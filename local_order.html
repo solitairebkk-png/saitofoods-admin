@@ -80,6 +80,13 @@
 
   #customer-result { margin-top: 10px; padding: 12px; border-radius: 6px; background: #f0f4f8; font-size: 13px; display: none; }
   #customer-not-found { margin-top: 10px; padding: 12px; border-radius: 6px; background: #fdf3d0; font-size: 13px; display: none; }
+  #customer-results-list { margin-top: 10px; }
+  .customer-result-item {
+    padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px;
+    cursor: pointer; font-size: 13px; background: white;
+  }
+  .customer-result-item:hover { border-color: var(--navy); background: #eef2f7; }
+  .customer-result-item.selected { border-color: var(--navy); background: #eef2f7; font-weight: 600; }
 
   .product-search-result {
     border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; margin-top: 6px; display: none;
@@ -165,18 +172,20 @@
       <h2><span class="th">ค้นหาลูกค้า</span><span class="en">Find Customer</span></h2>
       <div class="row">
         <div class="field">
-          <label><span class="th">เบอร์โทรศัพท์</span>Phone</label>
-          <input type="text" id="search-tel" placeholder="0812345678">
+          <label><span class="th">เบอร์โทร / ชื่อ / ที่อยู่</span>Phone / Name / Address</label>
+          <input type="text" id="search-query" placeholder="0812345678 หรือ ชื่อ หรือ ที่อยู่ / phone, name, or address" onkeydown="if(event.key==='Enter')searchCustomer()">
         </div>
         <div class="field" style="flex:0 0 auto; align-self:flex-end;">
           <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
         </div>
       </div>
+      <div id="customer-results-list"></div>
       <div id="customer-result"></div>
       <div id="customer-not-found">
         <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
         <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
         <div class="row" style="margin-top:10px;">
+          <div class="field"><label><span class="th">เบอร์โทร</span>Phone</label><input type="text" id="new-tel"></div>
           <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
           <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
         </div>
@@ -360,32 +369,57 @@ function toggleWalkin() {
   selectedCustomer = null;
 }
 
-// ---------------- Customer search (電話番号を引き継ぐ) ----------------
+// ---------------- Customer search (電話番号・名前・住所を横断検索) ----------------
 async function searchCustomer() {
-  const tel = document.getElementById('search-tel').value.trim();
+  const q = document.getElementById('search-query').value.trim();
   const resultEl = document.getElementById('customer-result');
   const notFoundEl = document.getElementById('customer-not-found');
+  const listEl = document.getElementById('customer-results-list');
   resultEl.style.display = 'none';
   notFoundEl.style.display = 'none';
+  listEl.innerHTML = '';
   selectedCustomer = null;
 
-  if (!tel) return;
+  if (!q) return;
 
   const { data, error } = await supabaseClient
-    .from('customers').select('id, family_name, first_name, email, area_id, point_balance')
-    .eq('tel1', tel).limit(1);
+    .from('customers')
+    .select('id, family_name, first_name, email, tel1, address1, address2, area_id, point_balance')
+    .or(`tel1.ilike.%${q}%,family_name.ilike.%${q}%,first_name.ilike.%${q}%,address1.ilike.%${q}%,address2.ilike.%${q}%`)
+    .limit(20);
 
   if (error) { alert('เกิดข้อผิดพลาด / Error: ' + error.message); return; }
 
   if (data && data.length > 0) {
-    selectedCustomer = data[0];
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `<b>${selectedCustomer.family_name} ${selectedCustomer.first_name}</b><br>Email: ${selectedCustomer.email || '-'}<br>Points: ${selectedCustomer.point_balance}`;
+    data.forEach(c => {
+      const div = document.createElement('div');
+      div.className = 'customer-result-item';
+      div.innerHTML = `<b>${c.family_name || ''} ${c.first_name || ''}</b> — Tel: ${c.tel1 || '-'}<br>
+        <span style="color:var(--text-muted);font-size:12px;">${c.address1 || ''} ${c.address2 || ''}</span><br>
+        <span style="color:var(--text-muted);font-size:12px;">Points: ${c.point_balance}</span>`;
+      div.onclick = () => selectCustomerFromList(c, div);
+      listEl.appendChild(div);
+    });
   } else {
-    // 検索した電話番号を新規登録フォームに引き継ぐ(旧B-STARの不満点を解消)
+    // 検索欄の内容を新規登録フォームに引き継ぐ(旧B-STARの不満点を解消)
     notFoundEl.style.display = 'block';
-    notFoundEl.dataset.tel = tel;
+    // 数字だけの検索(電話番号らしき入力)なら電話番号欄に、それ以外は名前欄に引き継ぐ
+    if (/^[0-9\-+ ]+$/.test(q)) {
+      document.getElementById('new-tel').value = q;
+    } else {
+      document.getElementById('new-family-name').value = q;
+    }
   }
+}
+
+function selectCustomerFromList(customer, el) {
+  selectedCustomer = customer;
+  document.querySelectorAll('.customer-result-item').forEach(item => item.classList.remove('selected'));
+  el.classList.add('selected');
+  const resultEl = document.getElementById('customer-result');
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${customer.family_name || ''} ${customer.first_name || ''}</b> (Tel: ${customer.tel1 || '-'})`;
+  document.getElementById('customer-not-found').style.display = 'none';
 }
 
 // ---------------- Category tabs & product grid ----------------
@@ -399,6 +433,12 @@ async function loadCategories() {
 
   const tabsEl = document.getElementById('category-tabs');
   tabsEl.innerHTML = '';
+
+  const popularBtn = document.createElement('button');
+  popularBtn.textContent = '⭐ ยอดนิยม / Popular';
+  popularBtn.onclick = () => selectCategory('popular', popularBtn);
+  tabsEl.appendChild(popularBtn);
+
   const allBtn = document.createElement('button');
   allBtn.textContent = 'ทั้งหมด / All';
   allBtn.classList.add('active');
@@ -426,6 +466,38 @@ async function loadProductGrid() {
   const gridEl = document.getElementById('product-grid');
   gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">กำลังโหลด... / Loading...</div>';
 
+  // 「人気商品」タブ: 注文履歴から集計したビューを使う
+  if (currentCategoryId === 'popular') {
+    const { data: popData, error: popError } = await supabaseClient
+      .from('popular_products')
+      .select('product_id, order_count')
+      .order('order_count', { ascending: false })
+      .limit(12);
+
+    if (popError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + popError.message + '</div>'; return; }
+
+    if (!popData || popData.length === 0) {
+      gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ยังไม่มีข้อมูลคำสั่งซื้อเพียงพอ / Not enough order history yet</div>';
+      return;
+    }
+
+    const ids = popData.map(p => p.product_id);
+    const { data: prodData, error: prodError } = await supabaseClient
+      .from('products')
+      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .in('id', ids);
+
+    if (prodError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + prodError.message + '</div>'; return; }
+
+    // 注文回数の多い順に並び替え(inクエリは順序を保証しないため)
+    const orderMap = {};
+    popData.forEach(p => { orderMap[p.product_id] = p.order_count; });
+    const sorted = (prodData || []).slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
+
+    renderProductGrid(sorted, orderMap);
+    return;
+  }
+
   let query;
   if (currentCategoryId) {
     query = supabaseClient
@@ -447,6 +519,12 @@ async function loadProductGrid() {
     ? (data || []).map(r => r.products).filter(p => p)
     : (data || []);
 
+  renderProductGrid(products);
+}
+
+function renderProductGrid(products, orderMap) {
+  const gridEl = document.getElementById('product-grid');
+
   if (products.length === 0) { gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ไม่มีสินค้า / No products</div>'; return; }
 
   gridEl.innerHTML = '';
@@ -457,7 +535,8 @@ async function loadProductGrid() {
     const noPrice = !isWeight && (!p.price || p.price === 0);
     const priceLabel = isWeight ? `${p.unit_price} THB/${p.unit_label}` : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
     const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${p.name_th}</div>` : '';
-    card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
+    const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
+    card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
     card.onclick = () => addToCart(p);
     gridEl.appendChild(card);
   });
@@ -563,7 +642,7 @@ async function submitOrder() {
       customerId = selectedCustomer.id;
     } else {
       // 新規顧客を作成(検索した電話番号を引き継ぐ)
-      const tel = document.getElementById('customer-not-found').dataset.tel || document.getElementById('search-tel').value.trim();
+      const tel = document.getElementById('new-tel').value.trim();
       if (!tel) {
         msgEl.textContent = 'กรุณาค้นหาลูกค้าด้วยเบอร์โทรศัพท์ก่อน / Please search for a customer by phone first.';
         msgEl.className = 'error';
@@ -647,7 +726,8 @@ async function submitOrder() {
   document.getElementById('order-comment').value = '';
   document.getElementById('customer-result').style.display = 'none';
   document.getElementById('customer-not-found').style.display = 'none';
-  document.getElementById('search-tel').value = '';
+  document.getElementById('search-query').value = '';
+  document.getElementById('customer-results-list').innerHTML = '';
 }
 </script>
 
