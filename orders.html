@@ -86,8 +86,16 @@
   .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
 
   .order-items { font-size: 12px; line-height: 1.7; }
+  .customer-info { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .customer-name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .customer-name { font-weight: 600; }
-  .customer-sub { color: var(--text-muted); font-size: 12px; }
+  .customer-tel { font-size: 15px; font-weight: 700; color: var(--navy); white-space: nowrap; }
+  .customer-address {
+    font-weight: 700; font-size: 14px; color: var(--text);
+    background: #fff8e6; border-left: 3px solid #e0a02e;
+    padding: 4px 8px; border-radius: 3px; margin: 4px 0;
+    display: inline-block;
+  }
 
   .manage-col { display: flex; flex-direction: column; gap: 6px; min-width: 100px; }
   .manage-col button {
@@ -355,9 +363,13 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td>
-      <div class="customer-name">${customerName}</div>
-      <div class="customer-sub">Tel: ${tel || '-'}</div>
-      ${address ? `<div class="customer-sub">${address}</div>` : ''}
+      <div class="customer-info">
+        <div class="customer-name-row">
+          <div class="customer-name">${customerName}</div>
+          <div class="customer-tel">📞 ${tel || '-'}</div>
+        </div>
+        ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
+      </div>
       <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB</span></div>
     </td>
