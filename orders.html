@@ -272,7 +272,7 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       payment_method, payment_status, total_amount, comment, slip_image_url,
-      customers ( family_name, first_name, tel1, area_id, areas ( name ) ),
+      customers ( family_name, first_name, tel1, address1, address2, province, area_id, areas ( name ) ),
       order_items ( product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -326,6 +326,8 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
     : 'หน้าร้าน / Walk-in';
   const tel = order.customers?.tel1 || '';
+  const addressParts = [order.customers?.address1, order.customers?.address2, order.customers?.province].filter(Boolean);
+  const address = addressParts.join(', ');
 
   const itemsHtml = (order.order_items || []).map(item => {
     const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
@@ -355,6 +357,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     <td>
       <div class="customer-name">${customerName}</div>
       <div class="customer-sub">Tel: ${tel || '-'}</div>
+      ${address ? `<div class="customer-sub">${address}</div>` : ''}
       <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB</span></div>
     </td>

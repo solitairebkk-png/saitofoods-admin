@@ -238,16 +238,16 @@
     <div class="row">
       <div class="field">
         <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
-        <input type="date" id="delivery-date">
+        <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
+        <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
       </div>
       <div class="field">
         <label><span class="th">ช่วงเวลา</span>Time slot</label>
-        <select id="delivery-time-slot">
-          <option value="เช้า / AM">เช้า / AM</option>
-          <option value="บ่าย / PM">บ่าย / PM</option>
-          <option value="เวลาใดก็ได้ / Anytime">เวลาใดก็ได้ / Anytime</option>
-        </select>
+        <select id="delivery-time-slot"></select>
       </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+      * วันอาทิตย์ปิดทำการ / Closed Sundays &nbsp;|&nbsp; วันเสาร์จัดส่งเฉพาะช่วงเช้า / Saturdays: morning only
     </div>
   </div>
 
@@ -336,7 +336,7 @@ async function login() {
   currentCustomer = customerRow;
   document.getElementById('login-panel').style.display = 'none';
   document.getElementById('main').style.display = 'block';
-  document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+  initDeliveryDatePicker();
   loadCategories();
 }
 
@@ -354,7 +354,7 @@ async function logout() {
       currentCustomer = customerRow;
       document.getElementById('login-panel').style.display = 'none';
       document.getElementById('main').style.display = 'block';
-      document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+      initDeliveryDatePicker();
       loadCategories();
     }
   }
@@ -420,6 +420,74 @@ function selectCustomerFromList(customer, el) {
   resultEl.style.display = 'block';
   resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${customer.family_name || ''} ${customer.first_name || ''}</b> (Tel: ${customer.tel1 || '-'})`;
   document.getElementById('customer-not-found').style.display = 'none';
+}
+
+// ---------------- Delivery date/time control ----------------
+// 時間帯の定義。フロントエンド(rakugo/自社サイト)側の設定に依存せず、
+// このバックエンド単体でも設定できるようにここで直接管理する。
+const MORNING_SLOTS = [
+  { value: 'เช้า / Morning (AM)', label: 'เช้า / Morning (AM)' },
+];
+const AFTERNOON_SLOTS = [
+  { value: '13:00-15:00', label: '13:00-15:00' },
+  { value: '13:30-15:30', label: '13:30-15:30' },
+  { value: '14:00-16:00', label: '14:00-16:00' },
+  { value: '14:30-16:30', label: '14:30-16:30' },
+  { value: '15:00-17:00', label: '15:00-17:00' },
+  { value: '15:30-17:30', label: '15:30-17:30' },
+  { value: '16:00-18:00', label: '16:00-18:00' },
+  { value: '17:00-18:00', label: '17:00-18:00' },
+];
+
+function initDeliveryDatePicker() {
+  const dateInput = document.getElementById('delivery-date');
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  dateInput.min = todayStr;
+  dateInput.value = todayStr;
+  onDeliveryDateChange();
+}
+
+function onDeliveryDateChange() {
+  const dateInput = document.getElementById('delivery-date');
+  const noteEl = document.getElementById('delivery-date-note');
+  const val = dateInput.value;
+  if (!val) return;
+
+  // タイムゾーンのずれを避けるため文字列から直接年月日を取り出して判定
+  const [y, m, d] = val.split('-').map(Number);
+  const dayOfWeek = new Date(y, m - 1, d).getDay(); // 0=日曜, 6=土曜
+
+  if (dayOfWeek === 0) {
+    noteEl.textContent = 'วันอาทิตย์ปิดทำการ กรุณาเลือกวันอื่น / Closed on Sundays. Please choose another date.';
+    populateTimeSlots([]);
+    return;
+  }
+
+  noteEl.textContent = '';
+  if (dayOfWeek === 6) {
+    populateTimeSlots(MORNING_SLOTS);
+  } else {
+    populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS));
+  }
+}
+
+function populateTimeSlots(slots) {
+  const select = document.getElementById('delivery-time-slot');
+  select.innerHTML = '';
+  if (slots.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '-- ปิดทำการ / Closed --';
+    select.appendChild(opt);
+    return;
+  }
+  slots.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.value;
+    opt.textContent = s.label;
+    select.appendChild(opt);
+  });
 }
 
 // ---------------- Category tabs & product grid ----------------
@@ -631,6 +699,15 @@ async function submitOrder() {
     msgEl.textContent = 'กรุณาเลือกสินค้าอย่างน้อย 1 รายการ / Please add at least one product.';
     msgEl.className = 'error';
     return;
+  }
+
+  if (!isWalkin) {
+    const timeSlot = document.getElementById('delivery-time-slot').value;
+    if (!timeSlot) {
+      msgEl.textContent = 'กรุณาเลือกวันที่จัดส่งที่ถูกต้อง (ไม่ใช่วันอาทิตย์) / Please choose a valid delivery date (not Sunday).';
+      msgEl.className = 'error';
+      return;
+    }
   }
 
   let customerId = null;
