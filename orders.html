@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Management | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557;
+    --navy-light: #2d4d7a;
+    --red-accent: #d94f3d;
+    --bg: #f6f5f2;
+    --panel: #ffffff;
+    --border: #dcdad4;
+    --text: #23272f;
+    --text-muted: #6b7280;
+
+    --status-unprinted: #fdf3d0;
+    --status-printed: #ffffff;
+    --status-weight: #d9e8f5;
+    --status-complete: #f6d9d4;
+    --status-paid-qr: #dbeee0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Inter", "Noto Sans Thai", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: var(--navy);
+    color: white;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  header h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin: 0;
+    line-height: 1.4;
+  }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 13px; display: block; }
+
+  header .user-info {
+    font-size: 13px;
+    color: #cdd8e6;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  #login-panel {
+    max-width: 380px;
+    margin: 80px auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+  }
+  #login-panel h2 { margin-top: 0; font-size: 16px; line-height: 1.5; }
+  #login-panel h2 .th { display: block; font-weight: 700; }
+  #login-panel h2 .en { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+  #login-panel input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  #login-panel button, .btn {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #login-panel button:hover, .btn:hover { background: var(--navy-light); }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main {
+    padding: 20px 24px 60px;
+    display: none;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .toolbar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; line-height: 1.4; }
+  .toolbar label .th { font-weight: 600; color: var(--text); font-size: 12px; }
+  .toolbar input, .toolbar select {
+    padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit;
+  }
+
+  .legend {
+    display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted);
+    margin-bottom: 14px; line-height: 1.4;
+  }
+  .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; flex-shrink: 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  thead th {
+    background: var(--navy);
+    color: white;
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+  }
+  thead th .en { display: block; font-weight: 400; color: #b9c6da; font-size: 10px; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 12px; vertical-align: top; }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    margin-right: 4px;
+    margin-bottom: 4px;
+  }
+  .badge-cash { background: #ece7de; color: #5b5140; }
+  .badge-qr { background: #dbeee0; color: #2c6b45; }
+  .badge-pending { background: #fdf3d0; color: #8a6d1e; }
+  .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
+
+  .order-items { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+  .actions { display: flex; flex-direction: column; gap: 6px; min-width: 110px; }
+  .actions button {
+    font-size: 11px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: white;
+    cursor: pointer;
+    font-family: inherit;
+    line-height: 1.3;
+  }
+  .actions button.primary { background: var(--navy); color: white; border-color: var(--navy); }
+  .actions button.danger { background: var(--red-accent); color: white; border-color: var(--red-accent); }
+  .actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .loading { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Order Management <span class="th">การจัดการคำสั่งซื้อ</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="local_order.html" style="color:#cdd8e6;text-decoration:none;">+ New Order / คำสั่งซื้อใหม่</a>
+    <span id="user-email"></span>
+    <span id="user-role" class="badge badge-cash"></span>
+    <button class="btn" onclick="logout()" style="padding:6px 12px;">Logout / ออกจากระบบ</button>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2><span class="th">เข้าสู่ระบบพนักงาน</span><span class="en">Staff Login</span></h2>
+  <input type="email" id="login-email" placeholder="Email / อีเมล">
+  <input type="password" id="login-password" placeholder="Password / รหัสผ่าน">
+  <button onclick="login()">Login / เข้าสู่ระบบ</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+  <div class="toolbar">
+    <label><span class="th">วันที่จัดส่ง (เริ่ม)</span>Delivery Date (Start)
+      <input type="date" id="filter-start">
+    </label>
+    <label><span class="th">วันที่จัดส่ง (สิ้นสุด)</span>Delivery Date (End)
+      <input type="date" id="filter-end">
+    </label>
+    <label><span class="th">พื้นที่</span>Area
+      <select id="filter-area">
+        <option value="">ทั้งหมด / All</option>
+        <option value="Bangkok">Bangkok</option>
+        <option value="Sriracha">Sriracha</option>
+      </select>
+    </label>
+    <label><span class="th">ประเภท</span>Type
+      <select id="filter-type">
+        <option value="">ทั้งหมด / All</option>
+        <option value="delivery">จัดส่ง / Delivery</option>
+        <option value="walk_in">หน้าร้าน / Walk-in</option>
+      </select>
+    </label>
+    <button class="btn" onclick="loadOrders()">ค้นหา / Search</button>
+  </div>
+
+  <div class="legend">
+    <span class="swatch"><span class="box" style="background:var(--status-unprinted)"></span>ยังไม่พิมพ์ / Unprinted</span>
+    <span class="swatch"><span class="box" style="background:var(--status-printed)"></span>พิมพ์แล้ว / Printed</span>
+    <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>ยังไม่ยืนยันน้ำหนัก / Weight unconfirmed</span>
+    <span class="swatch"><span class="box" style="background:var(--status-paid-qr)"></span>ยืนยันโอน QR แล้ว / QR confirmed</span>
+    <span class="swatch"><span class="box" style="background:var(--status-complete)"></span>เสร็จสิ้น / Complete</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:120px;">วันที่/เวลา<span class="en">Delivery Date/Time</span></th>
+        <th style="width:160px;">ลูกค้า<span class="en">Customer</span></th>
+        <th>รายการสินค้า<span class="en">Items</span></th>
+        <th style="width:90px;">ยอดเงิน<span class="en">Amount</span></th>
+        <th style="width:110px;">การชำระเงิน<span class="en">Payment</span></th>
+        <th style="width:120px;">การดำเนินการ<span class="en">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody id="orders-tbody">
+      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+</main>
+
+<script>
+// ==========================================================
+// Config: replace with your Supabase project values
+// Supabase Dashboard -> Project Settings -> API
+// ==========================================================
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+
+// ---------------- Auth ----------------
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message;
+    return;
+  }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers')
+    .select('id, family_name, first_name, role, email')
+    .eq('auth_user_id', data.user.id)
+    .single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบ / This account has no access.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  currentCustomer = null;
+  document.getElementById('login-panel').style.display = 'block';
+  document.getElementById('main').style.display = 'none';
+  document.getElementById('user-info').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  document.getElementById('user-role').textContent = currentCustomer.role === 'admin' ? 'ผู้ดูแลระบบ / Admin' : 'พนักงาน / Staff';
+
+  const today = new Date();
+  const weekLater = new Date(today.getTime() + 7 * 86400000);
+  document.getElementById('filter-start').value = today.toISOString().slice(0, 10);
+  document.getElementById('filter-end').value = weekLater.toISOString().slice(0, 10);
+
+  loadOrders();
+}
+
+// ---------------- Load orders ----------------
+async function loadOrders() {
+  const tbody = document.getElementById('orders-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const start = document.getElementById('filter-start').value;
+  const end = document.getElementById('filter-end').value;
+  const orderType = document.getElementById('filter-type').value;
+
+  let query = supabaseClient
+    .from('orders')
+    .select(`
+      id, order_type, delivery_date, delivery_time_slot,
+      has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
+      payment_method, payment_status, total_amount,
+      customers ( family_name, first_name, tel1 ),
+      order_items ( product_name_snapshot, quantity, sale_type, total_price )
+    `)
+    .order('delivery_date', { ascending: true })
+    .order('delivery_time_slot', { ascending: true });
+
+  if (start) query = query.gte('delivery_date', start);
+  if (end) query = query.lte('delivery_date', end);
+  if (orderType) query = query.eq('order_type', orderType);
+
+  const { data, error } = await query;
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">เกิดข้อผิดพลาด / Error loading orders: ' + error.message + '</td></tr>';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  data.forEach(order => tbody.appendChild(renderOrderRow(order)));
+}
+
+// ---------------- Status color logic ----------------
+function getStatusColor(order) {
+  if (order.is_completed) return 'var(--status-complete)';
+  if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'var(--status-paid-qr)';
+  if (order.has_weight_items && !order.is_weight_confirmed) return 'var(--status-weight)';
+  if (order.is_slip_printed) return 'var(--status-printed)';
+  return 'var(--status-unprinted)';
+}
+
+function renderOrderRow(order) {
+  const tr = document.createElement('tr');
+  tr.style.background = getStatusColor(order);
+
+  const customerName = order.customers
+    ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
+    : 'หน้าร้าน / Walk-in';
+  const tel = order.customers?.tel1 || '';
+
+  const itemsHtml = (order.order_items || []).map(item =>
+    `${item.product_name_snapshot} x ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} - ${item.total_price} THB`
+  ).join('<br>');
+
+  const paymentBadges = [];
+  if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">หน้าร้าน / Walk-in</span>');
+  if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
+  if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
+  if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
+
+  tr.innerHTML = `
+    <td>${order.delivery_date || '-'}<br><span style="color:var(--text-muted)">${order.delivery_time_slot || ''}</span></td>
+    <td>${customerName}<br><span style="color:var(--text-muted)">${tel}</span></td>
+    <td><div class="order-items">${itemsHtml || '(ไม่มีรายการ / no items)'}</div></td>
+    <td>${order.total_amount ? order.total_amount + ' THB' : '-'}</td>
+    <td>${paymentBadges.join('')}</td>
+    <td class="actions"></td>
+  `;
+
+  const actionsCell = tr.querySelector('.actions');
+  actionsCell.appendChild(makeActionButtons(order));
+
+  return tr;
+}
+
+function makeActionButtons(order) {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.gap = '6px';
+
+  if (order.has_weight_items && !order.is_weight_confirmed) {
+    wrap.appendChild(makeButton('ยืนยันน้ำหนัก / Confirm weight', () => updateOrder(order.id, { is_weight_confirmed: true }), 'primary'));
+  }
+  if (!order.is_slip_printed) {
+    wrap.appendChild(makeButton('พิมพ์ใบเสร็จ / Print slip', () => updateOrder(order.id, { is_slip_printed: true }), 'primary'));
+  }
+  if (!order.is_completed) {
+    wrap.appendChild(makeButton('เสร็จสิ้น / Complete', () => updateOrder(order.id, { is_completed: true }), 'primary'));
+  }
+  if (currentCustomer && currentCustomer.role === 'admin') {
+    wrap.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'danger'));
+  }
+  return wrap;
+}
+
+function makeButton(label, onClick, cls) {
+  const btn = document.createElement('button');
+  btn.textContent = label;
+  if (cls) btn.classList.add(cls);
+  btn.onclick = onClick;
+  return btn;
+}
+
+// ---------------- Update / Delete ----------------
+async function updateOrder(orderId, fields) {
+  const { error } = await supabaseClient.from('orders').update(fields).eq('id', orderId);
+  if (error) {
+    alert('อัปเดตไม่สำเร็จ / Update failed: ' + error.message);
+    return;
+  }
+  loadOrders();
+}
+
+async function deleteOrder(orderId) {
+  if (!confirm('ต้องการลบคำสั่งซื้อนี้หรือไม่? ไม่สามารถย้อนกลับได้\nDelete this order? This cannot be undone.')) return;
+  const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
+  if (error) {
+    alert('ลบไม่สำเร็จ / Delete failed: ' + error.message);
+    return;
+  }
+  loadOrders();
+}
+
+// ---------------- Restore session on load ----------------
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers')
+      .select('id, family_name, first_name, role, email')
+      .eq('auth_user_id', session.user.id)
+      .single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) {
+      currentCustomer = customerRow;
+      showMain();
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

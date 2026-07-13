@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Order | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557;
+    --navy-light: #2d4d7a;
+    --red-accent: #d94f3d;
+    --bg: #f6f5f2;
+    --panel: #ffffff;
+    --border: #dcdad4;
+    --text: #23272f;
+    --text-muted: #6b7280;
+    --green: #2c6b45;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Inter", "Noto Sans Thai", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: var(--navy); color: white; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 13px; display: block; }
+  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; margin-left: 16px; }
+  header nav a:hover { color: white; }
+
+  #login-panel {
+    max-width: 380px; margin: 80px auto; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 8px; padding: 32px;
+  }
+  #login-panel h2 { margin-top: 0; font-size: 16px; line-height: 1.5; }
+  #login-panel h2 .th { display: block; font-weight: 700; }
+  #login-panel h2 .en { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+  #login-panel input {
+    width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  .btn {
+    background: var(--navy); color: white; border: none; padding: 10px 16px; border-radius: 6px;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .btn:hover { background: var(--navy-light); }
+  .btn.secondary { background: white; color: var(--navy); border: 1px solid var(--navy); }
+  .btn.secondary:hover { background: #eef2f7; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 20px 24px 80px; display: none; max-width: 900px; margin: 0 auto; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 14px; color: var(--navy); }
+  .card h2 .th { display: block; }
+  .card h2 .en { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .field label .th { font-weight: 600; color: var(--text); display: block; font-size: 12px; }
+  .field input, .field select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 14px; font-family: inherit;
+  }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row .field { flex: 1; min-width: 160px; }
+
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .toggle-row input[type=checkbox] { width: 18px; height: 18px; }
+  .toggle-row label { font-size: 13px; font-weight: 600; }
+
+  #customer-result { margin-top: 10px; padding: 12px; border-radius: 6px; background: #f0f4f8; font-size: 13px; display: none; }
+  #customer-not-found { margin-top: 10px; padding: 12px; border-radius: 6px; background: #fdf3d0; font-size: 13px; display: none; }
+
+  .product-search-result {
+    border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; margin-top: 6px; display: none;
+  }
+  .product-search-result div {
+    padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border);
+  }
+  .product-search-result div:hover { background: #eef2f7; }
+  .product-search-result div:last-child { border-bottom: none; }
+
+  table.cart { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  table.cart th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--border); }
+  table.cart td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.cart input[type=number] { width: 70px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; }
+  table.cart .remove-btn { background: none; border: none; color: var(--red-accent); cursor: pointer; font-size: 16px; }
+  .weight-tag { font-size: 10px; background: #d9e8f5; color: #2c5279; padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
+
+  .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+  .payment-options { display: flex; gap: 10px; }
+  .payment-options label {
+    flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .payment-options input { display: none; }
+  .payment-options input:checked + span { color: var(--navy); }
+  .payment-options label:has(input:checked) { border-color: var(--navy); background: #eef2f7; }
+
+  #submit-msg { margin-top: 10px; font-size: 13px; }
+  #submit-msg.success { color: var(--green); }
+  #submit-msg.error { color: var(--red-accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>New Order <span class="th">สร้างคำสั่งซื้อใหม่</span></h1>
+  <nav>
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </nav>
+</header>
+
+<div id="login-panel">
+  <h2><span class="th">เข้าสู่ระบบพนักงาน</span><span class="en">Staff Login</span></h2>
+  <input type="email" id="login-email" placeholder="Email / อีเมล">
+  <input type="password" id="login-password" placeholder="Password / รหัสผ่าน">
+  <button class="btn" onclick="login()">Login / เข้าสู่ระบบ</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <!-- Walk-in toggle -->
+  <div class="card">
+    <div class="toggle-row">
+      <input type="checkbox" id="is-walkin" onchange="toggleWalkin()">
+      <label for="is-walkin">ลูกค้าหน้าร้าน (Walk-in)</label>
+    </div>
+
+    <!-- Delivery customer search -->
+    <div id="delivery-customer-block">
+      <h2><span class="th">ค้นหาลูกค้า</span><span class="en">Find Customer</span></h2>
+      <div class="row">
+        <div class="field">
+          <label><span class="th">เบอร์โทรศัพท์</span>Phone</label>
+          <input type="text" id="search-tel" placeholder="0812345678">
+        </div>
+        <div class="field" style="flex:0 0 auto; align-self:flex-end;">
+          <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
+        </div>
+      </div>
+      <div id="customer-result"></div>
+      <div id="customer-not-found">
+        <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
+        <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
+        <div class="row" style="margin-top:10px;">
+          <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
+          <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Walk-in attributes -->
+    <div id="walkin-block" style="display:none;">
+      <h2><span class="th">ข้อมูลลูกค้าโดยประมาณ</span><span class="en">Estimated Customer Info</span></h2>
+      <div class="row">
+        <div class="field">
+          <label><span class="th">สัญชาติ (โดยประมาณ)</span>Nationality (apparent)</label>
+          <select id="walkin-nationality">
+            <option value="日本人">Japanese / ญี่ปุ่น</option>
+            <option value="タイ人">Thai / ไทย</option>
+            <option value="欧米系">Western / ตะวันตก</option>
+            <option value="その他アジア系">Other Asian / เอเชียอื่นๆ</option>
+            <option value="その他">Other / อื่นๆ</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><span class="th">ช่วงอายุ</span>Age bracket</label>
+          <select id="walkin-age">
+            <option value="〜19">〜19</option>
+            <option value="20代">20s</option>
+            <option value="30代">30s</option>
+            <option value="40代">40s</option>
+            <option value="50代">50s</option>
+            <option value="60代〜">60+</option>
+          </select>
+        </div>
+        <div class="field">
+          <label><span class="th">เพศ</span>Gender</label>
+          <select id="walkin-gender">
+            <option value="男性">Male / ชาย</option>
+            <option value="女性">Female / หญิง</option>
+            <option value="不明">Unknown / ไม่ระบุ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery date/time (hidden for walk-in) -->
+  <div class="card" id="delivery-date-card">
+    <h2><span class="th">วันเวลาจัดส่ง</span><span class="en">Delivery Date/Time</span></h2>
+    <div class="row">
+      <div class="field">
+        <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
+        <input type="date" id="delivery-date">
+      </div>
+      <div class="field">
+        <label><span class="th">ช่วงเวลา</span>Time slot</label>
+        <select id="delivery-time-slot">
+          <option value="เช้า / AM">เช้า / AM</option>
+          <option value="บ่าย / PM">บ่าย / PM</option>
+          <option value="เวลาใดก็ได้ / Anytime">เวลาใดก็ได้ / Anytime</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div class="card">
+    <h2><span class="th">สินค้า</span><span class="en">Products</span></h2>
+    <div class="field">
+      <label><span class="th">ค้นหาสินค้า</span>Search product</label>
+      <input type="text" id="product-search" placeholder="พิมพ์ชื่อสินค้า / Type product name" oninput="searchProducts()">
+      <div class="product-search-result" id="product-search-result"></div>
+    </div>
+
+    <table class="cart">
+      <thead>
+        <tr>
+          <th>สินค้า / Product</th>
+          <th style="width:80px;">จำนวน / Qty</th>
+          <th style="width:90px;">ราคา / Price</th>
+          <th style="width:90px;">รวม / Total</th>
+          <th style="width:30px;"></th>
+        </tr>
+      </thead>
+      <tbody id="cart-tbody"></tbody>
+    </table>
+
+    <div class="total-row">
+      <span>ยอดรวม / Subtotal</span>
+      <span id="subtotal-display">0 THB</span>
+    </div>
+    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+      * สินค้าชั่งน้ำหนักจะยืนยันราคาภายหลังในหน้ารายการคำสั่งซื้อ<br>
+      * Weight-based items will be finalized later in the Order List screen.
+    </div>
+  </div>
+
+  <!-- Payment -->
+  <div class="card">
+    <h2><span class="th">วิธีชำระเงิน</span><span class="en">Payment Method</span></h2>
+    <div class="payment-options">
+      <label><input type="radio" name="payment" value="cash" checked><span>เงินสด / Cash</span></label>
+      <label><input type="radio" name="payment" value="qr"><span>โอน QR / QR Transfer</span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label><span class="th">หมายเหตุ</span>Comment</label>
+      <input type="text" id="order-comment">
+    </div>
+    <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
+    <div id="submit-msg"></div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;   // ログイン中スタッフ
+let selectedCustomer = null;  // 検索で見つかった配送先顧客
+let cart = [];                // { product_id, name, sale_type, price, unit_price, unit_label, quantity }
+
+// ---------------- Auth ----------------
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบ / This account has no access.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) {
+      currentCustomer = customerRow;
+      document.getElementById('login-panel').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+      document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+    }
+  }
+})();
+
+// ---------------- Walk-in toggle ----------------
+function toggleWalkin() {
+  const isWalkin = document.getElementById('is-walkin').checked;
+  document.getElementById('delivery-customer-block').style.display = isWalkin ? 'none' : 'block';
+  document.getElementById('walkin-block').style.display = isWalkin ? 'block' : 'none';
+  document.getElementById('delivery-date-card').style.display = isWalkin ? 'none' : 'block';
+  selectedCustomer = null;
+}
+
+// ---------------- Customer search (電話番号を引き継ぐ) ----------------
+async function searchCustomer() {
+  const tel = document.getElementById('search-tel').value.trim();
+  const resultEl = document.getElementById('customer-result');
+  const notFoundEl = document.getElementById('customer-not-found');
+  resultEl.style.display = 'none';
+  notFoundEl.style.display = 'none';
+  selectedCustomer = null;
+
+  if (!tel) return;
+
+  const { data, error } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, email, area_id, point_balance')
+    .eq('tel1', tel).limit(1);
+
+  if (error) { alert('เกิดข้อผิดพลาด / Error: ' + error.message); return; }
+
+  if (data && data.length > 0) {
+    selectedCustomer = data[0];
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `<b>${selectedCustomer.family_name} ${selectedCustomer.first_name}</b><br>Email: ${selectedCustomer.email || '-'}<br>Points: ${selectedCustomer.point_balance}`;
+  } else {
+    // 検索した電話番号を新規登録フォームに引き継ぐ(旧B-STARの不満点を解消)
+    notFoundEl.style.display = 'block';
+    notFoundEl.dataset.tel = tel;
+  }
+}
+
+// ---------------- Product search ----------------
+async function searchProducts() {
+  const q = document.getElementById('product-search').value.trim();
+  const resultEl = document.getElementById('product-search-result');
+  if (!q) { resultEl.style.display = 'none'; return; }
+
+  const { data, error } = await supabaseClient
+    .from('products')
+    .select('id, name_ja, price, unit_price, unit_label, sale_type')
+    .ilike('name_ja', `%${q}%`)
+    .eq('is_published', true)
+    .limit(15);
+
+  if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
+
+  resultEl.innerHTML = '';
+  data.forEach(p => {
+    const div = document.createElement('div');
+    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
+    div.innerHTML = `${p.name_ja} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
+    div.onclick = () => addToCart(p);
+    resultEl.appendChild(div);
+  });
+  resultEl.style.display = 'block';
+}
+
+function addToCart(p) {
+  cart.push({
+    product_id: p.id,
+    name: p.name_ja,
+    sale_type: p.sale_type,
+    price: p.price,
+    unit_price: p.unit_price,
+    unit_label: p.unit_label,
+    quantity: 1
+  });
+  document.getElementById('product-search').value = '';
+  document.getElementById('product-search-result').style.display = 'none';
+  renderCart();
+}
+
+function removeFromCart(index) {
+  cart.splice(index, 1);
+  renderCart();
+}
+
+function renderCart() {
+  const tbody = document.getElementById('cart-tbody');
+  tbody.innerHTML = '';
+  let subtotal = 0;
+
+  cart.forEach((item, i) => {
+    const isWeight = item.sale_type === 'weight';
+    const lineTotal = isWeight ? 0 : item.price * item.quantity;
+    if (!isWeight) subtotal += lineTotal;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.name}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
+      <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
+      <td>${isWeight ? item.unit_price + '/' + item.unit_label : item.price + ' THB'}</td>
+      <td>${isWeight ? '未確定 / TBD' : lineTotal + ' THB'}</td>
+      <td><button class="remove-btn" onclick="removeFromCart(${i})">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('subtotal-display').textContent = subtotal + ' THB (+ ชั่งน้ำหนัก / weight items TBD)';
+}
+
+function updateQty(index, value) {
+  cart[index].quantity = parseFloat(value) || 1;
+  renderCart();
+}
+
+// ---------------- Submit ----------------
+async function submitOrder() {
+  const msgEl = document.getElementById('submit-msg');
+  msgEl.textContent = '';
+  msgEl.className = '';
+
+  const isWalkin = document.getElementById('is-walkin').checked;
+  const paymentMethod = document.querySelector('input[name=payment]:checked').value;
+  const comment = document.getElementById('order-comment').value.trim();
+
+  if (cart.length === 0) {
+    msgEl.textContent = 'กรุณาเลือกสินค้าอย่างน้อย 1 รายการ / Please add at least one product.';
+    msgEl.className = 'error';
+    return;
+  }
+
+  let customerId = null;
+
+  if (isWalkin) {
+    // ウォークインは顧客レコードを作らない
+  } else {
+    if (selectedCustomer) {
+      customerId = selectedCustomer.id;
+    } else {
+      // 新規顧客を作成(検索した電話番号を引き継ぐ)
+      const tel = document.getElementById('customer-not-found').dataset.tel || document.getElementById('search-tel').value.trim();
+      if (!tel) {
+        msgEl.textContent = 'กรุณาค้นหาลูกค้าด้วยเบอร์โทรศัพท์ก่อน / Please search for a customer by phone first.';
+        msgEl.className = 'error';
+        return;
+      }
+      const { data: newCust, error: newCustErr } = await supabaseClient
+        .from('customers')
+        .insert({
+          tel1: tel,
+          first_name: document.getElementById('new-first-name').value.trim(),
+          family_name: document.getElementById('new-family-name').value.trim(),
+          email: document.getElementById('new-email').value.trim() || null,
+        })
+        .select('id').single();
+
+      if (newCustErr) {
+        msgEl.textContent = 'สร้างลูกค้าใหม่ไม่สำเร็จ / Failed to create customer: ' + newCustErr.message;
+        msgEl.className = 'error';
+        return;
+      }
+      customerId = newCust.id;
+    }
+  }
+
+  const hasWeightItems = cart.some(i => i.sale_type === 'weight');
+  const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  const orderPayload = {
+    order_type: isWalkin ? 'walk_in' : 'delivery',
+    order_source: 'local',
+    customer_id: customerId,
+    delivery_date: isWalkin ? null : document.getElementById('delivery-date').value,
+    delivery_time_slot: isWalkin ? null : document.getElementById('delivery-time-slot').value,
+    has_weight_items: hasWeightItems,
+    payment_method: paymentMethod,
+    payment_status: 'unpaid',
+    subtotal: subtotal,
+    total_amount: subtotal,
+    comment: comment || null,
+    created_by: currentCustomer.id,
+  };
+
+  if (isWalkin) {
+    orderPayload.walkin_nationality = document.getElementById('walkin-nationality').value;
+    orderPayload.walkin_age_bracket = document.getElementById('walkin-age').value;
+    orderPayload.walkin_gender = document.getElementById('walkin-gender').value;
+  }
+
+  const { data: orderRow, error: orderErr } = await supabaseClient
+    .from('orders').insert(orderPayload).select('id').single();
+
+  if (orderErr) {
+    msgEl.textContent = 'บันทึกคำสั่งซื้อไม่สำเร็จ / Failed to save order: ' + orderErr.message;
+    msgEl.className = 'error';
+    return;
+  }
+
+  const itemsPayload = cart.map(item => ({
+    order_id: orderRow.id,
+    product_id: item.product_id,
+    product_name_snapshot: item.name,
+    sale_type: item.sale_type,
+    quantity: item.quantity,
+    unit_price: item.sale_type === 'weight' ? item.unit_price : null,
+    price: item.sale_type === 'weight' ? 0 : item.price,
+    total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
+  }));
+
+  const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
+
+  if (itemsErr) {
+    msgEl.textContent = 'บันทึกรายการสินค้าไม่สำเร็จ / Failed to save order items: ' + itemsErr.message;
+    msgEl.className = 'error';
+    return;
+  }
+
+  msgEl.textContent = 'บันทึกคำสั่งซื้อสำเร็จ! / Order saved successfully!';
+  msgEl.className = 'success';
+  cart = [];
+  renderCart();
+  document.getElementById('order-comment').value = '';
+  document.getElementById('customer-result').style.display = 'none';
+  document.getElementById('customer-not-found').style.display = 'none';
+  document.getElementById('search-tel').value = '';
+}
+</script>
+
+</body>
+</html>
