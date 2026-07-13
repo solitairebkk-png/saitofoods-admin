@@ -340,21 +340,43 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   `;
 
   const manageCol = tr.querySelector('.manage-col');
-  manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => toggleDetail(order.id), 'btn-check'));
-  if (order.has_weight_items && !order.is_weight_confirmed) {
-    manageCol.appendChild(makeButton('Re-Order / ชั่งน้ำหนัก', () => updateOrder(order.id, { is_weight_confirmed: true }), 'btn-reorder'));
-  }
-  if (!order.is_slip_printed) {
-    manageCol.appendChild(makeButton('พิมพ์ / Print', () => updateOrder(order.id, { is_slip_printed: true }), 'btn-reorder'));
-  }
-  if (!order.is_completed) {
-    manageCol.appendChild(makeButton('Complete', () => updateOrder(order.id, { is_completed: true }), 'btn-complete'));
-  }
-  if (currentCustomer && currentCustomer.role === 'admin') {
-    manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
+  const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
+
+  if (!isLocked) {
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => toggleDetail(order.id), 'btn-check'));
+    if (!order.is_completed) {
+      manageCol.appendChild(makeButton('Edit / แก้ไข', () => editOrder(order), 'btn-reorder'));
+      manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order.id), 'btn-complete'));
+    }
+    if (currentCustomer && currentCustomer.role === 'admin') {
+      manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
+    }
+  } else {
+    const lockedNote = document.createElement('div');
+    lockedNote.style.fontSize = '11px';
+    lockedNote.style.color = 'var(--text-muted)';
+    lockedNote.textContent = 'เสร็จสิ้นแล้ว / Completed';
+    manageCol.appendChild(lockedNote);
   }
 
   return tr;
+}
+
+// Editボタン: 量り売りの重量が未確定ならそちらを優先、なければ印刷済みにする
+// (簡易実装。専用の編集画面は今後のフェーズで作成予定)
+function editOrder(order) {
+  if (order.has_weight_items && !order.is_weight_confirmed) {
+    updateOrder(order.id, { is_weight_confirmed: true });
+  } else if (!order.is_slip_printed) {
+    updateOrder(order.id, { is_slip_printed: true });
+  } else {
+    toggleDetail(order.id);
+  }
+}
+
+async function completeOrder(orderId) {
+  if (!confirm('ยืนยันว่าจัดส่ง/เก็บเงินเรียบร้อยแล้วใช่หรือไม่?\nConfirm this order is delivered and paid?')) return;
+  await updateOrder(orderId, { is_completed: true });
 }
 
 function makeButton(label, onClick, cls) {
