@@ -17,7 +17,7 @@
     --text: #23272f;
     --text-muted: #6b7280;
 
-    --status-unprinted: #fdf3d0;
+    --status-unprinted: #fbd7d2;   /* 旧UIのピンク寄りの色に合わせる */
     --status-printed: #ffffff;
     --status-weight: #d9e8f5;
     --status-complete: #f6d9d4;
@@ -25,168 +25,89 @@
   }
 
   * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: "Inter", "Noto Sans Thai", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-  }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
 
   header {
-    background: var(--navy);
-    color: white;
-    padding: 14px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
 
-  header h1 {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    margin: 0;
-    line-height: 1.4;
-  }
-  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 13px; display: block; }
-
-  header .user-info {
-    font-size: 13px;
-    color: #cdd8e6;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  #login-panel {
-    max-width: 380px;
-    margin: 80px auto;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 32px;
-  }
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
   #login-panel h2 { margin-top: 0; font-size: 16px; line-height: 1.5; }
   #login-panel h2 .th { display: block; font-weight: 700; }
   #login-panel h2 .en { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); }
-  #login-panel input {
-    width: 100%;
-    padding: 10px 12px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
-    font-family: inherit;
-  }
-  #login-panel button, .btn {
-    background: var(--navy);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-  }
-  #login-panel button:hover, .btn:hover { background: var(--navy-light); }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { border: none; padding: 8px 18px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-search { background: #4b9d5f; color: white; }
+  .btn-search:hover { background: #3d8250; }
+  #login-panel button { background: var(--navy); color: white; }
+  #login-panel button:hover { background: var(--navy-light); }
   #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
 
-  main {
-    padding: 20px 24px 60px;
-    display: none;
-  }
+  main { padding: 20px 24px 60px; display: none; }
 
-  .toolbar {
-    display: flex;
-    align-items: flex-end;
-    gap: 14px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
+  /* エリアタブ(旧UI準拠) */
+  .area-tabs { display: flex; gap: 2px; margin-bottom: 0; }
+  .area-tabs button {
+    background: #ece9e3; border: 1px solid var(--border); border-bottom: none;
+    padding: 8px 18px; font-size: 13px; cursor: pointer; border-radius: 4px 4px 0 0; font-family: inherit;
   }
-  .toolbar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; line-height: 1.4; }
-  .toolbar label .th { font-weight: 600; color: var(--text); font-size: 12px; }
-  .toolbar input, .toolbar select {
-    padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit;
-  }
+  .area-tabs button.active { background: var(--panel); font-weight: 700; }
 
-  .legend {
-    display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted);
-    margin-bottom: 14px; line-height: 1.4;
+  .filter-bar {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 0 4px 4px 4px;
+    padding: 14px 16px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px;
   }
+  .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .filter-bar label .th { font-weight: 600; color: var(--text); font-size: 12px; }
+  .filter-bar input, .filter-bar select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
-  .legend .box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; flex-shrink: 0; }
+  .legend .box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    font-size: 13px;
-  }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); font-size: 13px; }
   thead th {
-    background: var(--navy);
-    color: white;
-    text-align: left;
-    padding: 10px 12px;
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.01em;
-    line-height: 1.4;
+    background: #e9e6df; color: var(--text); text-align: center; padding: 10px 8px; font-weight: 700; font-size: 12px; border: 1px solid var(--border);
   }
-  thead th .en { display: block; font-weight: 400; color: #b9c6da; font-size: 10px; }
-  tbody tr { border-bottom: 1px solid var(--border); }
-  tbody tr:last-child { border-bottom: none; }
-  tbody td { padding: 10px 12px; vertical-align: top; }
+  thead th .en { display: block; font-weight: 400; color: var(--text-muted); font-size: 10px; }
+  tbody td { padding: 10px 12px; vertical-align: top; border: 1px solid var(--border); }
+  tbody td.center { text-align: center; }
 
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    font-weight: 600;
-    margin-right: 4px;
-    margin-bottom: 4px;
-  }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
   .badge-cash { background: #ece7de; color: #5b5140; }
   .badge-qr { background: #dbeee0; color: #2c6b45; }
   .badge-pending { background: #fdf3d0; color: #8a6d1e; }
   .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
 
-  .order-items { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
-  .actions { display: flex; flex-direction: column; gap: 6px; min-width: 110px; }
-  .actions button {
-    font-size: 11px;
-    padding: 6px 8px;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: white;
-    cursor: pointer;
-    font-family: inherit;
-    line-height: 1.3;
-  }
-  .actions button.primary { background: var(--navy); color: white; border-color: var(--navy); }
-  .actions button.danger { background: var(--red-accent); color: white; border-color: var(--red-accent); }
-  .actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .order-items { font-size: 12px; line-height: 1.7; }
+  .customer-name { font-weight: 600; }
+  .customer-sub { color: var(--text-muted); font-size: 12px; }
 
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-    font-size: 13px;
-    line-height: 1.6;
+  .manage-col { display: flex; flex-direction: column; gap: 6px; min-width: 100px; }
+  .manage-col button {
+    font-size: 11px; padding: 6px 6px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; color: white; line-height: 1.3;
   }
+  .btn-check { background: #3b8fd6; }
+  .btn-reorder { background: #e08a2e; }
+  .btn-complete { background: #4b9d5f; }
+  .btn-delete { background: var(--red-accent); }
 
+  .detail-panel { display: none; background: #fafafa; }
+  .detail-panel.open { display: table-row; }
+  .detail-inner { padding: 14px; font-size: 13px; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .detail-actions button { font-size: 12px; padding: 7px 12px; border-radius: 4px; border: 1px solid var(--border); background: white; cursor: pointer; font-family: inherit; }
+  .detail-actions button.primary { background: var(--navy); color: white; border-color: var(--navy); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
   .loading { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+  .count-badge { color: var(--red-accent); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -194,10 +115,10 @@
 <header>
   <h1>Order Management <span class="th">การจัดการคำสั่งซื้อ</span></h1>
   <div class="user-info" id="user-info" style="display:none;">
-    <a href="local_order.html" style="color:#cdd8e6;text-decoration:none;">+ New Order / คำสั่งซื้อใหม่</a>
+    <a href="local_order.html">+ New Order / คำสั่งซื้อใหม่</a>
     <span id="user-email"></span>
     <span id="user-role" class="badge badge-cash"></span>
-    <button class="btn" onclick="logout()" style="padding:6px 12px;">Logout / ออกจากระบบ</button>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
   </div>
 </header>
 
@@ -210,66 +131,59 @@
 </div>
 
 <main id="main">
-  <div class="toolbar">
-    <label><span class="th">วันที่จัดส่ง (เริ่ม)</span>Delivery Date (Start)
-      <input type="date" id="filter-start">
-    </label>
-    <label><span class="th">วันที่จัดส่ง (สิ้นสุด)</span>Delivery Date (End)
-      <input type="date" id="filter-end">
-    </label>
-    <label><span class="th">พื้นที่</span>Area
-      <select id="filter-area">
-        <option value="">ทั้งหมด / All</option>
-        <option value="Bangkok">Bangkok</option>
-        <option value="Sriracha">Sriracha</option>
-      </select>
-    </label>
+
+  <div class="area-tabs">
+    <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
+    <button data-area="Sriracha" onclick="setAreaTab(this,'Sriracha')">Sriracha / Pattaya</button>
+    <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
+  </div>
+
+  <div class="filter-bar">
+    <label><span class="th">เบอร์โทร</span>Tel.<input type="text" id="filter-tel"></label>
+    <label><span class="th">ชื่อ</span>Name<input type="text" id="filter-name"></label>
+    <label><span class="th">วันที่เริ่ม</span>Start<input type="date" id="filter-start"></label>
+    <label><span class="th">วันที่สิ้นสุด</span>End<input type="date" id="filter-end"></label>
     <label><span class="th">ประเภท</span>Type
       <select id="filter-type">
-        <option value="">ทั้งหมด / All</option>
-        <option value="delivery">จัดส่ง / Delivery</option>
-        <option value="walk_in">หน้าร้าน / Walk-in</option>
+        <option value="">All / ทั้งหมด</option>
+        <option value="delivery">Delivery / จัดส่ง</option>
+        <option value="walk_in">Walk-in / หน้าร้าน</option>
       </select>
     </label>
-    <button class="btn" onclick="loadOrders()">ค้นหา / Search</button>
+    <button class="btn btn-search" onclick="loadOrders()">Search / ค้นหา</button>
   </div>
 
   <div class="legend">
     <span class="swatch"><span class="box" style="background:var(--status-unprinted)"></span>ยังไม่พิมพ์ / Unprinted</span>
     <span class="swatch"><span class="box" style="background:var(--status-printed)"></span>พิมพ์แล้ว / Printed</span>
-    <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>ยังไม่ยืนยันน้ำหนัก / Weight unconfirmed</span>
-    <span class="swatch"><span class="box" style="background:var(--status-paid-qr)"></span>ยืนยันโอน QR แล้ว / QR confirmed</span>
+    <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>รอชั่งน้ำหนัก / Weight pending</span>
+    <span class="swatch"><span class="box" style="background:var(--status-paid-qr)"></span>โอน QR แล้ว / QR confirmed</span>
     <span class="swatch"><span class="box" style="background:var(--status-complete)"></span>เสร็จสิ้น / Complete</span>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th style="width:120px;">วันที่/เวลา<span class="en">Delivery Date/Time</span></th>
-        <th style="width:160px;">ลูกค้า<span class="en">Customer</span></th>
-        <th>รายการสินค้า<span class="en">Items</span></th>
-        <th style="width:90px;">ยอดเงิน<span class="en">Amount</span></th>
-        <th style="width:110px;">การชำระเงิน<span class="en">Payment</span></th>
-        <th style="width:120px;">การดำเนินการ<span class="en">Actions</span></th>
+        <th style="width:110px;">วันที่จัดส่ง<span class="en">Delivery-Date</span></th>
+        <th style="width:90px;">เวลา<span class="en">Time</span></th>
+        <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
+        <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
+        <th>รายละเอียด<span class="en">Details</span></th>
       </tr>
     </thead>
     <tbody id="orders-tbody">
-      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
 </main>
 
 <script>
-// ==========================================================
-// Config: replace with your Supabase project values
-// Supabase Dashboard -> Project Settings -> API
-// ==========================================================
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentCustomer = null;
+let currentAreaFilter = 'Bangkok';
 
 // ---------------- Auth ----------------
 async function login() {
@@ -279,57 +193,62 @@ async function login() {
   errEl.textContent = '';
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message;
-    return;
-  }
+  if (error) { errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message; return; }
 
   const { data: customerRow, error: custErr } = await supabaseClient
-    .from('customers')
-    .select('id, family_name, first_name, role, email')
-    .eq('auth_user_id', data.user.id)
-    .single();
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
 
   if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
     errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบ / This account has no access.';
     await supabaseClient.auth.signOut();
     return;
   }
-
   currentCustomer = customerRow;
   showMain();
 }
 
-async function logout() {
-  await supabaseClient.auth.signOut();
-  currentCustomer = null;
-  document.getElementById('login-panel').style.display = 'block';
-  document.getElementById('main').style.display = 'none';
-  document.getElementById('user-info').style.display = 'none';
-}
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
 
 function showMain() {
   document.getElementById('login-panel').style.display = 'none';
   document.getElementById('main').style.display = 'block';
   document.getElementById('user-info').style.display = 'flex';
   document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
-  document.getElementById('user-role').textContent = currentCustomer.role === 'admin' ? 'ผู้ดูแลระบบ / Admin' : 'พนักงาน / Staff';
+  document.getElementById('user-role').textContent = currentCustomer.role === 'admin' ? 'Admin / ผู้ดูแลระบบ' : 'Staff / พนักงาน';
 
   const today = new Date();
   const weekLater = new Date(today.getTime() + 7 * 86400000);
   document.getElementById('filter-start').value = today.toISOString().slice(0, 10);
   document.getElementById('filter-end').value = weekLater.toISOString().slice(0, 10);
+  loadOrders();
+}
 
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// ---------------- Area tabs ----------------
+function setAreaTab(btn, area) {
+  document.querySelectorAll('.area-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentAreaFilter = area;
   loadOrders();
 }
 
 // ---------------- Load orders ----------------
 async function loadOrders() {
   const tbody = document.getElementById('orders-tbody');
-  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
   const start = document.getElementById('filter-start').value;
   const end = document.getElementById('filter-end').value;
+  const tel = document.getElementById('filter-tel').value.trim();
+  const name = document.getElementById('filter-name').value.trim();
   const orderType = document.getElementById('filter-type').value;
 
   let query = supabaseClient
@@ -337,8 +256,8 @@ async function loadOrders() {
     .select(`
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
-      payment_method, payment_status, total_amount,
-      customers ( family_name, first_name, tel1 ),
+      payment_method, payment_status, total_amount, comment,
+      customers ( family_name, first_name, tel1, area_id, areas ( name ) ),
       order_items ( product_name_snapshot, quantity, sale_type, total_price )
     `)
     .order('delivery_date', { ascending: true })
@@ -347,24 +266,35 @@ async function loadOrders() {
   if (start) query = query.gte('delivery_date', start);
   if (end) query = query.lte('delivery_date', end);
   if (orderType) query = query.eq('order_type', orderType);
+  if (tel) query = query.ilike('customers.tel1', `%${tel}%`);
 
   const { data, error } = await query;
 
-  if (error) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">เกิดข้อผิดพลาด / Error loading orders: ' + error.message + '</td></tr>';
-    return;
+  if (error) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
+
+  let rows = data || [];
+  if (currentAreaFilter) {
+    rows = rows.filter(o => o.customers?.areas?.name === currentAreaFilter);
+  }
+  if (name) {
+    rows = rows.filter(o => {
+      const full = `${o.customers?.family_name || ''} ${o.customers?.first_name || ''}`;
+      return full.toLowerCase().includes(name.toLowerCase());
+    });
   }
 
-  if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>';
-    return;
-  }
+  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
   tbody.innerHTML = '';
-  data.forEach(order => tbody.appendChild(renderOrderRow(order)));
+  let lastDate = null;
+  rows.forEach((order, idx) => {
+    const tr = renderOrderRow(order, idx, order.delivery_date !== lastDate, rows.filter(r => r.delivery_date === order.delivery_date).length);
+    lastDate = order.delivery_date;
+    tbody.appendChild(tr);
+  });
 }
 
-// ---------------- Status color logic ----------------
+// ---------------- Status color ----------------
 function getStatusColor(order) {
   if (order.is_completed) return 'var(--status-complete)';
   if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'var(--status-paid-qr)';
@@ -373,7 +303,7 @@ function getStatusColor(order) {
   return 'var(--status-unprinted)';
 }
 
-function renderOrderRow(order) {
+function renderOrderRow(order, idx, showDate, countForDate) {
   const tr = document.createElement('tr');
   tr.style.background = getStatusColor(order);
 
@@ -383,94 +313,76 @@ function renderOrderRow(order) {
   const tel = order.customers?.tel1 || '';
 
   const itemsHtml = (order.order_items || []).map(item =>
-    `${item.product_name_snapshot} x ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} - ${item.total_price} THB`
+    `${item.product_name_snapshot} × ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} — ${item.total_price} THB`
   ).join('<br>');
 
   const paymentBadges = [];
-  if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">หน้าร้าน / Walk-in</span>');
+  if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
 
+  const dateCell = showDate
+    ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
+    : '';
+
   tr.innerHTML = `
-    <td>${order.delivery_date || '-'}<br><span style="color:var(--text-muted)">${order.delivery_time_slot || ''}</span></td>
-    <td>${customerName}<br><span style="color:var(--text-muted)">${tel}</span></td>
-    <td><div class="order-items">${itemsHtml || '(ไม่มีรายการ / no items)'}</div></td>
-    <td>${order.total_amount ? order.total_amount + ' THB' : '-'}</td>
-    <td>${paymentBadges.join('')}</td>
-    <td class="actions"></td>
+    <td class="center">${dateCell}</td>
+    <td class="center">${order.delivery_time_slot || ''}</td>
+    <td class="center">${order.id.slice(0, 8)}</td>
+    <td><div class="manage-col" id="manage-${order.id}"></div></td>
+    <td>
+      <div class="customer-name">${customerName}</div>
+      <div class="customer-sub">Tel: ${tel || '-'}</div>
+      <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
+      <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB</span></div>
+    </td>
   `;
 
-  const actionsCell = tr.querySelector('.actions');
-  actionsCell.appendChild(makeActionButtons(order));
-
-  return tr;
-}
-
-function makeActionButtons(order) {
-  const wrap = document.createElement('div');
-  wrap.style.display = 'flex';
-  wrap.style.flexDirection = 'column';
-  wrap.style.gap = '6px';
-
+  const manageCol = tr.querySelector('.manage-col');
+  manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => toggleDetail(order.id), 'btn-check'));
   if (order.has_weight_items && !order.is_weight_confirmed) {
-    wrap.appendChild(makeButton('ยืนยันน้ำหนัก / Confirm weight', () => updateOrder(order.id, { is_weight_confirmed: true }), 'primary'));
+    manageCol.appendChild(makeButton('Re-Order / ชั่งน้ำหนัก', () => updateOrder(order.id, { is_weight_confirmed: true }), 'btn-reorder'));
   }
   if (!order.is_slip_printed) {
-    wrap.appendChild(makeButton('พิมพ์ใบเสร็จ / Print slip', () => updateOrder(order.id, { is_slip_printed: true }), 'primary'));
+    manageCol.appendChild(makeButton('พิมพ์ / Print', () => updateOrder(order.id, { is_slip_printed: true }), 'btn-reorder'));
   }
   if (!order.is_completed) {
-    wrap.appendChild(makeButton('เสร็จสิ้น / Complete', () => updateOrder(order.id, { is_completed: true }), 'primary'));
+    manageCol.appendChild(makeButton('Complete', () => updateOrder(order.id, { is_completed: true }), 'btn-complete'));
   }
   if (currentCustomer && currentCustomer.role === 'admin') {
-    wrap.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'danger'));
+    manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
   }
-  return wrap;
+
+  return tr;
 }
 
 function makeButton(label, onClick, cls) {
   const btn = document.createElement('button');
   btn.textContent = label;
-  if (cls) btn.classList.add(cls);
+  btn.classList.add(cls);
   btn.onclick = onClick;
   return btn;
+}
+
+function toggleDetail(orderId) {
+  // 簡易表示: 詳細は今後のフェーズで別画面/モーダルに拡張予定
+  alert('รายละเอียดคำสั่งซื้อ / Order detail view — coming soon');
 }
 
 // ---------------- Update / Delete ----------------
 async function updateOrder(orderId, fields) {
   const { error } = await supabaseClient.from('orders').update(fields).eq('id', orderId);
-  if (error) {
-    alert('อัปเดตไม่สำเร็จ / Update failed: ' + error.message);
-    return;
-  }
+  if (error) { alert('อัปเดตไม่สำเร็จ / Update failed: ' + error.message); return; }
   loadOrders();
 }
 
 async function deleteOrder(orderId) {
-  if (!confirm('ต้องการลบคำสั่งซื้อนี้หรือไม่? ไม่สามารถย้อนกลับได้\nDelete this order? This cannot be undone.')) return;
+  if (!confirm('ต้องการลบคำสั่งซื้อนี้หรือไม่?\nDelete this order? This cannot be undone.')) return;
   const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
-  if (error) {
-    alert('ลบไม่สำเร็จ / Delete failed: ' + error.message);
-    return;
-  }
+  if (error) { alert('ลบไม่สำเร็จ / Delete failed: ' + error.message); return; }
   loadOrders();
 }
-
-// ---------------- Restore session on load ----------------
-(async function init() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) {
-    const { data: customerRow } = await supabaseClient
-      .from('customers')
-      .select('id, family_name, first_name, role, email')
-      .eq('auth_user_id', session.user.id)
-      .single();
-    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) {
-      currentCustomer = customerRow;
-      showMain();
-    }
-  }
-})();
 </script>
 
 </body>
