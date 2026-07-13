@@ -108,6 +108,16 @@
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 13px; }
   .loading { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
   .count-badge { color: var(--red-accent); font-weight: 700; }
+
+  .slip-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+  .slip-thumb:hover { border-color: var(--navy); }
+
+  #slip-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999;
+    align-items: center; justify-content: center; cursor: zoom-out;
+  }
+  #slip-modal.open { display: flex; }
+  #slip-modal img { max-width: 90%; max-height: 90%; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -169,13 +179,18 @@
         <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
         <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
+        <th style="width:70px;">สลิป<span class="en">Slip</span></th>
       </tr>
     </thead>
     <tbody id="orders-tbody">
-      <tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
 </main>
+
+<div id="slip-modal" onclick="closeSlipModal()">
+  <img id="slip-modal-img" src="">
+</div>
 
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
@@ -243,7 +258,7 @@ function setAreaTab(btn, area) {
 // ---------------- Load orders ----------------
 async function loadOrders() {
   const tbody = document.getElementById('orders-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
   const start = document.getElementById('filter-start').value;
   const end = document.getElementById('filter-end').value;
@@ -256,9 +271,9 @@ async function loadOrders() {
     .select(`
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
-      payment_method, payment_status, total_amount, comment,
+      payment_method, payment_status, total_amount, comment, slip_image_url,
       customers ( family_name, first_name, tel1, area_id, areas ( name ) ),
-      order_items ( product_name_snapshot, quantity, sale_type, total_price )
+      order_items ( product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th ) )
     `)
     .order('delivery_date', { ascending: true })
     .order('delivery_time_slot', { ascending: true });
@@ -270,7 +285,7 @@ async function loadOrders() {
 
   const { data, error } = await query;
 
-  if (error) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
+  if (error) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
 
   let rows = data || [];
   if (currentAreaFilter) {
@@ -283,7 +298,7 @@ async function loadOrders() {
     });
   }
 
-  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
+  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
   tbody.innerHTML = '';
   let lastDate = null;
@@ -312,9 +327,11 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     : 'หน้าร้าน / Walk-in';
   const tel = order.customers?.tel1 || '';
 
-  const itemsHtml = (order.order_items || []).map(item =>
-    `${item.product_name_snapshot} × ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} — ${item.total_price} THB`
-  ).join('<br>');
+  const itemsHtml = (order.order_items || []).map(item => {
+    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    const enName = item.products?.name_en ? ` / ${item.products.name_en}` : '';
+    return `${item.product_name_snapshot}${thName}${enName} × ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} — ${item.total_price} THB`;
+  }).join('<br>');
 
   const paymentBadges = [];
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
@@ -325,6 +342,10 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const dateCell = showDate
     ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
     : '';
+
+  const slipCell = order.slip_image_url
+    ? `<img src="${order.slip_image_url}" class="slip-thumb" onclick="openSlipModal('${order.slip_image_url}')">`
+    : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
@@ -337,6 +358,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB</span></div>
     </td>
+    <td class="center">${slipCell}</td>
   `;
 
   const manageCol = tr.querySelector('.manage-col');
@@ -390,6 +412,16 @@ function makeButton(label, onClick, cls) {
 function toggleDetail(orderId) {
   // 簡易表示: 詳細は今後のフェーズで別画面/モーダルに拡張予定
   alert('รายละเอียดคำสั่งซื้อ / Order detail view — coming soon');
+}
+
+function openSlipModal(url) {
+  document.getElementById('slip-modal-img').src = url;
+  document.getElementById('slip-modal').classList.add('open');
+}
+
+function closeSlipModal() {
+  document.getElementById('slip-modal').classList.remove('open');
+  document.getElementById('slip-modal-img').src = '';
 }
 
 // ---------------- Update / Delete ----------------

@@ -97,6 +97,26 @@
   table.cart .remove-btn { background: none; border: none; color: var(--red-accent); cursor: pointer; font-size: 16px; }
   .weight-tag { font-size: 10px; background: #d9e8f5; color: #2c5279; padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
 
+  .category-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; margin-bottom: 10px; }
+  .category-tabs button {
+    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: white;
+    font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .category-tabs button.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+  .product-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;
+    max-height: 320px; overflow-y: auto; padding: 4px;
+  }
+  .product-card {
+    border: 1px solid var(--border); border-radius: 6px; padding: 10px; cursor: pointer; background: white; font-size: 12px;
+  }
+  .product-card:hover { border-color: var(--navy); background: #f4f7fa; }
+  .product-card .p-name { font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
+  .product-card .p-price { color: var(--navy); font-weight: 700; }
+  .product-card .p-price.weight { color: #2c5279; }
+  .product-card .p-price.no-price { color: #9c3a2c; font-size: 11px; }
+
   .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
 
   .payment-options { display: flex; gap: 10px; }
@@ -231,6 +251,9 @@
       <div class="product-search-result" id="product-search-result"></div>
     </div>
 
+    <div class="category-tabs" id="category-tabs"></div>
+    <div class="product-grid" id="product-grid"></div>
+
     <table class="cart">
       <thead>
         <tr>
@@ -305,6 +328,7 @@ async function login() {
   document.getElementById('login-panel').style.display = 'none';
   document.getElementById('main').style.display = 'block';
   document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+  loadCategories();
 }
 
 async function logout() {
@@ -322,6 +346,7 @@ async function logout() {
       document.getElementById('login-panel').style.display = 'none';
       document.getElementById('main').style.display = 'block';
       document.getElementById('delivery-date').value = new Date().toISOString().slice(0, 10);
+      loadCategories();
     }
   }
 })();
@@ -363,6 +388,81 @@ async function searchCustomer() {
   }
 }
 
+// ---------------- Category tabs & product grid ----------------
+let allCategories = [];
+let currentCategoryId = null;
+
+async function loadCategories() {
+  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('name_ja');
+  if (error || !data) return;
+  allCategories = data;
+
+  const tabsEl = document.getElementById('category-tabs');
+  tabsEl.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.textContent = 'ทั้งหมด / All';
+  allBtn.classList.add('active');
+  allBtn.onclick = () => selectCategory(null, allBtn);
+  tabsEl.appendChild(allBtn);
+
+  data.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.textContent = cat.name_ja + (cat.name_en ? ' / ' + cat.name_en : '');
+    btn.onclick = () => selectCategory(cat.id, btn);
+    tabsEl.appendChild(btn);
+  });
+
+  selectCategory(null, allBtn);
+}
+
+function selectCategory(categoryId, btn) {
+  currentCategoryId = categoryId;
+  document.querySelectorAll('.category-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadProductGrid();
+}
+
+async function loadProductGrid() {
+  const gridEl = document.getElementById('product-grid');
+  gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">กำลังโหลด... / Loading...</div>';
+
+  let query;
+  if (currentCategoryId) {
+    query = supabaseClient
+      .from('product_categories')
+      .select('products ( id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published )')
+      .eq('category_id', currentCategoryId);
+  } else {
+    query = supabaseClient
+      .from('products')
+      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .order('name_ja')
+      .limit(500);
+  }
+
+  const { data, error } = await query;
+  if (error) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + error.message + '</div>'; return; }
+
+  const products = currentCategoryId
+    ? (data || []).map(r => r.products).filter(p => p)
+    : (data || []);
+
+  if (products.length === 0) { gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ไม่มีสินค้า / No products</div>'; return; }
+
+  gridEl.innerHTML = '';
+  products.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    const isWeight = p.sale_type === 'weight';
+    const noPrice = !isWeight && (!p.price || p.price === 0);
+    const priceLabel = isWeight ? `${p.unit_price} THB/${p.unit_label}` : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
+    const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${p.name_th}</div>` : '';
+    card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
+    card.onclick = () => addToCart(p);
+    gridEl.appendChild(card);
+  });
+}
+
 // ---------------- Product search ----------------
 async function searchProducts() {
   const q = document.getElementById('product-search').value.trim();
@@ -371,9 +471,8 @@ async function searchProducts() {
 
   const { data, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, price, unit_price, unit_label, sale_type')
-    .ilike('name_ja', `%${q}%`)
-    .eq('is_published', true)
+    .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type')
+    .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
     .limit(15);
 
   if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
@@ -382,7 +481,8 @@ async function searchProducts() {
   data.forEach(p => {
     const div = document.createElement('div');
     const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
-    div.innerHTML = `${p.name_ja} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
+    const thPart = p.name_th ? ` / ${p.name_th}` : '';
+    div.innerHTML = `${p.name_ja}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
     div.onclick = () => addToCart(p);
     resultEl.appendChild(div);
   });
