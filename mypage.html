@@ -124,6 +124,38 @@
           </div>
         </div>
         <button class="submit-btn" id="login-btn" onclick="login()">ログイン</button>
+        <div style="text-align:center;margin-top:12px;">
+          <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('forgot');return false;">パスワードをお忘れですか？</a>
+        </div>
+      </div>
+
+      <!-- パスワード再設定リクエスト -->
+      <div class="auth-panel-inner" id="panel-forgot">
+        <div class="form-hint" style="margin-bottom:14px;">
+          ご登録のメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。
+        </div>
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" class="form-input" id="forgot-email" placeholder="taro@example.com">
+        </div>
+        <button class="submit-btn" id="forgot-btn" onclick="requestPasswordReset()">再設定メールを送る</button>
+        <div style="text-align:center;margin-top:12px;">
+          <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('login');return false;">ログインに戻る</a>
+        </div>
+      </div>
+
+      <!-- 新しいパスワードの設定(再設定メールのリンクから戻ってきた場合に表示) -->
+      <div class="auth-panel-inner" id="panel-reset">
+        <div class="form-hint" style="margin-bottom:14px;">新しいパスワードを設定してください。</div>
+        <div class="form-group">
+          <label>新しいパスワード</label>
+          <input type="password" class="form-input" id="reset-password" placeholder="6文字以上">
+        </div>
+        <div class="form-group">
+          <label>パスワード(確認)</label>
+          <input type="password" class="form-input" id="reset-password-confirm">
+        </div>
+        <button class="submit-btn" id="reset-btn" onclick="submitNewPassword()">パスワードを更新する</button>
       </div>
 
       <div class="auth-panel-inner" id="panel-signup">
@@ -194,6 +226,9 @@ function switchAuthTab(tab) {
   document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
   document.getElementById('panel-login').classList.toggle('active', tab === 'login');
   document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('panel-forgot').classList.toggle('active', tab === 'forgot');
+  document.getElementById('panel-reset').classList.toggle('active', tab === 'reset');
+  document.querySelector('.auth-tabs').style.display = (tab === 'forgot' || tab === 'reset') ? 'none' : 'flex';
   hideAuthMsg();
 }
 
@@ -271,6 +306,52 @@ async function claimCustomerRecord(email, userId) {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) await loadMyPage(session.user);
 }
+
+async function requestPasswordReset() {
+  const email = document.getElementById('forgot-email').value.trim();
+  hideAuthMsg();
+  if (!email) { showAuthMsg('メールアドレスを入力してください。', true); return; }
+
+  const btn = document.getElementById('forgot-btn');
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: location.href.split('#')[0].split('?')[0],
+  });
+  btn.disabled = false;
+
+  if (error) { showAuthMsg('送信に失敗しました: ' + error.message, true); return; }
+  showAuthMsg('パスワード再設定用のメールをお送りしました。メール内のリンクを開いてください。');
+}
+
+async function submitNewPassword() {
+  const password = document.getElementById('reset-password').value;
+  const confirm = document.getElementById('reset-password-confirm').value;
+  hideAuthMsg();
+
+  if (password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
+  if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
+
+  const btn = document.getElementById('reset-btn');
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  btn.disabled = false;
+
+  if (error) { showAuthMsg('更新に失敗しました: ' + error.message, true); return; }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await loadMyPage(session.user);
+}
+
+// パスワード再設定メールのリンクから戻ってきた場合、自動的に「新しいパスワード」入力画面を表示する
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    document.getElementById('auth-panel').style.display = 'block';
+    document.getElementById('mypage-main').style.display = 'none';
+    switchAuthTab('reset');
+  }
+});
 
 async function logout() {
   await supabaseClient.auth.signOut();
