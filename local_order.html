@@ -552,6 +552,11 @@ async function loadCategories() {
   popularBtn.onclick = () => selectCategory('popular', popularBtn);
   tabsEl.appendChild(popularBtn);
 
+  const weightBtn = document.createElement('button');
+  weightBtn.textContent = '⚖️ ชั่งน้ำหนัก / Weight-based';
+  weightBtn.onclick = () => selectCategory('weight', weightBtn);
+  tabsEl.appendChild(weightBtn);
+
   const allBtn = document.createElement('button');
   allBtn.textContent = 'ทั้งหมด / All';
   allBtn.classList.add('active');
@@ -608,6 +613,21 @@ async function loadProductGrid() {
     const sorted = (prodData || []).slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
 
     renderProductGrid(sorted, orderMap);
+    return;
+  }
+
+  // 「量り売り」タブ: sale_type='weight'の商品だけを一覧表示
+  if (currentCategoryId === 'weight') {
+    const { data: weightData, error: weightError } = await supabaseClient
+      .from('products')
+      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .eq('sale_type', 'weight')
+      .order('name_ja')
+      .limit(200);
+
+    if (weightError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + weightError.message + '</div>'; return; }
+
+    renderProductGrid(weightData || []);
     return;
   }
 
