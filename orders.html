@@ -22,6 +22,7 @@
     --status-weight: #d9e8f5;       /* 青 = 量り売り商品の重量未入力 */
     --status-complete: #f2a89a;     /* 赤 = Complete押下後(以降変更不可) */
     --status-paid-qr: #dbeee0;      /* 緑 = QR振込み確認済み */
+    --status-cancelled: #dcdcdc;    /* グレー = まるごとキャンセル済み */
   }
 
   * { box-sizing: border-box; }
@@ -109,6 +110,9 @@
   .btn-reorder { background: #e08a2e; }
   .btn-complete { background: #4b9d5f; }
   .btn-delete { background: var(--red-accent); }
+  .btn-cancel { background: #6b7280; }
+
+  .badge-cancelled { background: #e2e2e2; color: #4a5568; }
 
   .detail-panel { display: none; background: #fafafa; }
   .detail-panel.open { display: table-row; }
@@ -250,6 +254,7 @@
     <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>รอชั่งน้ำหนัก / Weight pending</span>
     <span class="swatch"><span class="box" style="background:var(--status-paid-qr)"></span>โอน QR แล้ว / QR confirmed</span>
     <span class="swatch"><span class="box" style="background:var(--status-complete)"></span>เสร็จสิ้น / Complete</span>
+    <span class="swatch"><span class="box" style="background:var(--status-cancelled)"></span>ยกเลิกแล้ว / Cancelled</span>
   </div>
 
   <table>
@@ -385,6 +390,7 @@ async function loadOrders() {
     .select(`
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
+      is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, comment, slip_image_url,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
@@ -426,6 +432,7 @@ async function loadOrders() {
 
 // ---------------- Status color ----------------
 function getStatusColor(order) {
+  if (order.is_cancelled) return 'var(--status-cancelled)';
   if (order.is_completed) return 'var(--status-complete)';
   if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'var(--status-paid-qr)';
   if (order.has_weight_items && !order.is_weight_confirmed) return 'var(--status-weight)';
@@ -451,6 +458,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   }).join('<br>');
 
   const paymentBadges = [];
+  if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
@@ -484,6 +492,16 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   `;
 
   const manageCol = tr.querySelector('.manage-col');
+
+  if (order.is_cancelled) {
+    // キャンセル済み: 閲覧のみ(adminはDeleteも可能)、Edit/Complete/Cancelは出さない
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptModal(order), 'btn-check'));
+    if (currentCustomer && currentCustomer.role === 'admin') {
+      manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
+    }
+    return tr;
+  }
+
   const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
 
   if (!isLocked) {
@@ -494,6 +512,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         : 'Edit / แก้ไข';
       manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order.id), 'btn-complete'));
+      manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
     }
     if (currentCustomer && currentCustomer.role === 'admin') {
       manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
@@ -523,6 +542,17 @@ function editOrder(order) {
 async function completeOrder(orderId) {
   if (!confirm('ยืนยันว่าจัดส่ง/เก็บเงินเรียบร้อยแล้วใช่หรือไม่?\nConfirm this order is delivered and paid?')) return;
   await updateOrder(orderId, { is_completed: true });
+}
+
+// まるごとキャンセル: 削除(Delete)とは異なり記録は残す。スタッフ全員が実行可能。
+// Sales Summary(未実装)は is_cancelled=true の注文を必ず除外すること。
+async function cancelOrder(orderId) {
+  if (!confirm('ต้องการยกเลิกคำสั่งซื้อนี้ทั้งหมดหรือไม่? รายการนี้จะไม่ถูกนับในยอดขาย\nCancel this entire order? It will be excluded from sales totals but kept on record.')) return;
+  await updateOrder(orderId, {
+    is_cancelled: true,
+    cancelled_at: new Date().toISOString(),
+    cancelled_by: currentCustomer ? currentCustomer.id : null,
+  });
 }
 
 function makeButton(label, onClick, cls) {
