@@ -814,7 +814,7 @@ async function loadOrderForEdit(orderId) {
     .select(`
       id, order_type, delivery_date, delivery_time_slot, payment_method, comment,
       walkin_nationality, walkin_age_bracket, walkin_gender,
-      customers ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
+      customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
       order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
     `)
     .eq('id', orderId)

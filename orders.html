@@ -393,7 +393,7 @@ async function loadOrders() {
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, comment, slip_image_url,
       walkin_nationality, walkin_age_bracket, walkin_gender,
-      customers ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
