@@ -469,7 +469,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     : '';
 
   const slipCell = order.slip_image_url
-    ? `<img src="${order.slip_image_url}" class="slip-thumb" onclick="openSlipModal('${order.slip_image_url}')">`
+    ? `<img src="${driveImageUrl(order.slip_image_url)}" class="slip-thumb" onclick="openSlipModal('${driveImageUrl(order.slip_image_url, true)}')">`
     : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
   tr.innerHTML = `
@@ -652,6 +652,13 @@ window.addEventListener('afterprint', async () => {
 function openSlipModal(url) {
   document.getElementById('slip-modal-img').src = url;
   document.getElementById('slip-modal').classList.add('open');
+}
+
+// GAS(file.getUrl())が返す「表示ページ」URLは<img>で直接読み込めないため、
+// ファイルIDを抽出してサムネイル形式のURLに変換する(admin_slip.htmlと同じ手法)
+function driveImageUrl(url, large) {
+  const m = (url || '').match(/[-\w]{25,}/);
+  return m ? `https://drive.google.com/thumbnail?id=${m[0]}&sz=w${large ? 1600 : 200}` : url;
 }
 
 function closeSlipModal() {
