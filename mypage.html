@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイページ | サイトウフーズ</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --yellow: #F5C200;
+    --yellow-dark: #e0af00;
+    --yellow-light: #fff8d6;
+    --orange: #e07c00;
+    --brown: #5c3a0a;
+    --white: #ffffff;
+    --border: #e8d88a;
+    --text: #3a2400;
+    --muted: #997755;
+    --ok: #1a9a5c;
+    --red: #d43c3c;
+    --red-dim: rgba(212,60,60,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'M PLUS Rounded 1c', sans-serif; background: var(--yellow-light); color: var(--text); min-height: 100vh; padding-bottom: 48px; }
+  header { background: var(--yellow); padding: 0 16px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--yellow-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { font-size: 32px; }
+  .logo-main { font-size: 18px; font-weight: 800; color: var(--brown); letter-spacing: 0.03em; }
+  .logo-sub { font-size: 10px; font-weight: 500; color: var(--orange); letter-spacing: 0.06em; }
+  .logout-btn { padding: 6px 14px; border: 1.5px solid var(--brown); border-radius: 20px; background: transparent; color: var(--brown); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 28px 16px; }
+
+  .card { background: var(--white); border-radius: 16px; padding: 22px; margin-bottom: 18px; border: 1.5px solid var(--border); box-shadow: 0 2px 12px rgba(200,160,0,0.1); }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; margin-bottom: 14px; }
+
+  .auth-tabs { display: flex; gap: 4px; margin-bottom: 18px; background: var(--yellow-light); border-radius: 10px; padding: 4px; }
+  .auth-tab-btn { flex: 1; padding: 9px; border: none; border-radius: 8px; background: transparent; color: var(--brown); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .auth-tab-btn.active { background: var(--yellow); }
+  .auth-panel-inner { display: none; }
+  .auth-panel-inner.active { display: block; }
+
+  .form-group { margin-bottom: 14px; }
+  .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--brown); margin-bottom: 6px; }
+  .form-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--white); outline: none; }
+  .form-input:focus { border-color: var(--yellow-dark); }
+  .form-hint { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+
+  .submit-btn { width: 100%; background: var(--yellow); color: var(--brown); border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(200,160,0,0.3); }
+  .submit-btn:hover { background: var(--yellow-dark); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .auth-msg { margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: 8px; display: none; }
+  .auth-msg.error { display: block; background: var(--red-dim); color: var(--red); }
+  .auth-msg.success { display: block; background: #e6fff5; color: var(--ok); }
+
+  #mypage-main { display: none; }
+
+  .welcome { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+
+  .point-box { text-align: center; padding: 10px 0; }
+  .point-num { font-size: 40px; font-weight: 800; color: var(--orange); line-height: 1; }
+  .point-label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .order-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fffdf5; }
+  .order-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+  .order-date { font-size: 14px; font-weight: 700; color: var(--brown); }
+  .order-time { font-size: 11px; color: var(--muted); }
+  .order-items-list { font-size: 12px; color: var(--text); line-height: 1.8; margin-bottom: 8px; }
+  .order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .order-total { font-size: 15px; font-weight: 800; color: var(--orange); }
+
+  .status-badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
+  .status-completed { background: #e6fff5; color: var(--ok); }
+  .status-cancelled { background: #eee; color: #777; }
+  .status-pending { background: var(--yellow-light); color: var(--orange); border: 1px solid var(--border); }
+
+  .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
+  .loading { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-icon">🛵</div>
+    <div>
+      <div class="logo-main">マイページ</div>
+      <div class="logo-sub">SAITO FOODS CO.,LTD.</div>
+    </div>
+  </div>
+  <button class="logout-btn" id="logout-btn" onclick="logout()">ログアウト</button>
+</header>
+
+<div class="container">
+
+  <div id="auth-panel">
+    <div class="card">
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login" onclick="switchAuthTab('login')">ログイン</button>
+        <button class="auth-tab-btn" id="tab-signup" onclick="switchAuthTab('signup')">初めての方</button>
+      </div>
+
+      <div class="auth-panel-inner active" id="panel-login">
+        <div class="form-group">
+          <label>メールアドレス</label>
+          <input type="email" class="form-input" id="login-email" placeholder="taro@example.com">
+        </div>
+        <div class="form-group">
+          <label>パスワード</label>
+          <input type="password" class="form-input" id="login-password">
+        </div>
+        <button class="submit-btn" id="login-btn" onclick="login()">ログイン</button>
+      </div>
+
+      <div class="auth-panel-inner" id="panel-signup">
+        <div class="form-hint" style="margin-bottom:14px;">
+          ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。
+          <br>これまでのご注文履歴・ポイント残高がそのまま引き継がれます。
+        </div>
+        <div class="form-group">
+          <label>ご登録のメールアドレス</label>
+          <input type="email" class="form-input" id="signup-email" placeholder="taro@example.com">
+        </div>
+        <div class="form-group">
+          <label>新しいパスワード</label>
+          <input type="password" class="form-input" id="signup-password" placeholder="6文字以上">
+        </div>
+        <div class="form-group">
+          <label>パスワード(確認)</label>
+          <input type="password" class="form-input" id="signup-password-confirm">
+        </div>
+        <button class="submit-btn" id="signup-btn" onclick="signup()">パスワードを設定する</button>
+      </div>
+
+      <div class="auth-msg" id="auth-msg"></div>
+    </div>
+  </div>
+
+  <div id="mypage-main">
+    <div class="card">
+      <div class="welcome" id="welcome-name"></div>
+      <div class="point-box">
+        <div class="point-num" id="point-balance">0</div>
+        <div class="point-label">保有ポイント / Points Balance</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📦 ご注文履歴 / Order History</div>
+      <div id="order-list">
+        <div class="loading">読み込み中...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('panel-login').classList.toggle('active', tab === 'login');
+  document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
+  hideAuthMsg();
+}
+
+function showAuthMsg(msg, isError) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg;
+  el.className = 'auth-msg ' + (isError ? 'error' : 'success');
+}
+function hideAuthMsg() {
+  const el = document.getElementById('auth-msg');
+  el.textContent = '';
+  el.className = 'auth-msg';
+}
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  hideAuthMsg();
+
+  if (!email || !password) { showAuthMsg('メールアドレスとパスワードを入力してください。', true); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  btn.disabled = false;
+
+  if (error) { showAuthMsg('ログインに失敗しました: ' + error.message, true); return; }
+  await loadMyPage(data.user);
+}
+
+async function signup() {
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-password-confirm').value;
+  hideAuthMsg();
+
+  if (!email || !password) { showAuthMsg('メールアドレスとパスワードを入力してください。', true); return; }
+  if (password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
+  if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true;
+
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  btn.disabled = false;
+
+  if (error) { showAuthMsg('登録に失敗しました: ' + error.message, true); return; }
+
+  if (!data.session) {
+    showAuthMsg('確認メールをお送りしました。メール内のリンクをクリックした後、改めて「ログイン」タブからログインしてください。');
+    return;
+  }
+
+  await claimCustomerRecord(email, data.user.id);
+}
+
+async function claimCustomerRecord(email, userId) {
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .update({ auth_user_id: userId })
+    .eq('email', email)
+    .is('auth_user_id', null)
+    .select('id');
+
+  if (error) {
+    showAuthMsg('アカウントは作成されましたが、既存のご注文履歴との連携に失敗しました。お手数ですが店舗までご連絡ください。', true);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    showAuthMsg('このメールアドレスでの過去のご注文履歴は見つかりませんでした。アカウントは作成されましたので、これから先のご注文からポイントが貯まります。');
+  }
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await loadMyPage(session.user);
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await loadMyPage(session.user);
+})();
+
+async function loadMyPage(user) {
+  const { data: customerRow, error } = await supabaseClient
+    .from('customers')
+    .select('id, family_name, first_name, point_balance')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (error || !customerRow) {
+    showAuthMsg('このアカウントはまだお客様情報と連携していません。お手数ですが店舗までご連絡ください。', true);
+    return;
+  }
+
+  currentCustomer = customerRow;
+
+  document.getElementById('auth-panel').style.display = 'none';
+  document.getElementById('mypage-main').style.display = 'block';
+  document.getElementById('logout-btn').style.display = 'inline-block';
+
+  const name = `${customerRow.family_name || ''} ${customerRow.first_name || ''}`.trim();
+  document.getElementById('welcome-name').innerHTML = `${name} 様、いつもありがとうございます。`;
+  document.getElementById('point-balance').textContent = customerRow.point_balance ?? 0;
+
+  await loadOrderHistory(customerRow.id);
+}
+
+async function loadOrderHistory(customerId) {
+  const listEl = document.getElementById('order-list');
+  listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select(`
+      id, delivery_date, delivery_time_slot, payment_method, payment_status,
+      is_completed, is_cancelled, total_amount,
+      order_items ( product_name_snapshot, quantity, sale_type, total_price )
+    `)
+    .eq('customer_id', customerId)
+    .order('delivery_date', { ascending: false })
+    .limit(50);
+
+  if (error) { listEl.innerHTML = '<div class="empty-state">読み込みに失敗しました: ' + error.message + '</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">まだご注文履歴がありません。</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  data.forEach(order => listEl.appendChild(renderOrderCard(order)));
+}
+
+function renderOrderCard(order) {
+  const div = document.createElement('div');
+  div.className = 'order-card';
+
+  let statusHtml = '';
+  if (order.is_cancelled) {
+    statusHtml = '<span class="status-badge status-cancelled">キャンセル済み</span>';
+  } else if (order.is_completed) {
+    statusHtml = '<span class="status-badge status-completed">お届け完了</span>';
+  } else {
+    statusHtml = '<span class="status-badge status-pending">準備中</span>';
+  }
+
+  const itemsHtml = (order.order_items || []).map(item => {
+    const qty = item.sale_type === 'weight' ? `${item.quantity}` : `${item.quantity}点`;
+    return `${item.product_name_snapshot} × ${qty} — ${item.total_price} THB`;
+  }).join('<br>');
+
+  div.innerHTML = `
+    <div class="order-card-header">
+      <div>
+        <div class="order-date">${order.delivery_date || '-'}</div>
+        <div class="order-time">${order.delivery_time_slot || ''}</div>
+      </div>
+      ${statusHtml}
+    </div>
+    <div class="order-items-list">${itemsHtml || '(商品情報なし)'}</div>
+    <div class="order-footer">
+      <span style="font-size:12px;color:var(--muted);">${order.payment_method === 'qr' ? 'QR振込み' : '現金'}</span>
+      <span class="order-total">${order.total_amount || 0} THB</span>
+    </div>
+  `;
+  return div;
+}
+</script>
+
+</body>
+</html>
