@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 16px; font-weight: 700; margin: 0; }
+  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; margin-left: 16px; }
+  header nav a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.danger { background: var(--red-accent); }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 24px; max-width: 720px; margin: 0 auto; display: none; }
+  #no-access { max-width: 480px; margin: 100px auto; text-align: center; color: var(--text-muted); display: none; }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 14px; margin: 0 0 4px; color: var(--navy); }
+  .card .sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  table.rules { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+  table.rules th { text-align: left; padding: 6px 8px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  table.rules td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.rules select, table.rules input[type=number], table.rules input[type=text] {
+    padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit;
+  }
+  table.rules input[type=number] { width: 80px; }
+  .row-actions { display: flex; gap: 6px; }
+  .row-actions button { font-size: 11px; padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; color: white; }
+  .btn-save-row { background: var(--green); }
+  .btn-delete-row { background: var(--red-accent); }
+
+  .expiry-row { display: flex; align-items: center; gap: 10px; }
+  .expiry-row input { width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+
+  #save-msg { font-size: 13px; margin-top: 8px; }
+  #save-msg.success { color: var(--green); }
+  #save-msg.error { color: var(--red-accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Settings <span style="font-weight:400;color:#cdd8e6;font-size:12px;">การตั้งค่าระบบ</span></h1>
+  <nav>
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </nav>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="no-access">
+  <p>この画面はadmin(管理者)のみアクセスできます。</p>
+  <p style="font-size:12px;">This page is restricted to admin users.</p>
+</div>
+
+<main id="main">
+
+  <div class="card">
+    <h2>ポイント付与率(曜日別) / Point Earn Rate by Day of Week</h2>
+    <div class="sub">「デフォルト」は曜日指定の無い日に使われる基本レートです。特定の曜日だけ変えたい場合は「+ 曜日別ルールを追加」から追加してください。</div>
+    <table class="rules">
+      <thead>
+        <tr><th>曜日 / Day</th><th>付与率 / Rate (%)</th><th>ラベル / Label</th><th>有効 / Active</th><th></th></tr>
+      </thead>
+      <tbody id="rules-tbody"></tbody>
+    </table>
+    <button class="btn" onclick="addNewRuleRow()">+ 曜日別ルールを追加 / Add day-specific rule</button>
+  </div>
+
+  <div class="card">
+    <h2>ポイント失効日数 / Point Expiry (days)</h2>
+    <div class="sub">付与から何日で失効するか(現行運用は60日固定)</div>
+    <div class="expiry-row">
+      <input type="number" id="expiry-days-input" min="1">
+      <span>日 / days</span>
+      <button class="btn" onclick="saveExpiryDays()">บันทึก / Save</button>
+    </div>
+  </div>
+
+  <div id="save-msg"></div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const DAY_LABELS = ['日曜 / Sun', '月曜 / Mon', '火曜 / Tue', '水曜 / Wed', '木曜 / Thu', '金曜 / Fri', '土曜 / Sat'];
+
+let currentCustomer = null;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow) { errEl.textContent = 'Account not found.'; await supabaseClient.auth.signOut(); return; }
+  currentCustomer = customerRow;
+  afterLogin();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function afterLogin() {
+  document.getElementById('login-panel').style.display = 'none';
+  if (currentCustomer.role !== 'admin') {
+    document.getElementById('no-access').style.display = 'block';
+    return;
+  }
+  document.getElementById('main').style.display = 'block';
+  loadRules();
+  loadExpiryDays();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow) { currentCustomer = customerRow; document.getElementById('login-panel').style.display = 'none'; afterLogin(); }
+  }
+})();
+
+// ---------------- 曜日別ポイント付与率ルール ----------------
+async function loadRules() {
+  const tbody = document.getElementById('rules-tbody');
+  tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('point_rate_rules').select('*').order('day_of_week', { ascending: true, nullsFirst: true });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  (data || []).forEach(rule => tbody.appendChild(renderRuleRow(rule)));
+}
+
+function renderRuleRow(rule) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = rule.id || '';
+
+  const dayOptions = ['<option value="">デフォルト / Default</option>']
+    .concat(DAY_LABELS.map((label, i) => `<option value="${i}">${label}</option>`))
+    .join('');
+
+  tr.innerHTML = `
+    <td>
+      <select class="rule-day">${dayOptions}</select>
+    </td>
+    <td><input type="number" class="rule-rate" step="0.1" min="0" value="${rule.rate_percent ?? ''}"></td>
+    <td><input type="text" class="rule-label" value="${rule.label || ''}" placeholder="例: 水曜10%デー"></td>
+    <td><input type="checkbox" class="rule-active" ${rule.is_active ? 'checked' : ''}></td>
+    <td class="row-actions">
+      <button class="btn-save-row" onclick="saveRuleRow(this)">保存 / Save</button>
+      ${rule.id ? `<button class="btn-delete-row" onclick="deleteRuleRow(this)">削除 / Del</button>` : ''}
+    </td>
+  `;
+  tr.querySelector('.rule-day').value = (rule.day_of_week === null || rule.day_of_week === undefined) ? '' : rule.day_of_week;
+  return tr;
+}
+
+function addNewRuleRow() {
+  const tbody = document.getElementById('rules-tbody');
+  tbody.appendChild(renderRuleRow({ day_of_week: null, rate_percent: 1, label: '', is_active: true }));
+}
+
+async function saveRuleRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id || null;
+  const dayVal = tr.querySelector('.rule-day').value;
+  const dayOfWeek = dayVal === '' ? null : parseInt(dayVal, 10);
+  const ratePercent = parseFloat(tr.querySelector('.rule-rate').value);
+  const label = tr.querySelector('.rule-label').value.trim();
+  const isActive = tr.querySelector('.rule-active').checked;
+
+  if (isNaN(ratePercent) || ratePercent < 0) { showSaveMsg('付与率を正しく入力してください / Please enter a valid rate', true); return; }
+
+  const payload = { day_of_week: dayOfWeek, rate_percent: ratePercent, label: label || null, is_active: isActive };
+
+  let error;
+  if (id) {
+    ({ error } = await supabaseClient.from('point_rate_rules').update(payload).eq('id', id));
+  } else {
+    ({ error } = await supabaseClient.from('point_rate_rules').insert(payload));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadRules();
+}
+
+async function deleteRuleRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  if (!id) return;
+  if (!confirm('ลบกฎนี้หรือไม่? / Delete this rule?')) return;
+  const { error } = await supabaseClient.from('point_rate_rules').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadRules();
+}
+
+// ---------------- ポイント失効日数 ----------------
+async function loadExpiryDays() {
+  const { data, error } = await supabaseClient
+    .from('settings').select('value').eq('key', 'point_expiry_days').single();
+  if (!error && data) document.getElementById('expiry-days-input').value = data.value;
+}
+
+async function saveExpiryDays() {
+  const val = parseInt(document.getElementById('expiry-days-input').value, 10);
+  if (isNaN(val) || val <= 0) { showSaveMsg('日数を正しく入力してください / Please enter a valid number of days', true); return; }
+
+  const { error } = await supabaseClient
+    .from('settings').update({ value: String(val) }).eq('key', 'point_expiry_days');
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+}
+
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+}
+</script>
+
+</body>
+</html>

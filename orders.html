@@ -211,6 +211,7 @@
   <h1>Order Management <span class="th">การจัดการคำสั่งซื้อ</span></h1>
   <div class="user-info" id="user-info" style="display:none;">
     <a href="local_order.html">+ New Order / คำสั่งซื้อใหม่</a>
+    <a href="settings.html">⚙️ Settings</a>
     <span id="user-email"></span>
     <span id="user-role" class="badge badge-cash"></span>
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
@@ -388,7 +389,7 @@ async function loadOrders() {
   let query = supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot,
+      id, order_type, delivery_date, delivery_time_slot, customer_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, comment, slip_image_url,
@@ -511,7 +512,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         ? 'ชั่งน้ำหนัก / Weigh'
         : 'Edit / แก้ไข';
       manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
-      manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order.id), 'btn-complete'));
+      manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
     }
     if (currentCustomer && currentCustomer.role === 'admin') {
@@ -539,9 +540,57 @@ function editOrder(order) {
   }
 }
 
-async function completeOrder(orderId) {
+async function completeOrder(order) {
   if (!confirm('ยืนยันว่าจัดส่ง/เก็บเงินเรียบร้อยแล้วใช่หรือไม่?\nConfirm this order is delivered and paid?')) return;
-  await updateOrder(orderId, { is_completed: true });
+  await updateOrder(order.id, { is_completed: true });
+  await awardPointsForOrder(order);
+}
+
+// Complete時にポイントを自動計算・付与する。
+// 曜日別レート(point_rate_rules)を配送日(delivery_date)の曜日で判定し、
+// 該当曜日のルールが無ければデフォルトレート(day_of_week=null)を使う。
+// ウォークイン等、紐づく顧客がいない注文には付与しない。
+async function awardPointsForOrder(order) {
+  if (!order.customer_id || !order.delivery_date) return;
+
+  try {
+    const dow = new Date(order.delivery_date + 'T00:00:00').getDay(); // 0=日曜 ... 6=土曜
+
+    const { data: rules, error: rulesErr } = await supabaseClient
+      .from('point_rate_rules').select('day_of_week, rate_percent').eq('is_active', true);
+    if (rulesErr) { console.error('point_rate_rules取得エラー:', rulesErr); return; }
+
+    const specific = (rules || []).find(r => r.day_of_week === dow);
+    const fallback = (rules || []).find(r => r.day_of_week === null);
+    const ratePercent = specific ? Number(specific.rate_percent) : (fallback ? Number(fallback.rate_percent) : 1);
+
+    const points = Math.floor((order.total_amount || 0) * ratePercent / 100);
+    if (points <= 0) return;
+
+    const { data: expirySetting } = await supabaseClient
+      .from('settings').select('value').eq('key', 'point_expiry_days').single();
+    const expiryDays = expirySetting ? parseInt(expirySetting.value, 10) : 60;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+    const { error: ledgerErr } = await supabaseClient.from('points_ledger').insert({
+      customer_id: order.customer_id,
+      order_id: order.id,
+      change_type: 'earn',
+      points: points,
+      expires_at: expiresAt.toISOString().slice(0, 10),
+    });
+    if (ledgerErr) { console.error('points_ledger登録エラー:', ledgerErr); return; }
+
+    const { data: custRow, error: custErr } = await supabaseClient
+      .from('customers').select('point_balance').eq('id', order.customer_id).single();
+    if (custErr) { console.error('顧客ポイント残高取得エラー:', custErr); return; }
+
+    const newBalance = (custRow?.point_balance || 0) + points;
+    await supabaseClient.from('customers').update({ point_balance: newBalance }).eq('id', order.customer_id);
+  } catch (err) {
+    console.error('ポイント付与処理でエラー:', err);
+  }
 }
 
 // まるごとキャンセル: 削除(Delete)とは異なり記録は残す。スタッフ全員が実行可能。
