@@ -354,6 +354,10 @@ let currentCustomer = null;   // ログイン中スタッフ
 let selectedCustomer = null;  // 検索で見つかった配送先顧客
 let cart = [];                // { product_id, name, sale_type, price, unit_price, unit_label, quantity }
 
+// 編集モード(orders.html の Edit ボタンから ?edit=<注文ID> で遷移してきた場合)
+const editOrderId = new URLSearchParams(location.search).get('edit');
+let editingOrderId = null;
+
 // ---------------- Auth ----------------
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -377,6 +381,7 @@ async function login() {
   document.getElementById('main').style.display = 'block';
   initDeliveryDatePicker();
   loadCategories();
+  if (editOrderId) loadOrderForEdit(editOrderId);
 }
 
 async function logout() {
@@ -395,6 +400,7 @@ async function logout() {
       document.getElementById('main').style.display = 'block';
       initDeliveryDatePicker();
       loadCategories();
+      if (editOrderId) loadOrderForEdit(editOrderId);
     }
   }
 })();
@@ -781,6 +787,71 @@ function hidePromptPayQr() {
   document.getElementById('order-qr-code').innerHTML = '';
 }
 
+// ---------------- Edit mode: load existing order into the form ----------------
+async function loadOrderForEdit(orderId) {
+  const { data: order, error } = await supabaseClient
+    .from('orders')
+    .select(`
+      id, order_type, delivery_date, delivery_time_slot, payment_method, comment,
+      walkin_nationality, walkin_age_bracket, walkin_gender,
+      customers ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
+      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
+    `)
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) {
+    alert('ไม่พบคำสั่งซื้อ / Order not found: ' + (error?.message || ''));
+    return;
+  }
+
+  editingOrderId = order.id;
+
+  // ヘッダー・保存ボタンの表示をEditモードに切り替え
+  const titleEl = document.querySelector('header h1');
+  titleEl.innerHTML = `Edit Order <span class="th">แก้ไขคำสั่งซื้อ #${order.id.slice(0, 8)}</span>`;
+  const submitBtn = document.querySelector('main button[onclick="submitOrder()"]');
+  if (submitBtn) submitBtn.textContent = 'บันทึกการแก้ไข / Save Changes';
+
+  const isWalkin = order.order_type === 'walk_in';
+  document.getElementById('is-walkin').checked = isWalkin;
+  toggleWalkin();
+
+  if (isWalkin) {
+    if (order.walkin_nationality) document.getElementById('walkin-nationality').value = order.walkin_nationality;
+    if (order.walkin_age_bracket) document.getElementById('walkin-age').value = order.walkin_age_bracket;
+    if (order.walkin_gender) document.getElementById('walkin-gender').value = order.walkin_gender;
+  } else if (order.customers) {
+    selectedCustomer = order.customers;
+    const resultEl = document.getElementById('customer-result');
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${order.customers.family_name || ''} ${order.customers.first_name || ''}</b> (Tel: ${order.customers.tel1 || '-'})`;
+
+    document.getElementById('delivery-date').value = order.delivery_date || '';
+    onDeliveryDateChange();
+    // 時間帯のoptionが生成されるのを待ってから値をセット
+    setTimeout(() => {
+      document.getElementById('delivery-time-slot').value = order.delivery_time_slot || '';
+    }, 0);
+  }
+
+  document.querySelectorAll('input[name=payment]').forEach(r => {
+    r.checked = (r.value === order.payment_method);
+  });
+  document.getElementById('order-comment').value = order.comment || '';
+
+  cart = (order.order_items || []).map(item => ({
+    product_id: item.product_id,
+    name: item.product_name_snapshot,
+    sale_type: item.sale_type,
+    price: item.price,
+    unit_price: item.unit_price,
+    unit_label: item.products?.unit_label || '',
+    quantity: item.quantity,
+  }));
+  renderCart();
+}
+
 // ---------------- Slip upload link ----------------
 // 注文保存後、支払い方法がQR振込みの場合にスリップアップロード用リンクを生成・表示する。
 // 量り売り商品を含む注文は金額が未確定のため、リンクは生成せず、
@@ -929,6 +1000,64 @@ async function submitOrder() {
     orderPayload.walkin_nationality = document.getElementById('walkin-nationality').value;
     orderPayload.walkin_age_bracket = document.getElementById('walkin-age').value;
     orderPayload.walkin_gender = document.getElementById('walkin-gender').value;
+  }
+
+  // ---------------- 編集モード: 既存注文をUPDATE ----------------
+  if (editingOrderId) {
+    // 内容が変わるため、再印刷・再計量が必要という前提でフラグをリセットする
+    orderPayload.is_slip_printed = false;
+    if (hasWeightItems) orderPayload.is_weight_confirmed = false;
+
+    const { error: updErr } = await supabaseClient
+      .from('orders').update(orderPayload).eq('id', editingOrderId);
+
+    if (updErr) {
+      msgEl.textContent = 'บันทึกการแก้ไขไม่สำเร็จ / Failed to update order: ' + updErr.message;
+      msgEl.className = 'error';
+      return;
+    }
+
+    // 商品構成は一旦全削除して作り直す(シンプルさ優先。差分更新はしない)
+    const { error: delErr } = await supabaseClient
+      .from('order_items').delete().eq('order_id', editingOrderId);
+
+    if (delErr) {
+      msgEl.textContent = 'ลบรายการสินค้าเดิมไม่สำเร็จ / Failed to clear old items: ' + delErr.message;
+      msgEl.className = 'error';
+      return;
+    }
+
+    const editItemsPayload = cart.map(item => ({
+      order_id: editingOrderId,
+      product_id: item.product_id,
+      product_name_snapshot: item.name,
+      sale_type: item.sale_type,
+      quantity: item.quantity,
+      unit_price: item.sale_type === 'weight' ? item.unit_price : null,
+      price: item.sale_type === 'weight' ? 0 : item.price,
+      total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
+    }));
+
+    const { error: editItemsErr } = await supabaseClient.from('order_items').insert(editItemsPayload);
+
+    if (editItemsErr) {
+      msgEl.textContent = 'บันทึกรายการสินค้าใหม่ไม่สำเร็จ / Failed to save updated items: ' + editItemsErr.message;
+      msgEl.className = 'error';
+      return;
+    }
+
+    msgEl.textContent = 'บันทึกการแก้ไขสำเร็จ! / Order updated successfully!';
+    msgEl.className = 'success';
+
+    if (paymentMethod === 'qr') {
+      showSlipLink({
+        orderId: editingOrderId,
+        amount: subtotal,
+        hasWeightItems: hasWeightItems,
+        customerName: isWalkin ? '' : customerName,
+      });
+    }
+    return; // 編集モードはここで終了(新規作成のinsert処理には進まない)
   }
 
   const { data: orderRow, error: orderErr } = await supabaseClient

@@ -167,6 +167,38 @@
   #weight-modal-confirm-btn { background: var(--navy); color: white; }
   #weight-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #weight-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+
+  /* 帳票(伝票)表示 + 印刷モーダル */
+  #receipt-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 997;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #receipt-modal.open { display: flex; }
+  .receipt-box { background: var(--panel); border-radius: 8px; max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto; }
+  #receipt-content { padding: 24px; font-size: 13px; color: var(--text); }
+  .receipt-header { text-align: center; margin-bottom: 14px; border-bottom: 2px solid var(--navy); padding-bottom: 10px; }
+  .receipt-company { font-size: 16px; font-weight: 800; color: var(--navy); }
+  .receipt-company-sub { font-size: 11px; color: var(--text-muted); }
+  .receipt-meta { font-size: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
+  .receipt-customer { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); line-height: 1.6; }
+  table.receipt-items { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px; }
+  table.receipt-items th { text-align: left; border-bottom: 1px solid var(--border); padding: 4px 2px; font-size: 11px; color: var(--text-muted); }
+  table.receipt-items td { padding: 4px 2px; border-bottom: 1px dotted var(--border); }
+  .receipt-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; padding-top: 6px; border-top: 2px solid var(--navy); margin-bottom: 8px; }
+  .receipt-payment { font-size: 12px; margin-bottom: 6px; }
+  .receipt-comment { font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 6px; }
+  .receipt-actions { display: flex; gap: 10px; padding: 0 24px 20px; }
+  .receipt-actions button { flex: 1; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
+  #receipt-print-btn { background: var(--navy); color: white; }
+  #receipt-close-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #receipt-content, #receipt-content * { visibility: visible; }
+    #receipt-modal { position: absolute; inset: auto; background: none; }
+    .receipt-box { position: absolute; left: 0; top: 0; width: 100%; max-height: none; overflow: visible; box-shadow: none; }
+    .receipt-actions { display: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -259,6 +291,17 @@
   </div>
 </div>
 
+<!-- 帳票(伝票)表示 + 印刷モーダル -->
+<div id="receipt-modal">
+  <div class="receipt-box">
+    <div id="receipt-content"></div>
+    <div class="receipt-actions">
+      <button id="receipt-close-btn" onclick="closeReceiptModal()">ปิด / Close</button>
+      <button id="receipt-print-btn" onclick="printReceipt()">🖨️ พิมพ์ / Print</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -343,6 +386,7 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       payment_method, payment_status, total_amount, comment, slip_image_url,
+      walkin_nationality, walkin_age_bracket, walkin_gender,
       customers ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
@@ -443,7 +487,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
 
   if (!isLocked) {
-    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => toggleDetail(order.id), 'btn-check'));
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptModal(order), 'btn-check'));
     if (!order.is_completed) {
       const editLabel = (order.has_weight_items && !order.is_weight_confirmed)
         ? 'ชั่งน้ำหนัก / Weigh'
@@ -465,15 +509,14 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   return tr;
 }
 
-// Editボタン: 量り売りの重量が未確定なら重量確定モーダルを開く、
-// それ以外は従来どおり印刷済みフラグを立てる(専用の編集画面は今後のフェーズで作成予定)
+// Editボタン: 量り売りの重量が未確定なら重量確定モーダルを優先して開く。
+// それ以外は本格的な編集画面(local_order.html)に遷移し、
+// 顧客・商品・配送日時・支払い方法などを丸ごと編集できるようにする。
 function editOrder(order) {
   if (order.has_weight_items && !order.is_weight_confirmed) {
     openWeightModal(order);
-  } else if (!order.is_slip_printed) {
-    updateOrder(order.id, { is_slip_printed: true });
   } else {
-    toggleDetail(order.id);
+    location.href = `local_order.html?edit=${order.id}`;
   }
 }
 
@@ -494,6 +537,87 @@ function toggleDetail(orderId) {
   // 簡易表示: 詳細は今後のフェーズで別画面/モーダルに拡張予定
   alert('รายละเอียดคำสั่งซื้อ / Order detail view — coming soon');
 }
+
+// ================= 帳票(伝票)表示 + 印刷 =================
+let receiptModalOrderId = null;
+
+function openReceiptModal(order) {
+  receiptModalOrderId = order.id;
+
+  const customerName = order.customers
+    ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
+    : 'Walk-in / ลูกค้าหน้าร้าน';
+  const tel = order.customers?.tel1 || '-';
+  const addressParts = [order.customers?.address1, order.customers?.address2, order.customers?.province].filter(Boolean);
+  const address = addressParts.join(', ');
+
+  const itemsRows = (order.order_items || []).map(item => {
+    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    const qtyLabel = item.sale_type === 'weight'
+      ? `${item.quantity} ${item.products?.unit_label || ''}`
+      : `${item.quantity}`;
+    return `
+      <tr>
+        <td>${item.product_name_snapshot}${thName}</td>
+        <td style="text-align:center;">${qtyLabel}</td>
+        <td style="text-align:right;">${item.total_price} THB</td>
+      </tr>`;
+  }).join('');
+
+  const paymentLabel = order.payment_method === 'qr'
+    ? (order.payment_status === 'paid' ? 'โอน QR (ยืนยันแล้ว) / QR Transfer (Confirmed)' : 'โอน QR (รอยืนยัน) / QR Transfer (Pending)')
+    : 'เงินสด / Cash';
+
+  const walkinLine = order.order_type === 'walk_in'
+    ? `<div style="font-size:11px;color:var(--text-muted);">Walk-in — ${order.walkin_nationality || ''} / ${order.walkin_age_bracket || ''} / ${order.walkin_gender || ''}</div>`
+    : '';
+
+  document.getElementById('receipt-content').innerHTML = `
+    <div class="receipt-header">
+      <div class="receipt-company">SAITO FOODS CO.,LTD.</div>
+      <div class="receipt-company-sub">Since 1997 — Bangkok</div>
+    </div>
+    <div class="receipt-meta">
+      <div><b>Order:</b> ${order.id.slice(0, 8)}</div>
+      <div><b>Delivery:</b> ${order.delivery_date || '-'} ${order.delivery_time_slot || ''}</div>
+    </div>
+    <div class="receipt-customer">
+      <div><b>${customerName}</b></div>
+      <div>📞 ${tel}</div>
+      ${address ? `<div>📍 ${address}</div>` : ''}
+      ${walkinLine}
+    </div>
+    <table class="receipt-items">
+      <thead><tr><th>Item</th><th>Qty</th><th>Amount</th></tr></thead>
+      <tbody>${itemsRows || '<tr><td colspan="3">(ไม่มีรายการ)</td></tr>'}</tbody>
+    </table>
+    <div class="receipt-total"><span>Total / รวม</span><span>${order.total_amount || 0} THB</span></div>
+    <div class="receipt-payment">💳 ${paymentLabel}</div>
+    ${order.comment ? `<div class="receipt-comment">📝 ${order.comment}</div>` : ''}
+  `;
+
+  document.getElementById('receipt-modal').classList.add('open');
+}
+
+function closeReceiptModal() {
+  document.getElementById('receipt-modal').classList.remove('open');
+  receiptModalOrderId = null;
+}
+
+function printReceipt() {
+  window.print();
+}
+
+// 印刷ダイアログが閉じたタイミングで「印刷済み」フラグを立てる(黄色→白)
+// 注: ブラウザの仕様上、実際に印刷したかキャンセルしたかは区別できないため、
+// 印刷ダイアログを開いた時点で印刷済み扱いとする
+window.addEventListener('afterprint', async () => {
+  if (!receiptModalOrderId) return;
+  const idToUpdate = receiptModalOrderId;
+  closeReceiptModal();
+  await supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', idToUpdate);
+  loadOrders();
+});
 
 function openSlipModal(url) {
   document.getElementById('slip-modal-img').src = url;
