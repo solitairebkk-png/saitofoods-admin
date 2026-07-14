@@ -57,6 +57,14 @@
 
   main { padding: 20px 24px 80px; display: none; max-width: 900px; margin: 0 auto; }
 
+  /* お客様検索・注文状況・配送日時をスクロールしても常に見える位置に固定 */
+  .sticky-top {
+    position: sticky; top: 0; z-index: 15;
+    background: var(--bg); padding-top: 4px; margin-top: -4px;
+  }
+  #order-status-card table.cart { max-height: 140px; overflow-y: auto; display: block; }
+  #order-status-card table.cart thead, #order-status-card table.cart tbody { display: table; width: 100%; table-layout: fixed; }
+
   .card {
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
     padding: 20px; margin-bottom: 16px;
@@ -105,10 +113,10 @@
   table.cart .remove-btn { background: none; border: none; color: var(--red-accent); cursor: pointer; font-size: 16px; }
   .weight-tag { font-size: 10px; background: #d9e8f5; color: #2c5279; padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
 
-  .category-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; margin-bottom: 10px; }
+  .category-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 8px; }
   .category-tabs button {
-    padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: white;
-    font-size: 12px; cursor: pointer; font-family: inherit;
+    padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: white;
+    font-size: 11px; cursor: pointer; font-family: inherit;
   }
   .category-tabs button.active { background: var(--navy); color: white; border-color: var(--navy); }
 
@@ -180,98 +188,128 @@
 
 <main id="main">
 
-  <!-- Walk-in toggle -->
-  <div class="card">
-    <div class="toggle-row">
-      <input type="checkbox" id="is-walkin" onchange="toggleWalkin()">
-      <label for="is-walkin">ลูกค้าหน้าร้าน (Walk-in)</label>
-    </div>
+  <div class="sticky-top">
 
-    <!-- Delivery customer search -->
-    <div id="delivery-customer-block">
-      <h2><span class="th">ค้นหาลูกค้า</span><span class="en">Find Customer</span></h2>
-      <div class="row">
-        <div class="field">
-          <label><span class="th">เบอร์โทร / ชื่อ / ที่อยู่</span>Phone / Name / Address</label>
-          <input type="text" id="search-query" placeholder="0812345678 หรือ ชื่อ หรือ ที่อยู่ / phone, name, or address" onkeydown="if(event.key==='Enter')searchCustomer()">
-        </div>
-        <div class="field" style="flex:0 0 auto; align-self:flex-end;">
-          <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
-        </div>
+    <!-- Walk-in toggle -->
+    <div class="card">
+      <div class="toggle-row">
+        <input type="checkbox" id="is-walkin" onchange="toggleWalkin()">
+        <label for="is-walkin">ลูกค้าหน้าร้าน (Walk-in)</label>
       </div>
-      <div id="customer-results-list"></div>
-      <div id="customer-result"></div>
-      <div id="customer-not-found">
-        <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
-        <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
-        <div class="row" style="margin-top:10px;">
-          <div class="field"><label><span class="th">เบอร์โทร</span>Phone</label><input type="text" id="new-tel"></div>
-          <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
-          <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
-        </div>
+
+      <!-- Delivery customer search -->
+      <div id="delivery-customer-block">
+        <h2><span class="th">ค้นหาลูกค้า</span><span class="en">Find Customer</span></h2>
         <div class="row">
-          <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
+          <div class="field">
+            <label><span class="th">เบอร์โทร / ชื่อ / ที่อยู่</span>Phone / Name / Address</label>
+            <input type="text" id="search-query" placeholder="0812345678 หรือ ชื่อ หรือ ที่อยู่ / phone, name, or address" onkeydown="if(event.key==='Enter')searchCustomer()">
+          </div>
+          <div class="field" style="flex:0 0 auto; align-self:flex-end;">
+            <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
+          </div>
+        </div>
+        <div id="customer-results-list"></div>
+        <div id="customer-result"></div>
+        <div id="customer-not-found">
+          <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
+          <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
+          <div class="row" style="margin-top:10px;">
+            <div class="field"><label><span class="th">เบอร์โทร</span>Phone</label><input type="text" id="new-tel"></div>
+            <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
+            <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Walk-in attributes -->
+      <div id="walkin-block" style="display:none;">
+        <h2><span class="th">ข้อมูลลูกค้าโดยประมาณ</span><span class="en">Estimated Customer Info</span></h2>
+        <div class="row">
+          <div class="field">
+            <label><span class="th">สัญชาติ (โดยประมาณ)</span>Nationality (apparent)</label>
+            <select id="walkin-nationality">
+              <option value="日本人">Japanese / ญี่ปุ่น</option>
+              <option value="タイ人">Thai / ไทย</option>
+              <option value="欧米系">Western / ตะวันตก</option>
+              <option value="その他アジア系">Other Asian / เอเชียอื่นๆ</option>
+              <option value="その他">Other / อื่นๆ</option>
+            </select>
+          </div>
+          <div class="field">
+            <label><span class="th">ช่วงอายุ</span>Age bracket</label>
+            <select id="walkin-age">
+              <option value="〜19">〜19</option>
+              <option value="20代">20s</option>
+              <option value="30代">30s</option>
+              <option value="40代">40s</option>
+              <option value="50代">50s</option>
+              <option value="60代〜">60+</option>
+            </select>
+          </div>
+          <div class="field">
+            <label><span class="th">เพศ</span>Gender</label>
+            <select id="walkin-gender">
+              <option value="男性">Male / ชาย</option>
+              <option value="女性">Female / หญิง</option>
+              <option value="不明">Unknown / ไม่ระบุ</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Walk-in attributes -->
-    <div id="walkin-block" style="display:none;">
-      <h2><span class="th">ข้อมูลลูกค้าโดยประมาณ</span><span class="en">Estimated Customer Info</span></h2>
+    <!-- Order status / cart -->
+    <div class="card" id="order-status-card">
+      <h2><span class="th">สถานะคำสั่งซื้อ</span><span class="en">Order Status</span></h2>
+      <table class="cart">
+        <thead>
+          <tr>
+            <th>สินค้า / Product</th>
+            <th style="width:80px;">จำนวน / Qty</th>
+            <th style="width:90px;">ราคา / Price</th>
+            <th style="width:90px;">รวม / Total</th>
+            <th style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="cart-tbody"></tbody>
+      </table>
+
+      <div class="total-row">
+        <span>ยอดรวม / Subtotal</span>
+        <span id="subtotal-display">0 THB</span>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+        * สินค้าชั่งน้ำหนักจะยืนยันราคาภายหลังในหน้ารายการคำสั่งซื้อ<br>
+        * Weight-based items will be finalized later in the Order List screen.
+      </div>
+    </div>
+
+    <!-- Delivery date/time (hidden for walk-in) -->
+    <div class="card" id="delivery-date-card">
+      <h2><span class="th">วันเวลาจัดส่ง</span><span class="en">Delivery Date/Time</span></h2>
       <div class="row">
         <div class="field">
-          <label><span class="th">สัญชาติ (โดยประมาณ)</span>Nationality (apparent)</label>
-          <select id="walkin-nationality">
-            <option value="日本人">Japanese / ญี่ปุ่น</option>
-            <option value="タイ人">Thai / ไทย</option>
-            <option value="欧米系">Western / ตะวันตก</option>
-            <option value="その他アジア系">Other Asian / เอเชียอื่นๆ</option>
-            <option value="その他">Other / อื่นๆ</option>
-          </select>
+          <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
+          <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
+          <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
         </div>
         <div class="field">
-          <label><span class="th">ช่วงอายุ</span>Age bracket</label>
-          <select id="walkin-age">
-            <option value="〜19">〜19</option>
-            <option value="20代">20s</option>
-            <option value="30代">30s</option>
-            <option value="40代">40s</option>
-            <option value="50代">50s</option>
-            <option value="60代〜">60+</option>
-          </select>
-        </div>
-        <div class="field">
-          <label><span class="th">เพศ</span>Gender</label>
-          <select id="walkin-gender">
-            <option value="男性">Male / ชาย</option>
-            <option value="女性">Female / หญิง</option>
-            <option value="不明">Unknown / ไม่ระบุ</option>
-          </select>
+          <label><span class="th">ช่วงเวลา</span>Time slot</label>
+          <select id="delivery-time-slot"></select>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Delivery date/time (hidden for walk-in) -->
-  <div class="card" id="delivery-date-card">
-    <h2><span class="th">วันเวลาจัดส่ง</span><span class="en">Delivery Date/Time</span></h2>
-    <div class="row">
-      <div class="field">
-        <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
-        <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
-        <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
-      </div>
-      <div class="field">
-        <label><span class="th">ช่วงเวลา</span>Time slot</label>
-        <select id="delivery-time-slot"></select>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+        * วันอาทิตย์ปิดทำการ / Closed Sundays &nbsp;|&nbsp; วันเสาร์จัดส่งเฉพาะช่วงเช้า / Saturdays: morning only
       </div>
     </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-      * วันอาทิตย์ปิดทำการ / Closed Sundays &nbsp;|&nbsp; วันเสาร์จัดส่งเฉพาะช่วงเช้า / Saturdays: morning only
-    </div>
+
   </div>
 
-  <!-- Products -->
+  <!-- Products (scrollable browse area) -->
   <div class="card">
     <h2><span class="th">สินค้า</span><span class="en">Products</span></h2>
     <div class="field">
@@ -282,28 +320,6 @@
 
     <div class="category-tabs" id="category-tabs"></div>
     <div class="product-grid" id="product-grid"></div>
-
-    <table class="cart">
-      <thead>
-        <tr>
-          <th>สินค้า / Product</th>
-          <th style="width:80px;">จำนวน / Qty</th>
-          <th style="width:90px;">ราคา / Price</th>
-          <th style="width:90px;">รวม / Total</th>
-          <th style="width:30px;"></th>
-        </tr>
-      </thead>
-      <tbody id="cart-tbody"></tbody>
-    </table>
-
-    <div class="total-row">
-      <span>ยอดรวม / Subtotal</span>
-      <span id="subtotal-display">0 THB</span>
-    </div>
-    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-      * สินค้าชั่งน้ำหนักจะยืนยันราคาภายหลังในหน้ารายการคำสั่งซื้อ<br>
-      * Weight-based items will be finalized later in the Order List screen.
-    </div>
   </div>
 
   <!-- Payment -->
@@ -327,6 +343,7 @@
     <div id="slip-link-card">
       <div class="slip-link-title" id="slip-link-title"></div>
       <div id="slip-link-note" style="color:var(--text-muted);"></div>
+
 
       <div id="order-qr-wrap">
         <div id="order-qr-code"></div>
