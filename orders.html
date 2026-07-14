@@ -17,11 +17,11 @@
     --text: #23272f;
     --text-muted: #6b7280;
 
-    --status-unprinted: #fbd7d2;   /* 旧UIのピンク寄りの色に合わせる */
-    --status-printed: #ffffff;
-    --status-weight: #d9e8f5;
-    --status-complete: #f6d9d4;
-    --status-paid-qr: #dbeee0;
+    --status-unprinted: #fff2a8;    /* 黄色 = 伝票未印刷(準備前) */
+    --status-printed: #ffffff;      /* 白 = 伝票印刷済み */
+    --status-weight: #d9e8f5;       /* 青 = 量り売り商品の重量未入力 */
+    --status-complete: #f2a89a;     /* 赤 = Complete押下後(以降変更不可) */
+    --status-paid-qr: #dbeee0;      /* 緑 = QR振込み確認済み */
   }
 
   * { box-sizing: border-box; }
@@ -78,6 +78,10 @@
   thead th .en { display: block; font-weight: 400; color: var(--text-muted); font-size: 10px; }
   tbody td { padding: 10px 12px; vertical-align: top; border: 1px solid var(--border); }
   tbody td.center { text-align: center; }
+
+  /* 同じ配送日に複数オーダーが並んだ際、行の境目をはっきりさせるための太い区切り線 */
+  tbody tr + tr { border-top: 4px solid var(--navy); }
+  tbody tr + tr td { border-top: 4px solid var(--navy); }
 
   .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
   .badge-cash { background: #ece7de; color: #5b5140; }
