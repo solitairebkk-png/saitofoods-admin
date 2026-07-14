@@ -87,6 +87,27 @@
 
   .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
   .loading { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+  /* アカウント情報 */
+  .profile-msg { margin-top: 10px; font-size: 12px; padding: 8px 10px; border-radius: 8px; display: none; }
+  .profile-msg.error { display: block; background: var(--red-dim); color: var(--red); }
+  .profile-msg.success { display: block; background: #e6fff5; color: var(--ok); }
+
+  .email-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; background: var(--yellow-light); border-radius: 8px; margin-bottom: 8px; }
+  .email-current { font-size: 13px; font-weight: 600; word-break: break-all; }
+  .email-change-btn { font-size: 11px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--brown); background: transparent; color: var(--brown); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  #email-change-form { display: none; margin-top: 10px; }
+
+  /* お気に入り */
+  .fav-search-result { border: 1px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; margin-top: 6px; display: none; background: var(--white); }
+  .fav-search-result div { padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .fav-search-result div:hover { background: var(--yellow-light); }
+  .fav-search-result div:last-child { border-bottom: none; }
+
+  .fav-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: #fffdf5; }
+  .fav-item-name { font-size: 13px; font-weight: 600; }
+  .fav-item-sub { font-size: 11px; color: var(--muted); }
+  .fav-remove-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; line-height: 1; padding: 4px; }
 </style>
 </head>
 <body>
@@ -200,6 +221,49 @@
     <div class="card">
       <div class="card-title">📦 ご注文履歴 / Order History</div>
       <div id="order-list">
+        <div class="loading">読み込み中...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👤 アカウント情報 / Account Info</div>
+
+      <div class="email-row">
+        <div class="email-current" id="current-email-display">-</div>
+        <button class="email-change-btn" onclick="toggleEmailChangeForm()">変更する</button>
+      </div>
+      <div id="email-change-form">
+        <div class="form-group">
+          <label>新しいメールアドレス</label>
+          <input type="email" class="form-input" id="new-email-input" placeholder="new@example.com">
+        </div>
+        <button class="submit-btn" id="email-change-btn" onclick="submitEmailChange()">メールアドレスを変更する</button>
+        <div class="form-hint">変更後、新しいメールアドレス宛てに確認メールが届きます。確認が完了するまで現在のメールアドレスのままログインできます。</div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>電話番号</label>
+        <input type="text" class="form-input" id="profile-tel1">
+      </div>
+      <div class="form-group">
+        <label>住所1</label>
+        <input type="text" class="form-input" id="profile-address1">
+      </div>
+      <div class="form-group">
+        <label>住所2</label>
+        <input type="text" class="form-input" id="profile-address2">
+      </div>
+      <button class="submit-btn" onclick="saveProfile()">住所・電話番号を保存する</button>
+      <div class="profile-msg" id="profile-msg"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⭐ お気に入り商品 / Favorite Products</div>
+      <div class="form-group">
+        <input type="text" class="form-input" id="fav-search-input" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
+        <div class="fav-search-result" id="fav-search-result"></div>
+      </div>
+      <div id="fav-list">
         <div class="loading">読み込み中...</div>
       </div>
     </div>
@@ -364,9 +428,12 @@ async function logout() {
 })();
 
 async function loadMyPage(user) {
+  // Auth側でメールアドレス変更が確認済みの場合、customers.emailに同期する
+  await supabaseClient.rpc('sync_own_email');
+
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance')
+    .select('id, family_name, first_name, point_balance, email, tel1, address1, address2')
     .eq('auth_user_id', user.id)
     .single();
 
@@ -381,7 +448,7 @@ async function loadMyPage(user) {
 
     const retry = await supabaseClient
       .from('customers')
-      .select('id, family_name, first_name, point_balance')
+      .select('id, family_name, first_name, point_balance, email, tel1, address1, address2')
       .eq('auth_user_id', user.id)
       .single();
     customerRow = retry.data;
@@ -403,7 +470,13 @@ async function loadMyPage(user) {
   document.getElementById('welcome-name').innerHTML = `${name} 様、いつもありがとうございます。`;
   document.getElementById('point-balance').textContent = customerRow.point_balance ?? 0;
 
+  document.getElementById('current-email-display').textContent = customerRow.email || user.email || '-';
+  document.getElementById('profile-tel1').value = customerRow.tel1 || '';
+  document.getElementById('profile-address1').value = customerRow.address1 || '';
+  document.getElementById('profile-address2').value = customerRow.address2 || '';
+
   await loadOrderHistory(customerRow.id);
+  await loadFavorites(customerRow.id);
 }
 
 async function loadOrderHistory(customerId) {
@@ -465,6 +538,133 @@ function renderOrderCard(order) {
     </div>
   `;
   return div;
+}
+
+// ---------------- アカウント情報(住所・電話番号) ----------------
+function showProfileMsg(msg, isError) {
+  const el = document.getElementById('profile-msg');
+  el.textContent = msg;
+  el.className = 'profile-msg ' + (isError ? 'error' : 'success');
+  setTimeout(() => { el.textContent = ''; el.className = 'profile-msg'; }, 4000);
+}
+
+async function saveProfile() {
+  const tel1 = document.getElementById('profile-tel1').value.trim();
+  const address1 = document.getElementById('profile-address1').value.trim();
+  const address2 = document.getElementById('profile-address2').value.trim();
+
+  const { error } = await supabaseClient.rpc('update_own_profile', {
+    new_address1: address1 || null,
+    new_address2: address2 || null,
+    new_tel1: tel1 || null,
+  });
+
+  if (error) { showProfileMsg('保存に失敗しました: ' + error.message, true); return; }
+  showProfileMsg('保存しました。');
+}
+
+// ---------------- メールアドレス変更 ----------------
+function toggleEmailChangeForm() {
+  const form = document.getElementById('email-change-form');
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+async function submitEmailChange() {
+  const newEmail = document.getElementById('new-email-input').value.trim();
+  if (!newEmail) { showProfileMsg('新しいメールアドレスを入力してください。', true); return; }
+
+  const btn = document.getElementById('email-change-btn');
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+  btn.disabled = false;
+
+  if (error) { showProfileMsg('変更に失敗しました: ' + error.message, true); return; }
+  showProfileMsg('新しいメールアドレス宛てに確認メールをお送りしました。リンクを開くと変更が完了します。');
+  document.getElementById('email-change-form').style.display = 'none';
+}
+
+// ---------------- お気に入り商品 ----------------
+async function loadFavorites(customerId) {
+  const listEl = document.getElementById('fav-list');
+  listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('customer_favorites')
+    .select('id, products ( id, name_ja, name_th, price, unit_price, unit_label, sale_type )')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false });
+
+  if (error) { listEl.innerHTML = '<div class="empty-state">読み込みに失敗しました: ' + error.message + '</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">まだお気に入り商品がありません。上の検索欄から追加できます。</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  data.forEach(fav => {
+    const p = fav.products;
+    if (!p) return;
+    const div = document.createElement('div');
+    div.className = 'fav-item';
+    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
+    div.innerHTML = `
+      <div>
+        <div class="fav-item-name">${p.name_ja}</div>
+        <div class="fav-item-sub">${p.name_th || ''} ${priceLabel ? '— ' + priceLabel : ''}</div>
+      </div>
+      <button class="fav-remove-btn" onclick="removeFavorite('${fav.id}')">×</button>
+    `;
+    listEl.appendChild(div);
+  });
+}
+
+async function searchProductsForFavorite() {
+  const q = document.getElementById('fav-search-input').value.trim();
+  const resultEl = document.getElementById('fav-search-result');
+  if (!q) { resultEl.style.display = 'none'; return; }
+
+  const { data, error } = await supabaseClient
+    .from('products')
+    .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type')
+    .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
+    .limit(15);
+
+  if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
+
+  resultEl.innerHTML = '';
+  data.forEach(p => {
+    const div = document.createElement('div');
+    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
+    div.innerHTML = `${p.name_ja} <span style="color:var(--muted);font-size:11px;">(${priceLabel})</span>`;
+    div.onclick = () => addFavorite(p.id);
+    resultEl.appendChild(div);
+  });
+  resultEl.style.display = 'block';
+}
+
+async function addFavorite(productId) {
+  if (!currentCustomer) return;
+
+  const { error } = await supabaseClient
+    .from('customer_favorites')
+    .insert({ customer_id: currentCustomer.id, product_id: productId });
+
+  document.getElementById('fav-search-input').value = '';
+  document.getElementById('fav-search-result').style.display = 'none';
+
+  if (error && !error.message.includes('duplicate')) {
+    showProfileMsg('追加に失敗しました: ' + error.message, true);
+    return;
+  }
+  await loadFavorites(currentCustomer.id);
+}
+
+async function removeFavorite(favoriteId) {
+  const { error } = await supabaseClient.from('customer_favorites').delete().eq('id', favoriteId);
+  if (error) { showProfileMsg('削除に失敗しました: ' + error.message, true); return; }
+  if (currentCustomer) await loadFavorites(currentCustomer.id);
 }
 </script>
 
