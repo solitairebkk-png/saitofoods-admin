@@ -47,6 +47,15 @@
   .form-input:focus { border-color: var(--yellow-dark); }
   .form-hint { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
 
+  .password-field { position: relative; }
+  .password-field .form-input { padding-right: 44px; }
+  .password-toggle-btn {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 18px; padding: 6px;
+    color: var(--muted); line-height: 1;
+  }
+  .password-toggle-btn:hover { color: var(--brown); }
+
   .submit-btn { width: 100%; background: var(--yellow); color: var(--brown); border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(200,160,0,0.3); }
   .submit-btn:hover { background: var(--yellow-dark); }
   .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -109,7 +118,10 @@
         </div>
         <div class="form-group">
           <label>パスワード</label>
-          <input type="password" class="form-input" id="login-password">
+          <div class="password-field">
+            <input type="password" class="form-input" id="login-password">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)">👁</button>
+          </div>
         </div>
         <button class="submit-btn" id="login-btn" onclick="login()">ログイン</button>
       </div>
@@ -125,11 +137,17 @@
         </div>
         <div class="form-group">
           <label>新しいパスワード</label>
-          <input type="password" class="form-input" id="signup-password" placeholder="6文字以上">
+          <div class="password-field">
+            <input type="password" class="form-input" id="signup-password" placeholder="6文字以上">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password', this)">👁</button>
+          </div>
         </div>
         <div class="form-group">
           <label>パスワード(確認)</label>
-          <input type="password" class="form-input" id="signup-password-confirm">
+          <div class="password-field">
+            <input type="password" class="form-input" id="signup-password-confirm">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password-confirm', this)">👁</button>
+          </div>
         </div>
         <button class="submit-btn" id="signup-btn" onclick="signup()">パスワードを設定する</button>
       </div>
@@ -163,6 +181,13 @@ const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentCustomer = null;
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.textContent = isHidden ? '🙈' : '👁';
+}
 
 function switchAuthTab(tab) {
   document.getElementById('tab-login').classList.toggle('active', tab === 'login');
@@ -258,11 +283,29 @@ async function logout() {
 })();
 
 async function loadMyPage(user) {
-  const { data: customerRow, error } = await supabaseClient
+  let { data: customerRow, error } = await supabaseClient
     .from('customers')
     .select('id, family_name, first_name, point_balance')
     .eq('auth_user_id', user.id)
     .single();
+
+  // まだ紐付けが行われていない場合(確認メールのリンクをクリックして初めて
+  // ここに来たケースなど)、メールアドレスが一致する既存の顧客レコードへの紐付けを試みる
+  if ((error || !customerRow) && user.email) {
+    await supabaseClient
+      .from('customers')
+      .update({ auth_user_id: user.id })
+      .eq('email', user.email)
+      .is('auth_user_id', null);
+
+    const retry = await supabaseClient
+      .from('customers')
+      .select('id, family_name, first_name, point_balance')
+      .eq('auth_user_id', user.id)
+      .single();
+    customerRow = retry.data;
+    error = retry.error;
+  }
 
   if (error || !customerRow) {
     showAuthMsg('このアカウントはまだお客様情報と連携していません。お手数ですが店舗までご連絡ください。', true);
