@@ -580,7 +580,10 @@ async function submitEmailChange() {
   const btn = document.getElementById('email-change-btn');
   btn.disabled = true;
 
-  const { error } = await supabaseClient.auth.updateUser({ email: newEmail });
+  const { error } = await supabaseClient.auth.updateUser(
+    { email: newEmail },
+    { emailRedirectTo: location.href.split('#')[0].split('?')[0] }
+  );
   btn.disabled = false;
 
   if (error) { showProfileMsg('変更に失敗しました: ' + error.message, true); return; }
