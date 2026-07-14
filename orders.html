@@ -126,6 +126,43 @@
   }
   #slip-modal.open { display: flex; }
   #slip-modal img { max-width: 90%; max-height: 90%; border-radius: 6px; }
+
+  /* 量り売り 重量確定モーダル */
+  #weight-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #weight-modal.open { display: flex; }
+  #weight-modal .weight-modal-box {
+    background: var(--panel); border-radius: 8px; padding: 24px; max-width: 480px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+  }
+  #weight-modal h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  #weight-modal .weight-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .weight-item-row { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .weight-item-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .weight-item-input-row { display: flex; align-items: center; gap: 8px; }
+  .weight-input {
+    width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 14px; text-align: right; font-family: inherit;
+  }
+  .weight-unit { font-size: 12px; color: var(--text-muted); }
+  .weight-item-price { margin-left: auto; font-weight: 700; color: var(--navy); font-size: 13px; }
+  #weight-modal-summary { margin-top: 6px; padding-top: 10px; border-top: 2px solid var(--border); font-size: 13px; }
+  #weight-modal-summary .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  #weight-modal-summary .grand { font-weight: 700; font-size: 15px; color: var(--navy); margin-top: 6px; }
+  #weight-modal-mail-note {
+    margin-top: 12px; padding: 10px 12px; background: #eef2f7; border-radius: 6px;
+    font-size: 11px; color: var(--text-muted); line-height: 1.6;
+  }
+  #weight-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #weight-modal-actions button {
+    flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  #weight-modal-confirm-btn { background: var(--navy); color: white; }
+  #weight-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #weight-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 </style>
 </head>
 <body>
@@ -200,10 +237,32 @@
   <img id="slip-modal-img" src="">
 </div>
 
+<!-- 量り売り 重量確定モーダル -->
+<div id="weight-modal">
+  <div class="weight-modal-box">
+    <h3>ยืนยันน้ำหนักสินค้าชั่ง</h3>
+    <div class="weight-modal-sub">Confirm weight for weight-based items</div>
+    <div id="weight-modal-items"></div>
+    <div id="weight-modal-summary">
+      <div class="row"><span>สินค้าราคาคงที่ / Fixed-price items</span><span id="weight-modal-fixed-total">0</span></div>
+      <div class="row grand"><span>ยอดรวมทั้งหมด / Grand Total</span><span id="weight-modal-grand-total">0 THB</span></div>
+    </div>
+    <div id="weight-modal-mail-note"></div>
+    <div id="weight-modal-actions">
+      <button id="weight-modal-cancel-btn" onclick="closeWeightModal()">ยกเลิก / Cancel</button>
+      <button id="weight-modal-confirm-btn" onclick="confirmWeight()">ยืนยันน้ำหนัก / Confirm Weight</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// スリップアップロードアプリ(既存資産)+その裏のGAS(メール送信・スリップ受信を担当)
+const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
 
 let currentCustomer = null;
 let currentAreaFilter = 'Bangkok';
@@ -280,8 +339,8 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       payment_method, payment_status, total_amount, comment, slip_image_url,
-      customers ( family_name, first_name, tel1, address1, address2, province, area_id, areas ( name ) ),
-      order_items ( product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th ) )
+      customers ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
+      order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
     .order('delivery_time_slot', { ascending: true });
@@ -382,7 +441,10 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   if (!isLocked) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => toggleDetail(order.id), 'btn-check'));
     if (!order.is_completed) {
-      manageCol.appendChild(makeButton('Edit / แก้ไข', () => editOrder(order), 'btn-reorder'));
+      const editLabel = (order.has_weight_items && !order.is_weight_confirmed)
+        ? 'ชั่งน้ำหนัก / Weigh'
+        : 'Edit / แก้ไข';
+      manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order.id), 'btn-complete'));
     }
     if (currentCustomer && currentCustomer.role === 'admin') {
@@ -399,11 +461,11 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   return tr;
 }
 
-// Editボタン: 量り売りの重量が未確定ならそちらを優先、なければ印刷済みにする
-// (簡易実装。専用の編集画面は今後のフェーズで作成予定)
+// Editボタン: 量り売りの重量が未確定なら重量確定モーダルを開く、
+// それ以外は従来どおり印刷済みフラグを立てる(専用の編集画面は今後のフェーズで作成予定)
 function editOrder(order) {
   if (order.has_weight_items && !order.is_weight_confirmed) {
-    updateOrder(order.id, { is_weight_confirmed: true });
+    openWeightModal(order);
   } else if (!order.is_slip_printed) {
     updateOrder(order.id, { is_slip_printed: true });
   } else {
@@ -437,6 +499,154 @@ function openSlipModal(url) {
 function closeSlipModal() {
   document.getElementById('slip-modal').classList.remove('open');
   document.getElementById('slip-modal-img').src = '';
+}
+
+// ================= 量り売り 重量確定モーダル =================
+let weightModalOrder = null;
+
+function openWeightModal(order) {
+  weightModalOrder = order;
+  const listEl = document.getElementById('weight-modal-items');
+  listEl.innerHTML = '';
+
+  const weightItems = (order.order_items || []).filter(i => i.sale_type === 'weight');
+
+  weightItems.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'weight-item-row';
+    const unitLabel = item.products?.unit_label || '';
+    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    row.innerHTML = `
+      <div class="weight-item-name">${item.product_name_snapshot}${thName}</div>
+      <div class="weight-item-input-row">
+        <input type="number" step="0.001" min="0" class="weight-input"
+          data-item-id="${item.id}" data-unit-price="${item.unit_price || 0}"
+          value="${item.quantity && item.quantity > 0 ? item.quantity : ''}"
+          placeholder="0.000" oninput="recalcWeightTotal()">
+        <span class="weight-unit">${unitLabel}</span>
+        <span class="weight-item-price" id="weight-item-price-${item.id}">0 THB</span>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+
+  const mailNote = document.getElementById('weight-modal-mail-note');
+  if (order.payment_method === 'qr') {
+    mailNote.innerHTML = order.customers?.email
+      ? `✉️ ยืนยันแล้วจะส่งอีเมลพร้อมลิงก์ชำระเงิน (QR) ไปที่ ${order.customers.email} โดยอัตโนมัติ<br>An email with the payment QR link will be sent automatically to ${order.customers.email}.`
+      : `⚠️ ลูกค้ารายนี้ไม่มีอีเมลในระบบ จะไม่ส่งอีเมลอัตโนมัติ กรุณาแจ้งยอดด้วยวิธีอื่น<br>No email on file for this customer — the confirmation email cannot be sent automatically. Please notify them another way.`;
+  } else {
+    mailNote.innerHTML = '💵 ชำระเงินสด — จะไม่ส่งอีเมลอัตโนมัติ<br>Cash payment — no automatic email will be sent.';
+  }
+
+  document.getElementById('weight-modal-confirm-btn').disabled = false;
+  document.getElementById('weight-modal-confirm-btn').textContent = 'ยืนยันน้ำหนัก / Confirm Weight';
+  recalcWeightTotal();
+  document.getElementById('weight-modal').classList.add('open');
+}
+
+function recalcWeightTotal() {
+  if (!weightModalOrder) return;
+  const fixedTotal = (weightModalOrder.order_items || [])
+    .filter(i => i.sale_type !== 'weight')
+    .reduce((sum, i) => sum + (i.total_price || 0), 0);
+
+  let weightTotal = 0;
+  document.querySelectorAll('.weight-input').forEach(inp => {
+    const unitPrice = parseFloat(inp.dataset.unitPrice) || 0;
+    const weight = parseFloat(inp.value) || 0;
+    const price = Math.round(unitPrice * weight);
+    weightTotal += price;
+    const priceEl = document.getElementById('weight-item-price-' + inp.dataset.itemId);
+    if (priceEl) priceEl.textContent = price + ' THB';
+  });
+
+  document.getElementById('weight-modal-fixed-total').textContent = fixedTotal + ' THB';
+  document.getElementById('weight-modal-grand-total').textContent = (fixedTotal + weightTotal) + ' THB';
+}
+
+function closeWeightModal() {
+  document.getElementById('weight-modal').classList.remove('open');
+  weightModalOrder = null;
+}
+
+async function confirmWeight() {
+  if (!weightModalOrder) return;
+  const order = weightModalOrder;
+  const inputs = document.querySelectorAll('.weight-input');
+
+  for (const inp of inputs) {
+    const weight = parseFloat(inp.value);
+    if (!weight || weight <= 0) {
+      alert('กรุณากรอกน้ำหนักให้ครบทุกรายการ / Please enter weight for all items.');
+      return;
+    }
+  }
+
+  const btn = document.getElementById('weight-modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก... / Saving...';
+
+  try {
+    // 1. 各 order_item を実測重量で更新(quantityを実測重量として扱う)
+    for (const inp of inputs) {
+      const itemId = inp.dataset.itemId;
+      const unitPrice = parseFloat(inp.dataset.unitPrice) || 0;
+      const weight = parseFloat(inp.value);
+      const price = Math.round(unitPrice * weight);
+      const { error } = await supabaseClient
+        .from('order_items')
+        .update({ quantity: weight, price: price, total_price: price })
+        .eq('id', itemId);
+      if (error) throw error;
+    }
+
+    // 2. 注文全体の合計金額を再計算(固定価格商品+確定した量り売り商品)
+    const { data: items, error: itemsErr } = await supabaseClient
+      .from('order_items').select('total_price').eq('order_id', order.id);
+    if (itemsErr) throw itemsErr;
+    const newTotal = (items || []).reduce((sum, i) => sum + (i.total_price || 0), 0);
+
+    const { error: orderErr } = await supabaseClient
+      .from('orders')
+      .update({ subtotal: newTotal, total_amount: newTotal, is_weight_confirmed: true })
+      .eq('id', order.id);
+    if (orderErr) throw orderErr;
+
+    // 3. QR振込み・かつメールアドレスがある場合のみ、確定金額入りリンクを自動メール送信
+    if (order.payment_method === 'qr' && order.customers?.email) {
+      await sendWeightConfirmedEmail(order, newTotal);
+    }
+
+    closeWeightModal();
+    loadOrders();
+  } catch (err) {
+    alert('เกิดข้อผิดพลาด / Error: ' + (err.message || err));
+    btn.disabled = false;
+    btn.textContent = 'ยืนยันน้ำหนัก / Confirm Weight';
+  }
+}
+
+// 量り売り確定後の定型メール送信(既存GAS: slip.saitofoods.shop側のsendMailアクションを流用)
+// リンクを開くと index.html 側で ?amount= が自動的にPromptPay QRに反映されるため、
+// このメールにQR画像を添付する必要はない
+async function sendWeightConfirmedEmail(order, amount) {
+  const customerName = `${order.customers?.family_name || ''} ${order.customers?.first_name || ''}`.trim();
+  const params = new URLSearchParams({ amount: amount, name: customerName, ref: order.id });
+  const link = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+
+  const body = `${customerName} 様\n\nお待たせいたしました。ご注文の量り売り商品の重量が確定し、合計金額は ${amount} THB となりました。\n\n下記のリンクよりお支払い(QR振込み)とスリップのアップロードをお願いいたします。\n${link}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
+
+  try {
+    const url = `${GAS_URL}?action=sendMail&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(order.customers.email)}&body=${encodeURIComponent(body)}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status !== 'ok') {
+      alert('น้ำหนักは確定しましたが、メール送信でエラーが発生しました / Weight confirmed, but the email failed: ' + (json.message || ''));
+    }
+  } catch (e) {
+    alert('น้ำหนักは確定しましたが、メール送信に失敗しました(通信エラー) / Weight confirmed, but the email failed to send (network error).');
+  }
 }
 
 // ---------------- Update / Delete ----------------

@@ -6,6 +6,7 @@
 <title>New Order | Saito Foods</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --navy: #1c3557;
@@ -138,6 +139,25 @@
   #submit-msg { margin-top: 10px; font-size: 13px; }
   #submit-msg.success { color: var(--green); }
   #submit-msg.error { color: var(--red-accent); }
+
+  #slip-link-card {
+    margin-top: 12px; padding: 14px; border-radius: 6px; background: #eef2f7;
+    border: 1px solid #c9d6e5; font-size: 13px; display: none;
+  }
+  #slip-link-card.pending { background: #fdf3d0; border-color: #e8d68a; }
+  #slip-link-card .slip-link-title { font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+  #slip-link-card .slip-link-row { display: flex; gap: 8px; margin-top: 8px; }
+  #slip-link-input {
+    flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
+    font-size: 12px; font-family: inherit; background: white; color: var(--text);
+  }
+  #slip-copy-btn { flex: 0 0 auto; padding: 6px 14px; font-size: 12px; }
+  #order-qr-wrap {
+    display: none; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px;
+    padding: 14px; background: white; border: 1px solid var(--border); border-radius: 8px;
+  }
+  #order-qr-code { width: 190px; height: 190px; display: flex; align-items: center; justify-content: center; }
+  #order-qr-wrap .qr-caption { font-size: 11px; color: var(--text-muted); text-align: center; }
 </style>
 </head>
 <body>
@@ -302,6 +322,22 @@
     </div>
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
+
+    <!-- Slip upload link + PromptPay QR (shown after a QR-payment order is saved) -->
+    <div id="slip-link-card">
+      <div class="slip-link-title" id="slip-link-title"></div>
+      <div id="slip-link-note" style="color:var(--text-muted);"></div>
+
+      <div id="order-qr-wrap">
+        <div id="order-qr-code"></div>
+        <div class="qr-caption">PromptPay QR — <span id="order-qr-amount"></span> THB</div>
+      </div>
+
+      <div class="slip-link-row" id="slip-link-row" style="display:none;">
+        <input type="text" id="slip-link-input" readonly onclick="this.select()">
+        <button class="btn secondary" id="slip-copy-btn" onclick="copySlipLink()">คัดลอกลิงก์ / Copy Link</button>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -310,6 +346,9 @@
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// スリップアップロードアプリのベースURL(既存資産 slip.saitofoods.shop を流用)
+const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
 
 let currentCustomer = null;   // ログイン中スタッフ
 let selectedCustomer = null;  // 検索で見つかった配送先顧客
@@ -685,11 +724,130 @@ function updateQty(index, value) {
   renderCart();
 }
 
+// ---------------- PromptPay QR generation ----------------
+// slip.saitofoods.shop (お客様向けスリップアップロードページ)と同一のロジック・同一のBiller ID/口座を使用
+// (同じSCB口座 071-296992-2 を共有しているため)
+const PROMPTPAY_BILLER_ID = '010554007919109';
+const PROMPTPAY_REF1 = 'REF001';
+const PROMPTPAY_REF2 = 'REF002';
+const PROMPTPAY_TERMINAL = 'IFB0639311943';
+
+function ppTlv(tag, value) { return `${tag}${String(value.length).padStart(2, '0')}${value}`; }
+
+function ppCrc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= (str.charCodeAt(i) << 8);
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+
+function buildPromptPayPayload(amount) {
+  const merchantInfo = ppTlv('00', 'A000000677010112') + ppTlv('01', PROMPTPAY_BILLER_ID) + ppTlv('02', PROMPTPAY_REF1) + ppTlv('03', PROMPTPAY_REF2);
+  const amountStr = amount.toFixed(2);
+  const payload =
+    ppTlv('00', '01') +
+    ppTlv('01', '12') +
+    ppTlv('30', merchantInfo) +
+    ppTlv('53', '764') +
+    ppTlv('54', amountStr) +
+    ppTlv('58', 'TH') +
+    ppTlv('62', ppTlv('07', PROMPTPAY_TERMINAL));
+  const withCrcTag = payload + '6304';
+  return withCrcTag + ppCrc16(withCrcTag);
+}
+
+function renderPromptPayQr(amount) {
+  const wrapEl = document.getElementById('order-qr-wrap');
+  const codeEl = document.getElementById('order-qr-code');
+  const amountEl = document.getElementById('order-qr-amount');
+
+  if (!amount || amount <= 0) {
+    wrapEl.style.display = 'none';
+    return;
+  }
+
+  codeEl.innerHTML = '';
+  new QRCode(codeEl, { text: buildPromptPayPayload(amount), width: 190, height: 190 });
+  amountEl.textContent = amount;
+  wrapEl.style.display = 'flex';
+}
+
+function hidePromptPayQr() {
+  document.getElementById('order-qr-wrap').style.display = 'none';
+  document.getElementById('order-qr-code').innerHTML = '';
+}
+
+// ---------------- Slip upload link ----------------
+// 注文保存後、支払い方法がQR振込みの場合にスリップアップロード用リンクを生成・表示する。
+// 量り売り商品を含む注文は金額が未確定のため、リンクは生成せず、
+// 「重量確定後に注文一覧画面から自動送信される」旨の案内のみ表示する。
+function hideSlipLinkCard() {
+  const cardEl = document.getElementById('slip-link-card');
+  cardEl.style.display = 'none';
+  cardEl.classList.remove('pending');
+  document.getElementById('slip-link-row').style.display = 'none';
+  hidePromptPayQr();
+}
+
+function showSlipLink({ orderId, amount, hasWeightItems, customerName }) {
+  const cardEl = document.getElementById('slip-link-card');
+  const titleEl = document.getElementById('slip-link-title');
+  const noteEl = document.getElementById('slip-link-note');
+  const rowEl = document.getElementById('slip-link-row');
+  const inputEl = document.getElementById('slip-link-input');
+
+  cardEl.style.display = 'block';
+
+  if (hasWeightItems) {
+    cardEl.classList.add('pending');
+    titleEl.textContent = '⚠ ยอดเงินยังไม่ยืนยัน / Amount not yet confirmed';
+    noteEl.innerHTML = 'มีสินค้าชั่งน้ำหนักในคำสั่งซื้อนี้ QRและลิงก์อัปโหลดสลิปจะพร้อมใช้งานหลังจากยืนยันน้ำหนัก/ยอดเงินในหน้ารายการคำสั่งซื้อ (Order List)<br>' +
+      'This order contains weight-based items. The PromptPay QR and slip upload link will be available after the weight/amount is finalized in the Order List screen.';
+    rowEl.style.display = 'none';
+    hidePromptPayQr();
+    return;
+  }
+
+  cardEl.classList.remove('pending');
+  titleEl.textContent = 'ชำระเงินผ่าน QR / Pay via QR + Slip upload link';
+  noteEl.textContent = 'ให้ลูกค้าสแกน QR เพื่อโอนเงิน จากนั้นส่งลิงก์นี้เพื่ออัปโหลดสลิป / Have the customer scan the QR to pay, then send this link to upload the slip.';
+
+  // 金額入りPromptPay QR(rakugoスリップアプリと同一ロジック)
+  renderPromptPayQr(amount);
+
+  const params = new URLSearchParams({
+    amount: amount,
+    name: customerName || '',
+    ref: orderId,
+  });
+  inputEl.value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+  rowEl.style.display = 'flex';
+}
+
+function copySlipLink() {
+  const inputEl = document.getElementById('slip-link-input');
+  inputEl.select();
+  inputEl.setSelectionRange(0, 99999); // mobile Safari対策
+  navigator.clipboard.writeText(inputEl.value).then(() => {
+    const btn = document.getElementById('slip-copy-btn');
+    const original = btn.textContent;
+    btn.textContent = 'คัดลอกแล้ว! / Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  }).catch(() => {
+    alert('คัดลอกไม่สำเร็จ กรุณาคัดลอกด้วยตนเอง / Copy failed. Please copy manually.');
+  });
+}
+
 // ---------------- Submit ----------------
 async function submitOrder() {
   const msgEl = document.getElementById('submit-msg');
   msgEl.textContent = '';
   msgEl.className = '';
+  hideSlipLinkCard();
 
   const isWalkin = document.getElementById('is-walkin').checked;
   const paymentMethod = document.querySelector('input[name=payment]:checked').value;
@@ -711,12 +869,14 @@ async function submitOrder() {
   }
 
   let customerId = null;
+  let customerName = '';
 
   if (isWalkin) {
     // ウォークインは顧客レコードを作らない
   } else {
     if (selectedCustomer) {
       customerId = selectedCustomer.id;
+      customerName = `${selectedCustomer.family_name || ''} ${selectedCustomer.first_name || ''}`.trim();
     } else {
       // 新規顧客を作成(検索した電話番号を引き継ぐ)
       const tel = document.getElementById('new-tel').value.trim();
@@ -725,12 +885,14 @@ async function submitOrder() {
         msgEl.className = 'error';
         return;
       }
+      const newFirstName = document.getElementById('new-first-name').value.trim();
+      const newFamilyName = document.getElementById('new-family-name').value.trim();
       const { data: newCust, error: newCustErr } = await supabaseClient
         .from('customers')
         .insert({
           tel1: tel,
-          first_name: document.getElementById('new-first-name').value.trim(),
-          family_name: document.getElementById('new-family-name').value.trim(),
+          first_name: newFirstName,
+          family_name: newFamilyName,
           email: document.getElementById('new-email').value.trim() || null,
         })
         .select('id').single();
@@ -741,6 +903,7 @@ async function submitOrder() {
         return;
       }
       customerId = newCust.id;
+      customerName = `${newFamilyName} ${newFirstName}`.trim();
     }
   }
 
@@ -798,6 +961,17 @@ async function submitOrder() {
 
   msgEl.textContent = 'บันทึกคำสั่งซื้อสำเร็จ! / Order saved successfully!';
   msgEl.className = 'success';
+
+  // QR振込みの場合のみスリップアップロードリンクを表示(現金の場合は不要)
+  if (paymentMethod === 'qr') {
+    showSlipLink({
+      orderId: orderRow.id,
+      amount: subtotal,
+      hasWeightItems: hasWeightItems,
+      customerName: isWalkin ? '' : customerName,
+    });
+  }
+
   cart = [];
   renderCart();
   document.getElementById('order-comment').value = '';
