@@ -81,6 +81,7 @@
   <h1>Product Control <span class="th">จัดการสินค้า</span></h1>
   <div class="user-info" id="user-info" style="display:none;">
     <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="customer_control.html">👤 Customers</a>
     <a href="sales_summary.html">📊 Sales Summary</a>
     <a href="settings.html">⚙️ Settings</a>
     <span id="user-email"></span>
@@ -460,6 +461,160 @@ function showSaveMsg(msg, isError) {
   el.className = isError ? 'error' : 'success';
   setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
 }
+
+// ---------------- 在庫再インポート(CSV) ----------------
+let csvHeaders = [];
+let csvRows = [];
+
+function toggleImportPanel() {
+  const panel = document.getElementById('import-panel');
+  const icon = document.getElementById('import-toggle-icon');
+  const open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  icon.textContent = open ? '▼' : '▲';
+}
+
+function handleCsvFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  document.getElementById('import-result').innerHTML = '';
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    // EC-CUBE CSVはShift-JIS(CP932)想定。UTF-8で文字化けする場合はこちらでデコードする
+    let text;
+    try {
+      text = new TextDecoder('shift_jis').decode(new Uint8Array(e.target.result));
+    } catch (err) {
+      text = new TextDecoder('utf-8').decode(new Uint8Array(e.target.result));
+    }
+    parseCsv(text);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// 簡易CSVパーサ(ダブルクォート・カンマ区切り対応)
+function parseCsvLine(line) {
+  const cells = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { cur += ch; }
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { cells.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  cells.push(cur);
+  return cells.map(c => c.trim());
+}
+
+function parseCsv(text) {
+  const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim() !== '');
+  if (lines.length < 2) { showSaveMsg('CSVにデータがありません / CSV has no data rows', true); return; }
+
+  csvHeaders = parseCsvLine(lines[0]);
+  csvRows = lines.slice(1).map(parseCsvLine);
+
+  const codeSel = document.getElementById('map-code-col');
+  const stockSel = document.getElementById('map-stock-col');
+  codeSel.innerHTML = '';
+  stockSel.innerHTML = '';
+  csvHeaders.forEach((h, i) => {
+    codeSel.innerHTML += `<option value="${i}">${h || '(列' + (i + 1) + ')'}</option>`;
+    stockSel.innerHTML += `<option value="${i}">${h || '(列' + (i + 1) + ')'}</option>`;
+  });
+
+  // 商品コード・在庫数っぽい列名を自動推測して初期選択
+  const codeGuessIdx = csvHeaders.findIndex(h => /商品コード|code|sku/i.test(h));
+  const stockGuessIdx = csvHeaders.findIndex(h => /在庫|stock/i.test(h));
+  if (codeGuessIdx >= 0) codeSel.value = codeGuessIdx;
+  if (stockGuessIdx >= 0) stockSel.value = stockGuessIdx;
+
+  document.getElementById('import-preview-note').textContent =
+    `${csvRows.length}行検出。列を確認してください / ${csvRows.length} rows detected. Please confirm the columns below.`;
+
+  document.getElementById('import-mapping').style.display = 'block';
+  renderCsvPreview();
+
+  codeSel.onchange = renderCsvPreview;
+  stockSel.onchange = renderCsvPreview;
+}
+
+function renderCsvPreview() {
+  const codeIdx = parseInt(document.getElementById('map-code-col').value, 10);
+  const stockIdx = parseInt(document.getElementById('map-stock-col').value, 10);
+  const table = document.getElementById('import-preview-table');
+
+  let html = `<thead><tr><th>商品コード / Code</th><th>在庫数 / Stock</th></tr></thead><tbody>`;
+  csvRows.slice(0, 5).forEach(row => {
+    html += `<tr><td>${row[codeIdx] ?? ''}</td><td>${row[stockIdx] ?? ''}</td></tr>`;
+  });
+  html += `</tbody>`;
+  table.innerHTML = html;
+}
+
+async function runStockImport() {
+  const codeIdx = parseInt(document.getElementById('map-code-col').value, 10);
+  const stockIdx = parseInt(document.getElementById('map-stock-col').value, 10);
+  const progressEl = document.getElementById('import-progress');
+  const resultEl = document.getElementById('import-result');
+
+  // legacy_product_code -> product.id のマップを作る
+  const { data: products, error } = await supabaseClient.from('products').select('id, legacy_product_code, name_ja');
+  if (error) { showSaveMsg('商品データの取得に失敗 / Failed to load products: ' + error.message, true); return; }
+
+  const codeMap = {};
+  (products || []).forEach(p => { if (p.legacy_product_code) codeMap[p.legacy_product_code.trim()] = p; });
+
+  const matched = [];
+  const unmatched = [];
+
+  csvRows.forEach(row => {
+    const code = (row[codeIdx] || '').trim();
+    const stockRaw = (row[stockIdx] || '').trim().replace(/,/g, '');
+    if (!code) return;
+    const stockVal = stockRaw === '' || isNaN(parseInt(stockRaw, 10)) ? null : parseInt(stockRaw, 10);
+    const product = codeMap[code];
+    if (product && stockVal !== null) matched.push({ productId: product.id, name: product.name_ja, code, stock: stockVal });
+    else unmatched.push({ code, stockRaw });
+  });
+
+  if (matched.length === 0) {
+    resultEl.innerHTML = '<div class="summary-note alert">マッチした商品がありません。列の選択を確認してください / No products matched — please check column selection.</div>';
+    return;
+  }
+
+  if (!confirm(`${matched.length}件の在庫を更新します。よろしいですか？ / Update stock for ${matched.length} products. Proceed?`)) return;
+
+  let done = 0;
+  for (const m of matched) {
+    await supabaseClient.from('products').update({ stock_qty: m.stock }).eq('id', m.productId);
+    done++;
+    progressEl.textContent = `${done} / ${matched.length}`;
+  }
+
+  let html = `<div class="summary-note">✅ ${matched.length}件更新完了 / ${matched.length} updated`;
+  if (unmatched.length > 0) html += `　⚠️ ${unmatched.length}件マッチせず(下記) / ${unmatched.length} unmatched`;
+  html += `</div>`;
+
+  if (unmatched.length > 0) {
+    html += `<table class="products"><thead><tr><th>商品コード / Code</th><th>在庫値 / Raw stock value</th></tr></thead><tbody>`;
+    unmatched.slice(0, 50).forEach(u => { html += `<tr class="import-nomatch-row"><td>${u.code}</td><td>${u.stockRaw}</td></tr>`; });
+    html += `</tbody></table>`;
+    if (unmatched.length > 50) html += `<div class="summary-note">...他${unmatched.length - 50}件</div>`;
+  }
+  resultEl.innerHTML = html;
+  progressEl.textContent = '';
+
+  loadProducts();
+}
+
 </script>
 
 </body>

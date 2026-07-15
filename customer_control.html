@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Control | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+  .btn.save { background: var(--green); }
+  .btn.warn { background: var(--red-accent); }
+
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; display: none; }
+
+  .filter-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .filter-bar input[type=text], .filter-bar select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 160px;
+  }
+  .filter-bar .checkbox-label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
+
+  .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .summary-note.alert { color: var(--amber); }
+
+  table.customers { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.customers th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.customers td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.customers tr.dormant td { background: #fdf3d0; }
+  table.customers tr.inactive td { opacity: 0.5; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
+  .tag.dormant { background: var(--amber); color: white; }
+  .tag.inactive { background: #dcdcdc; color: #444; }
+  .tag.area { background: #d9e8f5; color: #1c3557; }
+
+  .edit-row td { background: #fafafa; padding: 16px; }
+  .edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .edit-grid label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .edit-grid input, .edit-grid select, .edit-grid textarea { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+  .edit-grid textarea { resize: vertical; min-height: 50px; }
+  .edit-grid .checkbox-field { flex-direction: row; align-items: center; gap: 6px; }
+  .edit-grid input[readonly] { background: #f0f0f0; color: var(--text-muted); }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  #save-msg { font-size: 13px; margin-top: 8px; }
+  #save-msg.success { color: var(--green); }
+  #save-msg.error { color: var(--red-accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Customer Control <span class="th">จัดการลูกค้า</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="product_control.html">📦 Products</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="filter-bar">
+    <label>ค้นหา / Search
+      <input type="text" id="filter-search" placeholder="name / tel / email" oninput="applyFilters()">
+    </label>
+    <label>พื้นที่ / Area
+      <select id="filter-area" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+      </select>
+    </label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-dormant" onchange="applyFilters()"> 休眠顧客のみ(1年以上購入無し) / Dormant only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-inactive" onchange="applyFilters()"> 無効のみ / Inactive only</label>
+    <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
+  </div>
+
+  <div class="summary-note" id="summary-note"></div>
+
+  <table class="customers">
+    <thead>
+      <tr>
+        <th>氏名 / Name</th>
+        <th>電話 / Tel</th>
+        <th>エリア / Area</th>
+        <th>最終購入日 / Last Purchase</th>
+        <th>ポイント / Points</th>
+        <th>状態 / Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="customers-tbody">
+      <tr><td colspan="7" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div id="save-msg"></div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+let allCustomers = [];
+let allAreas = [];
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  loadAreas();
+  loadCustomers();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// ---------------- ロード ----------------
+async function loadAreas() {
+  const { data, error } = await supabaseClient.from('areas').select('id, name').order('name');
+  if (error) return;
+  allAreas = data || [];
+  const sel = document.getElementById('filter-area');
+  allAreas.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadCustomers() {
+  const tbody = document.getElementById('customers-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .select('*')
+    .eq('role', 'customer')
+    .order('family_name');
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Error: ' + error.message + '</td></tr>';
+    return;
+  }
+
+  allCustomers = data || [];
+  applyFilters();
+}
+
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-area').value = '';
+  document.getElementById('filter-dormant').checked = false;
+  document.getElementById('filter-inactive').checked = false;
+  applyFilters();
+}
+
+function isDormant(c) {
+  if (!c.last_purchase_date) return true; // 購入履歴が無い場合も休眠扱い
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  return new Date(c.last_purchase_date) < oneYearAgo;
+}
+
+function applyFilters() {
+  const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  const areaId = document.getElementById('filter-area').value;
+  const dormantOnly = document.getElementById('filter-dormant').checked;
+  const inactiveOnly = document.getElementById('filter-inactive').checked;
+
+  let filtered = allCustomers.filter(c => {
+    if (q) {
+      const hay = [c.family_name, c.first_name, c.family_name_kana, c.first_name_kana, c.tel1, c.tel2, c.email]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (areaId && c.area_id !== areaId) return false;
+    if (dormantOnly && !isDormant(c)) return false;
+    if (inactiveOnly && c.is_active !== false) return false;
+    return true;
+  });
+
+  const dormantCount = allCustomers.filter(isDormant).length;
+  const noteEl = document.getElementById('summary-note');
+  noteEl.className = dormantCount > 0 ? 'summary-note alert' : 'summary-note';
+  noteEl.textContent = `全${allCustomers.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allCustomers.length}` +
+    (dormantCount > 0 ? ` — 休眠顧客(1年以上購入無し) ${dormantCount}件` : '');
+
+  renderTable(filtered);
+}
+
+function renderTable(customers) {
+  const tbody = document.getElementById('customers-tbody');
+  if (customers.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ไม่พบลูกค้า / No customers found</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  customers.forEach(c => tbody.appendChild(renderCustomerRow(c)));
+}
+
+function areaName(areaId) {
+  return allAreas.find(a => a.id === areaId)?.name || '-';
+}
+
+function renderCustomerRow(c) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = c.id;
+  const dormant = isDormant(c);
+  if (dormant) tr.classList.add('dormant');
+  if (c.is_active === false) tr.classList.add('inactive');
+
+  const tags = [
+    dormant ? '<span class="tag dormant">休眠 / Dormant</span>' : '',
+    c.is_active === false ? '<span class="tag inactive">無効</span>' : '',
+  ].join('');
+
+  tr.innerHTML = `
+    <td>${c.family_name || ''} ${c.first_name || ''}<br><span style="color:var(--text-muted);font-size:11px;">${c.family_name_kana || ''} ${c.first_name_kana || ''}</span><br>${tags}</td>
+    <td>${c.tel1 || '-'}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + c.tel2 + '</span>' : ''}</td>
+    <td><span class="tag area">${areaName(c.area_id)}</span></td>
+    <td>${c.last_purchase_date || '-'}</td>
+    <td>${c.point_balance ?? 0}</td>
+    <td>${c.is_active === false ? 'Inactive' : 'Active'}</td>
+    <td><button class="btn ghost small" onclick="toggleEdit('${c.id}')">編集 / Edit</button></td>
+  `;
+  return tr;
+}
+
+function toggleEdit(customerId) {
+  const existing = document.querySelector(`tr.edit-row[data-editing="${customerId}"]`);
+  if (existing) { existing.remove(); return; }
+
+  document.querySelectorAll('tr.edit-row').forEach(el => el.remove());
+
+  const c = allCustomers.find(x => x.id === customerId);
+  if (!c) return;
+  const baseRow = document.querySelector(`tr[data-id="${customerId}"]`);
+  const editRow = document.createElement('tr');
+  editRow.className = 'edit-row';
+  editRow.dataset.editing = customerId;
+
+  const areaOptions = allAreas.map(a => `<option value="${a.id}" ${c.area_id === a.id ? 'selected' : ''}>${a.name}</option>`).join('');
+
+  editRow.innerHTML = `
+    <td colspan="7">
+      <div class="edit-grid">
+        <label>姓 / Family Name<input type="text" class="e-fname" value="${c.family_name || ''}"></label>
+        <label>名 / First Name<input type="text" class="e-gname" value="${c.first_name || ''}"></label>
+        <label>姓カナ / Family Kana<input type="text" class="e-fkana" value="${c.family_name_kana || ''}"></label>
+        <label>名カナ / First Kana<input type="text" class="e-gkana" value="${c.first_name_kana || ''}"></label>
+        <label>Email(表示のみ / read-only)<input type="text" class="e-email" value="${c.email || ''}" readonly></label>
+        <label>電話1 / Tel 1<input type="text" class="e-tel1" value="${c.tel1 || ''}"></label>
+        <label>電話2 / Tel 2<input type="text" class="e-tel2" value="${c.tel2 || ''}"></label>
+        <label>エリア / Area<select class="e-area">${areaOptions}</select></label>
+        <label>ポイント残高 / Points<input type="number" class="e-points" step="1" value="${c.point_balance ?? 0}"></label>
+        <label>県 / Province<input type="text" class="e-province" value="${c.province || ''}"></label>
+        <label>住所1 / Address 1<input type="text" class="e-addr1" value="${c.address1 || ''}"></label>
+        <label>住所2 / Address 2<input type="text" class="e-addr2" value="${c.address2 || ''}"></label>
+        <label class="checkbox-field"><input type="checkbox" class="e-active" ${c.is_active !== false ? 'checked' : ''}> 有効 / Active</label>
+      </div>
+      <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:12px;">備考 / Notes
+        <textarea class="e-notes" style="width:100%;">${c.notes || ''}</textarea>
+      </label>
+      <button class="btn save small" onclick="saveCustomer('${customerId}')">保存 / Save</button>
+      <button class="btn ghost small" onclick="toggleEdit('${customerId}')">閉じる / Close</button>
+    </td>
+  `;
+  baseRow.after(editRow);
+}
+
+async function saveCustomer(customerId) {
+  const editRow = document.querySelector(`tr.edit-row[data-editing="${customerId}"]`);
+  const g = sel => editRow.querySelector(sel);
+
+  const payload = {
+    family_name: g('.e-fname').value.trim(),
+    first_name: g('.e-gname').value.trim(),
+    family_name_kana: g('.e-fkana').value.trim() || null,
+    first_name_kana: g('.e-gkana').value.trim() || null,
+    tel1: g('.e-tel1').value.trim() || null,
+    tel2: g('.e-tel2').value.trim() || null,
+    area_id: g('.e-area').value || null,
+    point_balance: parseInt(g('.e-points').value, 10) || 0,
+    province: g('.e-province').value.trim() || null,
+    address1: g('.e-addr1').value.trim() || null,
+    address2: g('.e-addr2').value.trim() || null,
+    is_active: g('.e-active').checked,
+    notes: g('.e-notes').value.trim() || null,
+  };
+
+  if (!payload.family_name) { showSaveMsg('姓を入力してください / Please enter a family name', true); return; }
+
+  const { error } = await supabaseClient.from('customers').update(payload).eq('id', customerId);
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadCustomers();
+}
+
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+}
+</script>
+
+</body>
+</html>
