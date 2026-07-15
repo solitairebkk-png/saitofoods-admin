@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Control | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+  .btn.save { background: var(--green); }
+  .btn.warn { background: var(--red-accent); }
+
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; display: none; }
+
+  .filter-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .filter-bar input[type=text], .filter-bar select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 160px;
+  }
+  .filter-bar .checkbox-label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
+
+  .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .summary-note.alert { color: var(--red-accent); font-weight: 600; }
+
+  table.products { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.products th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.products td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.products tr.no-price td { background: #fdf3d0; }
+  table.products tr.unpublished td { opacity: 0.5; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
+  .tag.special { background: #e6dcf5; color: #5a3d8a; }
+  .tag.weight { background: #d9e8f5; color: #1c3557; }
+  .tag.noprice { background: var(--red-accent); color: white; }
+  .tag.unpub { background: #dcdcdc; color: #444; }
+
+  .edit-row td { background: #fafafa; padding: 16px; }
+  .edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .edit-grid label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .edit-grid input, .edit-grid select { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+  .edit-grid .checkbox-field { flex-direction: row; align-items: center; gap: 6px; }
+  .cat-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .cat-checks label { font-size: 12px; display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  #save-msg { font-size: 13px; margin-top: 8px; }
+  #save-msg.success { color: var(--green); }
+  #save-msg.error { color: var(--red-accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Product Control <span class="th">จัดการสินค้า</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="filter-bar">
+    <label>ค้นหา / Search
+      <input type="text" id="filter-search" placeholder="name_ja / name_en / name_th" oninput="applyFilters()">
+    </label>
+    <label>หมวดหมู่ / Category
+      <select id="filter-category" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+      </select>
+    </label>
+    <label>ประเภท / Type
+      <select id="filter-saletype" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+        <option value="package">Package</option>
+        <option value="weight">Weight</option>
+      </select>
+    </label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-noprice" onchange="applyFilters()"> 価格未入力のみ / No price only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
+    <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
+    <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
+  </div>
+
+  <div class="summary-note" id="summary-note"></div>
+
+  <table class="products">
+    <thead>
+      <tr>
+        <th>商品名 / Name</th>
+        <th>カテゴリ / Category</th>
+        <th>Group</th>
+        <th>Type</th>
+        <th>価格 / Price</th>
+        <th>在庫 / Stock</th>
+        <th>公開 / Published</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="products-tbody">
+      <tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div id="save-msg"></div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+let allProducts = [];
+let allCategories = [];
+let productCategoryMap = {}; // product_id -> [category_id, ...]
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  loadCategories();
+  loadProducts();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// ---------------- ロード ----------------
+async function loadCategories() {
+  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('sort_order');
+  if (error) return;
+  allCategories = data || [];
+  const sel = document.getElementById('filter-category');
+  allCategories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name_ja + (c.name_en ? ' / ' + c.name_en : '');
+    sel.appendChild(opt);
+  });
+}
+
+async function loadProducts() {
+  const tbody = document.getElementById('products-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const [{ data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
+    supabaseClient.from('products').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_ja'),
+    supabaseClient.from('product_categories').select('product_id, category_id'),
+  ]);
+
+  if (prodErr || pcErr) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Error: ' + (prodErr?.message || pcErr?.message) + '</td></tr>';
+    return;
+  }
+
+  productCategoryMap = {};
+  (pcRows || []).forEach(row => {
+    if (!productCategoryMap[row.product_id]) productCategoryMap[row.product_id] = [];
+    productCategoryMap[row.product_id].push(row.category_id);
+  });
+
+  allProducts = products || [];
+  applyFilters();
+}
+
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-category').value = '';
+  document.getElementById('filter-saletype').value = '';
+  document.getElementById('filter-noprice').checked = false;
+  document.getElementById('filter-unpublished').checked = false;
+  applyFilters();
+}
+
+function isMissingPrice(p) {
+  return p.sale_type !== 'weight' && (!p.price || p.price === 0);
+}
+
+function applyFilters() {
+  const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  const catId = document.getElementById('filter-category').value;
+  const saleType = document.getElementById('filter-saletype').value;
+  const noPriceOnly = document.getElementById('filter-noprice').checked;
+  const unpublishedOnly = document.getElementById('filter-unpublished').checked;
+
+  let filtered = allProducts.filter(p => {
+    if (q) {
+      const hay = [p.name_ja, p.name_en, p.name_th].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (catId) {
+      const cats = productCategoryMap[p.id] || [];
+      if (!cats.includes(catId)) return false;
+    }
+    if (saleType && p.sale_type !== saleType) return false;
+    if (noPriceOnly && !isMissingPrice(p)) return false;
+    if (unpublishedOnly && p.is_published !== false) return false;
+    return true;
+  });
+
+  const missingCount = allProducts.filter(isMissingPrice).length;
+  const noteEl = document.getElementById('summary-note');
+  noteEl.className = missingCount > 0 ? 'summary-note alert' : 'summary-note';
+  noteEl.textContent = `全${allProducts.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allProducts.length}` +
+    (missingCount > 0 ? ` — ⚠️ 価格未入力 ${missingCount}件` : '');
+
+  renderTable(filtered);
+}
+
+function renderTable(products) {
+  const tbody = document.getElementById('products-tbody');
+  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  products.forEach(p => tbody.appendChild(renderProductRow(p)));
+}
+
+function categoryNames(productId) {
+  const ids = productCategoryMap[productId] || [];
+  return ids.map(id => allCategories.find(c => c.id === id)?.name_ja).filter(Boolean).join(', ') || '-';
+}
+
+function renderProductRow(p) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = p.id;
+  if (isMissingPrice(p)) tr.classList.add('no-price');
+  if (p.is_published === false) tr.classList.add('unpublished');
+
+  const priceLabel = p.sale_type === 'weight'
+    ? `${p.unit_price ?? '-'} / ${p.unit_label || 'kg'}`
+    : (isMissingPrice(p) ? '<span class="tag noprice">未入力</span>' : `${p.price} THB`);
+
+  const tags = [
+    p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
+    p.sale_type === 'weight' ? '<span class="tag weight">Weight</span>' : '',
+    p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
+  ].join('');
+
+  tr.innerHTML = `
+    <td>${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
+    <td style="font-size:12px;">${categoryNames(p.id)}</td>
+    <td>${p.group_type || '-'}</td>
+    <td>${p.sale_type || '-'}</td>
+    <td>${priceLabel}</td>
+    <td>${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
+    <td>${p.is_published === false ? 'No' : 'Yes'}</td>
+    <td><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
+  `;
+  return tr;
+}
+
+function toggleEdit(productId) {
+  const existing = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  if (existing) { existing.remove(); return; }
+
+  document.querySelectorAll('tr.edit-row').forEach(el => el.remove());
+
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  const baseRow = document.querySelector(`tr[data-id="${productId}"]`);
+  const editRow = document.createElement('tr');
+  editRow.className = 'edit-row';
+  editRow.dataset.editing = productId;
+
+  const catChecks = allCategories.map(c => {
+    const checked = (productCategoryMap[productId] || []).includes(c.id) ? 'checked' : '';
+    return `<label><input type="checkbox" class="e-cat" value="${c.id}" ${checked}> ${c.name_ja}</label>`;
+  }).join('');
+
+  editRow.innerHTML = `
+    <td colspan="8">
+      <div class="edit-grid">
+        <label>名前(日) / Name (JA)<input type="text" class="e-name-ja" value="${p.name_ja || ''}"></label>
+        <label>名前(英) / Name (EN)<input type="text" class="e-name-en" value="${p.name_en || ''}"></label>
+        <label>名前(タイ) / Name (TH)<input type="text" class="e-name-th" value="${p.name_th || ''}"></label>
+        <label>Group<select class="e-group">
+          <option value="A" ${p.group_type === 'A' ? 'selected' : ''}>A</option>
+          <option value="B" ${p.group_type === 'B' ? 'selected' : ''}>B</option>
+        </select></label>
+        <label>Type<select class="e-saletype" onchange="toggleWeightFields(this)">
+          <option value="package" ${p.sale_type === 'package' ? 'selected' : ''}>Package</option>
+          <option value="weight" ${p.sale_type === 'weight' ? 'selected' : ''}>Weight</option>
+        </select></label>
+        <label>価格 / Price (THB)<input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.sale_type === 'weight' ? 'disabled' : ''}></label>
+        <label>単価 / Unit Price<input type="number" class="e-unitprice" min="0" step="0.01" value="${p.unit_price ?? ''}" ${p.sale_type !== 'weight' ? 'disabled' : ''}></label>
+        <label>単位 / Unit Label<input type="text" class="e-unitlabel" value="${p.unit_label || ''}" placeholder="kg"></label>
+        <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
+        <label>在庫数 / Stock Qty<input type="number" class="e-stock" min="0" step="1" value="${p.stock_qty ?? ''}" ${p.is_unlimited_stock ? 'disabled' : ''}></label>
+        <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
+        <label class="checkbox-field"><input type="checkbox" class="e-unlimited" onchange="toggleStockField(this)" ${p.is_unlimited_stock ? 'checked' : ''}> 在庫無制限 / Unlimited</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
+      <div class="cat-checks">${catChecks || '<span style="color:var(--text-muted);font-size:12px;">カテゴリ未登録</span>'}</div>
+      <button class="btn save small" onclick="saveProduct('${productId}')">保存 / Save</button>
+      <button class="btn ghost small" onclick="toggleEdit('${productId}')">閉じる / Close</button>
+      ${p._isNew ? '' : `<button class="btn warn small" onclick="deleteProduct('${productId}')" style="float:right;">削除 / Delete</button>`}
+    </td>
+  `;
+  baseRow.after(editRow);
+}
+
+function toggleWeightFields(sel) {
+  const grid = sel.closest('.edit-grid');
+  const isWeight = sel.value === 'weight';
+  grid.querySelector('.e-price').disabled = isWeight;
+  grid.querySelector('.e-unitprice').disabled = !isWeight;
+}
+
+function toggleStockField(chk) {
+  chk.closest('.edit-grid').querySelector('.e-stock').disabled = chk.checked;
+}
+
+async function saveProduct(productId) {
+  const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  const g = sel => editRow.querySelector(sel);
+
+  const saleType = g('.e-saletype').value;
+  const payload = {
+    name_ja: g('.e-name-ja').value.trim(),
+    name_en: g('.e-name-en').value.trim() || null,
+    name_th: g('.e-name-th').value.trim() || null,
+    group_type: g('.e-group').value,
+    sale_type: saleType,
+    price: saleType === 'weight' ? null : (parseFloat(g('.e-price').value) || 0),
+    unit_price: saleType === 'weight' ? (parseFloat(g('.e-unitprice').value) || 0) : null,
+    unit_label: g('.e-unitlabel').value.trim() || null,
+    point_rate_percent: parseFloat(g('.e-pointrate').value) || 0,
+    is_unlimited_stock: g('.e-unlimited').checked,
+    stock_qty: g('.e-unlimited').checked ? null : (parseInt(g('.e-stock').value, 10) || 0),
+    sort_order: g('.e-sort').value ? parseInt(g('.e-sort').value, 10) : null,
+    is_local_special: g('.e-special').checked,
+    is_published: g('.e-published').checked,
+    is_available_en: g('.e-availen').checked,
+  };
+
+  if (!payload.name_ja) { showSaveMsg('商品名(日)を入力してください / Please enter a Japanese name', true); return; }
+
+  const selectedCatIds = [...editRow.querySelectorAll('.e-cat:checked')].map(el => el.value);
+
+  let productRowId = productId;
+  let error;
+
+  if (productId.startsWith('new-')) {
+    const { data, error: insertErr } = await supabaseClient.from('products').insert(payload).select('id').single();
+    error = insertErr;
+    if (data) productRowId = data.id;
+  } else {
+    ({ error } = await supabaseClient.from('products').update(payload).eq('id', productId));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+
+  // カテゴリ紐付けを一旦削除して選択分を入れ直す
+  await supabaseClient.from('product_categories').delete().eq('product_id', productRowId);
+  if (selectedCatIds.length > 0) {
+    await supabaseClient.from('product_categories').insert(selectedCatIds.map(cid => ({ product_id: productRowId, category_id: cid })));
+  }
+
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadProducts();
+}
+
+async function deleteProduct(productId) {
+  if (!confirm('この商品を削除しますか？(過去の注文データには影響しません) / Delete this product?')) return;
+  const { error } = await supabaseClient.from('products').delete().eq('id', productId);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadProducts();
+}
+
+function addNewProduct() {
+  const newId = 'new-' + Date.now();
+  const blank = {
+    id: newId, name_ja: '', name_en: '', name_th: '', group_type: 'A', sale_type: 'package',
+    price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
+    stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
+    _isNew: true,
+  };
+  allProducts.unshift(blank);
+  productCategoryMap[newId] = [];
+  applyFilters();
+  setTimeout(() => toggleEdit(newId), 50);
+}
+
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+}
+</script>
+
+</body>
+</html>
