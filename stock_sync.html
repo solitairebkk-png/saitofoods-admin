@@ -110,6 +110,7 @@
   <table class="stock">
     <thead>
       <tr>
+        <th>画像 / Image</th>
         <th>商品名 / Product</th>
         <th>在庫数 / Stock Qty</th>
         <th>無制限 / Unlimited</th>
@@ -118,7 +119,7 @@
       </tr>
     </thead>
     <tbody id="stock-tbody">
-      <tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
 
@@ -179,15 +180,15 @@ function showMain() {
 
 async function loadProducts() {
   const tbody = document.getElementById('stock-tbody');
-  tbody.innerHTML = '<tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
   const { data, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, name_th, sale_type, stock_qty, is_unlimited_stock, is_published, is_coming_soon')
+    .select('id, name_ja, name_en, name_th, sale_type, stock_qty, is_unlimited_stock, is_published, is_coming_soon, image_url')
     .order('name_ja');
 
   if (error) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error: ' + error.message + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>';
     return;
   }
 
@@ -265,7 +266,7 @@ function goToPage(page) {
 
 function renderTable(products) {
   const tbody = document.getElementById('stock-tbody');
-  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
+  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
 
   tbody.innerHTML = '';
   products.forEach(p => tbody.appendChild(renderRow(p)));
@@ -283,7 +284,12 @@ function renderRow(p) {
     p.is_coming_soon ? '<span class="tag soon">近日入荷</span>' : '',
   ].join('');
 
+  const imgCell = p.image_url
+    ? `<img src="${p.image_url}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${p.image_url}','_blank')">`
+    : `<div style="width:40px;height:40px;border:1px dashed var(--border);border-radius:4px;"></div>`;
+
   tr.innerHTML = `
+    <td>${imgCell}</td>
     <td>${p.name_ja || '(no name)'}${tags}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span></td>
     <td>
       <input type="number" class="stock-input" min="0" step="1" value="${p.stock_qty ?? 0}"
