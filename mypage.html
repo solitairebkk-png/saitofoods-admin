@@ -355,19 +355,14 @@ async function signup() {
 }
 
 async function claimCustomerRecord(email, userId) {
-  const { data, error } = await supabaseClient
-    .from('customers')
-    .update({ auth_user_id: userId })
-    .eq('email', email)
-    .is('auth_user_id', null)
-    .select('id');
+  const { data, error } = await supabaseClient.rpc('claim_customer_record');
 
   if (error) {
     showAuthMsg('アカウントは作成されましたが、既存のご注文履歴との連携に失敗しました。お手数ですが店舗までご連絡ください。', true);
     return;
   }
 
-  if (!data || data.length === 0) {
+  if (!data) {
     showAuthMsg('このメールアドレスでの過去のご注文履歴は見つかりませんでした。アカウントは作成されましたので、これから先のご注文からポイントが貯まります。');
   }
 
@@ -443,25 +438,16 @@ async function loadMyPage(user) {
 
   // まだ紐付けが行われていない場合(確認メールのリンクをクリックして初めて
   // ここに来たケースなど)、メールアドレスが一致する既存の顧客レコードへの紐付けを試みる
+  // (RLSの組み合わせに依存しないよう、サーバー側のRPC関数経由で行う)
   if ((error || !customerRow) && user.email) {
-    const claimResult = await supabaseClient
-      .from('customers')
-      .update({ auth_user_id: user.id })
-      .eq('email', user.email)
-      .is('auth_user_id', null)
-      .select('id');
+    const claimResult = await supabaseClient.rpc('claim_customer_record');
 
     if (claimResult.error) {
-      showAuthMsg('紐付け処理でエラー: ' + claimResult.error.message + ' (code: ' + claimResult.error.code + ')', true);
+      showAuthMsg('紐付け処理でエラー: ' + claimResult.error.message, true);
       return;
     }
-    if (!claimResult.data || claimResult.data.length === 0) {
-      const whoami = await supabaseClient.rpc('debug_whoami');
-      showAuthMsg(
-        '紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。 ' +
-        'DEBUG: auth.email()=' + JSON.stringify(whoami.data) + ' whoamiError=' + (whoami.error ? whoami.error.message : 'none'),
-        true
-      );
+    if (!claimResult.data) {
+      showAuthMsg('紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。お手数ですが店舗までご連絡ください。', true);
       return;
     }
 
