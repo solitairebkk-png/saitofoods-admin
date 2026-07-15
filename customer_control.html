@@ -72,6 +72,10 @@
   #save-msg { font-size: 13px; margin-top: 8px; }
   #save-msg.success { color: var(--green); }
   #save-msg.error { color: var(--red-accent); }
+
+  .pagination { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 16px; font-size: 13px; }
+  .pagination button { padding: 6px 12px; }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -119,6 +123,7 @@
       <tr>
         <th>氏名 / Name</th>
         <th>電話 / Tel</th>
+        <th>Email</th>
         <th>エリア / Area</th>
         <th>最終購入日 / Last Purchase</th>
         <th>ポイント / Points</th>
@@ -127,9 +132,11 @@
       </tr>
     </thead>
     <tbody id="customers-tbody">
-      <tr><td colspan="7" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
+
+  <div class="pagination" id="pagination"></div>
 
   <div id="save-msg"></div>
 </main>
@@ -200,20 +207,31 @@ async function loadAreas() {
 
 async function loadCustomers() {
   const tbody = document.getElementById('customers-tbody');
-  tbody.innerHTML = '<tr><td colspan="7" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
-  const { data, error } = await supabaseClient
-    .from('customers')
-    .select('*')
-    .eq('role', 'customer')
-    .order('family_name');
+  const PAGE_SIZE = 1000;
+  let all = [];
+  let from = 0;
 
-  if (error) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Error: ' + error.message + '</td></tr>';
-    return;
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from('customers')
+      .select('*')
+      .eq('role', 'customer')
+      .order('family_name')
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Error: ' + error.message + '</td></tr>';
+      return;
+    }
+
+    all = all.concat(data || []);
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
 
-  allCustomers = data || [];
+  allCustomers = all;
   applyFilters();
 }
 
@@ -231,6 +249,10 @@ function isDormant(c) {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   return new Date(c.last_purchase_date) < oneYearAgo;
 }
+
+let currentPage = 1;
+const PAGE_SIZE_DISPLAY = 100;
+let currentFiltered = [];
 
 function applyFilters() {
   const q = document.getElementById('filter-search').value.trim().toLowerCase();
@@ -256,12 +278,44 @@ function applyFilters() {
   noteEl.textContent = `全${allCustomers.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allCustomers.length}` +
     (dormantCount > 0 ? ` — 休眠顧客(1年以上購入無し) ${dormantCount}件` : '');
 
-  renderTable(filtered);
+  currentFiltered = filtered;
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const totalPages = Math.max(1, Math.ceil(currentFiltered.length / PAGE_SIZE_DISPLAY));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE_DISPLAY;
+  const pageItems = currentFiltered.slice(start, start + PAGE_SIZE_DISPLAY);
+
+  renderTable(pageItems);
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('pagination');
+  if (currentFiltered.length === 0) { el.innerHTML = ''; return; }
+  const start = (currentPage - 1) * PAGE_SIZE_DISPLAY + 1;
+  const end = Math.min(currentPage * PAGE_SIZE_DISPLAY, currentFiltered.length);
+  el.innerHTML = `
+    <button class="btn ghost small" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>« First</button>
+    <button class="btn ghost small" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span>${start}-${end} / ${currentFiltered.length} (Page ${currentPage}/${totalPages})</span>
+    <button class="btn ghost small" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>
+    <button class="btn ghost small" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Last »</button>
+  `;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderPage();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function renderTable(customers) {
   const tbody = document.getElementById('customers-tbody');
-  if (customers.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ไม่พบลูกค้า / No customers found</td></tr>'; return; }
+  if (customers.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบลูกค้า / No customers found</td></tr>'; return; }
 
   tbody.innerHTML = '';
   customers.forEach(c => tbody.appendChild(renderCustomerRow(c)));
@@ -286,6 +340,7 @@ function renderCustomerRow(c) {
   tr.innerHTML = `
     <td>${c.family_name || ''} ${c.first_name || ''}<br><span style="color:var(--text-muted);font-size:11px;">${c.family_name_kana || ''} ${c.first_name_kana || ''}</span><br>${tags}</td>
     <td>${c.tel1 || '-'}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + c.tel2 + '</span>' : ''}</td>
+    <td style="font-size:12px;">${c.email || '-'}</td>
     <td><span class="tag area">${areaName(c.area_id)}</span></td>
     <td>${c.last_purchase_date || '-'}</td>
     <td>${c.point_balance ?? 0}</td>
@@ -311,7 +366,7 @@ function toggleEdit(customerId) {
   const areaOptions = allAreas.map(a => `<option value="${a.id}" ${c.area_id === a.id ? 'selected' : ''}>${a.name}</option>`).join('');
 
   editRow.innerHTML = `
-    <td colspan="7">
+    <td colspan="8">
       <div class="edit-grid">
         <label>姓 / Family Name<input type="text" class="e-fname" value="${c.family_name || ''}"></label>
         <label>名 / First Name<input type="text" class="e-gname" value="${c.first_name || ''}"></label>
