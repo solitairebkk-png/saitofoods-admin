@@ -320,6 +320,22 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2
 let currentCustomer = null;
 let currentAreaFilter = 'Bangkok';
 
+// 配送料設定(settingsテーブルから取得。600baht未満の配送注文に配送料を加算する)
+let shippingFreeThreshold = 600;
+let shippingFeeAmount = 100;
+
+async function loadShippingSettings() {
+  const { data, error } = await supabaseClient
+    .from('settings')
+    .select('key, value')
+    .in('key', ['min_order_free_shipping', 'shipping_fee_amount']);
+  if (error || !data) return;
+  data.forEach(row => {
+    if (row.key === 'min_order_free_shipping') shippingFreeThreshold = parseFloat(row.value) || 600;
+    if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
+  });
+}
+
 // ---------------- Auth ----------------
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -355,6 +371,7 @@ function showMain() {
   const weekLater = new Date(today.getTime() + 7 * 86400000);
   document.getElementById('filter-start').value = today.toISOString().slice(0, 10);
   document.getElementById('filter-end').value = weekLater.toISOString().slice(0, 10);
+  loadShippingSettings();
   loadOrders();
 }
 
@@ -392,7 +409,7 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot, customer_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
-      payment_method, payment_status, total_amount, comment, slip_image_url,
+      payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
@@ -487,7 +504,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
       </div>
       <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
-      <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB</span></div>
+      <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
     <td class="center">${slipCell}</td>
   `;
@@ -671,6 +688,7 @@ function openReceiptModal(order) {
       <tbody>${itemsRows || '<tr><td colspan="3">(ไม่มีรายการ)</td></tr>'}</tbody>
     </table>
     <div class="receipt-total"><span>Total / รวม</span><span>${order.total_amount || 0} THB</span></div>
+    ${order.shipping_cost ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">(รวมค่าจัดส่ง / incl. delivery fee ${order.shipping_cost} THB)</div>` : ''}
     <div class="receipt-payment">💳 ${paymentLabel}</div>
     ${order.comment ? `<div class="receipt-comment">📝 ${order.comment}</div>` : ''}
   `;
@@ -816,14 +834,16 @@ async function confirmWeight() {
     }
 
     // 2. 注文全体の合計金額を再計算(固定価格商品+確定した量り売り商品)
+    // 配送料(shipping_cost)は注文作成時に一度決めたら変更しない(後から追加課金しない方針)
     const { data: items, error: itemsErr } = await supabaseClient
       .from('order_items').select('total_price').eq('order_id', order.id);
     if (itemsErr) throw itemsErr;
-    const newTotal = (items || []).reduce((sum, i) => sum + (i.total_price || 0), 0);
+    const newSubtotal = (items || []).reduce((sum, i) => sum + (i.total_price || 0), 0);
+    const newTotal = newSubtotal + (order.shipping_cost || 0);
 
     const { error: orderErr } = await supabaseClient
       .from('orders')
-      .update({ subtotal: newTotal, total_amount: newTotal, is_weight_confirmed: true })
+      .update({ subtotal: newSubtotal, total_amount: newTotal, is_weight_confirmed: true })
       .eq('id', order.id);
     if (orderErr) throw orderErr;
 
