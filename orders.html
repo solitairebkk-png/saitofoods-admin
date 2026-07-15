@@ -28,13 +28,11 @@
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
 
-  header {
-    background: var(--navy); color: white; padding: 12px 24px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
   header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
   header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
-  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
   header a { color: #cdd8e6; text-decoration: none; }
   header a:hover { color: white; }
 
@@ -133,7 +131,7 @@
   .loading { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
   .count-badge { color: var(--red-accent); font-weight: 700; }
 
-  .slip-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
+  .slip-thumb { width: 140px; height: 180px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
   .slip-thumb:hover { border-color: var(--navy); }
 
   #slip-modal {
@@ -217,7 +215,7 @@
 
 <header>
   <h1>Order Management <span class="th">การจัดการคำสั่งซื้อ</span></h1>
-  <div class="user-info" id="user-info" style="display:none;">
+  <div class="nav-links" id="nav-links" style="display:none;">
     <a href="local_order.html">+ New Order / คำสั่งซื้อใหม่</a>
     <a href="customer_control.html">👤 Customers</a>
     <a href="customer_history.html">🕘 History</a>
@@ -225,6 +223,8 @@
     <a href="product_control.html">📦 Products</a>
     <a href="sales_summary.html">📊 Sales Summary</a>
     <a href="settings.html">⚙️ Settings</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
     <span id="user-email"></span>
     <span id="user-role" class="badge badge-cash"></span>
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
@@ -280,7 +280,7 @@
         <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
         <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
-        <th style="width:70px;">สลิป<span class="en">Slip</span></th>
+        <th style="width:160px;">สลิป<span class="en">Slip</span></th>
       </tr>
     </thead>
     <tbody id="orders-tbody">
@@ -377,6 +377,7 @@ async function logout() { await supabaseClient.auth.signOut(); location.reload()
 function showMain() {
   document.getElementById('login-panel').style.display = 'none';
   document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
   document.getElementById('user-info').style.display = 'flex';
   document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
   document.getElementById('user-role').textContent = currentCustomer.role === 'admin' ? 'Admin / ผู้ดูแลระบบ' : 'Staff / พนักงาน';
@@ -754,7 +755,7 @@ function openSlipModal(url) {
 // ファイルIDを抽出してサムネイル形式のURLに変換する(admin_slip.htmlと同じ手法)
 function driveImageUrl(url, large) {
   const m = (url || '').match(/[-\w]{25,}/);
-  return m ? `https://drive.google.com/thumbnail?id=${m[0]}&sz=w${large ? 1600 : 200}` : url;
+  return m ? `https://drive.google.com/thumbnail?id=${m[0]}&sz=w${large ? 1600 : 400}` : url;
 }
 
 function closeSlipModal() {
