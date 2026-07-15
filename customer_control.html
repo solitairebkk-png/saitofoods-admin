@@ -58,6 +58,11 @@
   .tag.dormant { background: var(--amber); color: white; }
   .tag.inactive { background: #dcdcdc; color: #444; }
   .tag.area { background: #d9e8f5; color: #1c3557; }
+  .tag.area-bangkok { background: #d9e8f5; color: #1c3557; }
+  .tag.area-sriracha { background: #dbeee0; color: #1a5c33; }
+  .tag.area-pattaya { background: #f5e0d9; color: #8a3d1c; }
+  .tag.area-other { background: #ece3f5; color: #4a2d7a; }
+  .tag.area-none { background: #dcdcdc; color: #444; }
 
   .edit-row td { background: #fafafa; padding: 16px; }
   .edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 12px; }
@@ -358,6 +363,15 @@ function areaName(areaId) {
   return allAreas.find(a => a.id === areaId)?.name || '-';
 }
 
+function areaBadgeClass(areaId) {
+  const name = areaName(areaId);
+  if (name === 'Bangkok') return 'area-bangkok';
+  if (name === 'Sriracha') return 'area-sriracha';
+  if (name === 'Pattaya') return 'area-pattaya';
+  if (name === 'Other Provinces') return 'area-other';
+  return 'area-none';
+}
+
 function renderCustomerRow(c) {
   const tr = document.createElement('tr');
   tr.dataset.id = c.id;
@@ -375,7 +389,7 @@ function renderCustomerRow(c) {
     <td>${c.family_name || ''} ${c.first_name || ''}<br><span style="color:var(--text-muted);font-size:11px;">${c.family_name_kana || ''} ${c.first_name_kana || ''}</span><br>${tags}</td>
     <td>${c.tel1 || '-'}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + c.tel2 + '</span>' : ''}</td>
     <td style="font-size:12px;">${c.email || '-'}</td>
-    <td><span class="tag area">${areaName(c.area_id)}</span></td>
+    <td><span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span></td>
     <td>${c.last_purchase_date || '-'}</td>
     <td>${c.point_balance ?? 0}</td>
     <td>${c.is_active === false ? 'Inactive' : 'Active'}</td>
