@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Summary | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 24px; max-width: 960px; margin: 0 auto; display: none; }
+
+  .date-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .date-bar label { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .date-bar input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .card .amount { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .card .count { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .card.total { background: var(--navy); }
+  .card.total .label { color: #cdd8e6; }
+  .card.total .amount { color: white; }
+  .card.total .count { color: #cdd8e6; }
+
+  .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
+
+  .section-title { font-size: 14px; font-weight: 700; color: var(--navy); margin: 24px 0 10px; }
+
+  table.prod { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.prod th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); }
+  table.prod td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  table.prod tr:last-child td { border-bottom: none; }
+  table.prod td.num, table.prod th.num { text-align: right; }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sales Summary <span class="th">สรุปยอดขาย</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="date-bar">
+    <label>วันที่ / Date
+      <input type="date" id="filter-date">
+    </label>
+    <button class="btn" onclick="loadSummary()" style="align-self:flex-end;">Search / ค้นหา</button>
+    <button class="btn" onclick="resetToToday()" style="align-self:flex-end;">Today / วันนี้</button>
+  </div>
+
+  <div class="warn-box" id="unconfirmed-warn"></div>
+
+  <div class="summary-cards" id="summary-cards">
+    <div class="loading">กำลังโหลด... / Loading...</div>
+  </div>
+
+  <div class="section-title">商品別 販売個数 / Items Sold</div>
+  <table class="prod">
+    <thead>
+      <tr>
+        <th>商品 / Product</th>
+        <th class="num">数量 / Qty</th>
+        <th class="num">売上 / Sales (THB)</th>
+      </tr>
+    </thead>
+    <tbody id="prod-tbody">
+      <tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function todayStr() {
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 3600000); // Asia/Bangkok (UTC+7)
+  return bkk.toISOString().slice(0, 10);
+}
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  document.getElementById('filter-date').value = todayStr();
+  loadSummary();
+}
+
+function resetToToday() {
+  document.getElementById('filter-date').value = todayStr();
+  loadSummary();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// ---------------- 集計 ----------------
+const ORDER_SELECT = `
+  id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost,
+  is_cancelled, has_weight_items, is_weight_confirmed,
+  customers!customer_id ( areas ( name ) ),
+  order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th, unit_label ) )
+`;
+
+async function loadSummary() {
+  const date = document.getElementById('filter-date').value;
+  if (!date) return;
+
+  document.getElementById('summary-cards').innerHTML = '<div class="loading">กำลังโหลด... / Loading...</div>';
+  document.getElementById('prod-tbody').innerHTML = '<tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  document.getElementById('unconfirmed-warn').style.display = 'none';
+
+  // 配送分(delivery): delivery_date で判定
+  const deliveryPromise = supabaseClient
+    .from('orders').select(ORDER_SELECT)
+    .eq('order_type', 'delivery')
+    .eq('delivery_date', date);
+
+  // Walk-in分: created_at をバンコク時間(UTC+7)の日境界で判定(delivery_dateがnullのため)
+  const dayStart = `${date}T00:00:00+07:00`;
+  const dayEnd = `${date}T23:59:59.999+07:00`;
+  const walkinPromise = supabaseClient
+    .from('orders').select(ORDER_SELECT)
+    .eq('order_type', 'walk_in')
+    .gte('created_at', dayStart)
+    .lte('created_at', dayEnd);
+
+  const [{ data: deliveryData, error: err1 }, { data: walkinData, error: err2 }] = await Promise.all([deliveryPromise, walkinPromise]);
+
+  if (err1 || err2) {
+    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message) + '</div>';
+    document.getElementById('prod-tbody').innerHTML = '';
+    return;
+  }
+
+  const allOrders = [...(deliveryData || []), ...(walkinData || [])].filter(o => !o.is_cancelled);
+
+  renderSummary(allOrders);
+}
+
+function renderSummary(orders) {
+  const buckets = {
+    walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
+    Bangkok: { label: 'Bangkok', orders: 0, amount: 0 },
+    Sriracha: { label: 'Sriracha', orders: 0, amount: 0 },
+    other: { label: 'Other / ไม่ระบุพื้นที่', orders: 0, amount: 0 },
+  };
+
+  const productMap = new Map(); // product_id -> { name, unit, qty, revenue }
+  let unconfirmedCount = 0;
+
+  orders.forEach(order => {
+    let bucketKey;
+    if (order.order_type === 'walk_in') {
+      bucketKey = 'walk_in';
+    } else {
+      const areaName = order.customers?.areas?.name;
+      bucketKey = (areaName === 'Bangkok' || areaName === 'Sriracha') ? areaName : 'other';
+    }
+    buckets[bucketKey].orders += 1;
+    buckets[bucketKey].amount += Number(order.total_amount) || 0;
+
+    if (order.has_weight_items && !order.is_weight_confirmed) unconfirmedCount += 1;
+
+    (order.order_items || []).forEach(item => {
+      const key = item.product_id || item.product_name_snapshot;
+      const name = item.products?.name_en || item.products?.name_th || item.product_name_snapshot || '(unknown)';
+      const unit = item.products?.unit_label || (item.sale_type === 'weight' ? 'kg' : 'pcs');
+      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: 0, revenue: 0 });
+      const p = productMap.get(key);
+      p.qty += Number(item.quantity) || 0;
+      p.revenue += Number(item.total_price) || 0;
+    });
+  });
+
+  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0);
+  const grandOrders = Object.values(buckets).reduce((s, b) => s + b.orders, 0);
+
+  const cardsEl = document.getElementById('summary-cards');
+  cardsEl.innerHTML = '';
+
+  const order = ['Bangkok', 'Sriracha', 'walk_in'];
+  order.forEach(key => {
+    const b = buckets[key];
+    cardsEl.innerHTML += `
+      <div class="card">
+        <div class="label">${b.label}</div>
+        <div class="amount">${b.amount.toLocaleString()} THB</div>
+        <div class="count">${b.orders} orders / คำสั่งซื้อ</div>
+      </div>`;
+  });
+  if (buckets.other.orders > 0) {
+    cardsEl.innerHTML += `
+      <div class="card">
+        <div class="label">${buckets.other.label}</div>
+        <div class="amount">${buckets.other.amount.toLocaleString()} THB</div>
+        <div class="count">${buckets.other.orders} orders / คำสั่งซื้อ</div>
+      </div>`;
+  }
+  cardsEl.innerHTML += `
+    <div class="card total">
+      <div class="label">Total / รวมทั้งหมด</div>
+      <div class="amount">${grandTotal.toLocaleString()} THB</div>
+      <div class="count">${grandOrders} orders / คำสั่งซื้อ</div>
+    </div>`;
+
+  const warnEl = document.getElementById('unconfirmed-warn');
+  if (unconfirmedCount > 0) {
+    warnEl.style.display = 'block';
+    warnEl.textContent = `⚠️ 量り売り重量未確定の注文が${unconfirmedCount}件含まれています。該当分の金額は仮の数値です。 / ${unconfirmedCount} order(s) have unconfirmed weight — their amounts are estimates.`;
+  }
+
+  const prodTbody = document.getElementById('prod-tbody');
+  const products = [...productMap.values()].sort((a, b) => b.revenue - a.revenue);
+  if (products.length === 0) {
+    prodTbody.innerHTML = '<tr><td colspan="3" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
+    return;
+  }
+  prodTbody.innerHTML = products.map(p => `
+    <tr>
+      <td>${p.name}</td>
+      <td class="num">${formatQty(p.qty)} ${p.unit}</td>
+      <td class="num">${Math.round(p.revenue).toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function formatQty(qty) {
+  return Number.isInteger(qty) ? qty : qty.toFixed(2);
+}
+</script>
+
+</body>
+</html>
