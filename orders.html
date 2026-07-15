@@ -17,12 +17,12 @@
     --text: #23272f;
     --text-muted: #6b7280;
 
-    --status-unprinted: #fff2a8;    /* 黄色 = 伝票未印刷(準備前) */
+    --status-unprinted: #fdf6d8;    /* 黄色 = 伝票未印刷(準備前) */
     --status-printed: #ffffff;      /* 白 = 伝票印刷済み */
-    --status-weight: #d9e8f5;       /* 青 = 量り売り商品の重量未入力 */
-    --status-complete: #f2a89a;     /* 赤 = Complete押下後(以降変更不可) */
-    --status-paid-qr: #dbeee0;      /* 緑 = QR振込み確認済み */
-    --status-cancelled: #dcdcdc;    /* グレー = まるごとキャンセル済み */
+    --status-weight: #e6f0f8;       /* 青 = 量り売り商品の重量未入力 */
+    --status-complete: #f9d9d2;     /* 赤 = Complete押下後(以降変更不可) */
+    --status-paid-qr: #e4f3e8;      /* 緑 = QR振込み確認済み */
+    --status-cancelled: #eaeaea;    /* グレー = まるごとキャンセル済み */
   }
 
   * { box-sizing: border-box; }
@@ -96,7 +96,9 @@
   .badge-pending { background: #fdf3d0; color: #8a6d1e; }
   .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
 
-  .order-items { font-size: 12px; line-height: 1.7; }
+  .order-items { font-size: 12px; line-height: 1.5; }
+  .order-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+  .order-items-grid .item-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .customer-info { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
   .customer-name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .customer-name { font-weight: 600; }
@@ -499,11 +501,11 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const addressParts = [order.customers?.address1, order.customers?.address2, order.customers?.province].filter(Boolean);
   const address = addressParts.join(', ');
 
-  const itemsHtml = (order.order_items || []).map(item => {
-    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+  const itemsHtml = '<div class="order-items-grid">' + (order.order_items || []).map(item => {
     const enName = item.products?.name_en ? ` / ${item.products.name_en}` : '';
-    return `${item.product_name_snapshot}${thName}${enName} × ${item.quantity}${item.sale_type === 'weight' ? ' (ชั่งน้ำหนัก)' : ''} — ${item.total_price} THB`;
-  }).join('<br>');
+    const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
+    return `<div class="item-cell">${item.product_name_snapshot}${enName} ${qtyLabel}</div>`;
+  }).join('') + '</div>';
 
   const paymentBadges = [];
   if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
@@ -533,7 +535,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         </div>
         ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
       </div>
-      <div class="order-items">${itemsHtml || '(ไม่มีรายการ)'}</div>
+      <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
     <td class="center">${slipCell}</td>
