@@ -106,6 +106,7 @@
     <label>ค้นหา / Search
       <input type="text" id="filter-search" placeholder="name / tel / email" oninput="applyFilters()">
     </label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-nameonly" onchange="applyFilters()"> 氏名のみで検索 / Name only</label>
     <label>พื้นที่ / Area
       <select id="filter-area" onchange="applyFilters()">
         <option value="">All / ทั้งหมด</option>
@@ -113,6 +114,7 @@
     </label>
     <label class="checkbox-label"><input type="checkbox" id="filter-dormant" onchange="applyFilters()"> 休眠顧客のみ(1年以上購入無し) / Dormant only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-inactive" onchange="applyFilters()"> 無効のみ / Inactive only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-mismatch" onchange="applyFilters()"> ⚠️ 県とエリアが不一致のみ / Province/Area mismatch only</label>
     <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
   </div>
 
@@ -178,8 +180,7 @@ function showMain() {
   document.getElementById('main').style.display = 'block';
   document.getElementById('user-info').style.display = 'flex';
   document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
-  loadAreas();
-  loadCustomers();
+  loadAreas().then(loadCustomers);
 }
 
 (async function init() {
@@ -237,9 +238,11 @@ async function loadCustomers() {
 
 function clearFilters() {
   document.getElementById('filter-search').value = '';
+  document.getElementById('filter-nameonly').checked = false;
   document.getElementById('filter-area').value = '';
   document.getElementById('filter-dormant').checked = false;
   document.getElementById('filter-inactive').checked = false;
+  document.getElementById('filter-mismatch').checked = false;
   applyFilters();
 }
 
@@ -250,33 +253,63 @@ function isDormant(c) {
   return new Date(c.last_purchase_date) < oneYearAgo;
 }
 
+// 県(province)の文字列から推定されるエリア名を返す(該当キーワードが無ければnull)
+const AREA_KEYWORDS = [
+  { area: 'Sriracha', keywords: ['sriracha', 'si-racha', 'si racha', 'ศรีราชา'] },
+  { area: 'Pattaya', keywords: ['pattaya', 'พัทยา'] },
+  { area: 'Bangkok', keywords: ['bangkok', 'bkk', 'กรุงเทพ'] },
+];
+
+function suggestedAreaFromProvince(province) {
+  if (!province) return null;
+  const p = province.toLowerCase();
+  for (const entry of AREA_KEYWORDS) {
+    if (entry.keywords.some(k => p.includes(k))) return entry.area;
+  }
+  return null;
+}
+
+function isAreaMismatch(c) {
+  const suggested = suggestedAreaFromProvince(c.province);
+  if (!suggested) return false;
+  const actual = areaName(c.area_id);
+  return actual !== suggested;
+}
+
 let currentPage = 1;
 const PAGE_SIZE_DISPLAY = 100;
 let currentFiltered = [];
 
 function applyFilters() {
   const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  const nameOnly = document.getElementById('filter-nameonly').checked;
   const areaId = document.getElementById('filter-area').value;
   const dormantOnly = document.getElementById('filter-dormant').checked;
   const inactiveOnly = document.getElementById('filter-inactive').checked;
+  const mismatchOnly = document.getElementById('filter-mismatch').checked;
 
   let filtered = allCustomers.filter(c => {
     if (q) {
-      const hay = [c.family_name, c.first_name, c.family_name_kana, c.first_name_kana, c.tel1, c.tel2, c.email]
-        .filter(Boolean).join(' ').toLowerCase();
+      const fields = nameOnly
+        ? [c.family_name, c.first_name, c.family_name_kana, c.first_name_kana]
+        : [c.family_name, c.first_name, c.family_name_kana, c.first_name_kana, c.tel1, c.tel2, c.email];
+      const hay = fields.filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     if (areaId && c.area_id !== areaId) return false;
     if (dormantOnly && !isDormant(c)) return false;
     if (inactiveOnly && c.is_active !== false) return false;
+    if (mismatchOnly && !isAreaMismatch(c)) return false;
     return true;
   });
 
   const dormantCount = allCustomers.filter(isDormant).length;
+  const mismatchCount = allCustomers.filter(isAreaMismatch).length;
   const noteEl = document.getElementById('summary-note');
-  noteEl.className = dormantCount > 0 ? 'summary-note alert' : 'summary-note';
+  noteEl.className = (dormantCount > 0 || mismatchCount > 0) ? 'summary-note alert' : 'summary-note';
   noteEl.textContent = `全${allCustomers.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allCustomers.length}` +
-    (dormantCount > 0 ? ` — 休眠顧客(1年以上購入無し) ${dormantCount}件` : '');
+    (dormantCount > 0 ? ` — 休眠顧客(1年以上購入無し) ${dormantCount}件` : '') +
+    (mismatchCount > 0 ? ` — ⚠️ 県・エリア不一致 ${mismatchCount}件` : '');
 
   currentFiltered = filtered;
   currentPage = 1;
@@ -335,6 +368,7 @@ function renderCustomerRow(c) {
   const tags = [
     dormant ? '<span class="tag dormant">休眠 / Dormant</span>' : '',
     c.is_active === false ? '<span class="tag inactive">無効</span>' : '',
+    isAreaMismatch(c) ? `<span class="tag dormant" style="background:var(--red-accent);">⚠️ Area? (${c.province})</span>` : '',
   ].join('');
 
   tr.innerHTML = `
