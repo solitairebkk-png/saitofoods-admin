@@ -97,6 +97,7 @@
   .email-current { font-size: 13px; font-weight: 600; word-break: break-all; }
   .email-change-btn { font-size: 11px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--brown); background: transparent; color: var(--brown); cursor: pointer; font-family: inherit; white-space: nowrap; }
   #email-change-form { display: none; margin-top: 10px; }
+  #password-change-form { display: none; margin-top: 10px; }
 
   /* お気に入り */
   .fav-search-result { border: 1px solid var(--border); border-radius: 8px; max-height: 200px; overflow-y: auto; margin-top: 6px; display: none; background: var(--white); }
@@ -239,6 +240,28 @@
         </div>
         <button class="submit-btn" id="email-change-btn" onclick="submitEmailChange()">メールアドレスを変更する</button>
         <div class="form-hint">変更には確認メールが<b>新しいメールアドレスと現在のメールアドレスの両方</b>に届きます。<b>両方</b>のメール内のリンクをクリックしていただく必要があります(片方だけでは変更が完了しません)。</div>
+      </div>
+
+      <div class="email-row" style="margin-top:16px;">
+        <div class="email-current">パスワード / Password</div>
+        <button class="email-change-btn" onclick="togglePasswordChangeForm()">変更する</button>
+      </div>
+      <div id="password-change-form">
+        <div class="form-group">
+          <label>新しいパスワード / New Password</label>
+          <div class="password-field">
+            <input type="password" class="form-input" id="new-password-input" placeholder="6文字以上">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-password-input', this)">👁</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>新しいパスワード(確認) / Confirm</label>
+          <div class="password-field">
+            <input type="password" class="form-input" id="new-password-confirm-input">
+            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-password-confirm-input', this)">👁</button>
+          </div>
+        </div>
+        <button class="submit-btn" id="password-change-btn" onclick="submitPasswordChange()">パスワードを変更する</button>
       </div>
 
       <div class="form-group" style="margin-top:16px;">
@@ -590,6 +613,33 @@ async function submitEmailChange() {
   if (error) { showProfileMsg('変更に失敗しました: ' + error.message, true); return; }
   showProfileMsg('確認メールを2通お送りしました。① 新しいメールアドレス宛て ② 現在ご利用中のメールアドレス宛て — 両方のメール内のリンクをクリックしていただくと変更が完了します。片方だけでは変更されませんのでご注意ください。');
   document.getElementById('email-change-form').style.display = 'none';
+}
+
+// ---------------- パスワード変更 ----------------
+function togglePasswordChangeForm() {
+  const form = document.getElementById('password-change-form');
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+async function submitPasswordChange() {
+  const newPassword = document.getElementById('new-password-input').value;
+  const confirmPassword = document.getElementById('new-password-confirm-input').value;
+
+  if (newPassword.length < 6) { showProfileMsg('パスワードは6文字以上にしてください。', true); return; }
+  if (newPassword !== confirmPassword) { showProfileMsg('パスワードが一致しません。', true); return; }
+
+  const btn = document.getElementById('password-change-btn');
+  btn.disabled = true;
+
+  const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+  btn.disabled = false;
+
+  if (error) { showProfileMsg('変更に失敗しました: ' + error.message, true); return; }
+
+  showProfileMsg('パスワードを変更しました。');
+  document.getElementById('new-password-input').value = '';
+  document.getElementById('new-password-confirm-input').value = '';
+  document.getElementById('password-change-form').style.display = 'none';
 }
 
 // ---------------- お気に入り商品 ----------------

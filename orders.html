@@ -14,6 +14,7 @@
     --bg: #f6f5f2;
     --panel: #ffffff;
     --border: #dcdad4;
+    --table-border: #b9b5ac;
     --text: #23272f;
     --text-muted: #6b7280;
 
@@ -78,12 +79,12 @@
   .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
   .legend .box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
 
-  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--table-border); font-size: 13px; }
   thead th {
-    background: #e9e6df; color: var(--text); text-align: center; padding: 10px 8px; font-weight: 700; font-size: 12px; border: 1px solid var(--border);
+    background: #e9e6df; color: var(--text); text-align: center; padding: 10px 8px; font-weight: 700; font-size: 12px; border: 1px solid var(--table-border);
   }
   thead th .en { display: block; font-weight: 400; color: var(--text-muted); font-size: 10px; }
-  tbody td { padding: 10px 12px; vertical-align: top; border: 1px solid var(--border); }
+  tbody td { padding: 10px 12px; vertical-align: top; border: 1px solid var(--table-border); }
   tbody td.center { text-align: center; }
 
   /* 同じ配送日に複数オーダーが並んだ際、行の境目をはっきりさせるための太い区切り線 */
