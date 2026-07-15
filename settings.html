@@ -52,6 +52,10 @@
   .expiry-row { display: flex; align-items: center; gap: 10px; }
   .expiry-row input { width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
+  .shipping-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .shipping-row label { font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .shipping-row input { width: 100px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
+
   #save-msg { font-size: 13px; margin-top: 8px; }
   #save-msg.success { color: var(--green); }
   #save-msg.error { color: var(--red-accent); }
@@ -104,6 +108,24 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>配送料 / Shipping Fee</h2>
+    <div class="sub">小計がこの金額未満の配送注文(delivery)に配送料を加算します。注文作成時点の小計で一度確定し、量り売り重量確定後の再課金はしません。</div>
+    <div class="shipping-row">
+      <label>ค่าส่งฟรีเมื่อสั่งขั้นต่ำ / Free shipping at or above
+        <input type="number" id="shipping-threshold-input" min="0" step="1">
+        <span>THB</span>
+      </label>
+    </div>
+    <div class="shipping-row">
+      <label>ค่าจัดส่ง / Shipping fee amount
+        <input type="number" id="shipping-fee-input" min="0" step="1">
+        <span>THB</span>
+      </label>
+    </div>
+    <button class="btn" onclick="saveShippingSettings()">บันทึก / Save</button>
+  </div>
+
   <div id="save-msg"></div>
 </main>
 
@@ -144,6 +166,7 @@ function afterLogin() {
   document.getElementById('main').style.display = 'block';
   loadRules();
   loadExpiryDays();
+  loadShippingSettings();
 }
 
 (async function init() {
@@ -249,6 +272,38 @@ async function saveExpiryDays() {
     .from('settings').update({ value: String(val) }).eq('key', 'point_expiry_days');
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
+}
+
+// ---------------- 配送料設定 ----------------
+async function loadShippingSettings() {
+  const { data, error } = await supabaseClient
+    .from('settings').select('key, value')
+    .in('key', ['min_order_free_shipping', 'shipping_fee_amount']);
+
+  if (error) { showSaveMsg('โหลดไม่สำเร็จ / Load failed: ' + error.message, true); return; }
+
+  (data || []).forEach(row => {
+    if (row.key === 'min_order_free_shipping') document.getElementById('shipping-threshold-input').value = row.value;
+    if (row.key === 'shipping_fee_amount') document.getElementById('shipping-fee-input').value = row.value;
+  });
+}
+
+async function saveShippingSettings() {
+  const threshold = parseFloat(document.getElementById('shipping-threshold-input').value);
+  const fee = parseFloat(document.getElementById('shipping-fee-input').value);
+
+  if (isNaN(threshold) || threshold < 0 || isNaN(fee) || fee < 0) {
+    showSaveMsg('金額を正しく入力してください / Please enter valid amounts', true);
+    return;
+  }
+
+  const [{ error: err1 }, { error: err2 }] = await Promise.all([
+    supabaseClient.from('settings').update({ value: String(threshold) }).eq('key', 'min_order_free_shipping'),
+    supabaseClient.from('settings').update({ value: String(fee) }).eq('key', 'shipping_fee_amount'),
+  ]);
+
+  if (err1 || err2) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + (err1?.message || err2?.message), true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved (local_order.html・orders.html は次回読み込み時に反映されます)');
 }
 
 function showSaveMsg(msg, isError) {
