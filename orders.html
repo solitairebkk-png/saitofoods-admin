@@ -64,6 +64,14 @@
     background: var(--panel); border: 1px solid var(--border); border-radius: 0 4px 4px 4px;
     padding: 14px 16px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px;
   }
+  .scroll-fab-wrap { position: fixed; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 500; }
+  .scroll-fab {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border);
+    background: var(--navy); color: #fff; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25); opacity: 0.55; transition: opacity 0.15s;
+  }
+  .scroll-fab:hover { opacity: 1; }
   .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
   .filter-bar label .th { font-weight: 600; color: var(--text); font-size: 12px; }
   .filter-bar input, .filter-bar select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; }
@@ -247,6 +255,7 @@
       </select>
     </label>
     <button class="btn btn-search" onclick="loadOrders()">Search / ค้นหา</button>
+    <button class="btn" onclick="resetToToday()">Today / วันนี้</button>
   </div>
 
   <div class="legend">
@@ -367,11 +376,26 @@ function showMain() {
   document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
   document.getElementById('user-role').textContent = currentCustomer.role === 'admin' ? 'Admin / ผู้ดูแลระบบ' : 'Staff / พนักงาน';
 
-  const today = new Date();
-  const weekLater = new Date(today.getTime() + 7 * 86400000);
-  document.getElementById('filter-start').value = today.toISOString().slice(0, 10);
-  document.getElementById('filter-end').value = weekLater.toISOString().slice(0, 10);
+  // デフォルトは「今日以降」のみ表示(終了日は無制限)。
+  // 過去分を見たい場合は開始日を過去日付に変更して検索した時のみ表示する。
+  document.getElementById('filter-start').value = todayStr();
+  document.getElementById('filter-end').value = '';
   loadShippingSettings();
+  loadOrders();
+}
+
+function todayStr() {
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 3600000); // Asia/Bangkok (UTC+7)
+  return bkk.toISOString().slice(0, 10);
+}
+
+function resetToToday() {
+  document.getElementById('filter-start').value = todayStr();
+  document.getElementById('filter-end').value = '';
+  document.getElementById('filter-tel').value = '';
+  document.getElementById('filter-name').value = '';
+  document.getElementById('filter-type').value = '';
   loadOrders();
 }
 
@@ -896,6 +920,16 @@ async function deleteOrder(orderId) {
   if (error) { alert('ลบไม่สำเร็จ / Delete failed: ' + error.message); return; }
   loadOrders();
 }
+</script>
+
+<div class="scroll-fab-wrap">
+  <button class="scroll-fab" onclick="scrollToTop()" title="Top / บนสุด">▲</button>
+  <button class="scroll-fab" onclick="scrollToBottom()" title="Bottom / ล่างสุด">▼</button>
+</div>
+
+<script>
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 </script>
 
 </body>
