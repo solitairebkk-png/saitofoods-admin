@@ -238,7 +238,7 @@
           <input type="email" class="form-input" id="new-email-input" placeholder="new@example.com">
         </div>
         <button class="submit-btn" id="email-change-btn" onclick="submitEmailChange()">メールアドレスを変更する</button>
-        <div class="form-hint">変更後、新しいメールアドレス宛てに確認メールが届きます。確認が完了するまで現在のメールアドレスのままログインできます。</div>
+        <div class="form-hint">変更には確認メールが<b>新しいメールアドレスと現在のメールアドレスの両方</b>に届きます。<b>両方</b>のメール内のリンクをクリックしていただく必要があります(片方だけでは変更が完了しません)。</div>
       </div>
 
       <div class="form-group" style="margin-top:16px;">
@@ -588,7 +588,7 @@ async function submitEmailChange() {
   btn.disabled = false;
 
   if (error) { showProfileMsg('変更に失敗しました: ' + error.message, true); return; }
-  showProfileMsg('新しいメールアドレス宛てに確認メールをお送りしました。リンクを開くと変更が完了します。');
+  showProfileMsg('確認メールを2通お送りしました。① 新しいメールアドレス宛て ② 現在ご利用中のメールアドレス宛て — 両方のメール内のリンクをクリックしていただくと変更が完了します。片方だけでは変更されませんのでご注意ください。');
   document.getElementById('email-change-form').style.display = 'none';
 }
 
