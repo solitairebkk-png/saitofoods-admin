@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Sync | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; display: none; }
+
+  .filter-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .filter-bar input[type=text], .filter-bar select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 160px;
+  }
+  .filter-bar .checkbox-label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
+
+  .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+
+  table.stock { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.stock th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.stock td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.stock tr.zero-stock td { background: #fdeceb; }
+  table.stock tr.unpublished td { opacity: 0.55; }
+  table.stock input[type=number] { width: 80px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+  table.stock input[type=number]:disabled { background: #f0f0f0; color: var(--text-muted); }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
+  .tag.soon { background: var(--amber); color: white; }
+  .tag.unpub { background: #dcdcdc; color: #444; }
+  .tag.zero { background: var(--red-accent); color: white; }
+
+  .row-saved { animation: flash-save 0.6s ease; }
+  @keyframes flash-save { 0% { background: #dbeee0; } 100% { background: transparent; } }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+
+  .pagination { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 16px; font-size: 13px; }
+  .pagination button { padding: 6px 12px; }
+  .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Stock Sync <span class="th">ปรับสต็อกสินค้า</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="customer_control.html">👤 Customers</a>
+    <a href="customer_history.html">🕘 History</a>
+    <a href="product_control.html">📦 Products</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="filter-bar">
+    <label>ค้นหา / Search
+      <input type="text" id="filter-search" placeholder="name_ja / name_en / name_th" oninput="applyFilters()">
+    </label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-zero" onchange="applyFilters()"> 在庫0のみ / Out of stock only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-soon" onchange="applyFilters()"> 近日入荷のみ / Coming soon only</label>
+    <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
+  </div>
+
+  <div class="summary-note" id="summary-note"></div>
+
+  <table class="stock">
+    <thead>
+      <tr>
+        <th>商品名 / Product</th>
+        <th>在庫数 / Stock Qty</th>
+        <th>無制限 / Unlimited</th>
+        <th>公開 / Published</th>
+        <th>近日入荷 / Coming Soon</th>
+      </tr>
+    </thead>
+    <tbody id="stock-tbody">
+      <tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="pagination" id="pagination"></div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentStaff = null;
+let allProducts = [];
+let currentFiltered = [];
+let currentPage = 1;
+const PAGE_SIZE_DISPLAY = 100;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: staffRow, error: staffErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (staffErr || !staffRow || !['staff', 'admin'].includes(staffRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentStaff = staffRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentStaff.family_name + ' ' + currentStaff.first_name;
+  loadProducts();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: staffRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (staffRow && ['staff', 'admin'].includes(staffRow.role)) { currentStaff = staffRow; showMain(); }
+  }
+})();
+
+async function loadProducts() {
+  const tbody = document.getElementById('stock-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('products')
+    .select('id, name_ja, name_en, name_th, sale_type, stock_qty, is_unlimited_stock, is_published, is_coming_soon')
+    .order('name_ja');
+
+  if (error) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error: ' + error.message + '</td></tr>';
+    return;
+  }
+
+  allProducts = data || [];
+  applyFilters();
+}
+
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-zero').checked = false;
+  document.getElementById('filter-unpublished').checked = false;
+  document.getElementById('filter-soon').checked = false;
+  applyFilters();
+}
+
+function isZeroStock(p) {
+  return !p.is_unlimited_stock && (!p.stock_qty || p.stock_qty <= 0);
+}
+
+function applyFilters() {
+  const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  const zeroOnly = document.getElementById('filter-zero').checked;
+  const unpublishedOnly = document.getElementById('filter-unpublished').checked;
+  const soonOnly = document.getElementById('filter-soon').checked;
+
+  const filtered = allProducts.filter(p => {
+    if (q) {
+      const hay = [p.name_ja, p.name_en, p.name_th].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (zeroOnly && !isZeroStock(p)) return false;
+    if (unpublishedOnly && p.is_published === false) return false;
+    if (soonOnly && !p.is_coming_soon) return false;
+    return true;
+  });
+
+  const zeroCount = allProducts.filter(isZeroStock).length;
+  document.getElementById('summary-note').textContent =
+    `全${allProducts.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allProducts.length}` +
+    (zeroCount > 0 ? ` — 在庫0 ${zeroCount}件` : '');
+
+  currentFiltered = filtered;
+  currentPage = 1;
+  renderPage();
+}
+
+function renderPage() {
+  const totalPages = Math.max(1, Math.ceil(currentFiltered.length / PAGE_SIZE_DISPLAY));
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * PAGE_SIZE_DISPLAY;
+  const pageItems = currentFiltered.slice(start, start + PAGE_SIZE_DISPLAY);
+  renderTable(pageItems);
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const el = document.getElementById('pagination');
+  if (currentFiltered.length === 0) { el.innerHTML = ''; return; }
+  const start = (currentPage - 1) * PAGE_SIZE_DISPLAY + 1;
+  const end = Math.min(currentPage * PAGE_SIZE_DISPLAY, currentFiltered.length);
+  el.innerHTML = `
+    <button class="btn ghost small" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled' : ''}>« First</button>
+    <button class="btn ghost small" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>
+    <span>${start}-${end} / ${currentFiltered.length} (Page ${currentPage}/${totalPages})</span>
+    <button class="btn ghost small" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>
+    <button class="btn ghost small" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>Last »</button>
+  `;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderPage();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderTable(products) {
+  const tbody = document.getElementById('stock-tbody');
+  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  products.forEach(p => tbody.appendChild(renderRow(p)));
+}
+
+function renderRow(p) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = p.id;
+  if (isZeroStock(p)) tr.classList.add('zero-stock');
+  if (p.is_published === false) tr.classList.add('unpublished');
+
+  const tags = [
+    isZeroStock(p) ? '<span class="tag zero">在庫0</span>' : '',
+    p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
+    p.is_coming_soon ? '<span class="tag soon">近日入荷</span>' : '',
+  ].join('');
+
+  tr.innerHTML = `
+    <td>${p.name_ja || '(no name)'}${tags}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span></td>
+    <td>
+      <input type="number" class="stock-input" min="0" step="1" value="${p.stock_qty ?? 0}"
+        ${p.is_unlimited_stock ? 'disabled' : ''}
+        onchange="updateField('${p.id}', 'stock_qty', parseInt(this.value,10) || 0)">
+    </td>
+    <td><input type="checkbox" class="unlimited-input" ${p.is_unlimited_stock ? 'checked' : ''}
+      onchange="handleUnlimitedToggle('${p.id}', this)"></td>
+    <td><input type="checkbox" class="published-input" ${p.is_published !== false ? 'checked' : ''}
+      onchange="updateField('${p.id}', 'is_published', this.checked)"></td>
+    <td><input type="checkbox" class="soon-input" ${p.is_coming_soon ? 'checked' : ''}
+      onchange="updateField('${p.id}', 'is_coming_soon', this.checked)"></td>
+  `;
+  return tr;
+}
+
+function handleUnlimitedToggle(productId, checkbox) {
+  const tr = checkbox.closest('tr');
+  tr.querySelector('.stock-input').disabled = checkbox.checked;
+  updateField(productId, 'is_unlimited_stock', checkbox.checked);
+}
+
+async function updateField(productId, field, value) {
+  const tr = document.querySelector(`tr[data-id="${productId}"]`);
+  const { error } = await supabaseClient.from('products').update({ [field]: value }).eq('id', productId);
+
+  if (error) {
+    alert('保存に失敗しました / Save failed: ' + error.message);
+    return;
+  }
+
+  // ローカルデータも更新して再フィルタ時に反映されるようにする
+  const p = allProducts.find(x => x.id === productId);
+  if (p) p[field] = value;
+
+  if (tr) {
+    tr.classList.remove('row-saved');
+    void tr.offsetWidth; // reflow to restart animation
+    tr.classList.add('row-saved');
+  }
+}
+</script>
+
+</body>
+</html>

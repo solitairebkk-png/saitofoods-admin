@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer History | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header {
+    background: var(--navy); color: white; padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+
+  main { padding: 24px; max-width: 1100px; margin: 0 auto; display: none; }
+
+  .search-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .search-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .search-bar input[type=text] { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 260px; }
+
+  .search-results { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+  .search-results .result-row { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+  .search-results .result-row:last-child { border-bottom: none; }
+  .search-results .result-row:hover { background: var(--bg); }
+  .search-results .result-row .muted { color: var(--text-muted); font-size: 12px; }
+
+  .profile-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 18px 20px; margin-bottom: 20px; }
+  .profile-card .name { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .profile-card .meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .profile-card .stat { display: flex; gap: 24px; margin-top: 12px; flex-wrap: wrap; }
+  .profile-card .stat div { font-size: 12px; color: var(--text-muted); }
+  .profile-card .stat .val { font-size: 18px; font-weight: 700; color: var(--navy); display: block; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+  .tag.area-bangkok { background: #d9e8f5; color: #1c3557; }
+  .tag.area-sriracha { background: #dbeee0; color: #1a5c33; }
+  .tag.area-pattaya { background: #f5e0d9; color: #8a3d1c; }
+  .tag.area-other { background: #ece3f5; color: #4a2d7a; }
+
+  .order-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .order-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .order-date { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .order-time { font-size: 12px; color: var(--text-muted); }
+  .status-badge { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+  .status-cancelled { background: #dcdcdc; color: #444; }
+  .status-completed { background: var(--green); color: white; }
+  .status-pending { background: #fff2a8; color: #6b5a00; }
+  .order-items-list { font-size: 13px; color: var(--text); line-height: 1.6; margin-bottom: 8px; }
+  .order-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+  .order-total { font-size: 15px; font-weight: 700; color: var(--navy); }
+  .badge-qr { background: #d9e8f5; color: #1c3557; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .badge-cash { background: #f0e8d0; color: #6b5a00; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Customer History <span class="th">ประวัติการสั่งซื้อลูกค้า</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="customer_control.html">👤 Customers</a>
+    <a href="product_control.html">📦 Products</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="search-bar">
+    <label>顧客検索 / Search Customer
+      <input type="text" id="search-input" placeholder="name / tel / email" oninput="searchCustomers()">
+    </label>
+  </div>
+
+  <div class="search-results" id="search-results" style="display:none;"></div>
+
+  <div id="profile-section" style="display:none;">
+    <div class="profile-card" id="profile-card"></div>
+    <div id="order-list"></div>
+  </div>
+
+  <div class="empty-state" id="initial-hint">顧客名・電話番号・メールアドレスで検索してください / Search by name, phone, or email</div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentStaff = null;
+let allAreas = [];
+let searchDebounce = null;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: staffRow, error: staffErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (staffErr || !staffRow || !['staff', 'admin'].includes(staffRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentStaff = staffRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentStaff.family_name + ' ' + currentStaff.first_name;
+  loadAreas();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: staffRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (staffRow && ['staff', 'admin'].includes(staffRow.role)) { currentStaff = staffRow; showMain(); }
+  }
+})();
+
+async function loadAreas() {
+  const { data } = await supabaseClient.from('areas').select('id, name');
+  allAreas = data || [];
+}
+
+function areaName(areaId) { return allAreas.find(a => a.id === areaId)?.name || '-'; }
+function areaBadgeClass(areaId) {
+  const name = areaName(areaId);
+  if (name === 'Bangkok') return 'area-bangkok';
+  if (name === 'Sriracha') return 'area-sriracha';
+  if (name === 'Pattaya') return 'area-pattaya';
+  if (name === 'Other Provinces') return 'area-other';
+  return '';
+}
+
+// ---------------- 顧客検索 ----------------
+function searchCustomers() {
+  clearTimeout(searchDebounce);
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) {
+    document.getElementById('search-results').style.display = 'none';
+    return;
+  }
+  searchDebounce = setTimeout(() => runCustomerSearch(q), 300);
+}
+
+async function runCustomerSearch(q) {
+  const resultsEl = document.getElementById('search-results');
+  resultsEl.style.display = 'block';
+  resultsEl.innerHTML = '<div class="loading">กำลังค้นหา... / Searching...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('customers')
+    .select('id, family_name, first_name, tel1, email, area_id, point_balance')
+    .eq('role', 'customer')
+    .or(`family_name.ilike.%${q}%,first_name.ilike.%${q}%,tel1.ilike.%${q}%,email.ilike.%${q}%`)
+    .limit(20);
+
+  if (error) { resultsEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
+
+  if (!data || data.length === 0) {
+    resultsEl.innerHTML = '<div class="empty-state">見つかりませんでした / No customers found</div>';
+    return;
+  }
+
+  resultsEl.innerHTML = '';
+  data.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.onclick = () => selectCustomer(c.id);
+    row.innerHTML = `
+      <span>${c.family_name || ''} ${c.first_name || ''} <span class="muted">${c.tel1 || ''}</span></span>
+      <span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span>
+    `;
+    resultsEl.appendChild(row);
+  });
+}
+
+// ---------------- 選択した顧客の履歴表示 ----------------
+async function selectCustomer(customerId) {
+  document.getElementById('search-results').style.display = 'none';
+  document.getElementById('initial-hint').style.display = 'none';
+  document.getElementById('profile-section').style.display = 'block';
+
+  const profileCard = document.getElementById('profile-card');
+  const orderListEl = document.getElementById('order-list');
+  profileCard.innerHTML = '<div class="loading">กำลังโหลด... / Loading...</div>';
+  orderListEl.innerHTML = '';
+
+  const [{ data: customer, error: custErr }, { data: orders, error: ordErr }] = await Promise.all([
+    supabaseClient.from('customers').select('*').eq('id', customerId).single(),
+    supabaseClient
+      .from('orders')
+      .select(`
+        id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
+        is_completed, is_cancelled, has_weight_items, is_weight_confirmed, total_amount, created_at,
+        order_items ( product_name_snapshot, quantity, sale_type, total_price )
+      `)
+      .eq('customer_id', customerId)
+      .order('delivery_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(200),
+  ]);
+
+  if (custErr || !customer) { profileCard.innerHTML = '<div class="empty-state">Error loading customer</div>'; return; }
+
+  renderProfileCard(customer, orders || []);
+
+  if (ordErr) { orderListEl.innerHTML = '<div class="empty-state">Error: ' + ordErr.message + '</div>'; return; }
+  if (!orders || orders.length === 0) { orderListEl.innerHTML = '<div class="empty-state">注文履歴がありません / No order history</div>'; return; }
+
+  orders.forEach(o => orderListEl.appendChild(renderOrderCard(o)));
+}
+
+function renderProfileCard(c, orders) {
+  const validOrders = orders.filter(o => !o.is_cancelled);
+  const totalSpent = validOrders.reduce((s, o) => s + (Number(o.total_amount) || 0), 0);
+  const orderCount = validOrders.length;
+
+  document.getElementById('profile-card').innerHTML = `
+    <div class="name">${c.family_name || ''} ${c.first_name || ''}</div>
+    <div class="meta">
+      <span>📞 ${c.tel1 || '-'}${c.tel2 ? ' / ' + c.tel2 : ''}</span>
+      <span>✉️ ${c.email || '-'}</span>
+      <span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span>
+      <span>${c.province || ''} ${c.address1 || ''} ${c.address2 || ''}</span>
+    </div>
+    <div class="stat">
+      <div><span class="val">${orderCount}</span>注文回数 / Orders</div>
+      <div><span class="val">${totalSpent.toLocaleString()}</span>累計購入額 (THB) / Total Spent</div>
+      <div><span class="val">${c.point_balance ?? 0}</span>保有ポイント / Points</div>
+      <div><span class="val">${c.last_purchase_date || '-'}</span>最終購入日 / Last Purchase</div>
+    </div>
+  `;
+}
+
+function renderOrderCard(order) {
+  const div = document.createElement('div');
+  div.className = 'order-card';
+
+  let statusHtml = '';
+  if (order.is_cancelled) {
+    statusHtml = '<span class="status-badge status-cancelled">キャンセル済み / Cancelled</span>';
+  } else if (order.is_completed) {
+    statusHtml = '<span class="status-badge status-completed">お届け完了 / Complete</span>';
+  } else if (order.has_weight_items && !order.is_weight_confirmed) {
+    statusHtml = '<span class="status-badge status-pending">量り売り未確定 / Weight pending</span>';
+  } else {
+    statusHtml = '<span class="status-badge status-pending">準備中 / Preparing</span>';
+  }
+
+  const itemsHtml = (order.order_items || []).map(item => {
+    const qty = item.sale_type === 'weight' ? `${item.quantity}` : `${item.quantity}点`;
+    return `${item.product_name_snapshot} × ${qty} — ${item.total_price} THB`;
+  }).join('<br>');
+
+  const paymentBadge = order.payment_method === 'qr'
+    ? `<span class="badge-qr">${order.payment_status === 'paid' ? 'QR振込み(確認済)' : 'QR振込み(未確認)'}</span>`
+    : '<span class="badge-cash">現金 / Cash</span>';
+
+  const dateLabel = order.delivery_date || (order.created_at ? order.created_at.slice(0, 10) + ' (Walk-in)' : '-');
+
+  div.innerHTML = `
+    <div class="order-card-header">
+      <div>
+        <div class="order-date">${dateLabel}</div>
+        <div class="order-time">${order.delivery_time_slot || (order.order_type === 'walk_in' ? 'Walk-in' : '')}</div>
+      </div>
+      ${statusHtml}
+    </div>
+    <div class="order-items-list">${itemsHtml || '(商品情報なし)'}</div>
+    <div class="order-footer">
+      ${paymentBadge}
+      <span class="order-total">${order.total_amount || 0} THB</span>
+    </div>
+  `;
+  return div;
+}
+</script>
+
+</body>
+</html>
