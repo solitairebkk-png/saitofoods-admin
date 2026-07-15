@@ -14,13 +14,11 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
-  header {
-    background: var(--navy); color: white; padding: 12px 24px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
   header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
   header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
-  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
   header a { color: #cdd8e6; text-decoration: none; }
   header a:hover { color: white; }
 
@@ -79,13 +77,15 @@
 
 <header>
   <h1>Product Control <span class="th">จัดการสินค้า</span></h1>
-  <div class="user-info" id="user-info" style="display:none;">
+  <div class="nav-links" id="nav-links" style="display:none;">
     <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
     <a href="customer_control.html">👤 Customers</a>
     <a href="customer_history.html">🕘 History</a>
     <a href="stock_sync.html">🔄 Stock Sync</a>
     <a href="sales_summary.html">📊 Sales Summary</a>
     <a href="settings.html">⚙️ Settings</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
     <span id="user-email"></span>
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
   </div>
@@ -183,6 +183,7 @@ async function logout() { await supabaseClient.auth.signOut(); location.reload()
 function showMain() {
   document.getElementById('login-panel').style.display = 'none';
   document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
   document.getElementById('user-info').style.display = 'flex';
   document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
   loadCategories();
