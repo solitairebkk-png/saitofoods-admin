@@ -3,344 +3,144 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Order | Saito Foods</title>
+<title>Product Control | Saito Foods</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
-    --navy: #1c3557;
-    --navy-light: #2d4d7a;
-    --red-accent: #d94f3d;
-    --bg: #f6f5f2;
-    --panel: #ffffff;
-    --border: #dcdad4;
-    --text: #23272f;
-    --text-muted: #6b7280;
-    --green: #2c6b45;
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Inter", "Noto Sans Thai", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-  }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
   header {
-    background: var(--navy); color: white; padding: 14px 24px;
+    background: var(--navy); color: white; padding: 12px 24px;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   }
-  header h1 { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.4; }
-  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 13px; display: block; }
-  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; margin-left: 16px; }
-  header nav a:hover { color: white; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .user-info { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
 
-  #login-panel {
-    max-width: 380px; margin: 80px auto; background: var(--panel);
-    border: 1px solid var(--border); border-radius: 8px; padding: 32px;
-  }
-  #login-panel h2 { margin-top: 0; font-size: 16px; line-height: 1.5; }
-  #login-panel h2 .th { display: block; font-weight: 700; }
-  #login-panel h2 .en { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); }
-  #login-panel input {
-    width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border);
-    border-radius: 6px; font-size: 14px; font-family: inherit;
-  }
-  .btn {
-    background: var(--navy); color: white; border: none; padding: 10px 16px; border-radius: 6px;
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
-  .btn:hover { background: var(--navy-light); }
-  .btn.secondary { background: white; color: var(--navy); border: 1px solid var(--navy); }
-  .btn.secondary:hover { background: #eef2f7; }
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
   #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
 
-  main { padding: 20px 24px 80px; display: none; max-width: 900px; margin: 0 auto; }
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+  .btn.save { background: var(--green); }
+  .btn.warn { background: var(--red-accent); }
 
-  .card {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
-    padding: 20px; margin-bottom: 16px;
-  }
-  .card h2 { font-size: 14px; margin: 0 0 14px; color: var(--navy); }
-  .card h2 .th { display: block; }
-  .card h2 .en { display: block; font-size: 11px; font-weight: 400; color: var(--text-muted); }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; display: none; }
 
-  .field { margin-bottom: 12px; }
-  .field label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-  .field label .th { font-weight: 600; color: var(--text); display: block; font-size: 12px; }
-  .field input, .field select {
-    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
-    font-size: 14px; font-family: inherit;
+  .filter-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .filter-bar input[type=text], .filter-bar select {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 160px;
   }
-  .row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .row .field { flex: 1; min-width: 160px; }
+  .filter-bar .checkbox-label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
 
-  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-  .toggle-row input[type=checkbox] { width: 18px; height: 18px; }
-  .toggle-row label { font-size: 13px; font-weight: 600; }
+  .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .summary-note.alert { color: var(--red-accent); font-weight: 600; }
 
-  #customer-result { margin-top: 10px; padding: 12px; border-radius: 6px; background: #f0f4f8; font-size: 13px; display: none; }
-  #customer-not-found { margin-top: 10px; padding: 12px; border-radius: 6px; background: #fdf3d0; font-size: 13px; display: none; }
-  #customer-results-list { margin-top: 10px; }
-  .customer-result-item {
-    padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px;
-    cursor: pointer; font-size: 13px; background: white;
-  }
-  .customer-result-item:hover { border-color: var(--navy); background: #eef2f7; }
-  .customer-result-item.selected { border-color: var(--navy); background: #eef2f7; font-weight: 600; }
+  table.products { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.products th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.products td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.products tr.no-price td { background: #fdf3d0; }
+  table.products tr.unpublished td { opacity: 0.5; }
 
-  .product-search-result {
-    border: 1px solid var(--border); border-radius: 6px; max-height: 220px; overflow-y: auto; margin-top: 6px; display: none;
-  }
-  .product-search-result div {
-    padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border);
-  }
-  .product-search-result div:hover { background: #eef2f7; }
-  .product-search-result div:last-child { border-bottom: none; }
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
+  .tag.special { background: #e6dcf5; color: #5a3d8a; }
+  .tag.weight { background: #d9e8f5; color: #1c3557; }
+  .tag.noprice { background: var(--red-accent); color: white; }
+  .tag.unpub { background: #dcdcdc; color: #444; }
 
-  table.cart { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-  table.cart th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--border); }
-  table.cart td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  table.cart input[type=number] { width: 70px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; }
-  table.cart .remove-btn { background: none; border: none; color: var(--red-accent); cursor: pointer; font-size: 16px; }
-  .weight-tag { font-size: 10px; background: #d9e8f5; color: #2c5279; padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
+  .edit-row td { background: #fafafa; padding: 16px; }
+  .edit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .edit-grid label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .edit-grid input, .edit-grid select { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+  .edit-grid .checkbox-field { flex-direction: row; align-items: center; gap: 6px; }
+  .cat-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .cat-checks label { font-size: 12px; display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; }
 
-  .category-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 8px; }
-  .category-tabs button {
-    padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border); background: white;
-    font-size: 11px; cursor: pointer; font-family: inherit;
-  }
-  .category-tabs button.active { background: var(--navy); color: white; border-color: var(--navy); }
-
-  .product-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;
-    max-height: 320px; overflow-y: auto; padding: 4px;
-  }
-  .product-card {
-    border: 1px solid var(--border); border-radius: 6px; padding: 10px; cursor: pointer; background: white; font-size: 12px;
-  }
-  .product-card:hover { border-color: var(--navy); background: #f4f7fa; }
-  .product-card .p-name { font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
-  .product-card .p-price { color: var(--navy); font-weight: 700; }
-  .product-card .p-price.weight { color: #2c5279; }
-  .product-card .p-price.no-price { color: #9c3a2c; font-size: 11px; }
-
-  .total-row { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-
-  .payment-options { display: flex; gap: 10px; }
-  .payment-options label {
-    flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 10px; text-align: center;
-    cursor: pointer; font-size: 13px; font-weight: 600;
-  }
-  .payment-options input { display: none; }
-  .payment-options input:checked + span { color: var(--navy); }
-  .payment-options label:has(input:checked) { border-color: var(--navy); background: #eef2f7; }
-
-  #submit-msg { margin-top: 10px; font-size: 13px; }
-  #submit-msg.success { color: var(--green); }
-  #submit-msg.error { color: var(--red-accent); }
-
-  #slip-link-card {
-    margin-top: 12px; padding: 14px; border-radius: 6px; background: #eef2f7;
-    border: 1px solid #c9d6e5; font-size: 13px; display: none;
-  }
-  #slip-link-card.pending { background: #fdf3d0; border-color: #e8d68a; }
-  #slip-link-card .slip-link-title { font-weight: 700; margin-bottom: 6px; color: var(--navy); }
-  #slip-link-card .slip-link-row { display: flex; gap: 8px; margin-top: 8px; }
-  #slip-link-input {
-    flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
-    font-size: 12px; font-family: inherit; background: white; color: var(--text);
-  }
-  #slip-copy-btn { flex: 0 0 auto; padding: 6px 14px; font-size: 12px; }
-  #order-qr-wrap {
-    display: none; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px;
-    padding: 14px; background: white; border: 1px solid var(--border); border-radius: 8px;
-  }
-  #order-qr-code { width: 190px; height: 190px; display: flex; align-items: center; justify-content: center; }
-  #order-qr-wrap .qr-caption { font-size: 11px; color: var(--text-muted); text-align: center; }
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  #save-msg { font-size: 13px; margin-top: 8px; }
+  #save-msg.success { color: var(--green); }
+  #save-msg.error { color: var(--red-accent); }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>New Order <span class="th">สร้างคำสั่งซื้อใหม่</span></h1>
-  <nav>
+  <h1>Product Control <span class="th">จัดการสินค้า</span></h1>
+  <div class="user-info" id="user-info" style="display:none;">
     <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+    <span id="user-email"></span>
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
-  </nav>
+  </div>
 </header>
 
 <div id="login-panel">
-  <h2><span class="th">เข้าสู่ระบบพนักงาน</span><span class="en">Staff Login</span></h2>
-  <input type="email" id="login-email" placeholder="Email / อีเมล" onkeydown="if(event.key==='Enter')login()">
-  <input type="password" id="login-password" placeholder="Password / รหัสผ่าน" onkeydown="if(event.key==='Enter')login()">
-  <button class="btn" onclick="login()">Login / เข้าสู่ระบบ</button>
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
   <div id="login-error"></div>
 </div>
 
 <main id="main">
 
-  <!-- Walk-in toggle -->
-  <div class="card">
-    <div class="toggle-row">
-      <input type="checkbox" id="is-walkin" onchange="toggleWalkin()">
-      <label for="is-walkin">ลูกค้าหน้าร้าน (Walk-in)</label>
-    </div>
-
-    <!-- Delivery customer search -->
-    <div id="delivery-customer-block">
-      <h2><span class="th">ค้นหาลูกค้า</span><span class="en">Find Customer</span></h2>
-      <div class="row">
-        <div class="field">
-          <label><span class="th">เบอร์โทร / ชื่อ / ที่อยู่</span>Phone / Name / Address</label>
-          <input type="text" id="search-query" placeholder="0812345678 หรือ ชื่อ หรือ ที่อยู่ / phone, name, or address" onkeydown="if(event.key==='Enter')searchCustomer()">
-        </div>
-        <div class="field" style="flex:0 0 auto; align-self:flex-end;">
-          <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
-        </div>
-      </div>
-      <div id="customer-results-list"></div>
-      <div id="customer-result"></div>
-      <div id="customer-not-found">
-        <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
-        <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
-        <div class="row" style="margin-top:10px;">
-          <div class="field"><label><span class="th">เบอร์โทร</span>Phone</label><input type="text" id="new-tel"></div>
-          <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
-          <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
-        </div>
-        <div class="row">
-          <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Walk-in attributes -->
-    <div id="walkin-block" style="display:none;">
-      <h2><span class="th">ข้อมูลลูกค้าโดยประมาณ</span><span class="en">Estimated Customer Info</span></h2>
-      <div class="row">
-        <div class="field">
-          <label><span class="th">สัญชาติ (โดยประมาณ)</span>Nationality (apparent)</label>
-          <select id="walkin-nationality">
-            <option value="日本人">Japanese / ญี่ปุ่น</option>
-            <option value="タイ人">Thai / ไทย</option>
-            <option value="欧米系">Western / ตะวันตก</option>
-            <option value="その他アジア系">Other Asian / เอเชียอื่นๆ</option>
-            <option value="その他">Other / อื่นๆ</option>
-          </select>
-        </div>
-        <div class="field">
-          <label><span class="th">ช่วงอายุ</span>Age bracket</label>
-          <select id="walkin-age">
-            <option value="〜19">〜19</option>
-            <option value="20代">20s</option>
-            <option value="30代">30s</option>
-            <option value="40代">40s</option>
-            <option value="50代">50s</option>
-            <option value="60代〜">60+</option>
-          </select>
-        </div>
-        <div class="field">
-          <label><span class="th">เพศ</span>Gender</label>
-          <select id="walkin-gender">
-            <option value="男性">Male / ชาย</option>
-            <option value="女性">Female / หญิง</option>
-            <option value="不明">Unknown / ไม่ระบุ</option>
-          </select>
-        </div>
-      </div>
-    </div>
+  <div class="filter-bar">
+    <label>ค้นหา / Search
+      <input type="text" id="filter-search" placeholder="name_ja / name_en / name_th" oninput="applyFilters()">
+    </label>
+    <label>หมวดหมู่ / Category
+      <select id="filter-category" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+      </select>
+    </label>
+    <label>ประเภท / Type
+      <select id="filter-saletype" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+        <option value="package">Package</option>
+        <option value="weight">Weight</option>
+      </select>
+    </label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-noprice" onchange="applyFilters()"> 価格未入力のみ / No price only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
+    <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
+    <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
   </div>
 
-  <!-- Delivery date/time (hidden for walk-in) -->
-  <div class="card" id="delivery-date-card">
-    <h2><span class="th">วันเวลาจัดส่ง</span><span class="en">Delivery Date/Time</span></h2>
-    <div class="row">
-      <div class="field">
-        <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
-        <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
-        <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
-      </div>
-      <div class="field">
-        <label><span class="th">ช่วงเวลา</span>Time slot</label>
-        <select id="delivery-time-slot"></select>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-      * วันอาทิตย์ปิดทำการ / Closed Sundays &nbsp;|&nbsp; วันเสาร์จัดส่งเฉพาะช่วงเช้า / Saturdays: morning only
-    </div>
-  </div>
+  <div class="summary-note" id="summary-note"></div>
 
-  <!-- Products -->
-  <div class="card">
-    <h2><span class="th">สินค้า</span><span class="en">Products</span></h2>
-    <div class="field">
-      <label><span class="th">ค้นหาสินค้า</span>Search product</label>
-      <input type="text" id="product-search" placeholder="พิมพ์ชื่อสินค้า / Type product name" oninput="searchProducts()">
-      <div class="product-search-result" id="product-search-result"></div>
-    </div>
+  <table class="products">
+    <thead>
+      <tr>
+        <th>商品名 / Name</th>
+        <th>カテゴリ / Category</th>
+        <th>Group</th>
+        <th>Type</th>
+        <th>価格 / Price</th>
+        <th>在庫 / Stock</th>
+        <th>公開 / Published</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="products-tbody">
+      <tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
 
-    <div class="category-tabs" id="category-tabs"></div>
-    <div class="product-grid" id="product-grid"></div>
-
-    <table class="cart">
-      <thead>
-        <tr>
-          <th>สินค้า / Product</th>
-          <th style="width:80px;">จำนวน / Qty</th>
-          <th style="width:90px;">ราคา / Price</th>
-          <th style="width:90px;">รวม / Total</th>
-          <th style="width:30px;"></th>
-        </tr>
-      </thead>
-      <tbody id="cart-tbody"></tbody>
-    </table>
-
-    <div class="total-row">
-      <span>ยอดรวม / Subtotal</span>
-      <span id="subtotal-display">0 THB</span>
-    </div>
-    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-      * สินค้าชั่งน้ำหนักจะยืนยันราคาภายหลังในหน้ารายการคำสั่งซื้อ<br>
-      * Weight-based items will be finalized later in the Order List screen.
-    </div>
-  </div>
-
-  <!-- Payment -->
-  <div class="card">
-    <h2><span class="th">วิธีชำระเงิน</span><span class="en">Payment Method</span></h2>
-    <div class="payment-options">
-      <label><input type="radio" name="payment" value="cash" checked><span>เงินสด / Cash</span></label>
-      <label><input type="radio" name="payment" value="qr"><span>โอน QR / QR Transfer</span></label>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="field">
-      <label><span class="th">หมายเหตุ</span>Comment</label>
-      <input type="text" id="order-comment">
-    </div>
-    <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
-    <div id="submit-msg"></div>
-
-    <!-- Slip upload link + PromptPay QR (shown after a QR-payment order is saved) -->
-    <div id="slip-link-card">
-      <div class="slip-link-title" id="slip-link-title"></div>
-      <div id="slip-link-note" style="color:var(--text-muted);"></div>
-
-
-      <div id="order-qr-wrap">
-        <div id="order-qr-code"></div>
-        <div class="qr-caption">PromptPay QR — <span id="order-qr-amount"></span> THB</div>
-      </div>
-
-      <div class="slip-link-row" id="slip-link-row" style="display:none;">
-        <input type="text" id="slip-link-input" readonly onclick="this.select()">
-        <button class="btn secondary" id="slip-copy-btn" onclick="copySlipLink()">คัดลอกลิงก์ / Copy Link</button>
-      </div>
-    </div>
-  </div>
-
+  <div id="save-msg"></div>
 </main>
 
 <script>
@@ -348,34 +148,11 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// スリップアップロードアプリのベースURL(既存資産 slip.saitofoods.shop を流用)
-const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
+let currentCustomer = null;
+let allProducts = [];
+let allCategories = [];
+let productCategoryMap = {}; // product_id -> [category_id, ...]
 
-let currentCustomer = null;   // ログイン中スタッフ
-let selectedCustomer = null;  // 検索で見つかった配送先顧客
-let cart = [];                // { product_id, name, sale_type, price, unit_price, unit_label, quantity }
-
-// 配送料設定(settingsテーブルから取得。600baht未満の配送注文に配送料を加算する)
-let shippingFreeThreshold = 600;
-let shippingFeeAmount = 100;
-
-async function loadShippingSettings() {
-  const { data, error } = await supabaseClient
-    .from('settings')
-    .select('key, value')
-    .in('key', ['min_order_free_shipping', 'shipping_fee_amount']);
-  if (error || !data) return;
-  data.forEach(row => {
-    if (row.key === 'min_order_free_shipping') shippingFreeThreshold = parseFloat(row.value) || 600;
-    if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
-  });
-}
-
-// 編集モード(orders.html の Edit ボタンから ?edit=<注文ID> で遷移してきた場合)
-const editOrderId = new URLSearchParams(location.search).get('edit');
-let editingOrderId = null;
-
-// ---------------- Auth ----------------
 async function login() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -383,28 +160,29 @@ async function login() {
   errEl.textContent = '';
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) { errEl.textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message; return; }
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
 
   const { data: customerRow, error: custErr } = await supabaseClient
     .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
 
   if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
-    errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบ / This account has no access.';
+    errEl.textContent = 'Account not found or not authorized.';
     await supabaseClient.auth.signOut();
     return;
   }
   currentCustomer = customerRow;
-  document.getElementById('login-panel').style.display = 'none';
-  document.getElementById('main').style.display = 'block';
-  initDeliveryDatePicker();
-  loadCategories();
-  loadShippingSettings();
-  if (editOrderId) loadOrderForEdit(editOrderId);
+  showMain();
 }
 
-async function logout() {
-  await supabaseClient.auth.signOut();
-  location.reload();
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  loadCategories();
+  loadProducts();
 }
 
 (async function init() {
@@ -412,752 +190,275 @@ async function logout() {
   if (session) {
     const { data: customerRow } = await supabaseClient
       .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
-    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) {
-      currentCustomer = customerRow;
-      document.getElementById('login-panel').style.display = 'none';
-      document.getElementById('main').style.display = 'block';
-      initDeliveryDatePicker();
-      loadCategories();
-      loadShippingSettings();
-      if (editOrderId) loadOrderForEdit(editOrderId);
-    }
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
   }
 })();
 
-// ---------------- Walk-in toggle ----------------
-function toggleWalkin() {
-  const isWalkin = document.getElementById('is-walkin').checked;
-  document.getElementById('delivery-customer-block').style.display = isWalkin ? 'none' : 'block';
-  document.getElementById('walkin-block').style.display = isWalkin ? 'block' : 'none';
-  document.getElementById('delivery-date-card').style.display = isWalkin ? 'none' : 'block';
-  selectedCustomer = null;
-  renderCart();
-}
-
-// ---------------- Customer search (電話番号・名前・住所を横断検索) ----------------
-async function searchCustomer() {
-  const q = document.getElementById('search-query').value.trim();
-  const resultEl = document.getElementById('customer-result');
-  const notFoundEl = document.getElementById('customer-not-found');
-  const listEl = document.getElementById('customer-results-list');
-  resultEl.style.display = 'none';
-  notFoundEl.style.display = 'none';
-  listEl.innerHTML = '';
-  selectedCustomer = null;
-
-  if (!q) return;
-
-  const { data, error } = await supabaseClient
-    .from('customers')
-    .select('id, family_name, first_name, email, tel1, address1, address2, area_id, point_balance')
-    .or(`tel1.ilike.%${q}%,family_name.ilike.%${q}%,first_name.ilike.%${q}%,address1.ilike.%${q}%,address2.ilike.%${q}%`)
-    .limit(20);
-
-  if (error) { alert('เกิดข้อผิดพลาด / Error: ' + error.message); return; }
-
-  if (data && data.length > 0) {
-    data.forEach(c => {
-      const div = document.createElement('div');
-      div.className = 'customer-result-item';
-      div.innerHTML = `<b>${c.family_name || ''} ${c.first_name || ''}</b> — Tel: ${c.tel1 || '-'}<br>
-        <span style="color:var(--text-muted);font-size:12px;">${c.address1 || ''} ${c.address2 || ''}</span><br>
-        <span style="color:var(--text-muted);font-size:12px;">Points: ${c.point_balance}</span>`;
-      div.onclick = () => selectCustomerFromList(c, div);
-      listEl.appendChild(div);
-    });
-  } else {
-    // 検索欄の内容を新規登録フォームに引き継ぐ(旧B-STARの不満点を解消)
-    notFoundEl.style.display = 'block';
-    // 数字だけの検索(電話番号らしき入力)なら電話番号欄に、それ以外は名前欄に引き継ぐ
-    if (/^[0-9\-+ ]+$/.test(q)) {
-      document.getElementById('new-tel').value = q;
-    } else {
-      document.getElementById('new-family-name').value = q;
-    }
-  }
-}
-
-function selectCustomerFromList(customer, el) {
-  selectedCustomer = customer;
-  document.querySelectorAll('.customer-result-item').forEach(item => item.classList.remove('selected'));
-  el.classList.add('selected');
-  const resultEl = document.getElementById('customer-result');
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${customer.family_name || ''} ${customer.first_name || ''}</b> (Tel: ${customer.tel1 || '-'})`;
-  document.getElementById('customer-not-found').style.display = 'none';
-}
-
-// ---------------- Delivery date/time control ----------------
-// 時間帯の定義。フロントエンド(rakugo/自社サイト)側の設定に依存せず、
-// このバックエンド単体でも設定できるようにここで直接管理する。
-const MORNING_SLOTS = [
-  { value: 'เช้า / Morning (AM)', label: 'เช้า / Morning (AM)' },
-];
-const AFTERNOON_SLOTS = [
-  { value: '13:00-15:00', label: '13:00-15:00' },
-  { value: '13:30-15:30', label: '13:30-15:30' },
-  { value: '14:00-16:00', label: '14:00-16:00' },
-  { value: '14:30-16:30', label: '14:30-16:30' },
-  { value: '15:00-17:00', label: '15:00-17:00' },
-  { value: '15:30-17:30', label: '15:30-17:30' },
-  { value: '16:00-18:00', label: '16:00-18:00' },
-  { value: '17:00-18:00', label: '17:00-18:00' },
-];
-
-function initDeliveryDatePicker() {
-  const dateInput = document.getElementById('delivery-date');
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  dateInput.min = todayStr;
-  dateInput.value = todayStr;
-  onDeliveryDateChange();
-}
-
-function onDeliveryDateChange() {
-  const dateInput = document.getElementById('delivery-date');
-  const noteEl = document.getElementById('delivery-date-note');
-  const val = dateInput.value;
-  if (!val) return;
-
-  // タイムゾーンのずれを避けるため文字列から直接年月日を取り出して判定
-  const [y, m, d] = val.split('-').map(Number);
-  const dayOfWeek = new Date(y, m - 1, d).getDay(); // 0=日曜, 6=土曜
-
-  if (dayOfWeek === 0) {
-    noteEl.textContent = 'วันอาทิตย์ปิดทำการ กรุณาเลือกวันอื่น / Closed on Sundays. Please choose another date.';
-    populateTimeSlots([]);
-    return;
-  }
-
-  noteEl.textContent = '';
-  if (dayOfWeek === 6) {
-    populateTimeSlots(MORNING_SLOTS);
-  } else {
-    populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS));
-  }
-}
-
-function populateTimeSlots(slots) {
-  const select = document.getElementById('delivery-time-slot');
-  select.innerHTML = '';
-  if (slots.length === 0) {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = '-- ปิดทำการ / Closed --';
-    select.appendChild(opt);
-    return;
-  }
-  slots.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.value;
-    opt.textContent = s.label;
-    select.appendChild(opt);
-  });
-}
-
-// ---------------- Category tabs & product grid ----------------
-let allCategories = [];
-let currentCategoryId = null;
-
+// ---------------- ロード ----------------
 async function loadCategories() {
-  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('name_ja');
-  if (error || !data) return;
-  allCategories = data;
+  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('sort_order');
+  if (error) return;
+  allCategories = data || [];
+  const sel = document.getElementById('filter-category');
+  allCategories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name_ja + (c.name_en ? ' / ' + c.name_en : '');
+    sel.appendChild(opt);
+  });
+}
 
-  const tabsEl = document.getElementById('category-tabs');
-  tabsEl.innerHTML = '';
+async function loadProducts() {
+  const tbody = document.getElementById('products-tbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
-  const popularBtn = document.createElement('button');
-  popularBtn.textContent = '⭐ ยอดนิยม / Popular';
-  popularBtn.onclick = () => selectCategory('popular', popularBtn);
-  tabsEl.appendChild(popularBtn);
+  const [{ data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
+    supabaseClient.from('products').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_ja'),
+    supabaseClient.from('product_categories').select('product_id, category_id'),
+  ]);
 
-  const weightBtn = document.createElement('button');
-  weightBtn.textContent = '⚖️ ชั่งน้ำหนัก / Weight-based';
-  weightBtn.onclick = () => selectCategory('weight', weightBtn);
-  tabsEl.appendChild(weightBtn);
+  if (prodErr || pcErr) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Error: ' + (prodErr?.message || pcErr?.message) + '</td></tr>';
+    return;
+  }
 
-  const allBtn = document.createElement('button');
-  allBtn.textContent = 'ทั้งหมด / All';
-  allBtn.classList.add('active');
-  allBtn.onclick = () => selectCategory(null, allBtn);
-  tabsEl.appendChild(allBtn);
-
-  data.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.textContent = cat.name_ja + (cat.name_en ? ' / ' + cat.name_en : '');
-    btn.onclick = () => selectCategory(cat.id, btn);
-    tabsEl.appendChild(btn);
+  productCategoryMap = {};
+  (pcRows || []).forEach(row => {
+    if (!productCategoryMap[row.product_id]) productCategoryMap[row.product_id] = [];
+    productCategoryMap[row.product_id].push(row.category_id);
   });
 
-  selectCategory(null, allBtn);
+  allProducts = products || [];
+  applyFilters();
 }
 
-function selectCategory(categoryId, btn) {
-  currentCategoryId = categoryId;
-  document.querySelectorAll('.category-tabs button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadProductGrid();
+function clearFilters() {
+  document.getElementById('filter-search').value = '';
+  document.getElementById('filter-category').value = '';
+  document.getElementById('filter-saletype').value = '';
+  document.getElementById('filter-noprice').checked = false;
+  document.getElementById('filter-unpublished').checked = false;
+  applyFilters();
 }
 
-async function loadProductGrid() {
-  const gridEl = document.getElementById('product-grid');
-  gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">กำลังโหลด... / Loading...</div>';
+function isMissingPrice(p) {
+  return p.sale_type !== 'weight' && (!p.price || p.price === 0);
+}
 
-  // 「人気商品」タブ: 注文履歴から集計したビューを使う
-  if (currentCategoryId === 'popular') {
-    const { data: popData, error: popError } = await supabaseClient
-      .from('popular_products')
-      .select('product_id, order_count')
-      .order('order_count', { ascending: false })
-      .limit(12);
+function applyFilters() {
+  const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  const catId = document.getElementById('filter-category').value;
+  const saleType = document.getElementById('filter-saletype').value;
+  const noPriceOnly = document.getElementById('filter-noprice').checked;
+  const unpublishedOnly = document.getElementById('filter-unpublished').checked;
 
-    if (popError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + popError.message + '</div>'; return; }
-
-    if (!popData || popData.length === 0) {
-      gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ยังไม่มีข้อมูลคำสั่งซื้อเพียงพอ / Not enough order history yet</div>';
-      return;
+  let filtered = allProducts.filter(p => {
+    if (q) {
+      const hay = [p.name_ja, p.name_en, p.name_th].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
     }
-
-    const ids = popData.map(p => p.product_id);
-    const { data: prodData, error: prodError } = await supabaseClient
-      .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
-      .in('id', ids);
-
-    if (prodError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + prodError.message + '</div>'; return; }
-
-    // 注文回数の多い順に並び替え(inクエリは順序を保証しないため)
-    const orderMap = {};
-    popData.forEach(p => { orderMap[p.product_id] = p.order_count; });
-    const sorted = (prodData || []).slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
-
-    renderProductGrid(sorted, orderMap);
-    return;
-  }
-
-  // 「量り売り」タブ: sale_type='weight'の商品だけを一覧表示
-  if (currentCategoryId === 'weight') {
-    const { data: weightData, error: weightError } = await supabaseClient
-      .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
-      .eq('sale_type', 'weight')
-      .order('name_ja')
-      .limit(200);
-
-    if (weightError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + weightError.message + '</div>'; return; }
-
-    renderProductGrid(weightData || []);
-    return;
-  }
-
-  let query;
-  if (currentCategoryId) {
-    query = supabaseClient
-      .from('product_categories')
-      .select('products ( id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published )')
-      .eq('category_id', currentCategoryId);
-  } else {
-    query = supabaseClient
-      .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
-      .order('name_ja')
-      .limit(500);
-  }
-
-  const { data, error } = await query;
-  if (error) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + error.message + '</div>'; return; }
-
-  const products = currentCategoryId
-    ? (data || []).map(r => r.products).filter(p => p)
-    : (data || []);
-
-  renderProductGrid(products);
-}
-
-function renderProductGrid(products, orderMap) {
-  const gridEl = document.getElementById('product-grid');
-
-  if (products.length === 0) { gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ไม่มีสินค้า / No products</div>'; return; }
-
-  gridEl.innerHTML = '';
-  products.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    const isWeight = p.sale_type === 'weight';
-    const noPrice = !isWeight && (!p.price || p.price === 0);
-    const priceLabel = isWeight ? `${p.unit_price} THB/${p.unit_label}` : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
-    const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${p.name_th}</div>` : '';
-    const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
-    card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
-    card.onclick = () => addToCart(p);
-    gridEl.appendChild(card);
+    if (catId) {
+      const cats = productCategoryMap[p.id] || [];
+      if (!cats.includes(catId)) return false;
+    }
+    if (saleType && p.sale_type !== saleType) return false;
+    if (noPriceOnly && !isMissingPrice(p)) return false;
+    if (unpublishedOnly && p.is_published !== false) return false;
+    return true;
   });
+
+  const missingCount = allProducts.filter(isMissingPrice).length;
+  const noteEl = document.getElementById('summary-note');
+  noteEl.className = missingCount > 0 ? 'summary-note alert' : 'summary-note';
+  noteEl.textContent = `全${allProducts.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allProducts.length}` +
+    (missingCount > 0 ? ` — ⚠️ 価格未入力 ${missingCount}件` : '');
+
+  renderTable(filtered);
 }
 
-// ---------------- Product search ----------------
-async function searchProducts() {
-  const q = document.getElementById('product-search').value.trim();
-  const resultEl = document.getElementById('product-search-result');
-  if (!q) { resultEl.style.display = 'none'; return; }
+function renderTable(products) {
+  const tbody = document.getElementById('products-tbody');
+  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
 
-  const { data, error } = await supabaseClient
-    .from('products')
-    .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type')
-    .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
-    .limit(15);
-
-  if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
-
-  resultEl.innerHTML = '';
-  data.forEach(p => {
-    const div = document.createElement('div');
-    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
-    const thPart = p.name_th ? ` / ${p.name_th}` : '';
-    div.innerHTML = `${p.name_ja}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
-    div.onclick = () => addToCart(p);
-    resultEl.appendChild(div);
-  });
-  resultEl.style.display = 'block';
-}
-
-function addToCart(p) {
-  cart.push({
-    product_id: p.id,
-    name: p.name_ja,
-    sale_type: p.sale_type,
-    price: p.price,
-    unit_price: p.unit_price,
-    unit_label: p.unit_label,
-    quantity: 1
-  });
-  document.getElementById('product-search').value = '';
-  document.getElementById('product-search-result').style.display = 'none';
-  renderCart();
-}
-
-function removeFromCart(index) {
-  cart.splice(index, 1);
-  renderCart();
-}
-
-function renderCart() {
-  const tbody = document.getElementById('cart-tbody');
   tbody.innerHTML = '';
-  let subtotal = 0;
-
-  cart.forEach((item, i) => {
-    const isWeight = item.sale_type === 'weight';
-    const lineTotal = isWeight ? 0 : item.price * item.quantity;
-    if (!isWeight) subtotal += lineTotal;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${item.name}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
-      <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
-      <td>${isWeight ? item.unit_price + '/' + item.unit_label : item.price + ' THB'}</td>
-      <td>${isWeight ? '未確定 / TBD' : lineTotal + ' THB'}</td>
-      <td><button class="remove-btn" onclick="removeFromCart(${i})">×</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  const isWalkin = document.getElementById('is-walkin').checked;
-  const needsShipping = !isWalkin && subtotal < shippingFreeThreshold;
-  const shippingNote = needsShipping
-    ? ` +配送料 ${shippingFeeAmount} THB (${shippingFreeThreshold}THB未満のため)`
-    : '';
-
-  document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote + ' (+ ชั่งน้ำหนัก / weight items TBD)';
+  products.forEach(p => tbody.appendChild(renderProductRow(p)));
 }
 
-function updateQty(index, value) {
-  cart[index].quantity = parseFloat(value) || 1;
-  renderCart();
+function categoryNames(productId) {
+  const ids = productCategoryMap[productId] || [];
+  return ids.map(id => allCategories.find(c => c.id === id)?.name_ja).filter(Boolean).join(', ') || '-';
 }
 
-// ---------------- PromptPay QR generation ----------------
-// slip.saitofoods.shop (お客様向けスリップアップロードページ)と同一のロジック・同一のBiller ID/口座を使用
-// (同じSCB口座 071-296992-2 を共有しているため)
-const PROMPTPAY_BILLER_ID = '010554007919109';
-const PROMPTPAY_REF1 = 'REF001';
-const PROMPTPAY_REF2 = 'REF002';
-const PROMPTPAY_TERMINAL = 'IFB0639311943';
+function renderProductRow(p) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = p.id;
+  if (isMissingPrice(p)) tr.classList.add('no-price');
+  if (p.is_published === false) tr.classList.add('unpublished');
 
-function ppTlv(tag, value) { return `${tag}${String(value.length).padStart(2, '0')}${value}`; }
+  const priceLabel = p.sale_type === 'weight'
+    ? `${p.unit_price ?? '-'} / ${p.unit_label || 'kg'}`
+    : (isMissingPrice(p) ? '<span class="tag noprice">未入力</span>' : `${p.price} THB`);
 
-function ppCrc16(str) {
-  let crc = 0xFFFF;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= (str.charCodeAt(i) << 8);
-    for (let j = 0; j < 8; j++) {
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
-    }
-  }
-  return crc.toString(16).toUpperCase().padStart(4, '0');
+  const tags = [
+    p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
+    p.sale_type === 'weight' ? '<span class="tag weight">Weight</span>' : '',
+    p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
+  ].join('');
+
+  tr.innerHTML = `
+    <td>${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
+    <td style="font-size:12px;">${categoryNames(p.id)}</td>
+    <td>${p.group_type || '-'}</td>
+    <td>${p.sale_type || '-'}</td>
+    <td>${priceLabel}</td>
+    <td>${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
+    <td>${p.is_published === false ? 'No' : 'Yes'}</td>
+    <td><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
+  `;
+  return tr;
 }
 
-function buildPromptPayPayload(amount) {
-  const merchantInfo = ppTlv('00', 'A000000677010112') + ppTlv('01', PROMPTPAY_BILLER_ID) + ppTlv('02', PROMPTPAY_REF1) + ppTlv('03', PROMPTPAY_REF2);
-  const amountStr = amount.toFixed(2);
-  const payload =
-    ppTlv('00', '01') +
-    ppTlv('01', '12') +
-    ppTlv('30', merchantInfo) +
-    ppTlv('53', '764') +
-    ppTlv('54', amountStr) +
-    ppTlv('58', 'TH') +
-    ppTlv('62', ppTlv('07', PROMPTPAY_TERMINAL));
-  const withCrcTag = payload + '6304';
-  return withCrcTag + ppCrc16(withCrcTag);
+function toggleEdit(productId) {
+  const existing = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  if (existing) { existing.remove(); return; }
+
+  document.querySelectorAll('tr.edit-row').forEach(el => el.remove());
+
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  const baseRow = document.querySelector(`tr[data-id="${productId}"]`);
+  const editRow = document.createElement('tr');
+  editRow.className = 'edit-row';
+  editRow.dataset.editing = productId;
+
+  const catChecks = allCategories.map(c => {
+    const checked = (productCategoryMap[productId] || []).includes(c.id) ? 'checked' : '';
+    return `<label><input type="checkbox" class="e-cat" value="${c.id}" ${checked}> ${c.name_ja}</label>`;
+  }).join('');
+
+  editRow.innerHTML = `
+    <td colspan="8">
+      <div class="edit-grid">
+        <label>名前(日) / Name (JA)<input type="text" class="e-name-ja" value="${p.name_ja || ''}"></label>
+        <label>名前(英) / Name (EN)<input type="text" class="e-name-en" value="${p.name_en || ''}"></label>
+        <label>名前(タイ) / Name (TH)<input type="text" class="e-name-th" value="${p.name_th || ''}"></label>
+        <label>Group<select class="e-group">
+          <option value="A" ${p.group_type === 'A' ? 'selected' : ''}>A</option>
+          <option value="B" ${p.group_type === 'B' ? 'selected' : ''}>B</option>
+        </select></label>
+        <label>Type<select class="e-saletype" onchange="toggleWeightFields(this)">
+          <option value="package" ${p.sale_type === 'package' ? 'selected' : ''}>Package</option>
+          <option value="weight" ${p.sale_type === 'weight' ? 'selected' : ''}>Weight</option>
+        </select></label>
+        <label>価格 / Price (THB)<input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.sale_type === 'weight' ? 'disabled' : ''}></label>
+        <label>単価 / Unit Price<input type="number" class="e-unitprice" min="0" step="0.01" value="${p.unit_price ?? ''}" ${p.sale_type !== 'weight' ? 'disabled' : ''}></label>
+        <label>単位 / Unit Label<input type="text" class="e-unitlabel" value="${p.unit_label || ''}" placeholder="kg"></label>
+        <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
+        <label>在庫数 / Stock Qty<input type="number" class="e-stock" min="0" step="1" value="${p.stock_qty ?? ''}" ${p.is_unlimited_stock ? 'disabled' : ''}></label>
+        <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
+        <label class="checkbox-field"><input type="checkbox" class="e-unlimited" onchange="toggleStockField(this)" ${p.is_unlimited_stock ? 'checked' : ''}> 在庫無制限 / Unlimited</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
+      <div class="cat-checks">${catChecks || '<span style="color:var(--text-muted);font-size:12px;">カテゴリ未登録</span>'}</div>
+      <button class="btn save small" onclick="saveProduct('${productId}')">保存 / Save</button>
+      <button class="btn ghost small" onclick="toggleEdit('${productId}')">閉じる / Close</button>
+      ${p._isNew ? '' : `<button class="btn warn small" onclick="deleteProduct('${productId}')" style="float:right;">削除 / Delete</button>`}
+    </td>
+  `;
+  baseRow.after(editRow);
 }
 
-function renderPromptPayQr(amount) {
-  const wrapEl = document.getElementById('order-qr-wrap');
-  const codeEl = document.getElementById('order-qr-code');
-  const amountEl = document.getElementById('order-qr-amount');
-
-  if (!amount || amount <= 0) {
-    wrapEl.style.display = 'none';
-    return;
-  }
-
-  codeEl.innerHTML = '';
-  new QRCode(codeEl, { text: buildPromptPayPayload(amount), width: 190, height: 190 });
-  amountEl.textContent = amount;
-  wrapEl.style.display = 'flex';
+function toggleWeightFields(sel) {
+  const grid = sel.closest('.edit-grid');
+  const isWeight = sel.value === 'weight';
+  grid.querySelector('.e-price').disabled = isWeight;
+  grid.querySelector('.e-unitprice').disabled = !isWeight;
 }
 
-function hidePromptPayQr() {
-  document.getElementById('order-qr-wrap').style.display = 'none';
-  document.getElementById('order-qr-code').innerHTML = '';
+function toggleStockField(chk) {
+  chk.closest('.edit-grid').querySelector('.e-stock').disabled = chk.checked;
 }
 
-// ---------------- Edit mode: load existing order into the form ----------------
-async function loadOrderForEdit(orderId) {
-  const { data: order, error } = await supabaseClient
-    .from('orders')
-    .select(`
-      id, order_type, delivery_date, delivery_time_slot, payment_method, comment,
-      walkin_nationality, walkin_age_bracket, walkin_gender,
-      customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
-      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
-    `)
-    .eq('id', orderId)
-    .single();
+async function saveProduct(productId) {
+  const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  const g = sel => editRow.querySelector(sel);
 
-  if (error || !order) {
-    alert('ไม่พบคำสั่งซื้อ / Order not found: ' + (error?.message || ''));
-    return;
-  }
-
-  editingOrderId = order.id;
-
-  // ヘッダー・保存ボタンの表示をEditモードに切り替え
-  const titleEl = document.querySelector('header h1');
-  titleEl.innerHTML = `Edit Order <span class="th">แก้ไขคำสั่งซื้อ #${order.id.slice(0, 8)}</span>`;
-  const submitBtn = document.querySelector('main button[onclick="submitOrder()"]');
-  if (submitBtn) submitBtn.textContent = 'บันทึกการแก้ไข / Save Changes';
-
-  const isWalkin = order.order_type === 'walk_in';
-  document.getElementById('is-walkin').checked = isWalkin;
-  toggleWalkin();
-
-  if (isWalkin) {
-    if (order.walkin_nationality) document.getElementById('walkin-nationality').value = order.walkin_nationality;
-    if (order.walkin_age_bracket) document.getElementById('walkin-age').value = order.walkin_age_bracket;
-    if (order.walkin_gender) document.getElementById('walkin-gender').value = order.walkin_gender;
-  } else if (order.customers) {
-    selectedCustomer = order.customers;
-    const resultEl = document.getElementById('customer-result');
-    resultEl.style.display = 'block';
-    resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${order.customers.family_name || ''} ${order.customers.first_name || ''}</b> (Tel: ${order.customers.tel1 || '-'})`;
-
-    document.getElementById('delivery-date').value = order.delivery_date || '';
-    onDeliveryDateChange();
-    // 時間帯のoptionが生成されるのを待ってから値をセット
-    setTimeout(() => {
-      document.getElementById('delivery-time-slot').value = order.delivery_time_slot || '';
-    }, 0);
-  }
-
-  document.querySelectorAll('input[name=payment]').forEach(r => {
-    r.checked = (r.value === order.payment_method);
-  });
-  document.getElementById('order-comment').value = order.comment || '';
-
-  cart = (order.order_items || []).map(item => ({
-    product_id: item.product_id,
-    name: item.product_name_snapshot,
-    sale_type: item.sale_type,
-    price: item.price,
-    unit_price: item.unit_price,
-    unit_label: item.products?.unit_label || '',
-    quantity: item.quantity,
-  }));
-  renderCart();
-}
-
-// ---------------- Slip upload link ----------------
-// 注文保存後、支払い方法がQR振込みの場合にスリップアップロード用リンクを生成・表示する。
-// 量り売り商品を含む注文は金額が未確定のため、リンクは生成せず、
-// 「重量確定後に注文一覧画面から自動送信される」旨の案内のみ表示する。
-function hideSlipLinkCard() {
-  const cardEl = document.getElementById('slip-link-card');
-  cardEl.style.display = 'none';
-  cardEl.classList.remove('pending');
-  document.getElementById('slip-link-row').style.display = 'none';
-  hidePromptPayQr();
-}
-
-function showSlipLink({ orderId, amount, hasWeightItems, customerName }) {
-  const cardEl = document.getElementById('slip-link-card');
-  const titleEl = document.getElementById('slip-link-title');
-  const noteEl = document.getElementById('slip-link-note');
-  const rowEl = document.getElementById('slip-link-row');
-  const inputEl = document.getElementById('slip-link-input');
-
-  cardEl.style.display = 'block';
-
-  if (hasWeightItems) {
-    cardEl.classList.add('pending');
-    titleEl.textContent = '⚠ ยอดเงินยังไม่ยืนยัน / Amount not yet confirmed';
-    noteEl.innerHTML = 'มีสินค้าชั่งน้ำหนักในคำสั่งซื้อนี้ QRและลิงก์อัปโหลดสลิปจะพร้อมใช้งานหลังจากยืนยันน้ำหนัก/ยอดเงินในหน้ารายการคำสั่งซื้อ (Order List)<br>' +
-      'This order contains weight-based items. The PromptPay QR and slip upload link will be available after the weight/amount is finalized in the Order List screen.';
-    rowEl.style.display = 'none';
-    hidePromptPayQr();
-    return;
-  }
-
-  cardEl.classList.remove('pending');
-  titleEl.textContent = 'ชำระเงินผ่าน QR / Pay via QR + Slip upload link';
-  noteEl.textContent = 'ให้ลูกค้าสแกน QR เพื่อโอนเงิน จากนั้นส่งลิงก์นี้เพื่ออัปโหลดสลิป / Have the customer scan the QR to pay, then send this link to upload the slip.';
-
-  // 金額入りPromptPay QR(rakugoスリップアプリと同一ロジック)
-  renderPromptPayQr(amount);
-
-  const params = new URLSearchParams({
-    amount: amount,
-    name: customerName || '',
-    ref: orderId,
-  });
-  inputEl.value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
-  rowEl.style.display = 'flex';
-}
-
-function copySlipLink() {
-  const inputEl = document.getElementById('slip-link-input');
-  inputEl.select();
-  inputEl.setSelectionRange(0, 99999); // mobile Safari対策
-  navigator.clipboard.writeText(inputEl.value).then(() => {
-    const btn = document.getElementById('slip-copy-btn');
-    const original = btn.textContent;
-    btn.textContent = 'คัดลอกแล้ว! / Copied!';
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  }).catch(() => {
-    alert('คัดลอกไม่สำเร็จ กรุณาคัดลอกด้วยตนเอง / Copy failed. Please copy manually.');
-  });
-}
-
-// ---------------- Submit ----------------
-async function submitOrder() {
-  const msgEl = document.getElementById('submit-msg');
-  msgEl.textContent = '';
-  msgEl.className = '';
-  hideSlipLinkCard();
-
-  const isWalkin = document.getElementById('is-walkin').checked;
-  const paymentMethod = document.querySelector('input[name=payment]:checked').value;
-  const comment = document.getElementById('order-comment').value.trim();
-
-  if (cart.length === 0) {
-    msgEl.textContent = 'กรุณาเลือกสินค้าอย่างน้อย 1 รายการ / Please add at least one product.';
-    msgEl.className = 'error';
-    return;
-  }
-
-  if (!isWalkin) {
-    const timeSlot = document.getElementById('delivery-time-slot').value;
-    if (!timeSlot) {
-      msgEl.textContent = 'กรุณาเลือกวันที่จัดส่งที่ถูกต้อง (ไม่ใช่วันอาทิตย์) / Please choose a valid delivery date (not Sunday).';
-      msgEl.className = 'error';
-      return;
-    }
-  }
-
-  let customerId = null;
-  let customerName = '';
-
-  if (isWalkin) {
-    // ウォークインは顧客レコードを作らない
-  } else {
-    if (selectedCustomer) {
-      customerId = selectedCustomer.id;
-      customerName = `${selectedCustomer.family_name || ''} ${selectedCustomer.first_name || ''}`.trim();
-    } else {
-      // 新規顧客を作成(検索した電話番号を引き継ぐ)
-      const tel = document.getElementById('new-tel').value.trim();
-      if (!tel) {
-        msgEl.textContent = 'กรุณาค้นหาลูกค้าด้วยเบอร์โทรศัพท์ก่อน / Please search for a customer by phone first.';
-        msgEl.className = 'error';
-        return;
-      }
-      const newFirstName = document.getElementById('new-first-name').value.trim();
-      const newFamilyName = document.getElementById('new-family-name').value.trim();
-      const { data: newCust, error: newCustErr } = await supabaseClient
-        .from('customers')
-        .insert({
-          tel1: tel,
-          first_name: newFirstName,
-          family_name: newFamilyName,
-          email: document.getElementById('new-email').value.trim() || null,
-        })
-        .select('id').single();
-
-      if (newCustErr) {
-        msgEl.textContent = 'สร้างลูกค้าใหม่ไม่สำเร็จ / Failed to create customer: ' + newCustErr.message;
-        msgEl.className = 'error';
-        return;
-      }
-      customerId = newCust.id;
-      customerName = `${newFamilyName} ${newFirstName}`.trim();
-    }
-  }
-
-  const hasWeightItems = cart.some(i => i.sale_type === 'weight');
-  const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
-
-  // 配送(delivery)注文かつ設定金額未満の場合のみ配送料を加算(ウォークインは対象外)
-  const shippingCost = (!isWalkin && subtotal < shippingFreeThreshold) ? shippingFeeAmount : 0;
-
-  const orderPayload = {
-    order_type: isWalkin ? 'walk_in' : 'delivery',
-    order_source: 'local',
-    customer_id: customerId,
-    delivery_date: isWalkin ? null : document.getElementById('delivery-date').value,
-    delivery_time_slot: isWalkin ? null : document.getElementById('delivery-time-slot').value,
-    has_weight_items: hasWeightItems,
-    payment_method: paymentMethod,
-    payment_status: 'unpaid',
-    subtotal: subtotal,
-    shipping_cost: shippingCost,
-    total_amount: subtotal + shippingCost,
-    comment: comment || null,
-    created_by: currentCustomer.id,
+  const saleType = g('.e-saletype').value;
+  const payload = {
+    name_ja: g('.e-name-ja').value.trim(),
+    name_en: g('.e-name-en').value.trim() || null,
+    name_th: g('.e-name-th').value.trim() || null,
+    group_type: g('.e-group').value,
+    sale_type: saleType,
+    price: saleType === 'weight' ? null : (parseFloat(g('.e-price').value) || 0),
+    unit_price: saleType === 'weight' ? (parseFloat(g('.e-unitprice').value) || 0) : null,
+    unit_label: g('.e-unitlabel').value.trim() || null,
+    point_rate_percent: parseFloat(g('.e-pointrate').value) || 0,
+    is_unlimited_stock: g('.e-unlimited').checked,
+    stock_qty: g('.e-unlimited').checked ? null : (parseInt(g('.e-stock').value, 10) || 0),
+    sort_order: g('.e-sort').value ? parseInt(g('.e-sort').value, 10) : null,
+    is_local_special: g('.e-special').checked,
+    is_published: g('.e-published').checked,
+    is_available_en: g('.e-availen').checked,
   };
 
-  if (isWalkin) {
-    orderPayload.walkin_nationality = document.getElementById('walkin-nationality').value;
-    orderPayload.walkin_age_bracket = document.getElementById('walkin-age').value;
-    orderPayload.walkin_gender = document.getElementById('walkin-gender').value;
+  if (!payload.name_ja) { showSaveMsg('商品名(日)を入力してください / Please enter a Japanese name', true); return; }
+
+  const selectedCatIds = [...editRow.querySelectorAll('.e-cat:checked')].map(el => el.value);
+
+  let productRowId = productId;
+  let error;
+
+  if (productId.startsWith('new-')) {
+    const { data, error: insertErr } = await supabaseClient.from('products').insert(payload).select('id').single();
+    error = insertErr;
+    if (data) productRowId = data.id;
+  } else {
+    ({ error } = await supabaseClient.from('products').update(payload).eq('id', productId));
   }
 
-  // ---------------- 編集モード: 既存注文をUPDATE ----------------
-  if (editingOrderId) {
-    // 内容が変わるため、再印刷・再計量が必要という前提でフラグをリセットする
-    orderPayload.is_slip_printed = false;
-    if (hasWeightItems) orderPayload.is_weight_confirmed = false;
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
 
-    const { error: updErr } = await supabaseClient
-      .from('orders').update(orderPayload).eq('id', editingOrderId);
-
-    if (updErr) {
-      msgEl.textContent = 'บันทึกการแก้ไขไม่สำเร็จ / Failed to update order: ' + updErr.message;
-      msgEl.className = 'error';
-      return;
-    }
-
-    // 商品構成は一旦全削除して作り直す(シンプルさ優先。差分更新はしない)
-    const { error: delErr } = await supabaseClient
-      .from('order_items').delete().eq('order_id', editingOrderId);
-
-    if (delErr) {
-      msgEl.textContent = 'ลบรายการสินค้าเดิมไม่สำเร็จ / Failed to clear old items: ' + delErr.message;
-      msgEl.className = 'error';
-      return;
-    }
-
-    const editItemsPayload = cart.map(item => ({
-      order_id: editingOrderId,
-      product_id: item.product_id,
-      product_name_snapshot: item.name,
-      sale_type: item.sale_type,
-      quantity: item.quantity,
-      unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-      price: item.sale_type === 'weight' ? 0 : item.price,
-      total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
-    }));
-
-    const { error: editItemsErr } = await supabaseClient.from('order_items').insert(editItemsPayload);
-
-    if (editItemsErr) {
-      msgEl.textContent = 'บันทึกรายการสินค้าใหม่ไม่สำเร็จ / Failed to save updated items: ' + editItemsErr.message;
-      msgEl.className = 'error';
-      return;
-    }
-
-    msgEl.textContent = 'บันทึกการแก้ไขสำเร็จ! / Order updated successfully!';
-    msgEl.className = 'success';
-
-    if (paymentMethod === 'qr') {
-      showSlipLink({
-        orderId: editingOrderId,
-        amount: subtotal + shippingCost,
-        hasWeightItems: hasWeightItems,
-        customerName: isWalkin ? '' : customerName,
-      });
-    }
-    return; // 編集モードはここで終了(新規作成のinsert処理には進まない)
+  // カテゴリ紐付けを一旦削除して選択分を入れ直す
+  await supabaseClient.from('product_categories').delete().eq('product_id', productRowId);
+  if (selectedCatIds.length > 0) {
+    await supabaseClient.from('product_categories').insert(selectedCatIds.map(cid => ({ product_id: productRowId, category_id: cid })));
   }
 
-  const { data: orderRow, error: orderErr } = await supabaseClient
-    .from('orders').insert(orderPayload).select('id').single();
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadProducts();
+}
 
-  if (orderErr) {
-    msgEl.textContent = 'บันทึกคำสั่งซื้อไม่สำเร็จ / Failed to save order: ' + orderErr.message;
-    msgEl.className = 'error';
-    return;
-  }
+async function deleteProduct(productId) {
+  if (!confirm('この商品を削除しますか？(過去の注文データには影響しません) / Delete this product?')) return;
+  const { error } = await supabaseClient.from('products').delete().eq('id', productId);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadProducts();
+}
 
-  const itemsPayload = cart.map(item => ({
-    order_id: orderRow.id,
-    product_id: item.product_id,
-    product_name_snapshot: item.name,
-    sale_type: item.sale_type,
-    quantity: item.quantity,
-    unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-    price: item.sale_type === 'weight' ? 0 : item.price,
-    total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
-  }));
+function addNewProduct() {
+  const newId = 'new-' + Date.now();
+  const blank = {
+    id: newId, name_ja: '', name_en: '', name_th: '', group_type: 'A', sale_type: 'package',
+    price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
+    stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
+    _isNew: true,
+  };
+  allProducts.unshift(blank);
+  productCategoryMap[newId] = [];
+  applyFilters();
+  setTimeout(() => toggleEdit(newId), 50);
+}
 
-  const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
-
-  if (itemsErr) {
-    msgEl.textContent = 'บันทึกรายการสินค้าไม่สำเร็จ / Failed to save order items: ' + itemsErr.message;
-    msgEl.className = 'error';
-    return;
-  }
-
-  msgEl.textContent = 'บันทึกคำสั่งซื้อสำเร็จ! / Order saved successfully!';
-  msgEl.className = 'success';
-
-  // QR振込みの場合のみスリップアップロードリンクを表示(現金の場合は不要)
-  if (paymentMethod === 'qr') {
-    showSlipLink({
-      orderId: orderRow.id,
-      amount: subtotal + shippingCost,
-      hasWeightItems: hasWeightItems,
-      customerName: isWalkin ? '' : customerName,
-    });
-  }
-
-  cart = [];
-  renderCart();
-  document.getElementById('order-comment').value = '';
-  document.getElementById('customer-result').style.display = 'none';
-  document.getElementById('customer-not-found').style.display = 'none';
-  document.getElementById('search-query').value = '';
-  document.getElementById('customer-results-list').innerHTML = '';
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
 }
 </script>
 
