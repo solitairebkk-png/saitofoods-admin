@@ -456,7 +456,12 @@ async function loadMyPage(user) {
       return;
     }
     if (!claimResult.data || claimResult.data.length === 0) {
-      showAuthMsg('紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。', true);
+      const whoami = await supabaseClient.rpc('debug_whoami');
+      showAuthMsg(
+        '紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。 ' +
+        'DEBUG: auth.email()=' + JSON.stringify(whoami.data) + ' whoamiError=' + (whoami.error ? whoami.error.message : 'none'),
+        true
+      );
       return;
     }
 
