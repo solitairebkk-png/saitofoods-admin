@@ -444,11 +444,21 @@ async function loadMyPage(user) {
   // まだ紐付けが行われていない場合(確認メールのリンクをクリックして初めて
   // ここに来たケースなど)、メールアドレスが一致する既存の顧客レコードへの紐付けを試みる
   if ((error || !customerRow) && user.email) {
-    await supabaseClient
+    const claimResult = await supabaseClient
       .from('customers')
       .update({ auth_user_id: user.id })
       .eq('email', user.email)
-      .is('auth_user_id', null);
+      .is('auth_user_id', null)
+      .select('id');
+
+    if (claimResult.error) {
+      showAuthMsg('紐付け処理でエラー: ' + claimResult.error.message + ' (code: ' + claimResult.error.code + ')', true);
+      return;
+    }
+    if (!claimResult.data || claimResult.data.length === 0) {
+      showAuthMsg('紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。', true);
+      return;
+    }
 
     const retry = await supabaseClient
       .from('customers')
