@@ -167,6 +167,8 @@
   .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
   .footer-section p { line-height: 1.9; }
   .footer-section a { color: var(--brand-dark); text-decoration: underline; }
+  .footer-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-row .footer-section { flex: 1 1 240px; min-width: 220px; }
   .footer-area-images { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
   .footer-area-image-item { flex: 0 0 auto; width: 100px; text-align: center; }
   .footer-area-image-item a { display: block; }
@@ -268,43 +270,47 @@
     <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
   </div>
 
-  <div class="footer-section">
-    <h3>配送エリアについて / Delivery Area</h3>
-    <p>
-      バンコク・シラチャ・パタヤは自社配送でお届けします。<br>
-      それ以外の地域は、外部のクール便(冷蔵・冷凍配送サービス)を利用して全国どこへでもお届け可能です。詳しくはお問い合わせください。
-    </p>
-    <div class="footer-area-images">
-      <div class="footer-area-image-item">
-        <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
-          <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
-        </a>
-        <span>バンコクエリア</span>
+  <div class="footer-row">
+    <div class="footer-section">
+      <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+      <div class="footer-store-media">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+        <div id="footer-map" class="footer-store-map"></div>
       </div>
-      <div class="footer-area-image-item">
-        <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
-          <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
-        </a>
-        <span>シラチャエリア</span>
-      </div>
+      <p>
+        SAITO FOODS CO.,LTD.<br>
+        23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36,<br>
+        Klongtoey, Bangkok 10110<br>
+        TEL: 02-258-9878 / 06-5618-9906<br>
+        Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
+        Tax ID: 0-1055-40079-19-1<br>
+        ※ 直売店も同住所で営業しております。<br>
+        店頭でも商品をお買い求めいただけます。<br>
+        <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+      </p>
     </div>
-  </div>
 
-  <div class="footer-section">
-    <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
-    <div class="footer-store-media">
-      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
-      <div id="footer-map" class="footer-store-map"></div>
+    <div class="footer-section">
+      <h3>配送エリアについて / Delivery Area</h3>
+      <p>
+        バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
+        それ以外の地域は、外部のクール便<br>(冷蔵・冷凍配送サービス)を利用して<br>全国どこへでもお届け可能です。<br>詳しくはお問い合わせください。
+      </p>
+      <div class="footer-area-images">
+        <div class="footer-area-image-item">
+          <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
+            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+          </a>
+          <span>バンコクエリア</span>
+        </div>
+        <div class="footer-area-image-item">
+          <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
+            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+          </a>
+          <span>シラチャエリア</span>
+        </div>
+      </div>
     </div>
-    <p>
-      SAITO FOODS CO.,LTD.<br>
-      23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36, Klongtoey, Bangkok 10110<br>
-      TEL: 02-258-9878 / 06-5618-9906<br>
-      Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
-      Tax ID: 0-1055-40079-19-1<br>
-      ※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。<br>
-      <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
-    </p>
   </div>
 
   <div class="footer-section footer-links">
