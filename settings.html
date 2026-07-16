@@ -55,6 +55,19 @@
   .btn-move-row { background: var(--navy); font-size: 13px; padding: 4px 11px; }
   .btn-move-row:disabled { opacity: 0.3; cursor: not-allowed; }
 
+  .entry-card { border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafafa; }
+  .entry-card-fields { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+  .entry-card-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .entry-card-fields input, .entry-card-fields textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; }
+  .entry-card-fields .used-count-display { padding: 6px 0; color: var(--text-muted); font-size: 13px; }
+  .entry-card-actions { display: flex; gap: 8px; }
+
+  .scroll-fab-group { position: fixed; right: 20px; bottom: 24px; z-index: 60; display: flex; flex-direction: column; gap: 10px; }
+  .scroll-fab { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; background: #fff; color: var(--navy); font-size: 18px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.15s; }
+  .scroll-fab:hover { transform: translateY(-2px); border-color: var(--navy); }
+  .scroll-fab.hidden { opacity: 0; pointer-events: none; }
+  .scroll-fab.top { background: var(--navy); color: #fff; border-color: var(--navy); }
+
   .expiry-row { display: flex; align-items: center; gap: 10px; }
   .expiry-row input { width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
@@ -156,35 +169,25 @@
     </table>
   </div>
 
-  <div class="card">
+  <div class="card" id="section-coupons">
     <h2>クーポン管理 / Coupons</h2>
     <div class="sub">お客様向けサイト(cart.html)で使えるクーポンコードです。使用回数(used_count)は自動でカウントされるので、ここでは編集しないでください。</div>
-    <table class="rules" id="coupon-table">
-      <thead>
-        <tr><th>コード / Code</th><th>割引額(THB) / Discount</th><th>有効期限 / Expires</th><th>上限回数 / Max Uses</th><th>1人あたり上限 / Per Customer</th><th>使用回数 / Used</th><th>有効 / Active</th><th></th></tr>
-      </thead>
-      <tbody id="coupon-tbody">
-        <tr><td colspan="8">Loading...</td></tr>
-      </tbody>
-    </table>
+    <div id="coupon-tbody">
+      <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
+    </div>
     <button class="btn" onclick="addNewCouponRow()">+ クーポンを追加 / Add coupon</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="section-announcements">
     <h2>お知らせ管理 / Announcements</h2>
     <div class="sub">トップページ(index.html)のお知らせ欄に表示される内容です。「有効」のものだけ、公開日の新しい順に表示されます。</div>
-    <table class="rules" id="announce-table">
-      <thead>
-        <tr><th>公開日 / Date</th><th>タイトル / Title</th><th>本文 / Body</th><th>リンク先URL / Link URL</th><th>有効 / Active</th><th></th></tr>
-      </thead>
-      <tbody id="announce-tbody">
-        <tr><td colspan="6">Loading...</td></tr>
-      </tbody>
-    </table>
+    <div id="announce-tbody">
+      <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
+    </div>
     <button class="btn" onclick="addNewAnnouncementRow()">+ お知らせを追加 / Add announcement</button>
   </div>
 
-  <div class="card">
+  <div class="card" id="section-category-order">
     <h2>カテゴリ並び順 / Category Display Order</h2>
     <div class="sub">お客様向け商品一覧ページ(product_list.html)のカテゴリ一覧に表示される順番です。↑↓で並び替えて「保存」を押してください。</div>
     <table class="rules" id="category-order-table">
@@ -240,6 +243,12 @@
 
   <div id="save-msg"></div>
 </main>
+
+<div class="scroll-fab-group">
+  <button class="scroll-fab down" id="scroll-down-btn" onclick="scrollByViewport(1)">↓</button>
+  <button class="scroll-fab top hidden" id="scroll-top-btn" onclick="scrollToTop()">↑</button>
+</div>
+
 
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
@@ -333,14 +342,17 @@ async function loadMonthlyPromotions() {
         <div style="font-size:11px;color:var(--text-muted);">${p.name_en || ''} — 通常価格 ${p.price} THB</div>
       </div>
       <label style="font-size:11px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;">割引後価格(THB) / Promo price
-        <input type="number" min="0" step="1" value="${p.promotion_price ?? ''}" style="width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;" onchange="savePromotionPrice('${p.id}', this.value)">
+        <input type="number" min="0" step="1" id="promo-price-input-${p.id}" value="${p.promotion_price ?? ''}" style="width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;">
       </label>
+      <button class="btn-save-row" onclick="savePromotionPrice('${p.id}')">保存 / Save</button>
       <button class="btn-delete-row" onclick="removeMonthlyPromotion('${p.id}')">削除 / Remove</button>
     </div>
   `).join('');
 }
 
-async function savePromotionPrice(productId, value) {
+async function savePromotionPrice(productId) {
+  const inputEl = document.getElementById(`promo-price-input-${productId}`);
+  const value = inputEl.value;
   const promoPrice = value === '' ? null : parseFloat(value);
   if (value !== '' && (isNaN(promoPrice) || promoPrice < 0)) { showSaveMsg('割引後価格を正しく入力してください / Please enter a valid price', true); return; }
 
@@ -573,51 +585,54 @@ async function deleteBlockedDateGroup(date) {
 
 // ---------------- クーポン管理 ----------------
 async function loadCoupons() {
-  const tbody = document.getElementById('coupon-tbody');
-  tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+  const wrap = document.getElementById('coupon-tbody');
+  wrap.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
 
   const { data, error } = await supabaseClient
     .from('coupons').select('*').order('created_at', { ascending: false });
 
-  if (error) { tbody.innerHTML = '<tr><td colspan="8" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+  if (error) { wrap.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
 
-  tbody.innerHTML = '';
-  (data || []).forEach(c => tbody.appendChild(renderCouponRow(c)));
+  wrap.innerHTML = '';
+  (data || []).forEach(c => wrap.appendChild(renderCouponRow(c)));
 }
 
 function renderCouponRow(c) {
-  const tr = document.createElement('tr');
-  tr.dataset.id = c.id || '';
-  tr.innerHTML = `
-    <td><input type="text" class="cpn-code" value="${c.code ? c.code.replace(/"/g, '&quot;') : ''}" placeholder="例: SUMMER50" style="text-transform:uppercase;width:120px;"></td>
-    <td><input type="number" class="cpn-discount" min="0" step="1" value="${c.discount_amount ?? ''}" style="width:80px;"></td>
-    <td><input type="date" class="cpn-expires" value="${c.expires_at || ''}"></td>
-    <td><input type="number" class="cpn-maxuses" min="0" step="1" value="${c.max_uses ?? ''}" placeholder="無制限" style="width:80px;"></td>
-    <td><input type="number" class="cpn-percustomer" min="0" step="1" value="${c.per_customer_limit ?? ''}" placeholder="無制限" style="width:80px;"></td>
-    <td style="text-align:center;color:var(--text-muted);">${c.used_count ?? 0}</td>
-    <td><input type="checkbox" class="cpn-active" ${c.is_active !== false ? 'checked' : ''}></td>
-    <td class="row-actions">
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  div.dataset.id = c.id || '';
+  div.innerHTML = `
+    <div class="entry-card-fields">
+      <label>コード / Code<input type="text" class="cpn-code" value="${c.code ? c.code.replace(/"/g, '&quot;') : ''}" placeholder="例: SUMMER50" style="text-transform:uppercase;width:130px;"></label>
+      <label>割引額(THB) / Discount<input type="number" class="cpn-discount" min="0" step="1" value="${c.discount_amount ?? ''}" style="width:90px;"></label>
+      <label>有効期限 / Expires<input type="date" class="cpn-expires" value="${c.expires_at || ''}"></label>
+      <label>上限回数 / Max Uses<input type="number" class="cpn-maxuses" min="0" step="1" value="${c.max_uses ?? ''}" placeholder="無制限" style="width:90px;"></label>
+      <label>1人あたり上限 / Per Customer<input type="number" class="cpn-percustomer" min="0" step="1" value="${c.per_customer_limit ?? ''}" placeholder="無制限" style="width:90px;"></label>
+      <label>使用回数 / Used<span class="used-count-display">${c.used_count ?? 0}</span></label>
+      <label>有効 / Active<input type="checkbox" class="cpn-active" ${c.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
+    </div>
+    <div class="entry-card-actions">
       <button class="btn-save-row" onclick="saveCouponRow(this)">保存 / Save</button>
       ${c.id ? `<button class="btn-delete-row" onclick="deleteCouponRow(this)">削除 / Del</button>` : ''}
-    </td>
+    </div>
   `;
-  return tr;
+  return div;
 }
 
 function addNewCouponRow() {
-  const tbody = document.getElementById('coupon-tbody');
-  tbody.prepend(renderCouponRow({ code: '', discount_amount: 50, is_active: true, used_count: 0 }));
+  const wrap = document.getElementById('coupon-tbody');
+  wrap.prepend(renderCouponRow({ code: '', discount_amount: 50, is_active: true, used_count: 0 }));
 }
 
 async function saveCouponRow(btn) {
-  const tr = btn.closest('tr');
-  const id = tr.dataset.id || null;
-  const code = tr.querySelector('.cpn-code').value.trim().toUpperCase();
-  const discountAmount = parseFloat(tr.querySelector('.cpn-discount').value);
-  const expiresAt = tr.querySelector('.cpn-expires').value || null;
-  const maxUsesVal = tr.querySelector('.cpn-maxuses').value;
-  const perCustomerVal = tr.querySelector('.cpn-percustomer').value;
-  const isActive = tr.querySelector('.cpn-active').checked;
+  const card = btn.closest('.entry-card');
+  const id = card.dataset.id || null;
+  const code = card.querySelector('.cpn-code').value.trim().toUpperCase();
+  const discountAmount = parseFloat(card.querySelector('.cpn-discount').value);
+  const expiresAt = card.querySelector('.cpn-expires').value || null;
+  const maxUsesVal = card.querySelector('.cpn-maxuses').value;
+  const perCustomerVal = card.querySelector('.cpn-percustomer').value;
+  const isActive = card.querySelector('.cpn-active').checked;
 
   if (!code) { showSaveMsg('クーポンコードを入力してください / Please enter a coupon code', true); return; }
   if (isNaN(discountAmount) || discountAmount <= 0) { showSaveMsg('割引額を正しく入力してください / Please enter a valid discount amount', true); return; }
@@ -644,8 +659,8 @@ async function saveCouponRow(btn) {
 }
 
 async function deleteCouponRow(btn) {
-  const tr = btn.closest('tr');
-  const id = tr.dataset.id;
+  const card = btn.closest('.entry-card');
+  const id = card.dataset.id;
   if (!id) return;
   if (!confirm('このクーポンを削除しますか？ / Delete this coupon?')) return;
   const { error } = await supabaseClient.from('coupons').delete().eq('id', id);
@@ -656,49 +671,52 @@ async function deleteCouponRow(btn) {
 
 // ---------------- お知らせ管理 ----------------
 async function loadAnnouncements() {
-  const tbody = document.getElementById('announce-tbody');
-  tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+  const wrap = document.getElementById('announce-tbody');
+  wrap.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
 
   const { data, error } = await supabaseClient
     .from('announcements').select('*').order('published_at', { ascending: false });
 
-  if (error) { tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+  if (error) { wrap.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
 
-  tbody.innerHTML = '';
-  (data || []).forEach(a => tbody.appendChild(renderAnnouncementRow(a)));
+  wrap.innerHTML = '';
+  (data || []).forEach(a => wrap.appendChild(renderAnnouncementRow(a)));
 }
 
 function renderAnnouncementRow(a) {
-  const tr = document.createElement('tr');
-  tr.dataset.id = a.id || '';
-  tr.innerHTML = `
-    <td><input type="date" class="ann-date" value="${a.published_at || ''}"></td>
-    <td><input type="text" class="ann-title" value="${a.title ? a.title.replace(/"/g, '&quot;') : ''}" placeholder="タイトル"></td>
-    <td><textarea class="ann-body" placeholder="本文(省略可)">${a.body || ''}</textarea></td>
-    <td><input type="text" class="ann-link" value="${a.link_url ? a.link_url.replace(/"/g, '&quot;') : ''}" placeholder="例: product_list.html?view=商品ID" style="width:200px;"></td>
-    <td><input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''}></td>
-    <td class="row-actions">
+  const div = document.createElement('div');
+  div.className = 'entry-card';
+  div.dataset.id = a.id || '';
+  div.innerHTML = `
+    <div class="entry-card-fields">
+      <label>公開日 / Date<input type="date" class="ann-date" value="${a.published_at || ''}"></label>
+      <label style="flex:1;min-width:160px;">タイトル / Title<input type="text" class="ann-title" value="${a.title ? a.title.replace(/"/g, '&quot;') : ''}" placeholder="タイトル"></label>
+      <label style="flex:2;min-width:220px;">本文 / Body<textarea class="ann-body" placeholder="本文(省略可)" style="min-height:44px;resize:vertical;">${a.body || ''}</textarea></label>
+      <label style="flex:1;min-width:200px;">リンク先URL / Link URL<input type="text" class="ann-link" value="${a.link_url ? a.link_url.replace(/"/g, '&quot;') : ''}" placeholder="例: product_list.html?view=商品ID"></label>
+      <label>有効 / Active<input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
+    </div>
+    <div class="entry-card-actions">
       <button class="btn-save-row" onclick="saveAnnouncementRow(this)">保存 / Save</button>
       ${a.id ? `<button class="btn-delete-row" onclick="deleteAnnouncementRow(this)">削除 / Del</button>` : ''}
-    </td>
+    </div>
   `;
-  return tr;
+  return div;
 }
 
 function addNewAnnouncementRow() {
-  const tbody = document.getElementById('announce-tbody');
+  const wrap = document.getElementById('announce-tbody');
   const todayStr = new Date().toISOString().slice(0, 10);
-  tbody.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', is_active: true }));
+  wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', is_active: true }));
 }
 
 async function saveAnnouncementRow(btn) {
-  const tr = btn.closest('tr');
-  const id = tr.dataset.id || null;
-  const publishedAt = tr.querySelector('.ann-date').value;
-  const title = tr.querySelector('.ann-title').value.trim();
-  const body = tr.querySelector('.ann-body').value.trim();
-  const linkUrl = tr.querySelector('.ann-link').value.trim();
-  const isActive = tr.querySelector('.ann-active').checked;
+  const card = btn.closest('.entry-card');
+  const id = card.dataset.id || null;
+  const publishedAt = card.querySelector('.ann-date').value;
+  const title = card.querySelector('.ann-title').value.trim();
+  const body = card.querySelector('.ann-body').value.trim();
+  const linkUrl = card.querySelector('.ann-link').value.trim();
+  const isActive = card.querySelector('.ann-active').checked;
 
   if (!title) { showSaveMsg('タイトルを入力してください / Please enter a title', true); return; }
   if (!publishedAt) { showSaveMsg('公開日を選択してください / Please choose a date', true); return; }
@@ -718,8 +736,8 @@ async function saveAnnouncementRow(btn) {
 }
 
 async function deleteAnnouncementRow(btn) {
-  const tr = btn.closest('tr');
-  const id = tr.dataset.id;
+  const card = btn.closest('.entry-card');
+  const id = card.dataset.id;
   if (!id) return;
   if (!confirm('このお知らせを削除しますか？ / Delete this announcement?')) return;
   const { error } = await supabaseClient.from('announcements').delete().eq('id', id);
@@ -917,6 +935,18 @@ function showSaveMsg(msg, isError) {
   el.className = isError ? 'error' : 'success';
   setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
 }
+
+// ---------------- 上下スクロールボタン ----------------
+function scrollByViewport(direction) { window.scrollBy({ top: direction * window.innerHeight * 0.85, behavior: 'smooth' }); }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+window.addEventListener('scroll', () => {
+  const atTop = window.scrollY < 200;
+  const atBottom = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 40;
+  const topBtn = document.getElementById('scroll-top-btn');
+  const downBtn = document.getElementById('scroll-down-btn');
+  if (topBtn) topBtn.classList.toggle('hidden', atTop);
+  if (downBtn) downBtn.classList.toggle('hidden', atBottom);
+});
 </script>
 
 </body>
