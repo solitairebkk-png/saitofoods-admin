@@ -308,7 +308,7 @@ function maxQtyFor(p) {
   return p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
 }
 
-async function supabase(method, path, body) {
+async function supabaseRest(method, path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method,
     headers: {
@@ -328,9 +328,9 @@ async function init() {
   showSkeletonGrid();
   try {
     const [cats, prods, prodCats] = await Promise.all([
-      supabase('GET', 'categories?order=sort_order'),
-      supabase('GET', 'products?is_published=eq.true&order=sort_order'),
-      supabase('GET', 'product_categories?select=product_id,category_id'),
+      supabaseRest('GET', 'categories?order=sort_order'),
+      supabaseRest('GET', 'products?is_published=eq.true&order=sort_order'),
+      supabaseRest('GET', 'product_categories?select=product_id,category_id'),
       loadFavoritesState(),
     ]);
     allCategories = cats;
