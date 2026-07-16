@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイトウフーズ | Saito Foods — トップ</title>
+<style>
+  :root {
+    --brand: #8FB9A8; --brand-dark: #5F8B79; --accent: #F4C77B;
+    --cream: #FAF6EE; --ink: #33322E; --line: #D9E6DC; --line-soft: #EDF4EE; --red: #C5533F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
+  a { color: inherit; }
+
+  .app-shell { max-width: 480px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 40px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+
+  .site-header { background: #fff; position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--line); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 12px 20px; }
+  .site-logo-mark { font-weight: 800; font-size: 16px; color: var(--brand-dark); white-space: nowrap; }
+  .site-logo-mark small { display: block; font-size: 10px; font-weight: 600; color: #999; }
+  .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
+  .site-nav a { color: var(--ink); text-decoration: none; opacity: .7; }
+  .site-nav a.active { opacity: 1; color: var(--brand-dark); }
+  .site-cart-btn { background: var(--brand); color: #fff; font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  /* hero */
+  .hero { padding: 28px 20px 24px; text-align: center; background: linear-gradient(180deg, #fff 0%, var(--line-soft) 100%); }
+  .hero-icon { font-size: 40px; margin-bottom: 8px; }
+  .hero h1 { font-size: 19px; font-weight: 800; color: var(--brand-dark); line-height: 1.5; margin-bottom: 8px; }
+  .hero p { font-size: 12.5px; color: #777; line-height: 1.8; margin-bottom: 18px; }
+  .hero-cta { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px 32px; border-radius: 26px; text-decoration: none; box-shadow: 0 6px 16px rgba(95,139,121,0.25); }
+
+  main { padding: 20px 16px; }
+  .section-block { margin-bottom: 28px; }
+  .section-title { font-size: 15px; font-weight: 800; color: var(--brand-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* TOP3 */
+  .top3-list { display: flex; flex-direction: column; gap: 10px; }
+  .top3-item { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 10px 14px 10px 10px; cursor: pointer; text-decoration: none; color: inherit; }
+  .top3-rank { font-size: 22px; font-weight: 800; width: 34px; text-align: center; flex-shrink: 0; }
+  .top3-rank.r1 { color: #D4A017; }
+  .top3-rank.r2 { color: #9AA5AE; }
+  .top3-rank.r3 { color: #B08050; }
+  .top3-img { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; background: var(--line-soft); flex-shrink: 0; }
+  .top3-info { flex: 1; min-width: 0; }
+  .top3-name { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+  .top3-price { font-size: 12.5px; color: var(--brand-dark); font-weight: 700; margin-top: 2px; }
+  .top3-count { font-size: 10.5px; color: #B08A3A; margin-top: 2px; }
+
+  /* promotion */
+  .promo-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .promo-card { flex: 0 0 130px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; text-decoration: none; color: inherit; }
+  .promo-img-wrap { width: 100%; aspect-ratio: 1/1; background: var(--line-soft); overflow: hidden; }
+  .promo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-body { padding: 8px 10px 10px; }
+  .promo-name { font-size: 12px; font-weight: 700; line-height: 1.3; }
+  .promo-price { font-size: 12.5px; color: var(--brand-dark); font-weight: 800; margin-top: 4px; }
+
+  /* announcements */
+  .announce-item { background: #fff; border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .announce-date { font-size: 10.5px; color: #B08A3A; font-weight: 700; margin-bottom: 4px; }
+  .announce-title { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
+  .announce-body { font-size: 12px; color: #666; line-height: 1.7; white-space: pre-wrap; }
+
+  .empty-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
+  .loading-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
+
+  @media (min-width: 700px) { .app-shell { max-width: 760px; } }
+  @media (min-width: 1000px) { .app-shell { max-width: 1040px; } }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="index.html" class="site-logo-mark">サイトウフーズ<small>SAITO FOODS</small></a>
+    <nav class="site-nav">
+      <a href="index.html" class="active">トップ / Home</a>
+      <a href="product_list.html">商品一覧 / Products</a>
+      <a href="mypage.html">マイページ / My Page</a>
+    </nav>
+    <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-icon">🍱</div>
+  <h1>26年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
+  <p>日本食デリバリー・サイトウフーズの通販サイトです。<br>冷凍食品からお米、調味料まで幅広く取り揃えています。</p>
+  <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
+</div>
+
+<main>
+
+  <div class="section-block">
+    <div class="section-title">🏆 TOP3 / 人気商品ランキング</div>
+    <div class="top3-list" id="top3-list">
+      <div class="loading-note">読み込み中... / Loading...</div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">🎉 今月のプロモーション品 / This Month's Promotions</div>
+    <div class="promo-scroll" id="promo-scroll">
+      <div class="loading-note">読み込み中... / Loading...</div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">📣 お知らせ / Announcements</div>
+    <div id="announce-list">
+      <div class="loading-note">読み込み中... / Loading...</div>
+    </div>
+  </div>
+
+</main>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
+
+async function supabase(method, path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+// ヘッダーのカート個数(product_list.html/cart.htmlと同じlocalStorageキー)
+function updateHeaderCartCount() {
+  try {
+    const map = JSON.parse(localStorage.getItem('saitofoods_cart') || '{}');
+    const count = Object.values(map).reduce((sum, qty) => sum + (parseInt(qty, 10) || 0), 0);
+    document.getElementById('header-cart-count').textContent = count;
+  } catch (e) {}
+}
+
+// ---------------- TOP3(人気商品ランキング) ----------------
+async function loadTop3() {
+  const listEl = document.getElementById('top3-list');
+  try {
+    const popData = await supabase('GET', 'popular_products?select=product_id,order_count&order=order_count.desc&limit=3');
+    if (!popData.length) { listEl.innerHTML = '<div class="empty-note">まだ十分な注文実績がありません / Not enough order history yet</div>'; return; }
+
+    const ids = popData.map(p => p.product_id);
+    const idsParam = ids.map(id => `"${id}"`).join(',');
+    const products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url`);
+
+    const orderMap = {};
+    popData.forEach(p => { orderMap[p.product_id] = p.order_count; });
+    const sorted = products.slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
+
+    if (!sorted.length) { listEl.innerHTML = '<div class="empty-note">まだ十分な注文実績がありません / Not enough order history yet</div>'; return; }
+
+    const rankIcons = ['🥇', '🥈', '🥉'];
+    const rankClass = ['r1', 'r2', 'r3'];
+    listEl.innerHTML = sorted.map((p, i) => {
+      const img = p.image_url ? `<img src="${p.image_url}" class="top3-img" onerror="this.style.visibility='hidden'">` : `<div class="top3-img"></div>`;
+      return `
+        <a class="top3-item" href="product_list.html?view=${p.id}">
+          <div class="top3-rank ${rankClass[i] || ''}">${rankIcons[i] || (i + 1)}</div>
+          ${img}
+          <div class="top3-info">
+            <div class="top3-name">${p.name_ja}</div>
+            <div class="top3-price">฿${p.price}</div>
+            <div class="top3-count">⭐ ${orderMap[p.id] || 0}回注文されています</div>
+          </div>
+        </a>
+      `;
+    }).join('');
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-note">読み込みに失敗しました / Failed to load</div>`;
+  }
+}
+
+// ---------------- 今月のプロモーション品 ----------------
+async function loadPromotions() {
+  const scrollEl = document.getElementById('promo-scroll');
+  try {
+    // 「セール中!! / On Promotion」カテゴリの商品を表示(商品管理画面でこのカテゴリに
+    // 商品を追加/削除するだけで、ここに自動反映されます)
+    const categories = await supabase('GET', `categories?name_en=ilike.*promotion*&select=id`);
+    let categoryId = categories[0]?.id;
+    if (!categoryId) {
+      const fallback = await supabase('GET', `categories?name_ja=ilike.*セール*&select=id`);
+      categoryId = fallback[0]?.id;
+    }
+    if (!categoryId) { scrollEl.innerHTML = '<div class="empty-note">プロモーションカテゴリが見つかりませんでした / Promotion category not found</div>'; return; }
+
+    const pcRows = await supabase('GET', `product_categories?category_id=eq.${categoryId}&select=product_id`);
+    const ids = pcRows.map(r => r.product_id);
+    if (!ids.length) { scrollEl.innerHTML = '<div class="empty-note">現在プロモーション中の商品はありません / No promotions right now</div>'; return; }
+
+    const idsParam = ids.map(id => `"${id}"`).join(',');
+    const products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url&limit=12`);
+
+    if (!products.length) { scrollEl.innerHTML = '<div class="empty-note">現在プロモーション中の商品はありません / No promotions right now</div>'; return; }
+
+    scrollEl.innerHTML = products.map(p => {
+      const img = p.image_url ? `<img src="${p.image_url}" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
+      return `
+        <a class="promo-card" href="product_list.html?view=${p.id}">
+          <div class="promo-img-wrap">${img}</div>
+          <div class="promo-body">
+            <div class="promo-name">${p.name_ja}</div>
+            <div class="promo-price">฿${p.price}</div>
+          </div>
+        </a>
+      `;
+    }).join('');
+  } catch (e) {
+    scrollEl.innerHTML = `<div class="empty-note">読み込みに失敗しました / Failed to load</div>`;
+  }
+}
+
+// ---------------- お知らせ ----------------
+async function loadAnnouncements() {
+  const listEl = document.getElementById('announce-list');
+  try {
+    const rows = await supabase('GET', 'announcements?is_active=eq.true&order=published_at.desc&limit=10');
+    if (!rows.length) { listEl.innerHTML = '<div class="empty-note">現在お知らせはありません / No announcements right now</div>'; return; }
+
+    listEl.innerHTML = rows.map(a => `
+      <div class="announce-item">
+        <div class="announce-date">${a.published_at || ''}</div>
+        <div class="announce-title">${a.title}</div>
+        ${a.body ? `<div class="announce-body">${a.body}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-note">読み込みに失敗しました / Failed to load</div>`;
+  }
+}
+
+updateHeaderCartCount();
+loadTop3();
+loadPromotions();
+loadAnnouncements();
+</script>
+
+</body>
+</html>
