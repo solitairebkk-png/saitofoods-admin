@@ -692,7 +692,8 @@ function renderAnnouncementRow(a) {
       <label>公開日 / Date<input type="date" class="ann-date" value="${a.published_at || ''}"></label>
       <label style="flex:1;min-width:160px;">タイトル / Title<input type="text" class="ann-title" value="${a.title ? a.title.replace(/"/g, '&quot;') : ''}" placeholder="タイトル"></label>
       <label style="flex:2;min-width:220px;">本文 / Body<textarea class="ann-body" placeholder="本文(省略可)" style="min-height:44px;resize:vertical;">${a.body || ''}</textarea></label>
-      <label style="flex:1;min-width:200px;">リンク先URL / Link URL<input type="text" class="ann-link" value="${a.link_url ? a.link_url.replace(/"/g, '&quot;') : ''}" placeholder="例: product_list.html?view=商品ID"></label>
+      <label style="flex:1;min-width:200px;">リンク先URL / Link URL<input type="text" class="ann-link" value="${a.link_url ? a.link_url.replace(/"/g, '&quot;') : ''}" placeholder="例: https://www.yahoo.co.jp"></label>
+      <label style="flex:1;min-width:140px;">リンクの文言 / Link Text<input type="text" class="ann-link-text" value="${a.link_text ? a.link_text.replace(/"/g, '&quot;') : ''}" placeholder="例: ヤフージャパンへ"></label>
       <label>有効 / Active<input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
     </div>
     <div class="entry-card-actions">
@@ -706,7 +707,7 @@ function renderAnnouncementRow(a) {
 function addNewAnnouncementRow() {
   const wrap = document.getElementById('announce-tbody');
   const todayStr = new Date().toISOString().slice(0, 10);
-  wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', is_active: true }));
+  wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', link_text: '', is_active: true }));
 }
 
 async function saveAnnouncementRow(btn) {
@@ -716,12 +717,13 @@ async function saveAnnouncementRow(btn) {
   const title = card.querySelector('.ann-title').value.trim();
   const body = card.querySelector('.ann-body').value.trim();
   const linkUrl = card.querySelector('.ann-link').value.trim();
+  const linkText = card.querySelector('.ann-link-text').value.trim();
   const isActive = card.querySelector('.ann-active').checked;
 
   if (!title) { showSaveMsg('タイトルを入力してください / Please enter a title', true); return; }
   if (!publishedAt) { showSaveMsg('公開日を選択してください / Please choose a date', true); return; }
 
-  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, is_active: isActive };
+  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, link_text: linkText || null, is_active: isActive };
 
   let error;
   if (id) {
