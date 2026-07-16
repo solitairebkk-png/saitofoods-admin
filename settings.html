@@ -98,6 +98,21 @@
 <main id="main">
 
   <div class="card">
+    <h2>今月のプロモーション商品 / Monthly Promotion Products(最大2件)</h2>
+    <div class="sub">トップページ(index.html)の「今月のプロモーション品」に表示されます。割引価格を入れると、元の価格に取り消し線が付いて割引額も表示されます。</div>
+
+    <div id="promo-current-list">
+      <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
+    </div>
+
+    <div style="margin-top:14px; position:relative;">
+      <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">商品を検索して追加 / Search to add</label>
+      <input type="text" id="promo-search-input" oninput="searchProductsForPromotion()" placeholder="商品名で検索" style="width:100%;max-width:360px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <div id="promo-search-result" style="max-width:360px;border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;margin-top:4px;display:none;background:#fff;position:absolute;z-index:10;"></div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>定休日・配達不可日 / Holidays</h2>
     <div class="sub">ここに追加した日付は、トップページのカレンダーに赤色で表示され、お客様は注文フォームでその日を選べなくなります。日曜日は元々定休日のため、ここに登録する必要はありません。</div>
     <table class="rules" id="holiday-table">
@@ -262,6 +277,7 @@ function afterLogin() {
     return;
   }
   document.getElementById('main').style.display = 'block';
+  loadMonthlyPromotions();
   loadHolidays();
   loadBlockedSlots();
   loadCoupons();
@@ -293,6 +309,93 @@ const ALL_TIME_SLOTS = [
   { value: '16:00-18:00', label: '16:00-18:00' },
   { value: '17:00-18:00', label: '17:00-18:00' },
 ];
+
+// ---------------- 今月のプロモーション商品 ----------------
+async function loadMonthlyPromotions() {
+  const listEl = document.getElementById('promo-current-list');
+  listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('products').select('id, name_ja, name_en, price, promotion_price')
+    .eq('is_monthly_promotion', true);
+
+  if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">現在プロモーション設定中の商品はありません。下の検索から追加してください。</div>';
+    return;
+  }
+
+  listEl.innerHTML = data.map(p => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fffdf5;flex-wrap:wrap;">
+      <div style="flex:1;min-width:160px;">
+        <div style="font-size:13px;font-weight:600;">${p.name_ja}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${p.name_en || ''} — 通常価格 ${p.price} THB</div>
+      </div>
+      <label style="font-size:11px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;">割引後価格(THB) / Promo price
+        <input type="number" min="0" step="1" value="${p.promotion_price ?? ''}" style="width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;" onchange="savePromotionPrice('${p.id}', this.value)">
+      </label>
+      <button class="btn-delete-row" onclick="removeMonthlyPromotion('${p.id}')">削除 / Remove</button>
+    </div>
+  `).join('');
+}
+
+async function savePromotionPrice(productId, value) {
+  const promoPrice = value === '' ? null : parseFloat(value);
+  if (value !== '' && (isNaN(promoPrice) || promoPrice < 0)) { showSaveMsg('割引後価格を正しく入力してください / Please enter a valid price', true); return; }
+
+  const { error } = await supabaseClient.from('products').update({ promotion_price: promoPrice }).eq('id', productId);
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadMonthlyPromotions();
+}
+
+async function removeMonthlyPromotion(productId) {
+  if (!confirm('プロモーションから外しますか？ / Remove this product from monthly promotion?')) return;
+  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: false, promotion_price: null }).eq('id', productId);
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadMonthlyPromotions();
+}
+
+async function searchProductsForPromotion() {
+  const q = document.getElementById('promo-search-input').value.trim();
+  const resultEl = document.getElementById('promo-search-result');
+  if (!q) { resultEl.style.display = 'none'; return; }
+
+  const { data, error } = await supabaseClient
+    .from('products').select('id, name_ja, name_en, price, is_monthly_promotion')
+    .ilike('name_ja', `%${q}%`)
+    .eq('is_monthly_promotion', false)
+    .limit(15);
+
+  if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
+
+  resultEl.innerHTML = data.map(p => `
+    <div style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border);" onclick="addMonthlyPromotion('${p.id}')">
+      ${p.name_ja} <span style="color:var(--text-muted);font-size:11px;">(${p.price} THB)</span>
+    </div>
+  `).join('');
+  resultEl.style.display = 'block';
+}
+
+async function addMonthlyPromotion(productId) {
+  const { count, error: countErr } = await supabaseClient
+    .from('products').select('id', { count: 'exact', head: true }).eq('is_monthly_promotion', true);
+
+  if (!countErr && count >= 2) {
+    showSaveMsg('今月のプロモーション品は最大2件までです。先に他の商品を削除してください / Monthly promotion is limited to 2 products at a time.', true);
+    return;
+  }
+
+  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: true }).eq('id', productId);
+  document.getElementById('promo-search-input').value = '';
+  document.getElementById('promo-search-result').style.display = 'none';
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadMonthlyPromotions();
+}
 
 // ---------------- 定休日・配達不可日 ----------------
 async function loadHolidays() {
