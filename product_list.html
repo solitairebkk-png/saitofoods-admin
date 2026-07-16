@@ -195,12 +195,16 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
 
 /*
-  想定テーブル構造 (product_control.html と合わせています):
+  テーブル構造 (Supabase RLSポリシー確認済み・2026/07時点):
   products: id, name_ja, name_en, description_ja, description_en, price,
             category_id, stock, is_unlimited_stock, image_url,
-            is_active, is_local_special, sort_order
+            is_published, is_local_special, sort_order
   categories: id, name_ja, name_en, sort_order
-  ※実際のカラム名が異なる場合はここと下のマッピング部分を調整してください
+
+  ※ RLSポリシー "products_select_published" により、
+     is_published = true かつ is_local_special = false の商品のみ
+     anonキーで取得可能。ローカル限定商品(97件)はこのポリシーの時点で
+     自動的に除外されるため、フロント側での追加フィルタは不要。
 */
 
 let allCategories = [];
@@ -262,7 +266,7 @@ async function init() {
   try {
     [allCategories, allProducts] = await Promise.all([
       supabase('GET', 'categories?order=sort_order'),
-      supabase('GET', 'products?is_active=eq.true&order=sort_order'),
+      supabase('GET', 'products?is_published=eq.true&order=sort_order'),
     ]);
     loadCartFromStorage();
     renderCatTabs();
@@ -311,6 +315,8 @@ function productCardHtml(p) {
         ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty(${p.id}, -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty(${p.id}, 1)">+</button></div>`
         : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty(${p.id}, 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
     : `<span class="out-of-stock">在庫切れ</span>`;
+  // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
+  // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
   return `<div class="product-card" onclick="openPModal(${p.id})"><div class="product-img-wrap">${img}</div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}<div class="product-bottom"><div class="product-price">฿${p.price}<span></span></div>${stepper}</div></div></div>`;
 }
 
