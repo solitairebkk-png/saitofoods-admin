@@ -710,7 +710,7 @@ async function saveExpiryDays() {
   if (isNaN(val) || val <= 0) { showSaveMsg('日数を正しく入力してください / Please enter a valid number of days', true); return; }
 
   const { error } = await supabaseClient
-    .from('settings').update({ value: String(val) }).eq('key', 'point_expiry_days');
+    .from('settings').upsert({ key: 'point_expiry_days', value: String(val) }, { onConflict: 'key' });
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
 }
@@ -739,8 +739,8 @@ async function saveShippingSettings() {
   }
 
   const [{ error: err1 }, { error: err2 }] = await Promise.all([
-    supabaseClient.from('settings').update({ value: String(threshold) }).eq('key', 'min_order_free_shipping'),
-    supabaseClient.from('settings').update({ value: String(fee) }).eq('key', 'shipping_fee_amount'),
+    supabaseClient.from('settings').upsert({ key: 'min_order_free_shipping', value: String(threshold) }, { onConflict: 'key' }),
+    supabaseClient.from('settings').upsert({ key: 'shipping_fee_amount', value: String(fee) }, { onConflict: 'key' }),
   ]);
 
   if (err1 || err2) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + (err1?.message || err2?.message), true); return; }
