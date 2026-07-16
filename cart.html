@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイトウフーズ | Saito Foods — カート</title>
+<style>
+  :root {
+    --brand: #8FB9A8; --brand-dark: #5F8B79; --accent: #F4C77B;
+    --cream: #FAF6EE; --ink: #33322E; --line: #D9E6DC; --line-soft: #EDF4EE; --red: #C5533F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
+  a { color: inherit; }
+
+  .app-shell { max-width: 480px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 40px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+
+  .site-header { background: #fff; position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--line); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 12px 20px; }
+  .site-logo-mark { font-weight: 800; font-size: 16px; color: var(--brand-dark); white-space: nowrap; }
+  .site-logo-mark small { display: block; font-size: 10px; font-weight: 600; color: #999; }
+  .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
+  .site-nav a { color: var(--ink); text-decoration: none; opacity: .7; }
+  .site-nav a.active { opacity: 1; color: var(--brand-dark); }
+
+  main { padding: 16px; }
+
+  .page-title { font-size: 17px; font-weight: 800; color: var(--brand-dark); margin-bottom: 14px; }
+
+  .card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .card h2 { font-size: 13.5px; font-weight: 700; color: var(--brand-dark); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+  /* login */
+  #login-card input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; margin-bottom: 10px; }
+  #login-card .btn-primary { width: 100%; }
+  #login-error { color: var(--red); font-size: 12.5px; min-height: 16px; margin-bottom: 6px; }
+  .signup-hint { font-size: 12px; color: #999; margin-top: 10px; text-align: center; }
+  .signup-hint a { color: var(--brand-dark); font-weight: 700; text-decoration: underline; }
+
+  /* cart items */
+  .cart-item-row { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+  .cart-item-row:last-child { border-bottom: none; }
+  .cart-item-img { width: 52px; height: 52px; border-radius: 8px; background: var(--line-soft); object-fit: cover; flex-shrink: 0; }
+  .cart-item-info { flex: 1; min-width: 0; }
+  .cart-item-name { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+  .cart-item-price { font-size: 12.5px; color: var(--brand-dark); font-weight: 700; margin-top: 2px; }
+  .cart-item-weight-tag { font-size: 10.5px; font-weight: 700; color: #1c5279; background: #d9e8f5; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .cart-item-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .qty-btn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--brand); background: #fff; color: var(--brand-dark); font-size: 15px; font-weight: 700; cursor: pointer; }
+  .qty-num { font-size: 13.5px; font-weight: 700; min-width: 18px; text-align: center; }
+  .remove-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: #FEE2E2; color: #C53030; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+  .empty-cart-note { text-align: center; color: #999; font-size: 13px; padding: 30px 0; }
+
+  /* delivery */
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 11.5px; color: #7A8B7F; font-weight: 700; display: block; margin-bottom: 5px; }
+  .field input, .field select { width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; background: #fff; }
+  .date-note { font-size: 11px; color: var(--red); margin-top: 4px; min-height: 14px; }
+  .row-2 { display: flex; gap: 10px; }
+  .row-2 .field { flex: 1; }
+
+  /* shipping banner */
+  .shipping-banner { background: #FFF8EA; border: 1.5px dashed var(--accent); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #7A5C1E; line-height: 1.6; margin-bottom: 12px; }
+  .totals-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+  .totals-row.total { border-top: 1.5px solid var(--line-soft); margin-top: 6px; padding-top: 10px; font-size: 16px; font-weight: 800; color: var(--brand-dark); }
+  .totals-row.free { color: var(--brand-dark); font-weight: 700; }
+
+  /* payment */
+  .pay-options { display: flex; flex-direction: column; gap: 8px; }
+  .pay-option { border: 1.5px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .pay-option.selected { border-color: var(--brand); background: var(--line-soft); }
+  .pay-option input { width: 16px; height: 16px; }
+  .pay-option .pay-label { font-size: 13.5px; font-weight: 700; }
+  .pay-option .pay-sub { font-size: 11px; color: #999; margin-top: 1px; }
+
+  .bank-info-box, .cod-info-box { margin-top: 10px; padding: 12px; border-radius: 8px; background: var(--line-soft); font-size: 12.5px; line-height: 1.8; }
+
+  .btn-primary { background: var(--brand); color: #fff; border: none; padding: 13px; border-radius: 12px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #submit-msg { font-size: 13px; margin-top: 10px; text-align: center; }
+  #submit-msg.error { color: var(--red); }
+  #submit-msg.success { color: var(--brand-dark); font-weight: 700; }
+
+  /* success panel */
+  #success-panel { text-align: center; }
+  #success-panel .icon { font-size: 44px; margin-bottom: 8px; }
+  #success-panel h2 { justify-content: center; }
+  #order-qr-wrap { display: none; flex-direction: column; align-items: center; gap: 6px; margin: 14px 0; padding: 14px; background: var(--line-soft); border-radius: 10px; }
+  #order-qr-code { width: 190px; height: 190px; display: flex; align-items: center; justify-content: center; }
+  .slip-link-row { display: flex; gap: 8px; margin-top: 10px; }
+  #slip-link-input { flex: 1; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 8px; font-size: 12px; font-family: inherit; }
+  .btn-secondary { background: #fff; color: var(--brand-dark); border: 1.5px solid var(--brand); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+
+  @media (min-width: 700px) { .app-shell { max-width: 620px; } }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="index.html" class="site-logo-mark">サイトウフーズ<small>SAITO FOODS</small></a>
+    <nav class="site-nav">
+      <a href="index.html">トップ / Home</a>
+      <a href="product_list.html">商品一覧 / Products</a>
+      <a href="cart.html" class="active">カート / Cart</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">カート / Cart</div>
+
+  <!-- ログインが必要な場合 -->
+  <div class="card" id="login-card" style="display:none;">
+    <h2>🔒 ログインしてください / Please log in</h2>
+    <div style="font-size:12px;color:#999;margin-bottom:12px;">ご注文にはログインが必要です。カートの中身はこのまま保持されます。</div>
+    <div id="login-error"></div>
+    <input type="email" id="login-email" placeholder="メールアドレス / Email">
+    <input type="password" id="login-password" placeholder="パスワード / Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-primary" onclick="login()">ログイン / Log in</button>
+    <div class="signup-hint">アカウントをお持ちでない方は <a href="mypage.html">マイページ</a> から新規登録できます</div>
+  </div>
+
+  <!-- ログイン後のカート・注文フォーム -->
+  <div id="cart-content" style="display:none;">
+
+    <div class="card">
+      <h2>🛒 商品 / Items</h2>
+      <div id="cart-items-list"></div>
+    </div>
+
+    <div class="card" id="delivery-card">
+      <h2>🚚 配送日時 / Delivery date &amp; time</h2>
+      <div class="row-2">
+        <div class="field">
+          <label>配送日 / Delivery date</label>
+          <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
+          <div class="date-note" id="delivery-date-note"></div>
+        </div>
+        <div class="field">
+          <label>時間帯 / Time slot</label>
+          <select id="delivery-time-slot"></select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#999;">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
+    </div>
+
+    <div class="card">
+      <h2>💰 配送料について / Shipping fee</h2>
+      <div class="shipping-banner" id="shipping-banner"></div>
+      <div class="totals-row"><span>小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
+      <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
+      <div class="totals-row total"><span>合計 / Total</span><span id="totals-total">฿0</span></div>
+      <div style="font-size:11px;color:#999;margin-top:6px;">※ 量り売り商品は重量確定後に金額が決まります(合計には含まれません)</div>
+    </div>
+
+    <div class="card">
+      <h2>💳 支払い方法 / Payment method</h2>
+      <div class="pay-options">
+        <label class="pay-option" id="pay-option-qr">
+          <input type="radio" name="payment" value="qr" checked onchange="onPaymentChange()">
+          <div><div class="pay-label">📱 PromptPay QR</div><div class="pay-sub">QRコードを読み取って送金</div></div>
+        </label>
+        <label class="pay-option" id="pay-option-transfer">
+          <input type="radio" name="payment" value="transfer" onchange="onPaymentChange()">
+          <div><div class="pay-label">🏦 銀行振込 / Bank transfer</div><div class="pay-sub">SCB口座へお振込み</div></div>
+        </label>
+        <label class="pay-option" id="pay-option-cod">
+          <input type="radio" name="payment" value="cash" onchange="onPaymentChange()">
+          <div><div class="pay-label">💵 代金引換 / Cash on delivery</div><div class="pay-sub">配達員にお支払い</div></div>
+        </label>
+      </div>
+      <div class="bank-info-box" id="bank-info-box" style="display:none;">
+        <b>SCB (Siam Commercial Bank)</b><br>
+        口座番号 / Account No.: <b>071-296992-2</b><br>
+        口座名義 / Account name: <b>SAITO FOODS CO.,LTD.</b><br>
+        ※ ご注文確定後、スリップアップロード用リンクが表示されます
+      </div>
+      <div class="cod-info-box" id="cod-info-box" style="display:none;">
+        配達時に配達員へ直接お支払いください。おつりのないようご準備いただけると助かります。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>備考 / Comment</label>
+        <input type="text" id="order-comment" placeholder="例: 玄関前に置いてください">
+      </div>
+      <button class="btn-primary" style="width:100%;" onclick="submitOrder()">注文を確定する / Place order</button>
+      <div id="submit-msg"></div>
+    </div>
+
+    <!-- 注文完了後の表示 -->
+    <div class="card" id="success-panel" style="display:none;">
+      <div class="icon">🎉</div>
+      <h2 style="justify-content:center;">ご注文ありがとうございます！ / Order placed!</h2>
+      <div id="success-note" style="font-size:13px;color:#666;"></div>
+      <div id="order-qr-wrap">
+        <div id="order-qr-code"></div>
+        <div style="font-size:11px;color:#999;">PromptPay QR — <span id="order-qr-amount"></span> THB</div>
+      </div>
+      <div class="slip-link-row" id="slip-link-row" style="display:none;">
+        <input type="text" id="slip-link-input" readonly onclick="this.select()">
+        <button class="btn-secondary" onclick="copySlipLink()">コピー / Copy</button>
+      </div>
+      <button class="btn-secondary" style="width:100%;margin-top:14px;" onclick="location.href='product_list.html'">商品一覧に戻る / Back to products</button>
+    </div>
+
+  </div>
+</main>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// スリップアップロード用の既存アプリ(local_order.htmlと同一のものを流用)
+const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
+
+// PromptPay QR生成用(local_order.html・rakugo.storeと同一ロジック・同一口座)
+const PROMPTPAY_BILLER_ID = '010554007919109';
+const PROMPTPAY_REF1 = 'REF001';
+const PROMPTPAY_REF2 = 'REF002';
+const PROMPTPAY_TERMINAL = 'IFB0639311943';
+
+const MORNING_SLOTS = [{ value: 'เช้า / Morning (AM)', label: '午前 / Morning' }];
+const AFTERNOON_SLOTS = [
+  { value: '13:00-15:00', label: '13:00-15:00' },
+  { value: '13:30-15:30', label: '13:30-15:30' },
+  { value: '14:00-16:00', label: '14:00-16:00' },
+  { value: '14:30-16:30', label: '14:30-16:30' },
+  { value: '15:00-17:00', label: '15:00-17:00' },
+  { value: '15:30-17:30', label: '15:30-17:30' },
+  { value: '16:00-18:00', label: '16:00-18:00' },
+  { value: '17:00-18:00', label: '17:00-18:00' },
+];
+
+let currentCustomer = null; // customersテーブルの行(ログイン中のお客様)
+let cart = [];              // { product_id, name, sale_type, price, unit_price, unit_label, quantity, image_url }
+let shippingFreeThreshold = 600;
+let shippingFeeAmount = 100;
+
+// ---------------- 認証(supabase-js。mypage.html等と同じセッションを共有) ----------------
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'ログインに失敗しました / Login failed: ' + error.message; return; }
+
+  await loadCustomerAndInit(data.user.id);
+}
+
+async function loadCustomerAndInit(userId) {
+  const { data: rows, error } = await supabaseClient
+    .from('customers')
+    .select('id, family_name, first_name, tel1, address1, address2')
+    .eq('auth_user_id', userId);
+
+  if (error || !rows || rows.length === 0) {
+    document.getElementById('login-error').textContent = 'お客様情報が見つかりませんでした / Customer record not found.';
+    return;
+  }
+  currentCustomer = rows[0];
+  document.getElementById('login-card').style.display = 'none';
+  document.getElementById('cart-content').style.display = 'block';
+  initDeliveryDatePicker();
+  await Promise.all([loadShippingSettings(), loadCartItems()]);
+  onPaymentChange();
+}
+
+// ---------------- 初期化 ----------------
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    await loadCustomerAndInit(session.user.id);
+    return;
+  }
+  document.getElementById('login-card').style.display = 'block';
+})();
+
+// ---------------- 配送料設定 ----------------
+async function loadShippingSettings() {
+  const { data, error } = await supabaseClient
+    .from('settings').select('key, value')
+    .in('key', ['min_order_free_shipping', 'shipping_fee_amount']);
+
+  if (!error && data) {
+    data.forEach(row => {
+      if (row.key === 'min_order_free_shipping') shippingFreeThreshold = parseFloat(row.value) || 600;
+      if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
+    });
+  }
+  document.getElementById('shipping-banner').innerHTML =
+    `🚚 合計金額 <b>฿${shippingFreeThreshold}</b> 以上のご注文で配送料無料です。<br>` +
+    `฿${shippingFreeThreshold} 未満の場合、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+}
+
+// ---------------- カート読み込み(product_list.htmlのlocalStorageと同じキー) ----------------
+async function loadCartItems() {
+  const listEl = document.getElementById('cart-items-list');
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem('saitofoods_cart') || '{}'); } catch (e) {}
+
+  const ids = Object.keys(map);
+  if (ids.length === 0) {
+    cart = [];
+    listEl.innerHTML = '<div class="empty-cart-note">カートに商品がありません / Your cart is empty</div>';
+    updateTotals();
+    return;
+  }
+
+  const { data: products, error } = await supabaseClient
+    .from('products')
+    .select('id, name_ja, name_en, price, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty')
+    .in('id', ids);
+
+  if (error || !products) {
+    listEl.innerHTML = '<div class="empty-cart-note">読み込みに失敗しました / Failed to load cart</div>';
+    return;
+  }
+
+  cart = products.map(p => ({
+    product_id: p.id,
+    name: p.name_ja,
+    name_en: p.name_en,
+    sale_type: p.sale_type,
+    price: p.price,
+    unit_price: p.unit_price,
+    unit_label: p.unit_label,
+    image_url: p.image_url,
+    quantity: Math.max(1, parseInt(map[p.id], 10) || 1),
+    maxQty: p.is_unlimited_stock ? 999 : (p.stock_qty || 0),
+  }));
+
+  renderCart();
+}
+
+function saveCartToStorage() {
+  const map = {};
+  cart.forEach(i => { map[i.product_id] = i.quantity; });
+  localStorage.setItem('saitofoods_cart', JSON.stringify(map));
+}
+
+function renderCart() {
+  const listEl = document.getElementById('cart-items-list');
+  if (cart.length === 0) {
+    listEl.innerHTML = '<div class="empty-cart-note">カートに商品がありません / Your cart is empty</div>';
+    updateTotals();
+    return;
+  }
+
+  listEl.innerHTML = cart.map((item, i) => {
+    const isWeight = item.sale_type === 'weight';
+    const img = item.image_url ? `<img src="${item.image_url}" class="cart-item-img" onerror="this.style.visibility='hidden'">` : `<div class="cart-item-img"></div>`;
+    const priceLabel = isWeight ? `${item.unit_price} THB / ${item.unit_label}` : `฿${item.price}`;
+    return `
+      <div class="cart-item-row">
+        ${img}
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}${isWeight ? '<span class="cart-item-weight-tag">量り売り</span>' : ''}</div>
+          <div class="cart-item-price">${priceLabel}</div>
+        </div>
+        <div class="cart-item-controls">
+          <button class="qty-btn" onclick="updateQty(${i}, -1)">−</button>
+          <span class="qty-num">${item.quantity}</span>
+          <button class="qty-btn" onclick="updateQty(${i}, 1)">+</button>
+          <button class="remove-btn" onclick="removeItem(${i})">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  updateTotals();
+}
+
+function updateQty(index, delta) {
+  const item = cart[index];
+  if (!item) return;
+  const max = item.maxQty && item.maxQty > 0 ? item.maxQty : 999;
+  item.quantity = Math.max(1, Math.min(max, item.quantity + delta));
+  saveCartToStorage();
+  renderCart();
+}
+
+function removeItem(index) {
+  cart.splice(index, 1);
+  saveCartToStorage();
+  renderCart();
+}
+
+function updateTotals() {
+  const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const shippingCost = subtotal > 0 && subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
+  const total = subtotal + shippingCost;
+
+  document.getElementById('totals-subtotal').textContent = `฿${subtotal}`;
+  const shippingRow = document.getElementById('totals-shipping-row');
+  const shippingEl = document.getElementById('totals-shipping');
+  if (shippingCost > 0) {
+    shippingEl.textContent = `฿${shippingCost}`;
+    shippingRow.classList.remove('free');
+  } else {
+    shippingEl.textContent = subtotal > 0 ? '🎉 無料 / Free' : '฿0';
+    shippingRow.classList.add('free');
+  }
+  document.getElementById('totals-total').textContent = `฿${total}`;
+}
+
+// ---------------- 配送日時 ----------------
+function initDeliveryDatePicker() {
+  const dateInput = document.getElementById('delivery-date');
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  dateInput.min = todayStr;
+  dateInput.value = todayStr;
+  onDeliveryDateChange();
+}
+
+function onDeliveryDateChange() {
+  const dateInput = document.getElementById('delivery-date');
+  const noteEl = document.getElementById('delivery-date-note');
+  const val = dateInput.value;
+  if (!val) return;
+
+  const [y, m, d] = val.split('-').map(Number);
+  const dayOfWeek = new Date(y, m - 1, d).getDay();
+
+  if (dayOfWeek === 0) {
+    noteEl.textContent = '日曜定休のため、別の日をお選びください / Closed on Sundays. Please choose another date.';
+    populateTimeSlots([]);
+    return;
+  }
+  noteEl.textContent = '';
+  populateTimeSlots(dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
+}
+
+function populateTimeSlots(slots) {
+  const select = document.getElementById('delivery-time-slot');
+  select.innerHTML = '';
+  if (slots.length === 0) {
+    select.innerHTML = '<option value="">-- 休業日 / Closed --</option>';
+    return;
+  }
+  select.innerHTML = slots.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+}
+
+// ---------------- 支払い方法 ----------------
+function onPaymentChange() {
+  const method = document.querySelector('input[name=payment]:checked')?.value;
+  document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
+  if (method === 'qr') document.getElementById('pay-option-qr').classList.add('selected');
+  if (method === 'transfer') document.getElementById('pay-option-transfer').classList.add('selected');
+  if (method === 'cash') document.getElementById('pay-option-cod').classList.add('selected');
+
+  document.getElementById('bank-info-box').style.display = method === 'transfer' ? 'block' : 'none';
+  document.getElementById('cod-info-box').style.display = method === 'cash' ? 'block' : 'none';
+}
+
+// ---------------- PromptPay QR ----------------
+function ppTlv(tag, value) { return `${tag}${String(value.length).padStart(2, '0')}${value}`; }
+function ppCrc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= (str.charCodeAt(i) << 8);
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+function buildPromptPayPayload(amount) {
+  const merchantInfo = ppTlv('00', 'A000000677010112') + ppTlv('01', PROMPTPAY_BILLER_ID) + ppTlv('02', PROMPTPAY_REF1) + ppTlv('03', PROMPTPAY_REF2);
+  const payload = ppTlv('00', '01') + ppTlv('01', '12') + ppTlv('30', merchantInfo) + ppTlv('53', '764') + ppTlv('54', amount.toFixed(2)) + ppTlv('58', 'TH') + ppTlv('62', ppTlv('07', PROMPTPAY_TERMINAL));
+  const withCrcTag = payload + '6304';
+  return withCrcTag + ppCrc16(withCrcTag);
+}
+function renderPromptPayQr(amount) {
+  const wrapEl = document.getElementById('order-qr-wrap');
+  const codeEl = document.getElementById('order-qr-code');
+  if (!amount || amount <= 0) { wrapEl.style.display = 'none'; return; }
+  codeEl.innerHTML = '';
+  new QRCode(codeEl, { text: buildPromptPayPayload(amount), width: 190, height: 190 });
+  document.getElementById('order-qr-amount').textContent = amount;
+  wrapEl.style.display = 'flex';
+}
+
+function copySlipLink() {
+  const inputEl = document.getElementById('slip-link-input');
+  inputEl.select();
+  inputEl.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(inputEl.value).catch(() => {});
+}
+
+// ---------------- 注文送信 ----------------
+async function submitOrder() {
+  const msgEl = document.getElementById('submit-msg');
+  msgEl.textContent = '';
+  msgEl.className = '';
+
+  if (cart.length === 0) { msgEl.textContent = '商品をカートに入れてください / Please add at least one product.'; msgEl.className = 'error'; return; }
+
+  const deliveryDate = document.getElementById('delivery-date').value;
+  const deliveryTimeSlot = document.getElementById('delivery-time-slot').value;
+  if (!deliveryDate || !deliveryTimeSlot) { msgEl.textContent = '配送日時を選択してください(日曜以外) / Please choose a valid delivery date and time.'; msgEl.className = 'error'; return; }
+
+  const paymentMethod = document.querySelector('input[name=payment]:checked')?.value;
+  if (!paymentMethod) { msgEl.textContent = '支払い方法を選択してください / Please choose a payment method.'; msgEl.className = 'error'; return; }
+
+  const comment = document.getElementById('order-comment').value.trim();
+  const hasWeightItems = cart.some(i => i.sale_type === 'weight');
+  const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const shippingCost = subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
+  const total = subtotal + shippingCost;
+
+  const orderPayload = {
+    order_type: 'delivery',
+    order_source: 'online',
+    customer_id: currentCustomer.id,
+    delivery_date: deliveryDate,
+    delivery_time_slot: deliveryTimeSlot,
+    has_weight_items: hasWeightItems,
+    payment_method: paymentMethod,
+    payment_status: 'unpaid',
+    subtotal: subtotal,
+    shipping_cost: shippingCost,
+    total_amount: total,
+    comment: comment || null,
+    created_by: null,
+  };
+
+  const btn = document.querySelector('#cart-content .btn-primary');
+  btn.disabled = true;
+  btn.textContent = '送信中... / Submitting...';
+
+  try {
+    const { data: orderRows, error: orderErr } = await supabaseClient.from('orders').insert(orderPayload).select('id').single();
+    if (orderErr) throw orderErr;
+    const orderId = orderRows.id;
+
+    const itemsPayload = cart.map(item => ({
+      order_id: orderId,
+      product_id: item.product_id,
+      product_name_snapshot: item.name,
+      sale_type: item.sale_type,
+      quantity: item.quantity,
+      unit_price: item.sale_type === 'weight' ? item.unit_price : null,
+      price: item.sale_type === 'weight' ? 0 : item.price,
+      total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
+    }));
+    const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
+    if (itemsErr) throw itemsErr;
+
+    showSuccess({ orderId, amount: total, hasWeightItems, paymentMethod, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
+
+    cart = [];
+    localStorage.removeItem('saitofoods_cart');
+    document.getElementById('cart-items-list').innerHTML = '';
+    document.getElementById('delivery-card').style.display = 'none';
+    document.querySelectorAll('#cart-content > .card').forEach(el => { if (el.id !== 'success-panel') el.style.display = 'none'; });
+  } catch (e) {
+    msgEl.textContent = '注文の送信に失敗しました / Failed to submit order: ' + e.message;
+    msgEl.className = 'error';
+    btn.disabled = false;
+    btn.textContent = '注文を確定する / Place order';
+  }
+}
+
+function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, customerName }) {
+  const panel = document.getElementById('success-panel');
+  const noteEl = document.getElementById('success-note');
+  panel.style.display = 'block';
+
+  if (hasWeightItems) {
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>量り売り商品が含まれるため、重量確定後に正式な金額とお支払い方法のご案内をいたします。`;
+    return;
+  }
+
+  if (paymentMethod === 'cash') {
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>配達時に代金引換にてお支払いください。合計 ฿${amount}`;
+    return;
+  }
+
+  noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。`;
+  renderPromptPayQr(amount);
+
+  const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId });
+  document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+  document.getElementById('slip-link-row').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>
