@@ -326,12 +326,14 @@ async function loadAnnouncements() {
     listEl.innerHTML = rows.map(a => {
       const hasLink = !!a.link_url;
       const linkLabel = a.link_text || '詳しく見る';
+      const isExternal = hasLink && /^https?:\/\//i.test(a.link_url);
+      const linkAttrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
       return `
         <div class="announce-item">
           <div class="announce-date">${a.published_at || ''}</div>
           <div class="announce-title">${a.title}</div>
           ${a.body ? `<div class="announce-body">${a.body}</div>` : ''}
-          ${hasLink ? `<a class="announce-link-btn" href="${a.link_url}">${linkLabel} →</a>` : ''}
+          ${hasLink ? `<a class="announce-link-btn" href="${a.link_url}" ${linkAttrs}>${linkLabel} →</a>` : ''}
         </div>
       `;
     }).join('');
