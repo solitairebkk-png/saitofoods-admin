@@ -42,9 +42,22 @@
   .toolbar-sticky { position: sticky; top: 61px; z-index: 20; background: #fff; border-bottom: 1px solid var(--line-soft); padding: 12px 16px 0; }
   .search-input { width: 100%; padding: 10px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; margin-bottom: 10px; background: var(--cream); }
   .search-input:focus { outline: none; border-color: var(--brand); background: #fff; }
-  .cat-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 12px; }
-  .cat-tab { padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-  .cat-tab.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .cat-select-row { padding: 0 0 12px; }
+  .cat-select-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; border-radius: 22px; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; }
+  .cat-select-btn .cat-select-icon { flex-shrink: 0; }
+  .cat-select-btn #cat-select-label { flex: 1; }
+  .cat-select-btn .cat-select-arrow { flex-shrink: 0; color: var(--line); font-size: 16px; }
+
+  .cat-drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 90; }
+  .cat-drawer-overlay.open { display: block; }
+  .cat-drawer { position: fixed; top: 0; left: 0; height: 100%; width: 78%; max-width: 300px; background: #fff; z-index: 91; transform: translateX(-100%); transition: transform 0.25s ease; box-shadow: 4px 0 16px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+  .cat-drawer.open { transform: translateX(0); }
+  .cat-drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; background: var(--brand); color: #fff; flex-shrink: 0; }
+  .cat-drawer-header span:first-child { font-weight: 700; font-size: 14px; }
+  .cat-drawer-close { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; line-height: 1; }
+  .cat-drawer-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+  .cat-drawer-item { display: block; width: 100%; text-align: left; padding: 12px 18px; border: none; background: none; font-size: 13.5px; font-weight: 600; color: var(--ink); cursor: pointer; border-left: 3px solid transparent; }
+  .cat-drawer-item.active { color: var(--brand-dark); background: var(--line-soft); border-left-color: var(--brand); }
 
   .section-title { padding: 18px 16px 8px; font-size: 15px; font-weight: 800; color: var(--brand-dark); display:flex; align-items:center; gap:8px; }
   .section-title .badge-local { font-size:10.5px; font-weight:700; background: var(--accent); color:#5A3E00; padding:2px 8px; border-radius:10px; }
@@ -149,7 +162,13 @@
 
 <div class="toolbar-sticky">
   <input type="text" id="product-search" class="search-input" placeholder="🔍 商品を検索 / Search product" oninput="handleSearch(this.value)">
-  <div class="cat-tabs" id="cat-tabs"></div>
+  <div class="cat-select-row">
+    <button class="cat-select-btn" onclick="openCatDrawer()">
+      <span class="cat-select-icon">📂</span>
+      <span id="cat-select-label">すべて / All</span>
+      <span class="cat-select-arrow">›</span>
+    </button>
+  </div>
 </div>
 
 <div id="product-sections"></div>
@@ -157,6 +176,16 @@
 <div class="cart-bar" id="cart-bar">
   <div class="cart-bar-info"><b id="cart-count">0</b> 点 &nbsp;·&nbsp; ฿<b id="cart-total">0</b></div>
   <a class="cart-bar-btn" href="cart.html">カートを見る / View cart →</a>
+</div>
+
+<!-- CATEGORY DRAWER -->
+<div class="cat-drawer-overlay" id="cat-drawer-overlay" onclick="closeCatDrawer()"></div>
+<div class="cat-drawer" id="cat-drawer">
+  <div class="cat-drawer-header">
+    <span>カテゴリ / Category</span>
+    <button class="cat-drawer-close" onclick="closeCatDrawer()">✕</button>
+  </div>
+  <div class="cat-drawer-list" id="cat-drawer-list"></div>
 </div>
 
 <!-- PRODUCT DETAIL MODAL -->
@@ -291,16 +320,28 @@ async function init() {
 }
 
 function renderCatTabs() {
-  const wrap = document.getElementById('cat-tabs');
-  // カテゴリテーブルが取得できない/空でも「すべて」タブだけで正常動作する
-  wrap.innerHTML = `<button class="cat-tab active" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
-    allCategories.map(c => `<button class="cat-tab" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
+  const wrap = document.getElementById('cat-drawer-list');
+  // カテゴリテーブルが取得できない/空でも「すべて」項目だけで正常動作する
+  wrap.innerHTML = `<button class="cat-drawer-item active" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
+    allCategories.map(c => `<button class="cat-drawer-item" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
+}
+
+function openCatDrawer() {
+  document.getElementById('cat-drawer').classList.add('open');
+  document.getElementById('cat-drawer-overlay').classList.add('open');
+}
+
+function closeCatDrawer() {
+  document.getElementById('cat-drawer').classList.remove('open');
+  document.getElementById('cat-drawer-overlay').classList.remove('open');
 }
 
 function setCategoryFilter(catId, btn) {
   currentCategoryFilter = catId;
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.cat-drawer-item').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  document.getElementById('cat-select-label').textContent = btn.textContent;
+  closeCatDrawer();
   window.scrollTo({ top: 0, behavior: 'smooth' });
   renderProducts();
 }
