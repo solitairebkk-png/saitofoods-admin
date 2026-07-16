@@ -486,6 +486,8 @@ function productCardHtml(p) {
   const available = isAvailable(p);
   const inCart = cart[p.id]?.qty || 0;
   const isFav = favoriteProductIds.has(p.id);
+  const isWeight = p.sale_type === 'weight';
+  const priceLabel = isWeight ? `฿${p.unit_price} <span>/ ${p.unit_label}</span>` : `฿${p.price}<span></span>`;
   const stepper = available
     ? (inCart > 0
         ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button></div>`
@@ -493,7 +495,7 @@ function productCardHtml(p) {
     : `<span class="out-of-stock">在庫切れ</span>`;
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)">${isFav ? '♥' : '♡'}</button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}<div class="product-bottom"><div class="product-price">฿${p.price}<span></span></div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)">${isFav ? '♥' : '♡'}</button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
 }
 
 function handleSearch(q) {
@@ -608,7 +610,9 @@ function openPModal(productId) {
   document.getElementById('pmodal-name-en').textContent = p.name_en || '';
   document.getElementById('pmodal-local-tag').style.display = p.is_local_special ? 'block' : 'none';
   applyPModalDescLang(p);
-  document.getElementById('pmodal-price').textContent = `฿${p.price}`;
+  document.getElementById('pmodal-price').textContent = p.sale_type === 'weight'
+    ? `฿${p.unit_price} / ${p.unit_label}`
+    : `฿${p.price}`;
 
   const addBtn = document.getElementById('pmodal-addcart-btn');
   const alreadyInCart = cart[productId]?.qty || 0;
