@@ -28,12 +28,15 @@
   }
   header {
     background: var(--navy); color: white; padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
   }
   header h1 { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.4; }
   header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 13px; display: block; }
-  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; margin-left: 16px; }
+  header nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; }
   header nav a:hover { color: white; }
+  header .logout-link { margin-left: auto; color: #cdd8e6; text-decoration: none; font-size: 13px; }
+  header .logout-link:hover { color: white; }
 
   #login-panel {
     max-width: 380px; margin: 80px auto; background: var(--panel);
@@ -166,8 +169,14 @@
   <h1>New Order <span class="th">สร้างคำสั่งซื้อใหม่</span></h1>
   <nav>
     <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
-    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+    <a href="customer_control.html">👤 Customers</a>
+    <a href="customer_history.html">🕘 History</a>
+    <a href="stock_sync.html">🔄 Stock Sync</a>
+    <a href="product_control.html">📦 Products</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
   </nav>
+  <a href="#" onclick="logout()" class="logout-link">Logout / ออกจากระบบ</a>
 </header>
 
 <div id="login-panel">
