@@ -38,6 +38,10 @@
   /* TOP3 */
   .top3-list { display: flex; flex-direction: column; gap: 10px; }
   .top3-item { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 10px 14px 10px 10px; cursor: pointer; text-decoration: none; color: inherit; }
+  @media (min-width: 700px) {
+    .top3-list { flex-direction: row; }
+    .top3-item { flex: 1; }
+  }
   .top3-rank { font-size: 22px; font-weight: 800; width: 34px; text-align: center; flex-shrink: 0; }
   .top3-rank.r1 { color: #D4A017; }
   .top3-rank.r2 { color: #9AA5AE; }
@@ -101,8 +105,8 @@
   .skeleton-promo-card { flex: 0 0 130px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; }
   .skeleton-announce-item { background: #fff; border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
 
-  @media (min-width: 700px) { .app-shell { max-width: 760px; } }
-  @media (min-width: 1000px) { .app-shell { max-width: 1040px; } }
+  @media (min-width: 700px) { .app-shell { max-width: 700px; } }
+  @media (min-width: 1000px) { .app-shell { max-width: 900px; } }
 
   /* footer */
   .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; margin-top: 24px; font-size: 12.5px; color: #666; }
@@ -120,7 +124,7 @@
   .footer-area-image-item img:hover { transform: scale(2.6); box-shadow: 0 12px 32px rgba(0,0,0,0.3); z-index: 30; }
   .footer-area-image-item span { display: block; font-size: 11px; color: #777; margin-top: 4px; font-weight: 600; }
   .footer-store-media { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; max-width: 520px; }
-  .footer-store-photo, .footer-store-map { flex: 1 1 220px; width: 100%; aspect-ratio: 4/3; min-height: 170px; border-radius: 10px; border: 1px solid var(--line-soft); }
+  .footer-store-photo, .footer-store-map { flex: 0 0 auto; width: 150px; aspect-ratio: 4/3; border-radius: 10px; border: 1px solid var(--line-soft); }
   .footer-store-photo { object-fit: cover; display: block; }
   .footer-store-map { border: 1px solid var(--line-soft); overflow: hidden; background: #eee; }
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -141,6 +145,13 @@
     <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
   </div>
 </header>
+
+<div class="hero">
+  <div class="hero-icon">🍱</div>
+  <h1>26年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
+  <p>日本食デリバリー・サイトウフーズの通販サイトです。<br>冷凍食品からお米、調味料まで幅広く取り揃えています。</p>
+  <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
+</div>
 
 <div class="top-info-row">
   <div class="top-info-col">
@@ -167,13 +178,6 @@
       </div>
     </div>
   </div>
-</div>
-
-<div class="hero">
-  <div class="hero-icon">🍱</div>
-  <h1>26年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
-  <p>日本食デリバリー・サイトウフーズの通販サイトです。<br>冷凍食品からお米、調味料まで幅広く取り揃えています。</p>
-  <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
 </div>
 
 <main>
