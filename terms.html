@@ -50,10 +50,10 @@
   .footer-area-image-item img { width: 100%; border-radius: 8px; border: 1px solid var(--line-soft); display: block; object-fit: cover; aspect-ratio: 4/3; cursor: zoom-in; transition: transform 0.25s ease, box-shadow 0.25s ease; position: relative; }
   .footer-area-image-item img:hover { transform: scale(2.6); box-shadow: 0 12px 32px rgba(0,0,0,0.3); z-index: 30; }
   .footer-area-image-item span { display: block; font-size: 11px; color: #777; margin-top: 4px; font-weight: 600; }
-  .footer-store-media { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .footer-store-photo, .footer-store-map { flex: 1 1 130px; max-width: 200px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line-soft); }
+  .footer-store-media { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; max-width: 520px; }
+  .footer-store-photo, .footer-store-map { flex: 1 1 220px; width: 100%; aspect-ratio: 4/3; min-height: 170px; border-radius: 10px; border: 1px solid var(--line-soft); }
   .footer-store-photo { object-fit: cover; display: block; }
-  .footer-store-map { border: 1px solid var(--line-soft); }
+  .footer-store-map { border: 1px solid var(--line-soft); overflow: hidden; background: #eee; }
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 
@@ -208,7 +208,7 @@
     <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
     <div class="footer-store-media">
       <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
-      <iframe class="footer-store-map" src="https://www.google.com/maps?q=23/7+Soi+Naphasub+Yeak+2+Sukhumvit+Soi+36+Klongtoey+Bangkok+10110&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="サイトウフーズ 地図"></iframe>
+      <div id="footer-map" class="footer-store-map"></div>
     </div>
     <p>
       SAITO FOODS CO.,LTD.<br>
@@ -229,5 +229,27 @@
 </footer>
 
 </div>
+
+<script>
+// フッターの地図(ホテル等のPOIアイコンを非表示にするカスタムスタイル)
+function initFooterMap() {
+  const mapEl = document.getElementById('footer-map');
+  if (!mapEl) return;
+  const location = { lat: 13.7225193, lng: 100.5741505 };
+  const map = new google.maps.Map(mapEl, {
+    center: location,
+    zoom: 17,
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }
+    ]
+  });
+  new google.maps.Marker({ position: location, map: map, title: 'サイトウフーズ SAITO FOODS' });
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNH0d4VA9S0ocLKb5TiGghubIL8MigOTA&callback=initFooterMap" async defer></script>
+
 </body>
 </html>
