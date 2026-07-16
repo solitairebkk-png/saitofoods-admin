@@ -23,12 +23,15 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'M PLUS Rounded 1c', sans-serif; background: var(--yellow-light); color: var(--text); min-height: 100vh; padding-bottom: 48px; }
-  header { background: var(--yellow); padding: 0 16px; height: 72px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--yellow-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-  .logo-wrap { display: flex; align-items: center; gap: 12px; }
+  header { background: var(--yellow); padding: 0 16px; height: 72px; display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--yellow-dark); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .logo-icon { font-size: 32px; }
   .logo-main { font-size: 18px; font-weight: 800; color: var(--brown); letter-spacing: 0.03em; }
   .logo-sub { font-size: 10px; font-weight: 500; color: var(--orange); letter-spacing: 0.06em; }
-  .logout-btn { padding: 6px 14px; border: 1.5px solid var(--brown); border-radius: 20px; background: transparent; color: var(--brown); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none; }
+  .site-nav { display: flex; align-items: center; gap: 14px; overflow-x: auto; flex: 1; }
+  .site-nav a { color: var(--brown); text-decoration: none; font-size: 12.5px; font-weight: 700; white-space: nowrap; opacity: .7; }
+  .site-nav a.active { opacity: 1; text-decoration: underline; }
+  .logout-btn { padding: 6px 14px; border: 1.5px solid var(--brown); border-radius: 20px; background: transparent; color: var(--brown); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none; flex-shrink: 0; }
 
   .container { max-width: 480px; margin: 0 auto; padding: 28px 16px; }
 
@@ -121,6 +124,12 @@
       <div class="logo-sub">SAITO FOODS CO.,LTD.</div>
     </div>
   </div>
+  <nav class="site-nav">
+    <a href="index.html">トップ / Home</a>
+    <a href="product_list.html">商品一覧 / Products</a>
+    <a href="cart.html">カート / Cart</a>
+    <a href="mypage.html" class="active">マイページ / My Page</a>
+  </nav>
   <button class="logout-btn" id="logout-btn" onclick="logout()">ログアウト</button>
 </header>
 
