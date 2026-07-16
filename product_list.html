@@ -272,7 +272,7 @@ function loadCartFromStorage() {
     Object.entries(map).forEach(([pid, qty]) => {
       const product = allProducts.find(p => p.id === pid);
       if (!product) return;
-      const maxQty = isAvailable(product) ? (product.is_unlimited_stock ? 999 : product.stock) : 0;
+      const maxQty = isAvailable(product) ? (product.is_unlimited_stock ? 999 : product.stock_qty) : 0;
       const safeQty = Math.max(0, Math.min(maxQty, qty));
       if (safeQty > 0) cart[product.id] = { product, qty: safeQty };
     });
@@ -280,11 +280,11 @@ function loadCartFromStorage() {
 }
 
 function isAvailable(p) {
-  return !!(p.is_unlimited_stock || (p.stock && p.stock > 0));
+  return !!(p.is_unlimited_stock || (p.stock_qty && p.stock_qty > 0));
 }
 
 function maxQtyFor(p) {
-  return p.is_unlimited_stock ? 999 : (p.stock || 0);
+  return p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
 }
 
 async function supabase(method, path, body) {
