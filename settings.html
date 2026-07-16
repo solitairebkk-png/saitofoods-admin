@@ -51,6 +51,8 @@
   .row-actions button { font-size: 11px; padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; color: white; }
   .btn-save-row { background: var(--green); }
   .btn-delete-row { background: var(--red-accent); }
+  .btn-move-row { background: var(--navy); font-size: 13px; padding: 4px 11px; }
+  .btn-move-row:disabled { opacity: 0.3; cursor: not-allowed; }
 
   .expiry-row { display: flex; align-items: center; gap: 10px; }
   .expiry-row input { width: 90px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
@@ -93,6 +95,20 @@
 </div>
 
 <main id="main">
+
+  <div class="card">
+    <h2>カテゴリ並び順 / Category Display Order</h2>
+    <div class="sub">お客様向け商品一覧ページ(product_list.html)のカテゴリ一覧に表示される順番です。↑↓で並び替えて「保存」を押してください。</div>
+    <table class="rules" id="category-order-table">
+      <thead>
+        <tr><th>順番 / Order</th><th>カテゴリ名 / Category</th><th></th></tr>
+      </thead>
+      <tbody id="category-order-tbody">
+        <tr><td colspan="3">Loading...</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" onclick="saveCategoryOrder()">並び順を保存 / Save order</button>
+  </div>
 
   <div class="card">
     <h2>ポイント付与率(曜日別) / Point Earn Rate by Day of Week</h2>
@@ -145,6 +161,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 const DAY_LABELS = ['日曜 / Sun', '月曜 / Mon', '火曜 / Tue', '水曜 / Wed', '木曜 / Thu', '金曜 / Fri', '土曜 / Sat'];
 
 let currentCustomer = null;
+let categoryOrderList = [];
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -172,6 +189,7 @@ function afterLogin() {
     return;
   }
   document.getElementById('main').style.display = 'block';
+  loadCategoryOrder();
   loadRules();
   loadExpiryDays();
   loadShippingSettings();
@@ -185,6 +203,61 @@ function afterLogin() {
     if (customerRow) { currentCustomer = customerRow; document.getElementById('login-panel').style.display = 'none'; afterLogin(); }
   }
 })();
+
+// ---------------- カテゴリ並び順 ----------------
+async function loadCategoryOrder() {
+  const tbody = document.getElementById('category-order-tbody');
+  tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('categories').select('id, name_ja, name_en, sort_order')
+    .order('sort_order', { ascending: true, nullsFirst: false });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  categoryOrderList = data || [];
+  renderCategoryOrderTable();
+}
+
+function renderCategoryOrderTable() {
+  const tbody = document.getElementById('category-order-tbody');
+  if (categoryOrderList.length === 0) { tbody.innerHTML = '<tr><td colspan="3">カテゴリがまだありません / No categories yet</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  categoryOrderList.forEach((c, i) => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = c.id;
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${c.name_ja || '(no name)'}${c.name_en ? ' / ' + c.name_en : ''}</td>
+      <td class="row-actions">
+        <button class="btn-move-row" onclick="moveCategoryRow(${i}, -1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="btn-move-row" onclick="moveCategoryRow(${i}, 1)" ${i === categoryOrderList.length - 1 ? 'disabled' : ''}>↓</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function moveCategoryRow(index, direction) {
+  const target = index + direction;
+  if (target < 0 || target >= categoryOrderList.length) return;
+  const tmp = categoryOrderList[index];
+  categoryOrderList[index] = categoryOrderList[target];
+  categoryOrderList[target] = tmp;
+  renderCategoryOrderTable();
+}
+
+async function saveCategoryOrder() {
+  const updates = categoryOrderList.map((c, i) =>
+    supabaseClient.from('categories').update({ sort_order: i + 1 }).eq('id', c.id)
+  );
+  const results = await Promise.all(updates);
+  const failed = results.find(r => r.error);
+  if (failed) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + failed.error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved (product_list.html は次回読み込み時に反映されます)');
+  loadCategoryOrder();
+}
 
 // ---------------- 曜日別ポイント付与率ルール ----------------
 async function loadRules() {
