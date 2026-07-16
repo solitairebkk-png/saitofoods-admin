@@ -211,6 +211,7 @@ let allCategories = [];
 let allProducts = [];
 let cart = {};
 let currentSearchQuery = '';
+let currentCategoryFilter = null; // null = すべて
 let pmodalProductId = null;
 let pmodalQty = 1;
 let pmodalDescLang = 'ja';
@@ -279,31 +280,42 @@ async function init() {
 
 function renderCatTabs() {
   const wrap = document.getElementById('cat-tabs');
-  wrap.innerHTML = `<button class="cat-tab active" onclick="scrollToCat('all', this)">すべて / All</button>` +
-    allCategories.map(c => `<button class="cat-tab" onclick="scrollToCat(${c.id}, this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
+  // カテゴリテーブルが取得できない/空でも「すべて」タブだけで正常動作する
+  wrap.innerHTML = `<button class="cat-tab active" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
+    allCategories.map(c => `<button class="cat-tab" onclick="setCategoryFilter(${c.id}, this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
 }
 
-function scrollToCat(catId, btn) {
-  if (currentSearchQuery) {
-    document.getElementById('product-search').value = '';
-    currentSearchQuery = '';
-    renderProducts();
-  }
+function setCategoryFilter(catId, btn) {
+  currentCategoryFilter = catId;
   document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
-  const el = document.getElementById(`cat-section-${catId}`);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderProducts();
+}
+
+function getFilteredProducts() {
+  let matches = allProducts;
+  if (currentCategoryFilter !== null) {
+    matches = matches.filter(p => p.category_id == currentCategoryFilter);
+  }
+  if (currentSearchQuery) {
+    const q = currentSearchQuery.toLowerCase();
+    matches = matches.filter(p =>
+      (p.name_ja || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q)
+    );
+  }
+  return matches;
 }
 
 function renderProducts() {
   const wrap = document.getElementById('product-sections');
   if (!allProducts.length) { wrap.innerHTML = `<div class="loading">商品がまだありません / No products yet</div>`; return; }
-  const groups = [{ id: 'all', name_ja: '商品一覧 / All products' }, ...allCategories];
-  wrap.innerHTML = groups.map(g => {
-    const items = g.id === 'all' ? allProducts : allProducts.filter(p => p.category_id == g.id);
-    if (!items.length) return '';
-    return `<div id="cat-section-${g.id}" ${g.id !== 'all' ? '' : 'style="display:none"'}><div class="section-title">${g.name_ja}</div><div class="product-grid">${items.map(productCardHtml).join('')}</div></div>`;
-  }).join('');
+  const matches = getFilteredProducts();
+  if (!matches.length) { wrap.innerHTML = `<div class="loading">該当する商品がありません / No products found</div>`; return; }
+  const title = currentSearchQuery
+    ? `検索結果 (${matches.length})`
+    : (currentCategoryFilter === null ? `商品一覧 / All products (${matches.length})` : `${matches.length}件`);
+  wrap.innerHTML = `<div class="section-title">${title}</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
 }
 
 function productCardHtml(p) {
@@ -322,14 +334,7 @@ function productCardHtml(p) {
 
 function handleSearch(q) {
   currentSearchQuery = q.trim();
-  if (!currentSearchQuery) { renderProducts(); return; }
-  const wrap = document.getElementById('product-sections');
-  const lower = currentSearchQuery.toLowerCase();
-  const matches = allProducts.filter(p =>
-    (p.name_ja || '').toLowerCase().includes(lower) || (p.name_en || '').toLowerCase().includes(lower)
-  );
-  if (!matches.length) { wrap.innerHTML = `<div class="loading">該当する商品がありません / No products found</div>`; return; }
-  wrap.innerHTML = `<div class="section-title">検索結果 (${matches.length})</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
+  renderProducts();
 }
 
 function changeQty(productId, delta) {
@@ -339,7 +344,7 @@ function changeQty(productId, delta) {
   const next = Math.max(0, Math.min(maxQtyFor(product), current + delta));
   if (next === 0) delete cart[productId];
   else cart[productId] = { product, qty: next };
-  if (currentSearchQuery) handleSearch(currentSearchQuery); else renderProducts();
+  renderProducts();
   updateCartBar();
   saveCartToStorage();
 }
