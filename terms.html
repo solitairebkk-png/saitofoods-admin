@@ -44,11 +44,16 @@
   .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
   .footer-section p { line-height: 1.9; }
   .footer-section a { color: var(--brand-dark); text-decoration: underline; }
-  .footer-area-images { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-  .footer-area-image-item { flex: 1; min-width: 120px; text-align: center; }
-  .footer-area-image-item img { width: 100%; border-radius: 8px; border: 1px solid var(--line-soft); display: block; object-fit: cover; aspect-ratio: 4/3; }
+  .footer-area-images { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .footer-area-image-item { flex: 0 0 auto; width: 100px; text-align: center; }
+  .footer-area-image-item a { display: block; }
+  .footer-area-image-item img { width: 100%; border-radius: 8px; border: 1px solid var(--line-soft); display: block; object-fit: cover; aspect-ratio: 4/3; cursor: zoom-in; transition: transform 0.25s ease, box-shadow 0.25s ease; position: relative; }
+  .footer-area-image-item img:hover { transform: scale(2.6); box-shadow: 0 12px 32px rgba(0,0,0,0.3); z-index: 30; }
   .footer-area-image-item span { display: block; font-size: 11px; color: #777; margin-top: 4px; font-weight: 600; }
-  .footer-store-photo { width: 100%; max-width: 280px; border-radius: 10px; margin-bottom: 10px; display: block; border: 1px solid var(--line-soft); }
+  .footer-store-media { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .footer-store-photo, .footer-store-map { flex: 1 1 130px; max-width: 200px; aspect-ratio: 1/1; border-radius: 10px; border: 1px solid var(--line-soft); }
+  .footer-store-photo { object-fit: cover; display: block; }
+  .footer-store-map { border: 1px solid var(--line-soft); }
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 
@@ -185,11 +190,15 @@
     </p>
     <div class="footer-area-images">
       <div class="footer-area-image-item">
-        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+        <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+        </a>
         <span>バンコクエリア</span>
       </div>
       <div class="footer-area-image-item">
-        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+        <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
+          <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+        </a>
         <span>シラチャエリア</span>
       </div>
     </div>
@@ -197,7 +206,10 @@
 
   <div class="footer-section">
     <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
-    <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+    <div class="footer-store-media">
+      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+      <iframe class="footer-store-map" src="https://www.google.com/maps?q=23/7+Soi+Naphasub+Yeak+2+Sukhumvit+Soi+36+Klongtoey+Bangkok+10110&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="サイトウフーズ 地図"></iframe>
+    </div>
     <p>
       SAITO FOODS CO.,LTD.<br>
       23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36, Klongtoey, Bangkok 10110<br>
