@@ -66,6 +66,26 @@
   .empty-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
   .loading-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
 
+  .announce-top-section { background: #fff; border-bottom: 2px solid var(--line); }
+
+  /* calendar */
+  .calendar-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px; }
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .calendar-nav-btn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 16px; cursor: pointer; }
+  .calendar-month-label { font-size: 14px; font-weight: 800; color: var(--brand-dark); }
+  .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 10.5px; color: #999; font-weight: 700; margin-bottom: 4px; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .calendar-cell { aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; font-size: 12px; border-radius: 8px; position: relative; }
+  .calendar-cell.empty { visibility: hidden; }
+  .calendar-cell.today { border: 1.5px solid var(--brand); font-weight: 800; }
+  .calendar-cell.closed { background: #FBE4E1; color: #B03A30; font-weight: 700; }
+  .calendar-cell.morning { background: #FFF3D9; color: #8A6300; font-weight: 700; }
+  .calendar-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #777; }
+  .calendar-legend span { display: flex; align-items: center; gap: 5px; }
+  .calendar-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .calendar-dot.closed { background: #FBE4E1; border: 1px solid #B03A30; }
+  .calendar-dot.morning { background: #FFF3D9; border: 1px solid #8A6300; }
+
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .skeleton-box { background: linear-gradient(90deg, var(--line-soft) 25%, #e2ece5 37%, var(--line-soft) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 6px; }
   .skeleton-top3-item { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 10px 14px 10px 10px; }
@@ -90,6 +110,13 @@
     <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
   </div>
 </header>
+
+<div class="announce-top-section">
+  <div class="section-title" style="padding:14px 16px 0;">📣 お知らせ / Announcements</div>
+  <div id="announce-list" style="padding:0 16px 4px;">
+    <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+  </div>
+</div>
 
 <div class="hero">
   <div class="hero-icon">🍱</div>
@@ -118,10 +145,29 @@
   </div>
 
   <div class="section-block">
-    <div class="section-title">📣 お知らせ / Announcements</div>
-    <div id="announce-list">
-      <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
-      <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+    <div class="section-title">🏷️ お買い得商品 / On Sale</div>
+    <div class="promo-scroll" id="bargain-scroll">
+      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <div class="section-title">📅 配送カレンダー / Delivery Calendar</div>
+    <div class="calendar-card" id="calendar-card">
+      <div class="calendar-header">
+        <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
+        <div class="calendar-month-label" id="calendar-month-label"></div>
+        <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
+      </div>
+      <div class="calendar-weekdays">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="calendar-legend">
+        <span><i class="calendar-dot closed"></i>定休日・配達不可 / Closed</span>
+        <span><i class="calendar-dot morning"></i>午前配送のみ / Morning only</span>
+      </div>
     </div>
   </div>
 
@@ -221,6 +267,41 @@ async function loadPromotions() {
   }
 }
 
+// ---------------- お買い得商品(「セール中」カテゴリ・今月のプロモーションとは別枠) ----------------
+async function loadBargainProducts() {
+  const scrollEl = document.getElementById('bargain-scroll');
+  try {
+    let categories = await supabase('GET', `categories?name_ja=ilike.*セール*&select=id`);
+    if (!categories.length) categories = await supabase('GET', `categories?name_en=ilike.*sale*&select=id`);
+    const categoryId = categories[0]?.id;
+    if (!categoryId) { scrollEl.innerHTML = '<div class="empty-note">「セール中」カテゴリが見つかりませんでした / Sale category not found</div>'; return; }
+
+    const pcRows = await supabase('GET', `product_categories?category_id=eq.${categoryId}&select=product_id`);
+    const ids = pcRows.map(r => r.product_id);
+    if (!ids.length) { scrollEl.innerHTML = '<div class="empty-note">現在お買い得商品はありません / No sale items right now</div>'; return; }
+
+    const idsParam = ids.map(id => `"${id}"`).join(',');
+    const products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url&limit=12`);
+
+    if (!products.length) { scrollEl.innerHTML = '<div class="empty-note">現在お買い得商品はありません / No sale items right now</div>'; return; }
+
+    scrollEl.innerHTML = products.map(p => {
+      const img = p.image_url ? `<img src="${p.image_url}" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
+      return `
+        <a class="promo-card" href="product_list.html?view=${p.id}">
+          <div class="promo-img-wrap">${img}</div>
+          <div class="promo-body">
+            <div class="promo-name">${p.name_ja}</div>
+            <div class="promo-price">฿${p.price}</div>
+          </div>
+        </a>
+      `;
+    }).join('');
+  } catch (e) {
+    scrollEl.innerHTML = `<div class="empty-note">読み込みに失敗しました / Failed to load</div>`;
+  }
+}
+
 // ---------------- お知らせ ----------------
 async function loadAnnouncements() {
   const listEl = document.getElementById('announce-list');
@@ -240,10 +321,71 @@ async function loadAnnouncements() {
   }
 }
 
+// ---------------- 配送カレンダー(定休日・配達不可日を色分け表示) ----------------
+let calendarYear, calendarMonth; // calendarMonth: 0-11
+let holidaySet = new Set();
+
+async function loadHolidaysAndRenderCalendar() {
+  const today = new Date();
+  calendarYear = today.getFullYear();
+  calendarMonth = today.getMonth();
+
+  try {
+    const rows = await supabase('GET', 'holidays?select=holiday_date');
+    holidaySet = new Set((rows || []).map(r => r.holiday_date));
+  } catch (e) {
+    holidaySet = new Set();
+  }
+  renderCalendar();
+}
+
+function changeCalendarMonth(delta) {
+  calendarMonth += delta;
+  if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+  if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const labelEl = document.getElementById('calendar-month-label');
+  const gridEl = document.getElementById('calendar-grid');
+  labelEl.textContent = `${calendarYear}年 ${calendarMonth + 1}月`;
+
+  const firstDay = new Date(calendarYear, calendarMonth, 1);
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const startWeekday = firstDay.getDay();
+  const todayStr = formatDateLocal(new Date());
+
+  let html = '';
+  for (let i = 0; i < startWeekday; i++) html += `<div class="calendar-cell empty"></div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(calendarYear, calendarMonth, d);
+    const dateStr = formatDateLocal(dateObj);
+    const dayOfWeek = dateObj.getDay();
+    const isToday = dateStr === todayStr;
+
+    let cls = 'calendar-cell';
+    if (isToday) cls += ' today';
+    if (dayOfWeek === 0 || holidaySet.has(dateStr)) cls += ' closed';
+    else if (dayOfWeek === 6) cls += ' morning';
+
+    html += `<div class="${cls}">${d}</div>`;
+  }
+
+  gridEl.innerHTML = html;
+}
+
+function formatDateLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 updateHeaderCartCount();
 loadTop3();
 loadPromotions();
+loadBargainProducts();
 loadAnnouncements();
+loadHolidaysAndRenderCalendar();
 </script>
 
 </body>

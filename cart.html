@@ -152,8 +152,17 @@
     <div class="card">
       <h2>💰 配送料について / Shipping fee</h2>
       <div class="shipping-banner" id="shipping-banner"></div>
+      <div class="field">
+        <label>クーポンコード / Coupon code</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="coupon-input" placeholder="例: SUMMER50" style="flex:1;text-transform:uppercase;" oninput="onCouponInputChange()">
+          <button type="button" class="btn-secondary" onclick="applyCoupon()">適用 / Apply</button>
+        </div>
+        <div id="coupon-status" style="font-size:12px;margin-top:6px;"></div>
+      </div>
       <div class="totals-row"><span>小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
       <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
+      <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span>割引 / Discount</span><span id="totals-discount">-฿0</span></div>
       <div class="totals-row total"><span>合計 / Total</span><span id="totals-total">฿0</span></div>
       <div style="font-size:11px;color:#999;margin-top:6px;">※ 量り売り商品は重量確定後に金額が決まります(合計には含まれません)</div>
     </div>
@@ -245,6 +254,7 @@ let currentCustomer = null; // customersテーブルの行(ログイン中のお
 let cart = [];              // { product_id, name, sale_type, price, unit_price, unit_label, quantity, image_url }
 let shippingFreeThreshold = 600;
 let shippingFeeAmount = 100;
+let appliedCoupon = null;
 
 // ---------------- 認証(supabase-js。mypage.html等と同じセッションを共有) ----------------
 async function login() {
@@ -272,7 +282,7 @@ async function loadCustomerAndInit(userId) {
   currentCustomer = rows[0];
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('cart-content').style.display = 'block';
-  initDeliveryDatePicker();
+  await initDeliveryDatePicker();
   await Promise.all([loadShippingSettings(), loadCartItems()]);
   onPaymentChange();
 }
@@ -400,7 +410,9 @@ function removeItem(index) {
 function updateTotals() {
   const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shippingCost = subtotal > 0 && subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
-  const total = subtotal + shippingCost;
+  const preDiscountTotal = subtotal + shippingCost;
+  const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
+  const total = preDiscountTotal - discount;
 
   document.getElementById('totals-subtotal').textContent = `฿${subtotal}`;
   const shippingRow = document.getElementById('totals-shipping-row');
@@ -412,16 +424,80 @@ function updateTotals() {
     shippingEl.textContent = subtotal > 0 ? '🎉 無料 / Free' : '฿0';
     shippingRow.classList.add('free');
   }
+
+  const discountRow = document.getElementById('totals-discount-row');
+  if (discount > 0) {
+    discountRow.style.display = 'flex';
+    document.getElementById('totals-discount').textContent = `-฿${discount}`;
+  } else {
+    discountRow.style.display = 'none';
+  }
+
   document.getElementById('totals-total').textContent = `฿${total}`;
 }
 
+// ---------------- クーポン ----------------
+function onCouponInputChange() {
+  if (appliedCoupon) {
+    appliedCoupon = null;
+    document.getElementById('coupon-status').textContent = '';
+    updateTotals();
+  }
+}
+
+async function applyCoupon() {
+  const codeInput = document.getElementById('coupon-input');
+  const code = codeInput.value.trim().toUpperCase();
+  const statusEl = document.getElementById('coupon-status');
+
+  if (!code) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'クーポンコードを入力してください / Please enter a coupon code'; return; }
+  statusEl.style.color = '#999'; statusEl.textContent = '確認中... / Checking...';
+
+  try {
+    const { data: rows, error } = await supabaseClient.from('coupons').select('*').eq('code', code).limit(1);
+    if (error) throw error;
+    const coupon = rows && rows[0];
+
+    if (!coupon || !coupon.is_active) throw new Error('無効なクーポンコードです / Invalid or inactive coupon code');
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (coupon.expires_at && coupon.expires_at < todayStr) throw new Error('このクーポンは有効期限切れです / This coupon has expired');
+    if (coupon.max_uses !== null && coupon.used_count >= coupon.max_uses) throw new Error('このクーポンは使用上限に達しています / This coupon has reached its usage limit');
+
+    if (coupon.per_customer_limit) {
+      const { data: priorOrders, error: priorErr } = await supabaseClient
+        .from('orders').select('id').eq('coupon_code', coupon.code).eq('customer_id', currentCustomer.id);
+      if (priorErr) throw priorErr;
+      if ((priorOrders || []).length >= coupon.per_customer_limit) throw new Error('このクーポンは既にご利用済みです / You have already used this coupon');
+    }
+
+    appliedCoupon = coupon;
+    statusEl.style.color = 'var(--brand-dark)';
+    statusEl.textContent = `✓「${coupon.code}」を適用しました。-฿${coupon.discount_amount} / Coupon applied`;
+    updateTotals();
+  } catch (e) {
+    appliedCoupon = null;
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = e.message || 'エラーが発生しました / Something went wrong';
+    updateTotals();
+  }
+}
+
 // ---------------- 配送日時 ----------------
-function initDeliveryDatePicker() {
+let holidaySet = new Set();
+
+async function initDeliveryDatePicker() {
   const dateInput = document.getElementById('delivery-date');
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   dateInput.min = todayStr;
   dateInput.value = todayStr;
+
+  try {
+    const { data } = await supabaseClient.from('holidays').select('holiday_date');
+    holidaySet = new Set((data || []).map(r => r.holiday_date));
+  } catch (e) { /* 取得失敗時は日曜・土曜のみの通常ルールで続行 */ }
+
   onDeliveryDateChange();
 }
 
@@ -436,6 +512,11 @@ function onDeliveryDateChange() {
 
   if (dayOfWeek === 0) {
     noteEl.textContent = '日曜定休のため、別の日をお選びください / Closed on Sundays. Please choose another date.';
+    populateTimeSlots([]);
+    return;
+  }
+  if (holidaySet.has(val)) {
+    noteEl.textContent = 'この日は配達不可日のため、別の日をお選びください / This date is unavailable for delivery. Please choose another date.';
     populateTimeSlots([]);
     return;
   }
@@ -517,7 +598,9 @@ async function submitOrder() {
   const hasWeightItems = cart.some(i => i.sale_type === 'weight');
   const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
   const shippingCost = subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
-  const total = subtotal + shippingCost;
+  const preDiscountTotal = subtotal + shippingCost;
+  const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
+  const total = preDiscountTotal - discount;
 
   const orderPayload = {
     order_type: 'delivery',
@@ -530,6 +613,8 @@ async function submitOrder() {
     payment_status: 'unpaid',
     subtotal: subtotal,
     shipping_cost: shippingCost,
+    coupon_code: appliedCoupon ? appliedCoupon.code : null,
+    discount_amount: discount,
     total_amount: total,
     comment: comment || null,
     created_by: null,
@@ -557,9 +642,14 @@ async function submitOrder() {
     const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
     if (itemsErr) throw itemsErr;
 
+    if (appliedCoupon) {
+      await supabaseClient.from('coupons').update({ used_count: appliedCoupon.used_count + 1 }).eq('id', appliedCoupon.id);
+    }
+
     showSuccess({ orderId, amount: total, hasWeightItems, paymentMethod, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
 
     cart = [];
+    appliedCoupon = null;
     localStorage.removeItem('saitofoods_cart');
     document.getElementById('cart-items-list').innerHTML = '';
     document.getElementById('delivery-card').style.display = 'none';
