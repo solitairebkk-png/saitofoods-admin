@@ -197,9 +197,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 /*
   テーブル構造 (Supabase RLSポリシー確認済み・2026/07時点):
   products: id, name_ja, name_en, description_ja, description_en, price,
-            category_id, stock, is_unlimited_stock, image_url,
+            stock, is_unlimited_stock, image_url,
             is_published, is_local_special, sort_order
   categories: id, name_ja, name_en, sort_order
+  product_categories: product_id, category_id (商品とカテゴリの中間テーブル・多対多)
 
   ※ RLSポリシー "products_select_published" により、
      is_published = true かつ is_local_special = false の商品のみ
@@ -209,6 +210,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let allCategories = [];
 let allProducts = [];
+let allProductCategories = []; // product_categories中間テーブル(product_id, category_id)
 let cart = {};
 let currentSearchQuery = '';
 let currentCategoryFilter = null; // null = すべて
@@ -230,7 +232,7 @@ function loadCartFromStorage() {
     if (!raw) return;
     const map = JSON.parse(raw);
     Object.entries(map).forEach(([pid, qty]) => {
-      const product = allProducts.find(p => p.id === parseInt(pid));
+      const product = allProducts.find(p => p.id === pid);
       if (!product) return;
       const maxQty = isAvailable(product) ? (product.is_unlimited_stock ? 999 : product.stock) : 0;
       const safeQty = Math.max(0, Math.min(maxQty, qty));
@@ -265,9 +267,10 @@ async function supabase(method, path, body) {
 
 async function init() {
   try {
-    [allCategories, allProducts] = await Promise.all([
+    [allCategories, allProducts, allProductCategories] = await Promise.all([
       supabase('GET', 'categories?order=sort_order'),
       supabase('GET', 'products?is_published=eq.true&order=sort_order'),
+      supabase('GET', 'product_categories?select=product_id,category_id'),
     ]);
     loadCartFromStorage();
     renderCatTabs();
@@ -282,7 +285,7 @@ function renderCatTabs() {
   const wrap = document.getElementById('cat-tabs');
   // カテゴリテーブルが取得できない/空でも「すべて」タブだけで正常動作する
   wrap.innerHTML = `<button class="cat-tab active" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
-    allCategories.map(c => `<button class="cat-tab" onclick="setCategoryFilter(${c.id}, this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
+    allCategories.map(c => `<button class="cat-tab" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
 }
 
 function setCategoryFilter(catId, btn) {
@@ -296,7 +299,10 @@ function setCategoryFilter(catId, btn) {
 function getFilteredProducts() {
   let matches = allProducts;
   if (currentCategoryFilter !== null) {
-    matches = matches.filter(p => p.category_id == currentCategoryFilter);
+    const idsInCategory = new Set(
+      allProductCategories.filter(pc => pc.category_id == currentCategoryFilter).map(pc => pc.product_id)
+    );
+    matches = matches.filter(p => idsInCategory.has(p.id));
   }
   if (currentSearchQuery) {
     const q = currentSearchQuery.toLowerCase();
@@ -324,12 +330,12 @@ function productCardHtml(p) {
   const inCart = cart[p.id]?.qty || 0;
   const stepper = available
     ? (inCart > 0
-        ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty(${p.id}, -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty(${p.id}, 1)">+</button></div>`
-        : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty(${p.id}, 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
+        ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button></div>`
+        : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
     : `<span class="out-of-stock">在庫切れ</span>`;
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
-  return `<div class="product-card" onclick="openPModal(${p.id})"><div class="product-img-wrap">${img}</div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}<div class="product-bottom"><div class="product-price">฿${p.price}<span></span></div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}</div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}<div class="product-bottom"><div class="product-price">฿${p.price}<span></span></div>${stepper}</div></div></div>`;
 }
 
 function handleSearch(q) {
