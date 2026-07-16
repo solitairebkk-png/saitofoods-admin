@@ -312,6 +312,11 @@
         <label>住所2</label>
         <input type="text" class="form-input" id="profile-address2">
       </div>
+      <div class="form-group">
+        <label>エリア / Area</label>
+        <select class="form-input" id="profile-area"></select>
+        <div class="form-hint">引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。</div>
+      </div>
       <button class="submit-btn" onclick="saveProfile()">住所・電話番号を保存する</button>
       <div class="profile-msg" id="profile-msg"></div>
     </div>
@@ -544,11 +549,7 @@ async function loadMyPage(user) {
 
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance, email, tel1, address1, address2')
-    .eq('auth_user_id', user.id)
-    .single();
-
-  // まだ紐付けが行われていない場合(確認メールのリンクをクリックして初めて
+    .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
   // ここに来たケースなど)、メールアドレスが一致する既存の顧客レコードへの紐付けを試みる
   // (RLSの組み合わせに依存しないよう、サーバー側のRPC関数経由で行う)
   if ((error || !customerRow) && user.email) {
@@ -565,7 +566,7 @@ async function loadMyPage(user) {
 
     const retry = await supabaseClient
       .from('customers')
-      .select('id, family_name, first_name, point_balance, email, tel1, address1, address2')
+      .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
       .eq('auth_user_id', user.id)
       .single();
     customerRow = retry.data;
@@ -591,6 +592,7 @@ async function loadMyPage(user) {
   document.getElementById('profile-tel1').value = customerRow.tel1 || '';
   document.getElementById('profile-address1').value = customerRow.address1 || '';
   document.getElementById('profile-address2').value = customerRow.address2 || '';
+  await loadAreaOptions(customerRow.area_id);
 
   await loadOrderHistory(customerRow.id);
   await loadFavorites(customerRow.id);
@@ -708,15 +710,36 @@ function showProfileMsg(msg, isError) {
   setTimeout(() => { el.textContent = ''; el.className = 'profile-msg'; }, 4000);
 }
 
+async function loadAreaOptions(currentAreaId) {
+  const select = document.getElementById('profile-area');
+  const { data, error } = await supabaseClient.from('areas').select('*').order('id');
+
+  if (error || !data) {
+    select.innerHTML = '<option value="">読み込みに失敗しました</option>';
+    return;
+  }
+
+  select.innerHTML = data.map(area => {
+    // areasテーブルのカラム名が環境によって違う可能性があるため、
+    // name系のカラムを優先的に探して表示名として使う(見つからなければ最初の文字列項目)
+    const label = area.name || area.name_ja || area.name_en ||
+      Object.values(area).find(v => typeof v === 'string') || `(ID: ${area.id})`;
+    const selected = area.id === currentAreaId ? 'selected' : '';
+    return `<option value="${area.id}" ${selected}>${label}</option>`;
+  }).join('');
+}
+
 async function saveProfile() {
   const tel1 = document.getElementById('profile-tel1').value.trim();
   const address1 = document.getElementById('profile-address1').value.trim();
   const address2 = document.getElementById('profile-address2').value.trim();
+  const areaId = document.getElementById('profile-area').value || null;
 
   const { error } = await supabaseClient.rpc('update_own_profile', {
     new_address1: address1 || null,
     new_address2: address2 || null,
     new_tel1: tel1 || null,
+    new_area_id: areaId,
   });
 
   if (error) { showProfileMsg('保存に失敗しました: ' + error.message, true); return; }
