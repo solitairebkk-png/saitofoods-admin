@@ -66,6 +66,19 @@
   .cat-checks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
   .cat-checks label { font-size: 12px; display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; }
 
+  .image-slots { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .image-slot { width: 150px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+  .image-slot-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .image-preview-wrap { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 4px; overflow: hidden; background: var(--bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+  .image-preview-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .image-preview-wrap .no-image-text { font-size: 10px; color: var(--text-muted); }
+  .image-clear-btn { position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: white; font-size: 12px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .image-file-input { width: 100%; font-size: 10px; margin-bottom: 4px; }
+  .image-url-input { width: 100%; font-size: 11px; padding: 5px 6px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; }
+  .image-upload-status { font-size: 10px; color: var(--text-muted); min-height: 14px; margin-top: 3px; }
+  .image-upload-status.success { color: var(--green); }
+  .image-upload-status.error { color: var(--red-accent); }
+
   .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
   .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
   #save-msg { font-size: 13px; margin-top: 8px; }
@@ -366,12 +379,13 @@ function toggleEdit(productId) {
         <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
         <label>在庫数 / Stock Qty<input type="number" class="e-stock" min="0" step="1" value="${p.stock_qty ?? ''}" ${p.is_unlimited_stock ? 'disabled' : ''}></label>
         <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
-        <label>画像URL / Image URL<input type="text" class="e-image" value="${p.image_url || ''}" placeholder="https://..."></label>
         <label class="checkbox-field"><input type="checkbox" class="e-unlimited" onchange="toggleStockField(this)" ${p.is_unlimited_stock ? 'checked' : ''}> 在庫無制限 / Unlimited</label>
         <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
         <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
         <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
       </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大3枚 / up to 3 photos)</div>
+      <div class="image-slots">${[1, 2, 3].map(slot => imageSlotHtml(p, slot)).join('')}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
       <div class="cat-checks">${catChecks || '<span style="color:var(--text-muted);font-size:12px;">カテゴリ未登録</span>'}</div>
       <button class="btn save small" onclick="saveProduct('${productId}')">保存 / Save</button>
@@ -380,6 +394,84 @@ function toggleEdit(productId) {
     </td>
   `;
   baseRow.after(editRow);
+}
+
+function imageFieldName(slot) {
+  return slot === 1 ? 'image_url' : `image_url_${slot}`;
+}
+
+function imageSlotHtml(p, slot) {
+  const url = p[imageFieldName(slot)] || '';
+  const previewInner = url
+    ? `<img src="${url}" alt="">`
+    : `<span class="no-image-text">No Image</span>`;
+  const clearBtn = url ? `<button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>` : '';
+
+  return `
+    <div class="image-slot" data-slot="${slot}">
+      <div class="image-slot-label">写真 ${slot} / Photo ${slot}</div>
+      <div class="image-preview-wrap">
+        ${previewInner}
+        ${clearBtn}
+      </div>
+      <input type="file" accept="image/*" capture="environment" class="image-file-input" onchange="handleImageUpload(event, ${slot})">
+      <input type="text" class="image-url-input e-image-${slot}" value="${url}" placeholder="または画像URLを直接入力" oninput="onImageUrlInput(this, ${slot})">
+      <div class="image-upload-status"></div>
+    </div>
+  `;
+}
+
+async function handleImageUpload(event, slot) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const slotEl = event.target.closest('.image-slot');
+  const statusEl = slotEl.querySelector('.image-upload-status');
+  const previewWrap = slotEl.querySelector('.image-preview-wrap');
+  const urlInput = slotEl.querySelector(`.e-image-${slot}`);
+
+  statusEl.className = 'image-upload-status';
+  statusEl.textContent = 'アップロード中... / Uploading...';
+
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const safeStamp = Date.now();
+    const path = `staff-uploads/${safeStamp}_slot${slot}.${ext}`;
+
+    const { error: uploadErr } = await supabaseClient.storage
+      .from('product-images')
+      .upload(path, file, { cacheControl: '3600', upsert: true, contentType: file.type || undefined });
+
+    if (uploadErr) throw uploadErr;
+
+    const { data: publicData } = supabaseClient.storage.from('product-images').getPublicUrl(path);
+    const publicUrl = publicData.publicUrl;
+
+    urlInput.value = publicUrl;
+    previewWrap.innerHTML = `<img src="${publicUrl}" alt=""><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`;
+    statusEl.className = 'image-upload-status success';
+    statusEl.textContent = 'アップロード完了 ✓ / Uploaded';
+  } catch (err) {
+    statusEl.className = 'image-upload-status error';
+    statusEl.textContent = 'アップロード失敗 / Upload failed: ' + err.message;
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function onImageUrlInput(input, slot) {
+  const slotEl = input.closest('.image-slot');
+  const previewWrap = slotEl.querySelector('.image-preview-wrap');
+  const url = input.value.trim();
+  previewWrap.innerHTML = url
+    ? `<img src="${url}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-image-text',textContent:'画像を読み込めません'}))"><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`
+    : `<span class="no-image-text">No Image</span>`;
+}
+
+function clearImageSlot(btn, slot) {
+  const slotEl = btn.closest('.image-slot');
+  slotEl.querySelector(`.e-image-${slot}`).value = '';
+  slotEl.querySelector('.image-preview-wrap').innerHTML = `<span class="no-image-text">No Image</span>`;
 }
 
 function toggleWeightFields(sel) {
@@ -411,7 +503,9 @@ async function saveProduct(productId) {
     is_unlimited_stock: g('.e-unlimited').checked,
     stock_qty: g('.e-unlimited').checked ? null : (parseInt(g('.e-stock').value, 10) || 0),
     sort_order: g('.e-sort').value ? parseInt(g('.e-sort').value, 10) : null,
-    image_url: g('.e-image').value.trim() || null,
+    image_url: g('.e-image-1').value.trim() || null,
+    image_url_2: g('.e-image-2').value.trim() || null,
+    image_url_3: g('.e-image-3').value.trim() || null,
     is_local_special: g('.e-special').checked,
     is_published: g('.e-published').checked,
     is_available_en: g('.e-availen').checked,
@@ -458,6 +552,7 @@ function addNewProduct() {
     id: newId, name_ja: '', name_en: '', name_th: '', group_type: 'A', sale_type: 'package',
     price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
     stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
+    image_url: null, image_url_2: null, image_url_3: null,
     _isNew: true,
   };
   allProducts.unshift(blank);
