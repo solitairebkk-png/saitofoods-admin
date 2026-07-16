@@ -82,6 +82,11 @@
   .order-items-list { font-size: 12px; color: var(--text); line-height: 1.8; margin-bottom: 8px; }
   .order-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed var(--border); }
   .order-total { font-size: 15px; font-weight: 800; color: var(--orange); }
+  .reorder-btn { width: 100%; margin-top: 10px; padding: 9px; border-radius: 8px; border: 1.5px solid var(--yellow-dark); background: var(--yellow-light); color: var(--brown); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .reorder-btn:hover { background: var(--yellow); }
+
+  @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skeleton-box { background: linear-gradient(90deg, var(--yellow-light) 25%, #fdf0c0 37%, var(--yellow-light) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 5px; }
 
   .status-badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
   .status-completed { background: #e6fff5; color: var(--ok); }
@@ -309,6 +314,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentCustomer = null;
+let allOrders = [];
 
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
@@ -518,14 +524,14 @@ async function loadMyPage(user) {
 
 async function loadOrderHistory(customerId) {
   const listEl = document.getElementById('order-list');
-  listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+  listEl.innerHTML = orderHistorySkeletonHtml();
 
   const { data, error } = await supabaseClient
     .from('orders')
     .select(`
       id, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, total_amount,
-      order_items ( product_name_snapshot, quantity, sale_type, total_price )
+      order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price )
     `)
     .eq('customer_id', customerId)
     .order('delivery_date', { ascending: false })
@@ -538,11 +544,29 @@ async function loadOrderHistory(customerId) {
     return;
   }
 
+  allOrders = data;
   listEl.innerHTML = '';
-  data.forEach(order => listEl.appendChild(renderOrderCard(order)));
+  data.forEach((order, index) => listEl.appendChild(renderOrderCard(order, index)));
 }
 
-function renderOrderCard(order) {
+function orderHistorySkeletonHtml() {
+  const oneCard = `
+    <div class="order-card">
+      <div class="order-card-header">
+        <div style="flex:1;">
+          <div class="skeleton-box skeleton-line" style="width:90px;height:14px;margin-bottom:6px;"></div>
+          <div class="skeleton-box skeleton-line" style="width:60px;height:10px;"></div>
+        </div>
+        <div class="skeleton-box skeleton-line" style="width:60px;height:16px;border-radius:999px;"></div>
+      </div>
+      <div class="skeleton-box skeleton-line" style="width:100%;height:12px;margin:10px 0 6px;"></div>
+      <div class="skeleton-box skeleton-line" style="width:70%;height:12px;"></div>
+    </div>
+  `;
+  return oneCard.repeat(3);
+}
+
+function renderOrderCard(order, index) {
   const div = document.createElement('div');
   div.className = 'order-card';
 
@@ -573,8 +597,33 @@ function renderOrderCard(order) {
       <span style="font-size:12px;color:var(--muted);">${order.payment_method === 'qr' ? 'QR振込み' : '現金'}</span>
       <span class="order-total">${order.total_amount || 0} THB</span>
     </div>
+    <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
   `;
   return div;
+}
+
+// ---------------- もう一度注文する(カートへ追加) ----------------
+function reorderOrder(index) {
+  const order = allOrders[index];
+  if (!order) return;
+
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem('saitofoods_cart') || '{}'); } catch (e) {}
+
+  let addedCount = 0;
+  (order.order_items || []).forEach(item => {
+    if (!item.product_id) return; // 商品が削除済みなどでproduct_idが無い場合はスキップ
+    map[item.product_id] = (parseInt(map[item.product_id], 10) || 0) + (item.quantity || 1);
+    addedCount++;
+  });
+
+  if (addedCount === 0) {
+    showProfileMsg('この注文の商品情報が見つからなかったため、カートに追加できませんでした。', true);
+    return;
+  }
+
+  localStorage.setItem('saitofoods_cart', JSON.stringify(map));
+  location.href = 'cart.html';
 }
 
 // ---------------- アカウント情報(住所・電話番号) ----------------
@@ -654,7 +703,15 @@ async function submitPasswordChange() {
 // ---------------- お気に入り商品 ----------------
 async function loadFavorites(customerId) {
   const listEl = document.getElementById('fav-list');
-  listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+  const favSkeleton = `
+    <div class="fav-item">
+      <div style="flex:1;">
+        <div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div>
+        <div class="skeleton-box" style="width:40%;height:11px;"></div>
+      </div>
+    </div>
+  `;
+  listEl.innerHTML = favSkeleton.repeat(2);
 
   const { data, error } = await supabaseClient
     .from('customer_favorites')
