@@ -498,10 +498,10 @@ async function initDeliveryDatePicker() {
     holidaySet = new Set((data || []).map(r => r.holiday_date));
   } catch (e) { /* 取得失敗時は日曜・土曜のみの通常ルールで続行 */ }
 
-  onDeliveryDateChange();
+  await onDeliveryDateChange();
 }
 
-function onDeliveryDateChange() {
+async function onDeliveryDateChange() {
   const dateInput = document.getElementById('delivery-date');
   const noteEl = document.getElementById('delivery-date-note');
   const val = dateInput.value;
@@ -520,15 +520,29 @@ function onDeliveryDateChange() {
     populateTimeSlots([]);
     return;
   }
+
   noteEl.textContent = '';
-  populateTimeSlots(dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
+  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+
+  // その日だけ受付停止にされている時間帯を除外する(settings.htmlの「時間帯ブロック」設定)
+  try {
+    const { data: blockedRows } = await supabaseClient
+      .from('blocked_time_slots').select('time_slot').eq('blocked_date', val);
+    const blockedValues = new Set((blockedRows || []).map(r => r.time_slot));
+    if (blockedValues.size > 0) {
+      slots = slots.filter(s => !blockedValues.has(s.value));
+      if (slots.length === 0) noteEl.textContent = 'この日はご注文が集中しているため、選択可能な時間帯がありません / All time slots are full for this date.';
+    }
+  } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }
+
+  populateTimeSlots(slots);
 }
 
 function populateTimeSlots(slots) {
   const select = document.getElementById('delivery-time-slot');
   select.innerHTML = '';
   if (slots.length === 0) {
-    select.innerHTML = '<option value="">-- 休業日 / Closed --</option>';
+    select.innerHTML = '<option value="">-- 選択可能な時間帯がありません / No slots available --</option>';
     return;
   }
   select.innerHTML = slots.map(s => `<option value="${s.value}">${s.label}</option>`).join('');

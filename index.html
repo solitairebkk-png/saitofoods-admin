@@ -68,6 +68,9 @@
 
   .announce-top-section { background: #fff; border-bottom: 2px solid var(--line); }
 
+  .top-info-row { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px; background: #fff; border-bottom: 2px solid var(--line); }
+  .top-info-col { flex: 1 1 260px; min-width: 240px; }
+
   /* calendar */
   .calendar-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; padding: 14px; }
   .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -111,10 +114,30 @@
   </div>
 </header>
 
-<div class="announce-top-section">
-  <div class="section-title" style="padding:14px 16px 0;">📣 お知らせ / Announcements</div>
-  <div id="announce-list" style="padding:0 16px 4px;">
-    <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+<div class="top-info-row">
+  <div class="top-info-col">
+    <div class="section-title" style="padding:0 0 8px;">📣 お知らせ / Announcements</div>
+    <div id="announce-list">
+      <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+    </div>
+  </div>
+  <div class="top-info-col">
+    <div class="section-title" style="padding:0 0 8px;">📅 配送カレンダー / Delivery Calendar</div>
+    <div class="calendar-card" id="calendar-card">
+      <div class="calendar-header">
+        <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
+        <div class="calendar-month-label" id="calendar-month-label"></div>
+        <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
+      </div>
+      <div class="calendar-weekdays">
+        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="calendar-legend">
+        <span><i class="calendar-dot closed"></i>定休日・配達不可 / Closed</span>
+        <span><i class="calendar-dot morning"></i>午前配送のみ / Morning only</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -149,25 +172,6 @@
     <div class="promo-scroll" id="bargain-scroll">
       <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
       <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
-    </div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-title">📅 配送カレンダー / Delivery Calendar</div>
-    <div class="calendar-card" id="calendar-card">
-      <div class="calendar-header">
-        <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
-        <div class="calendar-month-label" id="calendar-month-label"></div>
-        <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
-      </div>
-      <div class="calendar-weekdays">
-        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
-      </div>
-      <div class="calendar-grid" id="calendar-grid"></div>
-      <div class="calendar-legend">
-        <span><i class="calendar-dot closed"></i>定休日・配達不可 / Closed</span>
-        <span><i class="calendar-dot morning"></i>午前配送のみ / Morning only</span>
-      </div>
     </div>
   </div>
 

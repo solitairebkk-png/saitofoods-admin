@@ -43,9 +43,10 @@
   table.rules { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
   table.rules th { text-align: left; padding: 6px 8px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
   table.rules td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  table.rules select, table.rules input[type=number], table.rules input[type=text] {
+  table.rules select, table.rules input[type=number], table.rules input[type=text], table.rules input[type=date], table.rules textarea {
     padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit;
   }
+  table.rules textarea { width: 220px; min-height: 44px; resize: vertical; }
   table.rules input[type=number] { width: 80px; }
   .row-actions { display: flex; gap: 6px; }
   .row-actions button { font-size: 11px; padding: 5px 10px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; color: white; }
@@ -95,6 +96,62 @@
 </div>
 
 <main id="main">
+
+  <div class="card">
+    <h2>定休日・配達不可日 / Holidays</h2>
+    <div class="sub">ここに追加した日付は、トップページのカレンダーに赤色で表示され、お客様は注文フォームでその日を選べなくなります。日曜日は元々定休日のため、ここに登録する必要はありません。</div>
+    <table class="rules" id="holiday-table">
+      <thead>
+        <tr><th>日付 / Date</th><th>理由(任意) / Reason</th><th></th></tr>
+      </thead>
+      <tbody id="holiday-tbody">
+        <tr><td colspan="3">Loading...</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" onclick="addNewHolidayRow()">+ 定休日を追加 / Add holiday</button>
+  </div>
+
+  <div class="card">
+    <h2>時間帯ブロック / Block Specific Time Slots</h2>
+    <div class="sub">特定の日の、特定の時間帯だけ注文を止めたいときに使います(例: 混雑時に特定の日の16:00-18:00だけ受付停止)。その日の他の時間帯は通常通り選択できます。</div>
+    <table class="rules" id="blocked-slot-table">
+      <thead>
+        <tr><th>日付 / Date</th><th>時間帯 / Time Slot</th><th>理由(任意) / Reason</th><th></th></tr>
+      </thead>
+      <tbody id="blocked-slot-tbody">
+        <tr><td colspan="4">Loading...</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" onclick="addNewBlockedSlotRow()">+ 時間帯ブロックを追加 / Add blocked slot</button>
+  </div>
+
+  <div class="card">
+    <h2>クーポン管理 / Coupons</h2>
+    <div class="sub">お客様向けサイト(cart.html)で使えるクーポンコードです。使用回数(used_count)は自動でカウントされるので、ここでは編集しないでください。</div>
+    <table class="rules" id="coupon-table">
+      <thead>
+        <tr><th>コード / Code</th><th>割引額(THB) / Discount</th><th>有効期限 / Expires</th><th>上限回数 / Max Uses</th><th>1人あたり上限 / Per Customer</th><th>使用回数 / Used</th><th>有効 / Active</th><th></th></tr>
+      </thead>
+      <tbody id="coupon-tbody">
+        <tr><td colspan="8">Loading...</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" onclick="addNewCouponRow()">+ クーポンを追加 / Add coupon</button>
+  </div>
+
+  <div class="card">
+    <h2>お知らせ管理 / Announcements</h2>
+    <div class="sub">トップページ(index.html)のお知らせ欄に表示される内容です。「有効」のものだけ、公開日の新しい順に表示されます。</div>
+    <table class="rules" id="announce-table">
+      <thead>
+        <tr><th>公開日 / Date</th><th>タイトル / Title</th><th>本文 / Body</th><th>有効 / Active</th><th></th></tr>
+      </thead>
+      <tbody id="announce-tbody">
+        <tr><td colspan="5">Loading...</td></tr>
+      </tbody>
+    </table>
+    <button class="btn" onclick="addNewAnnouncementRow()">+ お知らせを追加 / Add announcement</button>
+  </div>
 
   <div class="card">
     <h2>カテゴリ並び順 / Category Display Order</h2>
@@ -189,6 +246,10 @@ function afterLogin() {
     return;
   }
   document.getElementById('main').style.display = 'block';
+  loadHolidays();
+  loadBlockedSlots();
+  loadCoupons();
+  loadAnnouncements();
   loadCategoryOrder();
   loadRules();
   loadExpiryDays();
@@ -203,6 +264,305 @@ function afterLogin() {
     if (customerRow) { currentCustomer = customerRow; document.getElementById('login-panel').style.display = 'none'; afterLogin(); }
   }
 })();
+
+// cart.html・local_order.htmlと同じ時間帯の選択肢(時間帯ブロック管理のドロップダウン用)
+const ALL_TIME_SLOTS = [
+  { value: 'เช้า / Morning (AM)', label: '午前 / Morning' },
+  { value: '13:00-15:00', label: '13:00-15:00' },
+  { value: '13:30-15:30', label: '13:30-15:30' },
+  { value: '14:00-16:00', label: '14:00-16:00' },
+  { value: '14:30-16:30', label: '14:30-16:30' },
+  { value: '15:00-17:00', label: '15:00-17:00' },
+  { value: '15:30-17:30', label: '15:30-17:30' },
+  { value: '16:00-18:00', label: '16:00-18:00' },
+  { value: '17:00-18:00', label: '17:00-18:00' },
+];
+
+// ---------------- 定休日・配達不可日 ----------------
+async function loadHolidays() {
+  const tbody = document.getElementById('holiday-tbody');
+  tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('holidays').select('*').order('holiday_date', { ascending: true });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="3" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  (data || []).forEach(h => tbody.appendChild(renderHolidayRow(h)));
+}
+
+function renderHolidayRow(h) {
+  const tr = document.createElement('tr');
+  tr.dataset.date = h.holiday_date || '';
+  tr.dataset.isNew = h.holiday_date ? '' : 'true';
+  tr.innerHTML = `
+    <td><input type="date" class="hol-date" value="${h.holiday_date || ''}" ${h.holiday_date ? 'disabled' : ''}></td>
+    <td><input type="text" class="hol-reason" value="${h.reason ? h.reason.replace(/"/g, '&quot;') : ''}" placeholder="例: 旧正月休業"></td>
+    <td class="row-actions">
+      <button class="btn-save-row" onclick="saveHolidayRow(this)">保存 / Save</button>
+      ${h.holiday_date ? `<button class="btn-delete-row" onclick="deleteHolidayRow(this)">削除 / Del</button>` : ''}
+    </td>
+  `;
+  return tr;
+}
+
+function addNewHolidayRow() {
+  const tbody = document.getElementById('holiday-tbody');
+  tbody.prepend(renderHolidayRow({ holiday_date: '', reason: '' }));
+}
+
+async function saveHolidayRow(btn) {
+  const tr = btn.closest('tr');
+  const isNew = tr.dataset.isNew === 'true';
+  const dateVal = tr.querySelector('.hol-date').value;
+  const reason = tr.querySelector('.hol-reason').value.trim();
+
+  if (!dateVal) { showSaveMsg('日付を選択してください / Please choose a date', true); return; }
+
+  if (isNew) {
+    const { error } = await supabaseClient.from('holidays').insert({ holiday_date: dateVal, reason: reason || null });
+    if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  } else {
+    const { error } = await supabaseClient.from('holidays').update({ reason: reason || null }).eq('holiday_date', tr.dataset.date);
+    if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadHolidays();
+}
+
+async function deleteHolidayRow(btn) {
+  const tr = btn.closest('tr');
+  if (!confirm('この定休日を削除しますか？ / Delete this holiday?')) return;
+  const { error } = await supabaseClient.from('holidays').delete().eq('holiday_date', tr.dataset.date);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadHolidays();
+}
+
+// ---------------- 時間帯ブロック ----------------
+async function loadBlockedSlots() {
+  const tbody = document.getElementById('blocked-slot-tbody');
+  tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('blocked_time_slots').select('*').order('blocked_date', { ascending: true });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="4" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  (data || []).forEach(b => tbody.appendChild(renderBlockedSlotRow(b)));
+}
+
+function renderBlockedSlotRow(b) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = b.id || '';
+  const slotOptions = ALL_TIME_SLOTS.map(s => `<option value="${s.value}" ${b.time_slot === s.value ? 'selected' : ''}>${s.label}</option>`).join('');
+  tr.innerHTML = `
+    <td><input type="date" class="bslot-date" value="${b.blocked_date || ''}"></td>
+    <td><select class="bslot-time">${slotOptions}</select></td>
+    <td><input type="text" class="bslot-reason" value="${b.reason ? b.reason.replace(/"/g, '&quot;') : ''}" placeholder="例: 予約過多のため"></td>
+    <td class="row-actions">
+      <button class="btn-save-row" onclick="saveBlockedSlotRow(this)">保存 / Save</button>
+      ${b.id ? `<button class="btn-delete-row" onclick="deleteBlockedSlotRow(this)">削除 / Del</button>` : ''}
+    </td>
+  `;
+  return tr;
+}
+
+function addNewBlockedSlotRow() {
+  const tbody = document.getElementById('blocked-slot-tbody');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  tbody.prepend(renderBlockedSlotRow({ blocked_date: todayStr, time_slot: ALL_TIME_SLOTS[0].value, reason: '' }));
+}
+
+async function saveBlockedSlotRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id || null;
+  const blockedDate = tr.querySelector('.bslot-date').value;
+  const timeSlot = tr.querySelector('.bslot-time').value;
+  const reason = tr.querySelector('.bslot-reason').value.trim();
+
+  if (!blockedDate) { showSaveMsg('日付を選択してください / Please choose a date', true); return; }
+
+  const payload = { blocked_date: blockedDate, time_slot: timeSlot, reason: reason || null };
+  let error;
+  if (id) {
+    ({ error } = await supabaseClient.from('blocked_time_slots').update(payload).eq('id', id));
+  } else {
+    ({ error } = await supabaseClient.from('blocked_time_slots').insert(payload));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadBlockedSlots();
+}
+
+async function deleteBlockedSlotRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  if (!id) return;
+  if (!confirm('このブロックを削除しますか？ / Delete this block?')) return;
+  const { error } = await supabaseClient.from('blocked_time_slots').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadBlockedSlots();
+}
+
+// ---------------- クーポン管理 ----------------
+async function loadCoupons() {
+  const tbody = document.getElementById('coupon-tbody');
+  tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('coupons').select('*').order('created_at', { ascending: false });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="8" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  (data || []).forEach(c => tbody.appendChild(renderCouponRow(c)));
+}
+
+function renderCouponRow(c) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = c.id || '';
+  tr.innerHTML = `
+    <td><input type="text" class="cpn-code" value="${c.code ? c.code.replace(/"/g, '&quot;') : ''}" placeholder="例: SUMMER50" style="text-transform:uppercase;width:120px;"></td>
+    <td><input type="number" class="cpn-discount" min="0" step="1" value="${c.discount_amount ?? ''}" style="width:80px;"></td>
+    <td><input type="date" class="cpn-expires" value="${c.expires_at || ''}"></td>
+    <td><input type="number" class="cpn-maxuses" min="0" step="1" value="${c.max_uses ?? ''}" placeholder="無制限" style="width:80px;"></td>
+    <td><input type="number" class="cpn-percustomer" min="0" step="1" value="${c.per_customer_limit ?? ''}" placeholder="無制限" style="width:80px;"></td>
+    <td style="text-align:center;color:var(--text-muted);">${c.used_count ?? 0}</td>
+    <td><input type="checkbox" class="cpn-active" ${c.is_active !== false ? 'checked' : ''}></td>
+    <td class="row-actions">
+      <button class="btn-save-row" onclick="saveCouponRow(this)">保存 / Save</button>
+      ${c.id ? `<button class="btn-delete-row" onclick="deleteCouponRow(this)">削除 / Del</button>` : ''}
+    </td>
+  `;
+  return tr;
+}
+
+function addNewCouponRow() {
+  const tbody = document.getElementById('coupon-tbody');
+  tbody.prepend(renderCouponRow({ code: '', discount_amount: 50, is_active: true, used_count: 0 }));
+}
+
+async function saveCouponRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id || null;
+  const code = tr.querySelector('.cpn-code').value.trim().toUpperCase();
+  const discountAmount = parseFloat(tr.querySelector('.cpn-discount').value);
+  const expiresAt = tr.querySelector('.cpn-expires').value || null;
+  const maxUsesVal = tr.querySelector('.cpn-maxuses').value;
+  const perCustomerVal = tr.querySelector('.cpn-percustomer').value;
+  const isActive = tr.querySelector('.cpn-active').checked;
+
+  if (!code) { showSaveMsg('クーポンコードを入力してください / Please enter a coupon code', true); return; }
+  if (isNaN(discountAmount) || discountAmount <= 0) { showSaveMsg('割引額を正しく入力してください / Please enter a valid discount amount', true); return; }
+
+  const payload = {
+    code,
+    discount_amount: discountAmount,
+    expires_at: expiresAt,
+    max_uses: maxUsesVal ? parseInt(maxUsesVal, 10) : null,
+    per_customer_limit: perCustomerVal ? parseInt(perCustomerVal, 10) : null,
+    is_active: isActive,
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await supabaseClient.from('coupons').update(payload).eq('id', id));
+  } else {
+    ({ error } = await supabaseClient.from('coupons').insert(payload));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadCoupons();
+}
+
+async function deleteCouponRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  if (!id) return;
+  if (!confirm('このクーポンを削除しますか？ / Delete this coupon?')) return;
+  const { error } = await supabaseClient.from('coupons').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadCoupons();
+}
+
+// ---------------- お知らせ管理 ----------------
+async function loadAnnouncements() {
+  const tbody = document.getElementById('announce-tbody');
+  tbody.innerHTML = '<tr><td colspan="5">Loading...</td></tr>';
+
+  const { data, error } = await supabaseClient
+    .from('announcements').select('*').order('published_at', { ascending: false });
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--red-accent);">Error: ' + error.message + '</td></tr>'; return; }
+
+  tbody.innerHTML = '';
+  (data || []).forEach(a => tbody.appendChild(renderAnnouncementRow(a)));
+}
+
+function renderAnnouncementRow(a) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = a.id || '';
+  tr.innerHTML = `
+    <td><input type="date" class="ann-date" value="${a.published_at || ''}"></td>
+    <td><input type="text" class="ann-title" value="${a.title ? a.title.replace(/"/g, '&quot;') : ''}" placeholder="タイトル"></td>
+    <td><textarea class="ann-body" placeholder="本文(省略可)">${a.body || ''}</textarea></td>
+    <td><input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''}></td>
+    <td class="row-actions">
+      <button class="btn-save-row" onclick="saveAnnouncementRow(this)">保存 / Save</button>
+      ${a.id ? `<button class="btn-delete-row" onclick="deleteAnnouncementRow(this)">削除 / Del</button>` : ''}
+    </td>
+  `;
+  return tr;
+}
+
+function addNewAnnouncementRow() {
+  const tbody = document.getElementById('announce-tbody');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  tbody.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', is_active: true }));
+}
+
+async function saveAnnouncementRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id || null;
+  const publishedAt = tr.querySelector('.ann-date').value;
+  const title = tr.querySelector('.ann-title').value.trim();
+  const body = tr.querySelector('.ann-body').value.trim();
+  const isActive = tr.querySelector('.ann-active').checked;
+
+  if (!title) { showSaveMsg('タイトルを入力してください / Please enter a title', true); return; }
+  if (!publishedAt) { showSaveMsg('公開日を選択してください / Please choose a date', true); return; }
+
+  const payload = { published_at: publishedAt, title, body: body || null, is_active: isActive };
+
+  let error;
+  if (id) {
+    ({ error } = await supabaseClient.from('announcements').update(payload).eq('id', id));
+  } else {
+    ({ error } = await supabaseClient.from('announcements').insert(payload));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadAnnouncements();
+}
+
+async function deleteAnnouncementRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  if (!id) return;
+  if (!confirm('このお知らせを削除しますか？ / Delete this announcement?')) return;
+  const { error } = await supabaseClient.from('announcements').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadAnnouncements();
+}
 
 // ---------------- カテゴリ並び順 ----------------
 async function loadCategoryOrder() {
