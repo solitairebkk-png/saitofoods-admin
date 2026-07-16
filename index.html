@@ -59,6 +59,9 @@
 
   /* announcements */
   .announce-item { background: #fff; border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .announce-item-linked { display: block; text-decoration: none; color: inherit; cursor: pointer; border-color: var(--brand); }
+  .announce-item-linked:hover { background: var(--line-soft); }
+  .announce-arrow { color: var(--brand-dark); font-weight: 800; }
   .announce-date { font-size: 10.5px; color: #B08A3A; font-weight: 700; margin-bottom: 4px; }
   .announce-title { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; }
   .announce-body { font-size: 12px; color: #666; line-height: 1.7; white-space: pre-wrap; }
@@ -313,13 +316,18 @@ async function loadAnnouncements() {
     const rows = await supabase('GET', 'announcements?is_active=eq.true&order=published_at.desc&limit=10');
     if (!rows.length) { listEl.innerHTML = '<div class="empty-note">現在お知らせはありません / No announcements right now</div>'; return; }
 
-    listEl.innerHTML = rows.map(a => `
-      <div class="announce-item">
-        <div class="announce-date">${a.published_at || ''}</div>
-        <div class="announce-title">${a.title}</div>
-        ${a.body ? `<div class="announce-body">${a.body}</div>` : ''}
-      </div>
-    `).join('');
+    listEl.innerHTML = rows.map(a => {
+      const hasLink = !!a.link_url;
+      const tag = hasLink ? 'a' : 'div';
+      const hrefAttr = hasLink ? `href="${a.link_url}"` : '';
+      return `
+        <${tag} class="announce-item ${hasLink ? 'announce-item-linked' : ''}" ${hrefAttr}>
+          <div class="announce-date">${a.published_at || ''}</div>
+          <div class="announce-title">${a.title}${hasLink ? ' <span class="announce-arrow">→</span>' : ''}</div>
+          ${a.body ? `<div class="announce-body">${a.body}</div>` : ''}
+        </${tag}>
+      `;
+    }).join('');
   } catch (e) {
     listEl.innerHTML = `<div class="empty-note">読み込みに失敗しました / Failed to load</div>`;
   }
