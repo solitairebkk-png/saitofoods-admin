@@ -98,6 +98,8 @@
   .calendar-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
   .calendar-dot.closed { background: #FBE4E1; border: 1px solid #B03A30; }
   .calendar-dot.morning { background: #FFF3D9; border: 1px solid #8A6300; }
+  .calendar-dot.pattaya { background: #E0E9FB; border: 1px solid #3A5FB0; }
+  .calendar-cell.pattaya { background: #E0E9FB; color: #3A5FB0; font-weight: 700; }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .skeleton-box { background: linear-gradient(90deg, var(--line-soft) 25%, #e2ece5 37%, var(--line-soft) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 6px; }
@@ -175,6 +177,7 @@
       <div class="calendar-legend">
         <span><i class="calendar-dot closed"></i>定休日・配達不可 / Closed</span>
         <span><i class="calendar-dot morning"></i>午前配送のみ / Morning only</span>
+        <span><i class="calendar-dot pattaya"></i>パタヤ配送日 / Pattaya delivery</span>
       </div>
     </div>
   </div>
@@ -424,6 +427,8 @@ async function loadAnnouncements() {
 let calendarYear, calendarMonth; // calendarMonth: 0-11
 let holidaySet = new Set();
 
+let pattayaDaySet = new Set();
+
 async function loadHolidaysAndRenderCalendar() {
   const today = new Date();
   calendarYear = today.getFullYear();
@@ -435,6 +440,14 @@ async function loadHolidaysAndRenderCalendar() {
   } catch (e) {
     holidaySet = new Set();
   }
+
+  try {
+    const rows = await supabase('GET', 'pattaya_delivery_days?select=delivery_date');
+    pattayaDaySet = new Set((rows || []).map(r => r.delivery_date));
+  } catch (e) {
+    pattayaDaySet = new Set();
+  }
+
   renderCalendar();
 }
 
@@ -466,7 +479,8 @@ function renderCalendar() {
 
     let cls = 'calendar-cell';
     if (isToday) cls += ' today';
-    if (dayOfWeek === 0 || holidaySet.has(dateStr)) cls += ' closed';
+    if (pattayaDaySet.has(dateStr)) cls += ' pattaya';
+    else if (dayOfWeek === 0 || holidaySet.has(dateStr)) cls += ' closed';
     else if (dayOfWeek === 6) cls += ' morning';
 
     html += `<div class="${cls}">${d}</div>`;

@@ -110,6 +110,56 @@
 
 <main id="main">
 
+  <div class="card" id="section-condos">
+    <h2>コンドミニアム管理 / Condominiums</h2>
+    <div class="sub">シラチャ・パタヤのお客様が注文時に選択するコンドミニアムのリストです。「シラチャ火曜日グループ(海側)」「シラチャ木曜日グループ(山側)」「パタヤグループ」の3種類に分かれています。</div>
+
+    <div id="condo-list-tuesday"></div>
+    <div id="condo-list-thursday"></div>
+    <div id="condo-list-pattaya"></div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+      <input type="text" id="new-condo-name" placeholder="コンドミニアム名" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <select id="new-condo-group" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+        <option value="sriracha_tuesday">シラチャ火曜日(海側)</option>
+        <option value="sriracha_thursday">シラチャ木曜日(山側)</option>
+        <option value="pattaya">パタヤ</option>
+      </select>
+      <button class="btn" onclick="addNewCondo()">+ 追加 / Add</button>
+    </div>
+  </div>
+
+  <div class="card" id="section-pattaya-days">
+    <h2>パタヤ配送日 / Pattaya Delivery Days</h2>
+    <div class="sub">ここに追加した日付が、トップページ(index.html)のカレンダーに「パタヤ配送日」として表示され、パタヤのお客様はこの日だけご注文いただけます。</div>
+    <div id="pattaya-days-list"></div>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <input type="date" id="new-pattaya-date" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <button class="btn" onclick="addPattayaDay()">+ 追加 / Add</button>
+    </div>
+  </div>
+
+  <div class="card" id="section-gps">
+    <h2>GPS車両追跡情報 / GPS Tracking Info</h2>
+    <div class="sub">シラチャ・パタヤのお客様に、注文確定後の画面でご案内する配送車両の位置情報サービスのログイン情報です。</div>
+    <div class="shipping-row">
+      <label>追跡サイトURL / Tracking URL
+        <input type="text" id="gps-url-input" style="width:280px;">
+      </label>
+    </div>
+    <div class="shipping-row">
+      <label>ユーザー名 / Username
+        <input type="text" id="gps-username-input" style="width:180px;">
+      </label>
+    </div>
+    <div class="shipping-row">
+      <label>パスワード / Password
+        <input type="text" id="gps-password-input" style="width:180px;">
+      </label>
+    </div>
+    <button class="btn" onclick="saveGpsSettings()">บันทึก / Save</button>
+  </div>
+
   <div class="card">
     <h2>今月のプロモーション商品 / Monthly Promotion Products(最大2件)</h2>
     <div class="sub">トップページ(index.html)の「今月のプロモーション品」に表示されます。割引価格を入れると、元の価格に取り消し線が付いて割引額も表示されます。</div>
@@ -286,6 +336,9 @@ function afterLogin() {
     return;
   }
   document.getElementById('main').style.display = 'block';
+  loadCondos();
+  loadPattayaDays();
+  loadGpsSettings();
   loadMonthlyPromotions();
   loadHolidays();
   loadBlockedSlots();
@@ -318,6 +371,146 @@ const ALL_TIME_SLOTS = [
   { value: '16:00-18:00', label: '16:00-18:00' },
   { value: '17:00-18:00', label: '17:00-18:00' },
 ];
+
+// ---------------- コンドミニアム管理 ----------------
+const CONDO_GROUP_LABELS = {
+  sriracha_tuesday: 'シラチャ 火曜日グループ(海側)',
+  sriracha_thursday: 'シラチャ 木曜日グループ(山側)',
+  pattaya: 'パタヤグループ',
+};
+
+async function loadCondos() {
+  const { data, error } = await supabaseClient
+    .from('condominiums').select('*').order('area_group').order('sort_order');
+
+  const containers = {
+    sriracha_tuesday: document.getElementById('condo-list-tuesday'),
+    sriracha_thursday: document.getElementById('condo-list-thursday'),
+    pattaya: document.getElementById('condo-list-pattaya'),
+  };
+
+  if (error) {
+    Object.values(containers).forEach(el => el.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">読み込みに失敗しました</div>');
+    return;
+  }
+
+  const grouped = { sriracha_tuesday: [], sriracha_thursday: [], pattaya: [] };
+  (data || []).forEach(c => { if (grouped[c.area_group]) grouped[c.area_group].push(c); });
+
+  Object.keys(containers).forEach(group => {
+    const list = grouped[group];
+    const html = `<div style="font-size:12px;font-weight:700;color:var(--navy);margin:14px 0 6px;">${CONDO_GROUP_LABELS[group]}(${list.length}件)</div>` +
+      (list.length
+        ? list.map(c => `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:5px;background:#fafafa;">
+              <span style="flex:1;font-size:13px;">${c.name}</span>
+              <input type="checkbox" ${c.is_active ? 'checked' : ''} onchange="toggleCondoActive('${c.id}', this.checked)" title="有効/無効">
+              <button class="btn-delete-row" onclick="deleteCondo('${c.id}')">削除</button>
+            </div>
+          `).join('')
+        : '<div style="color:var(--text-muted);font-size:12px;">まだ登録がありません</div>');
+    containers[group].innerHTML = html;
+  });
+}
+
+async function addNewCondo() {
+  const nameInput = document.getElementById('new-condo-name');
+  const name = nameInput.value.trim();
+  const group = document.getElementById('new-condo-group').value;
+  if (!name) { showSaveMsg('コンドミニアム名を入力してください / Please enter a name', true); return; }
+
+  const { error } = await supabaseClient.from('condominiums').insert({ name, area_group: group, sort_order: 500 });
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  nameInput.value = '';
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadCondos();
+}
+
+async function toggleCondoActive(id, isActive) {
+  const { error } = await supabaseClient.from('condominiums').update({ is_active: isActive }).eq('id', id);
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+}
+
+async function deleteCondo(id) {
+  if (!confirm('このコンドミニアムを削除しますか？ / Delete this condominium?')) return;
+  const { error } = await supabaseClient.from('condominiums').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadCondos();
+}
+
+// ---------------- パタヤ配送日 ----------------
+async function loadPattayaDays() {
+  const listEl = document.getElementById('pattaya-days-list');
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await supabaseClient
+    .from('pattaya_delivery_days').select('*').gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
+
+  if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">読み込みに失敗しました</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">今後のパタヤ配送日はまだ設定されていません。</div>';
+    return;
+  }
+
+  listEl.innerHTML = data.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:#fafafa;">
+      <span style="flex:1;font-size:13px;font-weight:600;">${d.delivery_date}</span>
+      <button class="btn-delete-row" onclick="deletePattayaDay('${d.delivery_date}')">削除</button>
+    </div>
+  `).join('');
+}
+
+async function addPattayaDay() {
+  const dateInput = document.getElementById('new-pattaya-date');
+  const dateVal = dateInput.value;
+  if (!dateVal) { showSaveMsg('日付を選択してください / Please choose a date', true); return; }
+
+  const { error } = await supabaseClient.from('pattaya_delivery_days').insert({ delivery_date: dateVal });
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  dateInput.value = '';
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadPattayaDays();
+}
+
+async function deletePattayaDay(dateVal) {
+  if (!confirm(`${dateVal} を削除しますか？ / Delete this date?`)) return;
+  const { error } = await supabaseClient.from('pattaya_delivery_days').delete().eq('delivery_date', dateVal);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadPattayaDays();
+}
+
+// ---------------- GPS車両追跡情報 ----------------
+async function loadGpsSettings() {
+  const { data, error } = await supabaseClient
+    .from('settings').select('key, value')
+    .in('key', ['gps_tracking_url', 'gps_tracking_username', 'gps_tracking_password']);
+
+  if (error || !data) return;
+  data.forEach(row => {
+    if (row.key === 'gps_tracking_url') document.getElementById('gps-url-input').value = row.value;
+    if (row.key === 'gps_tracking_username') document.getElementById('gps-username-input').value = row.value;
+    if (row.key === 'gps_tracking_password') document.getElementById('gps-password-input').value = row.value;
+  });
+}
+
+async function saveGpsSettings() {
+  const url = document.getElementById('gps-url-input').value.trim();
+  const username = document.getElementById('gps-username-input').value.trim();
+  const password = document.getElementById('gps-password-input').value.trim();
+
+  const results = await Promise.all([
+    supabaseClient.from('settings').upsert({ key: 'gps_tracking_url', value: url }, { onConflict: 'key' }),
+    supabaseClient.from('settings').upsert({ key: 'gps_tracking_username', value: username }, { onConflict: 'key' }),
+    supabaseClient.from('settings').upsert({ key: 'gps_tracking_password', value: password }, { onConflict: 'key' }),
+  ]);
+  const failed = results.find(r => r.error);
+  if (failed) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + failed.error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+}
 
 // ---------------- 今月のプロモーション商品 ----------------
 async function loadMonthlyPromotions() {

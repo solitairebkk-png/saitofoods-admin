@@ -157,19 +157,48 @@
     </div>
 
     <div class="card" id="delivery-card">
-      <h2>🚚 配送日時 / Delivery date &amp; time</h2>
-      <div class="row-2">
+      <h2>🚚 配送日時 / Delivery date &amp; schedule</h2>
+
+      <div id="delivery-fields-bangkok" style="display:none;">
+        <div class="row-2">
+          <div class="field">
+            <label>配送日 / Delivery date</label>
+            <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
+            <div class="date-note" id="delivery-date-note"></div>
+          </div>
+          <div class="field">
+            <label>時間帯 / Time slot</label>
+            <select id="delivery-time-slot"></select>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#999;">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
+      </div>
+
+      <div id="delivery-fields-sriracha" style="display:none;">
+        <div class="field">
+          <label>配送日 / Delivery date(火曜日または木曜日)</label>
+          <select id="sriracha-date-select" onchange="onSrirachaDateChange()"></select>
+        </div>
+        <div class="field">
+          <label>コンドミニアム / Condominium</label>
+          <select id="sriracha-condo-select" onchange="onCondoSelectChange('sriracha')"></select>
+          <input type="text" id="sriracha-condo-other" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
+        </div>
+        <div style="font-size:11px;color:#999;">※ シラチャエリアは時間指定不可・配送順に順次お届けします(注文確定後、車両位置情報のご案内をいたします)</div>
+      </div>
+
+      <div id="delivery-fields-pattaya" style="display:none;">
         <div class="field">
           <label>配送日 / Delivery date</label>
-          <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
-          <div class="date-note" id="delivery-date-note"></div>
+          <select id="pattaya-date-select"></select>
         </div>
         <div class="field">
-          <label>時間帯 / Time slot</label>
-          <select id="delivery-time-slot"></select>
+          <label>コンドミニアム / Condominium</label>
+          <select id="pattaya-condo-select" onchange="onCondoSelectChange('pattaya')"></select>
+          <input type="text" id="pattaya-condo-other" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
         </div>
+        <div style="font-size:11px;color:#999;">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
-      <div style="font-size:11px;color:#999;">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
     </div>
 
     <div class="card">
@@ -238,6 +267,14 @@
       <div class="slip-link-row" id="slip-link-row" style="display:none;">
         <input type="text" id="slip-link-input" readonly onclick="this.select()">
         <button class="btn-secondary" onclick="copySlipLink()">コピー / Copy</button>
+      </div>
+      <div id="gps-info-box" style="display:none;text-align:left;margin-top:14px;padding:12px 14px;background:var(--line-soft);border-radius:10px;font-size:12.5px;line-height:1.9;">
+        <b>🚚 配送車両の位置情報 / Vehicle tracking</b><br>
+        配送日の朝、下記リンクから配送車両の現在地をご確認いただけます。<br>
+        URL: <a id="gps-info-url" href="#" target="_blank" rel="noopener noreferrer" style="color:var(--brand-dark);"></a><br>
+        ユーザー名 / Username: <span id="gps-info-username"></span><br>
+        パスワード / Password: <span id="gps-info-password"></span><br>
+        <span style="font-size:11px;color:#999;">※ スマホアプリ「sinotrack pro」でも同じ情報でログインできます</span>
       </div>
       <button class="btn-secondary" style="width:100%;margin-top:14px;" onclick="location.href='product_list.html'">商品一覧に戻る / Back to products</button>
     </div>
@@ -330,6 +367,9 @@ let cart = [];              // { product_id, name, sale_type, price, unit_price,
 let shippingFreeThreshold = 600;
 let shippingFeeAmount = 100;
 let appliedCoupon = null;
+let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
+let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
+let gpsTrackingInfo = null;  // { url, username, password }
 
 // ---------------- 認証(supabase-js。mypage.html等と同じセッションを共有) ----------------
 async function login() {
@@ -347,7 +387,7 @@ async function login() {
 async function loadCustomerAndInit(userId) {
   const { data: rows, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, tel1, address1, address2')
+    .select('id, family_name, first_name, tel1, address1, address2, area_id')
     .eq('auth_user_id', userId);
 
   if (error || !rows || rows.length === 0) {
@@ -357,9 +397,116 @@ async function loadCustomerAndInit(userId) {
   currentCustomer = rows[0];
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('cart-content').style.display = 'block';
-  await initDeliveryDatePicker();
+  await initDeliveryArea();
   await Promise.all([loadShippingSettings(), loadCartItems()]);
   onPaymentChange();
+}
+
+// ---------------- エリア判定(バンコク/シラチャ/パタヤ)して配送フォームを出し分け ----------------
+async function initDeliveryArea() {
+  customerAreaType = 'bangkok';
+
+  if (currentCustomer.area_id) {
+    try {
+      const { data: areaRow } = await supabaseClient.from('areas').select('*').eq('id', currentCustomer.area_id).single();
+      if (areaRow) {
+        const text = Object.values(areaRow).filter(v => typeof v === 'string').join(' ').toLowerCase();
+        if (text.includes('pattaya')) customerAreaType = 'pattaya';
+        else if (text.includes('sriracha')) customerAreaType = 'sriracha';
+      }
+    } catch (e) { /* 取得失敗時はバンコク扱いのまま続行 */ }
+  }
+
+  document.getElementById('delivery-fields-bangkok').style.display = customerAreaType === 'bangkok' ? 'block' : 'none';
+  document.getElementById('delivery-fields-sriracha').style.display = customerAreaType === 'sriracha' ? 'block' : 'none';
+  document.getElementById('delivery-fields-pattaya').style.display = customerAreaType === 'pattaya' ? 'block' : 'none';
+
+  if (customerAreaType === 'bangkok') {
+    await initDeliveryDatePicker();
+  } else if (customerAreaType === 'sriracha') {
+    await initSrirachaFlow();
+  } else if (customerAreaType === 'pattaya') {
+    await initPattayaFlow();
+  }
+}
+
+// ---------------- シラチャ(火曜/木曜 + コンドミニアム選択) ----------------
+async function initSrirachaFlow() {
+  try {
+    const { data } = await supabaseClient.from('holidays').select('holiday_date');
+    holidaySet = new Set((data || []).map(r => r.holiday_date));
+  } catch (e) { holidaySet = new Set(); }
+
+  try {
+    const { data } = await supabaseClient.from('condominiums').select('*')
+      .in('area_group', ['sriracha_tuesday', 'sriracha_thursday']).eq('is_active', true).order('sort_order');
+    allCondos = data || [];
+  } catch (e) { allCondos = []; }
+
+  const select = document.getElementById('sriracha-date-select');
+  const options = [];
+  const d = new Date();
+  for (let i = 0; i < 90 && options.length < 8; i++) {
+    const dow = d.getDay();
+    const dateStr = formatDateLocal(d);
+    if ((dow === 2 || dow === 4) && !holidaySet.has(dateStr)) {
+      const label = `${dateStr} (${dow === 2 ? '火' : '木'})`;
+      options.push(`<option value="${dateStr}" data-dow="${dow}">${label}</option>`);
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  select.innerHTML = options.length ? options.join('') : '<option value="">選択可能な日がありません</option>';
+  onSrirachaDateChange();
+}
+
+function onSrirachaDateChange() {
+  const select = document.getElementById('sriracha-date-select');
+  const selectedOption = select.options[select.selectedIndex];
+  const dow = selectedOption ? parseInt(selectedOption.dataset.dow, 10) : null;
+  const group = dow === 2 ? 'sriracha_tuesday' : (dow === 4 ? 'sriracha_thursday' : null);
+
+  const condoSelect = document.getElementById('sriracha-condo-select');
+  const list = allCondos.filter(c => c.area_group === group);
+  condoSelect.innerHTML = list.length
+    ? list.map(c => `<option value="${c.name}">${c.name}</option>`).join('')
+    : '<option value="">コンドミニアムがありません</option>';
+  onCondoSelectChange('sriracha');
+}
+
+// ---------------- パタヤ(指定日 + コンドミニアム選択) ----------------
+async function initPattayaFlow() {
+  try {
+    const { data } = await supabaseClient.from('condominiums').select('*')
+      .eq('area_group', 'pattaya').eq('is_active', true).order('sort_order');
+    allCondos = data || [];
+  } catch (e) { allCondos = []; }
+
+  const dateSelect = document.getElementById('pattaya-date-select');
+  const todayStr = formatDateLocal(new Date());
+  try {
+    const { data } = await supabaseClient.from('pattaya_delivery_days').select('delivery_date')
+      .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
+    const dates = data || [];
+    dateSelect.innerHTML = dates.length
+      ? dates.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
+      : '<option value="">配送日が設定されていません / No date set yet</option>';
+  } catch (e) {
+    dateSelect.innerHTML = '<option value="">読み込みに失敗しました</option>';
+  }
+
+  const condoSelect = document.getElementById('pattaya-condo-select');
+  condoSelect.innerHTML = allCondos.length
+    ? allCondos.map(c => `<option value="${c.name}">${c.name}</option>`).join('')
+    : '<option value="">コンドミニアムがありません</option>';
+  onCondoSelectChange('pattaya');
+}
+
+// 「その他 / Other」選択時にテキスト入力欄を出す(シラチャ・パタヤ共通)
+function onCondoSelectChange(area) {
+  const select = document.getElementById(`${area}-condo-select`);
+  const otherInput = document.getElementById(`${area}-condo-other`);
+  const isOther = select.value && select.value.toLowerCase().includes('other');
+  otherInput.style.display = isOther ? 'block' : 'none';
 }
 
 // ---------------- 初期化 ----------------
@@ -561,6 +708,10 @@ async function applyCoupon() {
 // ---------------- 配送日時 ----------------
 let holidaySet = new Set();
 
+function formatDateLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 async function initDeliveryDatePicker() {
   const dateInput = document.getElementById('delivery-date');
   const today = new Date();
@@ -676,9 +827,35 @@ async function submitOrder() {
 
   if (cart.length === 0) { msgEl.textContent = '商品をカートに入れてください / Please add at least one product.'; msgEl.className = 'error'; return; }
 
-  const deliveryDate = document.getElementById('delivery-date').value;
-  const deliveryTimeSlot = document.getElementById('delivery-time-slot').value;
-  if (!deliveryDate || !deliveryTimeSlot) { msgEl.textContent = '配送日時を選択してください(日曜以外) / Please choose a valid delivery date and time.'; msgEl.className = 'error'; return; }
+  let deliveryDate = '';
+  let deliveryTimeSlot = null;
+  let condoName = null;
+
+  if (customerAreaType === 'bangkok') {
+    deliveryDate = document.getElementById('delivery-date').value;
+    deliveryTimeSlot = document.getElementById('delivery-time-slot').value;
+    if (!deliveryDate || !deliveryTimeSlot) { msgEl.textContent = '配送日時を選択してください(日曜以外) / Please choose a valid delivery date and time.'; msgEl.className = 'error'; return; }
+  } else if (customerAreaType === 'sriracha') {
+    deliveryDate = document.getElementById('sriracha-date-select').value;
+    const condoSelect = document.getElementById('sriracha-condo-select');
+    condoName = condoSelect.value;
+    if (condoName && condoName.toLowerCase().includes('other')) {
+      condoName = document.getElementById('sriracha-condo-other').value.trim() || 'その他';
+    }
+    deliveryTimeSlot = 'シラチャ配送(時間指定なし)';
+    if (!deliveryDate) { msgEl.textContent = '配送日を選択してください / Please choose a delivery date.'; msgEl.className = 'error'; return; }
+    if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
+  } else if (customerAreaType === 'pattaya') {
+    deliveryDate = document.getElementById('pattaya-date-select').value;
+    const condoSelect = document.getElementById('pattaya-condo-select');
+    condoName = condoSelect.value;
+    if (condoName && condoName.toLowerCase().includes('other')) {
+      condoName = document.getElementById('pattaya-condo-other').value.trim() || 'その他';
+    }
+    deliveryTimeSlot = 'パタヤ配送(時間指定なし)';
+    if (!deliveryDate) { msgEl.textContent = '配送日を選択してください(設定が無い場合はお問い合わせください) / Please choose a delivery date.'; msgEl.className = 'error'; return; }
+    if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
+  }
 
   const paymentMethod = document.querySelector('input[name=payment]:checked')?.value;
   if (!paymentMethod) { msgEl.textContent = '支払い方法を選択してください / Please choose a payment method.'; msgEl.className = 'error'; return; }
@@ -697,6 +874,7 @@ async function submitOrder() {
     customer_id: currentCustomer.id,
     delivery_date: deliveryDate,
     delivery_time_slot: deliveryTimeSlot,
+    condo_name: condoName,
     has_weight_items: hasWeightItems,
     payment_method: paymentMethod,
     payment_status: 'unpaid',
@@ -758,20 +936,35 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, customerN
 
   if (hasWeightItems) {
     noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>量り売り商品が含まれるため、重量確定後に正式な金額とお支払い方法のご案内をいたします。`;
-    return;
-  }
-
-  if (paymentMethod === 'cash') {
+  } else if (paymentMethod === 'cash') {
     noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>配達時に代金引換にてお支払いください。合計 ฿${amount}`;
-    return;
+  } else {
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。`;
+    renderPromptPayQr(amount);
+    const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId });
+    document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+    document.getElementById('slip-link-row').style.display = 'flex';
   }
 
-  noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。`;
-  renderPromptPayQr(amount);
+  if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
+    showGpsInfoBox();
+  }
+}
 
-  const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId });
-  document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
-  document.getElementById('slip-link-row').style.display = 'flex';
+async function showGpsInfoBox() {
+  try {
+    const { data } = await supabaseClient.from('settings').select('key, value')
+      .in('key', ['gps_tracking_url', 'gps_tracking_username', 'gps_tracking_password']);
+    const map = {};
+    (data || []).forEach(row => { map[row.key] = row.value; });
+    if (!map.gps_tracking_url) return;
+
+    document.getElementById('gps-info-url').href = map.gps_tracking_url;
+    document.getElementById('gps-info-url').textContent = map.gps_tracking_url;
+    document.getElementById('gps-info-username').textContent = map.gps_tracking_username || '-';
+    document.getElementById('gps-info-password').textContent = map.gps_tracking_password || '-';
+    document.getElementById('gps-info-box').style.display = 'block';
+  } catch (e) { /* GPS情報の取得に失敗しても注文自体は成立しているので無視する */ }
 }
 
 // フッターの地図(ホテル等のPOIアイコンを非表示にするカスタムスタイル)
