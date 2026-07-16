@@ -117,6 +117,23 @@
   .fav-item-name { font-size: 13px; font-weight: 600; }
   .fav-item-sub { font-size: 11px; color: var(--muted); }
   .fav-remove-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; line-height: 1; padding: 4px; }
+
+  /* footer */
+  .site-footer { max-width: 480px; margin: 24px auto 0; background: var(--white); border-top: 2px solid var(--yellow-dark); padding: 24px 16px 18px; font-size: 12.5px; color: var(--muted); }
+  .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
+  .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--yellow); color: var(--brown); display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
+  .footer-social a:hover { background: var(--yellow-dark); }
+  .footer-section { margin-bottom: 18px; }
+  .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--orange); margin-bottom: 6px; }
+  .footer-section p { line-height: 1.9; color: var(--text); }
+  .footer-section a { color: var(--orange); text-decoration: underline; }
+  .footer-area-images { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .footer-area-image-item { flex: 1; min-width: 120px; text-align: center; }
+  .footer-area-image-item img { width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; object-fit: cover; aspect-ratio: 4/3; }
+  .footer-area-image-item span { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+  .footer-store-photo { width: 100%; max-width: 280px; border-radius: 10px; margin-bottom: 10px; display: block; border: 1px solid var(--border); }
+  .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+  .footer-copyright { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
@@ -307,6 +324,51 @@
   </div>
 
 </div>
+
+<footer class="site-footer">
+  <div class="footer-social">
+    <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
+    <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
+  </div>
+
+  <div class="footer-section">
+    <h3>配送エリアについて / Delivery Area</h3>
+    <p>
+      バンコク・シラチャ・パタヤは自社配送でお届けします。<br>
+      それ以外の地域は、外部のクール便(冷蔵・冷凍配送サービス)を利用して全国どこへでもお届け可能です。詳しくはお問い合わせください。
+    </p>
+    <div class="footer-area-images">
+      <div class="footer-area-image-item">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+        <span>バンコクエリア</span>
+      </div>
+      <div class="footer-area-image-item">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+        <span>シラチャエリア</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-section">
+    <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+    <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+    <p>
+      SAITO FOODS CO.,LTD.<br>
+      23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36, Klongtoey, Bangkok 10110<br>
+      TEL: 02-258-9878 / 06-5618-9906<br>
+      Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
+      Tax ID: 0-1055-40079-19-1<br>
+      ※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。<br>
+      <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+    </p>
+  </div>
+
+  <div class="footer-section footer-links">
+    <a href="terms.html">利用規約 / Terms of Service</a>
+  </div>
+
+  <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
+</footer>
 
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
