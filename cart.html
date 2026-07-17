@@ -278,8 +278,10 @@
         パスワード / Password: <span id="gps-info-password"></span><br>
         <span style="font-size:11px;color:#999;">※ スマホアプリ「sinotrack pro」でも同じ情報でログインできます</span>
       </div>
-      <button class="btn-secondary" style="width:100%;margin-top:14px;" onclick="location.href='product_list.html'">商品一覧に戻る / Back to products</button>
+      <button class="btn-secondary" id="receipt-link-btn" style="width:100%;margin-top:14px;display:none;">🧾 伝票を表示・印刷する / View &amp; print receipt</button>
+      <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="location.href='product_list.html'">商品一覧に戻る / Back to products</button>
     </div>
+
 
   </div>
 </main>
@@ -958,6 +960,10 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, customerN
   if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
     showGpsInfoBox();
   }
+
+  const receiptBtn = document.getElementById('receipt-link-btn');
+  receiptBtn.style.display = 'block';
+  receiptBtn.onclick = () => window.open('receipt.html?order_id=' + encodeURIComponent(orderId), '_blank');
 }
 
 async function fetchGpsInfo() {
