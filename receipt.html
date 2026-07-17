@@ -19,7 +19,7 @@
 
   /* ---- screen-only toolbar ---- */
   .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-  .toolbar .back-link { font-size: 12.5px; color: var(--brand-dark); font-weight: 700; text-decoration: none; }
+  .toolbar .back-link { font-size: 12.5px; color: var(--brand-dark); font-weight: 700; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
   .btn { border: none; border-radius: 8px; padding: 9px 15px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .btn-primary { background: var(--brand-dark); color: #fff; }
   .btn-primary:hover { background: #4d735f; }
@@ -27,6 +27,12 @@
 
   /* ---- receipt paper (print target) ---- */
   .receipt-paper { background: #fff; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 18px 22px; }
+
+  .area-banner { text-align: center; font-weight: 800; font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 10px; border-radius: 8px; margin-bottom: 10px; }
+  .area-bangkok { background: #e4f3ea; color: #1a7a4c; border: 1.5px solid #8FB9A8; }
+  .area-sriracha { background: #e3edfa; color: #2c5da0; border: 1.5px solid #9fc0ea; }
+  .area-pattaya { background: #fdece0; color: #b0592f; border: 1.5px solid #f0b98a; }
+  .area-other { background: #eee; color: #666; border: 1.5px solid #ccc; }
 
   .receipt-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--brand); padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
   .receipt-logo img { height: 64px; display: block; }
@@ -88,7 +94,7 @@
     .toolbar, .hint-text { display: none !important; }
     .page-shell { max-width: none; padding: 0; }
     .receipt-paper { box-shadow: none; border-radius: 0; padding: 6mm 7mm; }
-    .status-pill, .weight-note, .points-box, .change-box, table.items-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
   @media (max-width: 560px) {
     .info-grid { grid-template-columns: 1fr; }
@@ -101,7 +107,7 @@
 <div class="page-shell">
 
   <div class="toolbar no-print">
-    <a href="#" onclick="history.back(); return false;" class="back-link">← Back</a>
+    <button class="btn back-link" onclick="goBack()">← Back</button>
     <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
   </div>
 
@@ -119,6 +125,8 @@
           <div class="order-no" id="f-issue-date"></div>
         </div>
       </div>
+
+      <div class="area-banner" id="f-area-banner"></div>
 
       <div class="info-grid">
         <div class="info-box">
@@ -213,6 +221,16 @@ function baht(n) {
   return '฿' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
+// リンクを直接開いた/新しいタブで開いた場合など、このタブに「戻る履歴」が無いケースがあるため、
+// history.back()が使えるかを確認し、使えなければタブを閉じるのを試みる(閉じられない場合は何もしない)。
+function goBack() {
+  if (window.history.length > 1) {
+    history.back();
+  } else {
+    window.close();
+  }
+}
+
 function fmtDate(d) {
   if (!d) return '-';
   try {
@@ -247,7 +265,7 @@ async function loadReceipt() {
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at,
-      customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance ),
+      customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_th, unit_label ) )
     `)
     .eq('id', orderId)
@@ -269,6 +287,13 @@ function renderReceipt(order) {
 
   document.getElementById('f-order-no').textContent = '#' + String(order.id).slice(0, 8).toUpperCase();
   document.getElementById('f-issue-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString('en-GB') : '';
+
+  // エリア区分バナー(area_idが未設定の顧客はcart.html等と同様にBangkok扱いとする)
+  const areaName = c.areas?.name || 'Bangkok';
+  const areaBanner = document.getElementById('f-area-banner');
+  const areaClassMap = { Bangkok: 'area-bangkok', Sriracha: 'area-sriracha', Pattaya: 'area-pattaya' };
+  areaBanner.textContent = `📍 ${areaName}`;
+  areaBanner.className = 'area-banner ' + (areaClassMap[areaName] || 'area-other');
 
   document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
   document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
