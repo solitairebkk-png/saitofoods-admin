@@ -395,6 +395,7 @@ let shippingFeeAmount = 100;
 let appliedCoupon = null;
 let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
+let customerAreaName = 'Bangkok'; // areas.nameそのもの。注文時にorders.area_nameとして保存し、後でお客様がエリアを変更しても伝票の表示が変わらないようにする
 let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
 let gpsTrackingInfo = null;  // { url, username, password }
 
@@ -433,11 +434,13 @@ async function loadCustomerAndInit(userId) {
 // ---------------- エリア判定(バンコク/シラチャ/パタヤ)して配送フォームを出し分け ----------------
 async function initDeliveryArea() {
   customerAreaType = 'bangkok';
+  customerAreaName = 'Bangkok';
 
   if (currentCustomer.area_id) {
     try {
       const { data: areaRow } = await supabaseClient.from('areas').select('*').eq('id', currentCustomer.area_id).single();
       if (areaRow) {
+        customerAreaName = areaRow.name || customerAreaName;
         const text = Object.values(areaRow).filter(v => typeof v === 'string').join(' ').toLowerCase();
         if (text.includes('pattaya')) customerAreaType = 'pattaya';
         else if (text.includes('sriracha')) customerAreaType = 'sriracha';
@@ -959,6 +962,7 @@ async function submitOrder() {
     delivery_date: deliveryDate,
     delivery_time_slot: deliveryTimeSlot,
     condo_name: condoName,
+    area_name: customerAreaName,
     has_weight_items: hasWeightItems,
     payment_method: paymentMethod,
     payment_status: 'unpaid',

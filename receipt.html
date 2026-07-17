@@ -269,7 +269,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
-      subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at,
+      subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_th, unit_label ) )
     `)
@@ -302,8 +302,10 @@ function renderReceipt(order) {
   document.getElementById('f-order-no').textContent = '#' + String(order.id).slice(0, 8).toUpperCase();
   document.getElementById('f-issue-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString('en-GB') : '';
 
-  // エリア区分バナー(area_idが未設定の顧客はcart.html等と同様にBangkok扱いとする)
-  const areaName = c.areas?.name || 'Bangkok';
+  // エリア区分バナー: 注文時点のスナップショット(orders.area_name)を優先する。
+  // お客様が後からエリアを変更しても、過去の伝票の表示が変わらないようにするため。
+  // area_nameが無い古い注文(この列を追加する前のデータ)だけ、現在のお客様のエリアで代用する。
+  const areaName = order.area_name || c.areas?.name || 'Bangkok';
   const areaBanner = document.getElementById('f-area-banner');
   const areaClassMap = { Bangkok: 'area-bangkok', Sriracha: 'area-sriracha', Pattaya: 'area-pattaya' };
   areaBanner.textContent = `📍 ${areaName}`;
