@@ -28,8 +28,8 @@
   /* ---- receipt paper (print target) ---- */
   .receipt-paper { background: #fff; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 18px 22px; }
 
-  .receipt-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--brand); padding-bottom: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-  .receipt-logo img { height: 34px; display: block; }
+  .receipt-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--brand); padding-bottom: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .receipt-logo img { height: 64px; display: block; }
   .receipt-title-block { text-align: right; }
   .receipt-title-block h1 { font-size: 14.5px; font-weight: 800; margin-bottom: 2px; }
   .receipt-title-block .order-no { font-size: 11.5px; color: #666; }
@@ -62,6 +62,7 @@
 
   .points-box { margin-top: 8px; padding: 6px 10px; background: var(--line-soft); border-radius: 8px; font-size: 11px; line-height: 1.5; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px; }
   .points-box b { color: var(--brand-dark); font-size: 12.5px; }
+  .points-box #f-points-pending { color: var(--brand-dark); font-weight: 600; }
 
   .pay-section { margin-top: 12px; padding-top: 10px; border-top: 2px solid var(--brand); }
   .pay-section h3 { font-size: 11px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -145,6 +146,7 @@
         <div class="t-row"><span>Subtotal</span><span id="f-subtotal"></span></div>
         <div class="t-row"><span>Shipping</span><span id="f-shipping"></span></div>
         <div class="t-row discount" id="f-discount-row" style="display:none;"><span id="f-discount-label"></span><span id="f-discount-amount"></span></div>
+        <div class="t-row discount" id="f-points-used-row" style="display:none;"><span>Points used</span><span id="f-points-used-amount"></span></div>
         <div class="t-row grand"><span>Total</span><span id="f-total"></span></div>
       </div>
 
@@ -154,6 +156,7 @@
       <div class="points-box" id="f-points-box" style="display:none;">
         <div>Points balance: <b id="f-points-balance"></b> pt</div>
         <div id="f-points-expiry"></div>
+        <div id="f-points-pending" style="flex-basis:100%;"></div>
       </div>
 
       <div class="pay-section">
@@ -243,7 +246,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
-      subtotal, shipping_cost, coupon_code, discount_amount, total_amount, comment, created_at,
+      subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_th, unit_label ) )
     `)
@@ -253,6 +256,7 @@ async function loadReceipt() {
   if (error || !order) { showError(); return; }
   renderReceipt(order);
   loadPointsExpiry(order.customer_id);
+  loadOrderPoints(order);
 }
 
 function showError() {
@@ -315,6 +319,11 @@ function renderReceipt(order) {
 
   document.getElementById('f-total').textContent = baht(order.total_amount);
 
+  if (order.points_used > 0) {
+    document.getElementById('f-points-used-row').style.display = 'flex';
+    document.getElementById('f-points-used-amount').textContent = `-${baht(order.points_used)} (${order.points_used} pt)`;
+  }
+
   if (order.has_weight_items && !order.is_weight_confirmed) {
     document.getElementById('f-weight-note').style.display = 'block';
     document.getElementById('f-weight-note').textContent = '⚖️ This order includes items sold by weight. The final amount will be confirmed after weighing.';
@@ -373,6 +382,46 @@ async function loadPointsExpiry(customerId) {
       document.getElementById('f-points-expiry').textContent = `Next expiry: ${data[0].expires_at}`;
     }
   } catch (e) { /* balance only if this lookup fails */ }
+}
+
+// The customer's point_balance is only updated once staff mark the order "Complete" in orders.html
+// (after delivery), so right after checkout — and even at the moment of delivery — this order's
+// points are usually NOT reflected yet. Show what this specific order will earn so the balance
+// above doesn't look wrong or missing to the customer/staff.
+async function loadOrderPoints(order) {
+  if (!order.customer_id) return;
+  const pendingEl = document.getElementById('f-points-pending');
+
+  try {
+    const { data: existing } = await supabaseClient
+      .from('points_ledger')
+      .select('points')
+      .eq('order_id', order.id)
+      .eq('change_type', 'earn')
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      pendingEl.textContent = `This order already earned +${existing[0].points} pt (included in the balance above).`;
+      return;
+    }
+
+    if (order.has_weight_items && !order.is_weight_confirmed) {
+      pendingEl.textContent = `Points for this order will be added after weighing and delivery is confirmed.`;
+      return;
+    }
+
+    const dow = new Date(order.delivery_date + 'T00:00:00').getDay();
+    const { data: rules } = await supabaseClient
+      .from('point_rate_rules').select('day_of_week, rate_percent').eq('is_active', true);
+    const specific = (rules || []).find(r => r.day_of_week === dow);
+    const fallback = (rules || []).find(r => r.day_of_week === null);
+    const ratePercent = specific ? Number(specific.rate_percent) : (fallback ? Number(fallback.rate_percent) : 1);
+    const projectedPoints = Math.floor((order.total_amount || 0) * ratePercent / 100);
+
+    if (projectedPoints > 0) {
+      pendingEl.textContent = `This order will earn +${projectedPoints} pt once delivery is confirmed (not yet in the balance above).`;
+    }
+  } catch (e) { /* leave blank if the projection can't be calculated */ }
 }
 
 loadReceipt();

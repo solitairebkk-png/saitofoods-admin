@@ -214,9 +214,18 @@
         </div>
         <div id="coupon-status" style="font-size:12px;margin-top:6px;"></div>
       </div>
+      <div class="field" id="points-field" style="display:none;">
+        <label>ポイントを使う / Use points (残高 <span id="points-available">0</span> pt)</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()">
+          <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="flex:1;" disabled oninput="onPointsAmountChange()">
+        </div>
+        <div style="font-size:11px;color:#999;margin-top:4px;">1pt = ฿1 割引 / 1 pt = ฿1 discount</div>
+      </div>
       <div class="totals-row"><span>小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
       <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
       <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span>割引 / Discount</span><span id="totals-discount">-฿0</span></div>
+      <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span>ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
       <div class="totals-row total"><span>合計 / Total</span><span id="totals-total">฿0</span></div>
       <div style="font-size:11px;color:#999;margin-top:6px;">※ 量り売り商品は重量確定後に金額が決まります(合計には含まれません)</div>
     </div>
@@ -376,6 +385,7 @@ let cart = [];              // { product_id, name, sale_type, price, unit_price,
 let shippingFreeThreshold = 600;
 let shippingFeeAmount = 100;
 let appliedCoupon = null;
+let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
 let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
 let gpsTrackingInfo = null;  // { url, username, password }
@@ -396,7 +406,7 @@ async function login() {
 async function loadCustomerAndInit(userId) {
   const { data: rows, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, tel1, email, address1, address2, area_id')
+    .select('id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance')
     .eq('auth_user_id', userId);
 
   if (error || !rows || rows.length === 0) {
@@ -409,6 +419,7 @@ async function loadCustomerAndInit(userId) {
   await initDeliveryArea();
   await Promise.all([loadShippingSettings(), loadCartItems()]);
   onPaymentChange();
+  initPointsUI();
 }
 
 // ---------------- エリア判定(バンコク/シラチャ/パタヤ)して配送フォームを出し分け ----------------
@@ -643,7 +654,9 @@ function updateTotals() {
   const shippingCost = subtotal > 0 && subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
-  const total = preDiscountTotal - discount;
+  const afterDiscount = preDiscountTotal - discount;
+  const appliedPoints = Math.min(pointsToUse, afterDiscount, currentCustomer?.point_balance || 0);
+  const total = afterDiscount - appliedPoints;
 
   document.getElementById('totals-subtotal').textContent = `฿${subtotal}`;
   const shippingRow = document.getElementById('totals-shipping-row');
@@ -664,7 +677,47 @@ function updateTotals() {
     discountRow.style.display = 'none';
   }
 
+  const pointsRow = document.getElementById('totals-points-row');
+  if (appliedPoints > 0) {
+    pointsRow.style.display = 'flex';
+    document.getElementById('totals-points').textContent = `-฿${appliedPoints}`;
+  } else {
+    pointsRow.style.display = 'none';
+  }
+
   document.getElementById('totals-total').textContent = `฿${total}`;
+}
+
+// ---------------- ポイント利用(オンライン注文限定。1pt = ฿1割引。上限なし=残高全部まで使用可) ----------------
+function initPointsUI() {
+  const balance = currentCustomer.point_balance || 0;
+  if (balance <= 0) return; // 残高が無いお客様には表示しない
+  document.getElementById('points-field').style.display = 'block';
+  document.getElementById('points-available').textContent = balance;
+  document.getElementById('points-amount-input').max = balance;
+}
+
+function onUsePointsToggle() {
+  const checked = document.getElementById('use-points-checkbox').checked;
+  const input = document.getElementById('points-amount-input');
+  input.disabled = !checked;
+  if (checked) {
+    input.value = currentCustomer.point_balance || 0; // 初期値は残高全部。お客様が減らすことも可能
+  } else {
+    input.value = '';
+  }
+  onPointsAmountChange();
+}
+
+function onPointsAmountChange() {
+  const checked = document.getElementById('use-points-checkbox').checked;
+  const input = document.getElementById('points-amount-input');
+  const balance = currentCustomer.point_balance || 0;
+  let val = checked ? (parseInt(input.value, 10) || 0) : 0;
+  val = Math.max(0, Math.min(val, balance));
+  if (checked) input.value = val;
+  pointsToUse = val;
+  updateTotals();
 }
 
 // ---------------- クーポン ----------------
@@ -875,7 +928,9 @@ async function submitOrder() {
   const shippingCost = subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
-  const total = preDiscountTotal - discount;
+  const afterDiscount = preDiscountTotal - discount;
+  const appliedPoints = Math.min(pointsToUse, afterDiscount, currentCustomer.point_balance || 0);
+  const total = afterDiscount - appliedPoints;
 
   const orderPayload = {
     order_type: 'delivery',
@@ -891,6 +946,7 @@ async function submitOrder() {
     shipping_cost: shippingCost,
     coupon_code: appliedCoupon ? appliedCoupon.code : null,
     discount_amount: discount,
+    points_used: appliedPoints,
     total_amount: total,
     comment: comment || null,
     created_by: null,
@@ -922,12 +978,26 @@ async function submitOrder() {
       await supabaseClient.from('coupons').update({ used_count: appliedCoupon.used_count + 1 }).eq('id', appliedCoupon.id);
     }
 
+    if (appliedPoints > 0) {
+      const newBalance = (currentCustomer.point_balance || 0) - appliedPoints;
+      await supabaseClient.from('customers').update({ point_balance: newBalance }).eq('id', currentCustomer.id);
+      await supabaseClient.from('points_ledger').insert({
+        customer_id: currentCustomer.id,
+        order_id: orderId,
+        change_type: 'redeem',
+        points: appliedPoints,
+        expires_at: null,
+      });
+      currentCustomer.point_balance = newBalance;
+    }
+
     sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeSlot, condoName, total, cartSnapshot: cart.slice() }).catch(() => {});
 
-    showSuccess({ orderId, amount: total, hasWeightItems, paymentMethod, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
+    showSuccess({ orderId, amount: total, hasWeightItems, paymentMethod, pointsUsed: appliedPoints, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
 
     cart = [];
     appliedCoupon = null;
+    pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     document.getElementById('cart-items-list').innerHTML = '';
     document.getElementById('delivery-card').style.display = 'none';
@@ -940,17 +1010,19 @@ async function submitOrder() {
   }
 }
 
-function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, customerName }) {
+function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUsed, customerName }) {
   const panel = document.getElementById('success-panel');
   const noteEl = document.getElementById('success-note');
   panel.style.display = 'block';
 
+  const pointsLine = pointsUsed > 0 ? `<br>ポイント利用: ${pointsUsed} pt (-฿${pointsUsed})` : '';
+
   if (hasWeightItems) {
-    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>量り売り商品が含まれるため、重量確定後に正式な金額とお支払い方法のご案内をいたします。`;
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>量り売り商品が含まれるため、重量確定後に正式な金額とお支払い方法のご案内をいたします。${pointsLine}`;
   } else if (paymentMethod === 'cash') {
-    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>配達時に代金引換にてお支払いください。合計 ฿${amount}`;
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>配達時に代金引換にてお支払いください。合計 ฿${amount}${pointsLine}`;
   } else {
-    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。`;
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。${pointsLine}`;
     renderPromptPayQr(amount);
     const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId });
     document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
