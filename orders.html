@@ -246,7 +246,7 @@
 
   <div class="area-tabs">
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
-    <button data-area="Sriracha" onclick="setAreaTab(this,'Sriracha')">Sriracha / Pattaya</button>
+    <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
   </div>
 
@@ -461,7 +461,8 @@ async function loadOrders() {
 
   let rows = data || [];
   if (currentAreaFilter) {
-    rows = rows.filter(o => o.customers?.areas?.name === currentAreaFilter);
+    const filterList = currentAreaFilter.split(',');
+    rows = rows.filter(o => filterList.includes(o.customers?.areas?.name));
   }
   if (name) {
     rows = rows.filter(o => {
