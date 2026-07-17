@@ -36,6 +36,14 @@
   .logout-btn { padding: 6px 14px; border: 1.5px solid var(--brown); border-radius: 20px; background: transparent; color: var(--brown); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none; flex-shrink: 0; }
 
   .container { max-width: 480px; margin: 0 auto; padding: 28px 16px; }
+  @media (min-width: 700px) {
+    .container { max-width: 600px; }
+    .site-footer { max-width: 600px; }
+  }
+  @media (min-width: 1000px) {
+    .container { max-width: 720px; }
+    .site-footer { max-width: 720px; }
+  }
 
   .card { background: var(--white); border-radius: 16px; padding: 22px; margin-bottom: 18px; border: 1.5px solid var(--border); box-shadow: 0 2px 12px rgba(200,160,0,0.1); }
   .card-title { font-size: 13px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; margin-bottom: 14px; }

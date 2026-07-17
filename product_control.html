@@ -383,6 +383,8 @@ function toggleEdit(productId) {
         <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
         <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
         <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
+        <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
+        <label>YouTube URL<input type="text" class="e-youtube" value="${p.youtube_url || ''}" placeholder="https://www.youtube.com/watch?v=..."></label>
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大3枚 / up to 3 photos)</div>
       <div class="image-slots">${[1, 2, 3].map(slot => imageSlotHtml(p, slot)).join('')}</div>
@@ -509,6 +511,8 @@ async function saveProduct(productId) {
     is_local_special: g('.e-special').checked,
     is_published: g('.e-published').checked,
     is_available_en: g('.e-availen').checked,
+    instagram_url: g('.e-instagram').value.trim() || null,
+    youtube_url: g('.e-youtube').value.trim() || null,
   };
 
   if (!payload.name_ja) { showSaveMsg('商品名(日)を入力してください / Please enter a Japanese name', true); return; }
@@ -553,6 +557,7 @@ function addNewProduct() {
     price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
     stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
     image_url: null, image_url_2: null, image_url_3: null,
+    instagram_url: null, youtube_url: null,
     _isNew: true,
   };
   allProducts.unshift(blank);

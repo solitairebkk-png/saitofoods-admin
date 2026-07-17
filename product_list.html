@@ -139,6 +139,18 @@
   .pmodal-addcart-btn { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: none; background: var(--brand); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
   .pmodal-addcart-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+  .pmodal-sns-row { display: flex; gap: 8px; margin-top: 12px; }
+  .pmodal-sns-link { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--brand-dark); border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 10px; text-decoration: none; }
+  .pmodal-sns-link:hover { border-color: var(--brand); }
+
+  .pmodal-suggest { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pmodal-suggest h4 { font-size: 11.5px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.03em; margin-bottom: 8px; }
+  .pmodal-suggest-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .pmodal-suggest-card { flex: 0 0 84px; cursor: pointer; }
+  .pmodal-suggest-card img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; background: var(--line-soft); display: block; }
+  .pmodal-suggest-card .name { font-size: 10.5px; line-height: 1.3; margin-top: 4px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pmodal-suggest-card .price { font-size: 11px; font-weight: 700; color: var(--brand-dark); margin-top: 2px; }
+
   @media (max-width: 640px) {
     .pmodal-overlay { padding: 0; align-items: flex-end; }
     .pmodal { border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
@@ -252,6 +264,11 @@
           <button class="pmodal-qty-btn" onclick="pmodalChangeQty(1)">+</button>
         </div>
         <button class="pmodal-addcart-btn" id="pmodal-addcart-btn" onclick="pmodalAddToCart()">カートに入れる / Add to cart</button>
+        <div class="pmodal-sns-row" id="pmodal-sns-row" style="display:none;"></div>
+        <div class="pmodal-suggest" id="pmodal-suggest" style="display:none;">
+          <h4>一緒に購入されている商品 / Frequently bought together</h4>
+          <div class="pmodal-suggest-row" id="pmodal-suggest-row"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -705,7 +722,51 @@ function openPModal(productId) {
     addBtn.disabled = false;
   }
 
+  // SNSリンク(Instagram/YouTube)。商品ごとに設定されている場合だけ表示
+  const snsRow = document.getElementById('pmodal-sns-row');
+  const snsLinks = [];
+  if (p.instagram_url) snsLinks.push(`<a class="pmodal-sns-link" href="${p.instagram_url}" target="_blank" rel="noopener noreferrer">📷 Instagram</a>`);
+  if (p.youtube_url) snsLinks.push(`<a class="pmodal-sns-link" href="${p.youtube_url}" target="_blank" rel="noopener noreferrer">▶️ YouTube</a>`);
+  if (snsLinks.length > 0) {
+    snsRow.innerHTML = snsLinks.join('');
+    snsRow.style.display = 'flex';
+  } else {
+    snsRow.style.display = 'none';
+  }
+
+  loadPModalSuggestions(productId);
+
   document.getElementById('pmodal-overlay').classList.add('open');
+}
+
+// 「一緒に購入されている商品」サジェスト表示
+// product_co_purchase_counts(注文データから集計した公開ビュー)を参照する
+async function loadPModalSuggestions(productId) {
+  const wrap = document.getElementById('pmodal-suggest');
+  const row = document.getElementById('pmodal-suggest-row');
+  wrap.style.display = 'none';
+  row.innerHTML = '';
+
+  try {
+    const counts = await supabaseRest('GET', `product_co_purchase_counts?product_id=eq.${productId}&order=times_bought_together.desc&limit=8`);
+    const suggestions = counts
+      .map(c => allProducts.find(p => p.id === c.co_product_id))
+      .filter(p => p && p.is_published !== false && isAvailable(p))
+      .slice(0, 6);
+
+    if (suggestions.length === 0) return;
+
+    row.innerHTML = suggestions.map(p => `
+      <div class="pmodal-suggest-card" onclick="openPModal('${p.id}')">
+        <img src="${p.image_url || ''}" alt="${p.name_ja || ''}" onerror="this.style.visibility='hidden'">
+        <div class="name">${p.name_ja || ''}</div>
+        <div class="price">${p.sale_type === 'weight' ? `฿${p.unit_price}/${p.unit_label}` : `฿${p.price}`}</div>
+      </div>
+    `).join('');
+    wrap.style.display = 'block';
+  } catch (e) {
+    // ビュー未作成・取得失敗時は静かに非表示のまま(致命的エラーにしない)
+  }
 }
 
 function closePModal() {
