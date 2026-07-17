@@ -557,6 +557,9 @@ async function loadMyPage(user) {
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
     .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
+    .eq('auth_user_id', user.id)
+    .single();
+
   // ここに来たケースなど)、メールアドレスが一致する既存の顧客レコードへの紐付けを試みる
   // (RLSの組み合わせに依存しないよう、サーバー側のRPC関数経由で行う)
   if ((error || !customerRow) && user.email) {

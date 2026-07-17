@@ -691,10 +691,22 @@ function updateTotals() {
 // ---------------- ポイント利用(オンライン注文限定。1pt = ฿1割引。上限なし=残高全部まで使用可) ----------------
 function initPointsUI() {
   const balance = currentCustomer.point_balance || 0;
-  if (balance <= 0) return; // 残高が無いお客様には表示しない
-  document.getElementById('points-field').style.display = 'block';
+  const field = document.getElementById('points-field');
+  const checkbox = document.getElementById('use-points-checkbox');
+  const input = document.getElementById('points-amount-input');
+
+  field.style.display = 'block';
   document.getElementById('points-available').textContent = balance;
-  document.getElementById('points-amount-input').max = balance;
+  input.max = balance;
+
+  if (balance <= 0) {
+    checkbox.disabled = true;
+    input.disabled = true;
+    field.style.opacity = '0.5';
+  } else {
+    checkbox.disabled = false;
+    field.style.opacity = '1';
+  }
 }
 
 function onUsePointsToggle() {
