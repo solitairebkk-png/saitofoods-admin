@@ -547,7 +547,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 
   if (order.is_cancelled) {
     // キャンセル済み: 閲覧のみ(adminはDeleteも可能)、Edit/Complete/Cancelは出さない
-    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptModal(order), 'btn-check'));
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     if (currentCustomer && currentCustomer.role === 'admin') {
       manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
@@ -557,7 +557,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
 
   if (!isLocked) {
-    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptModal(order), 'btn-check'));
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     if (!order.is_completed) {
       const editLabel = (order.has_weight_items && !order.is_weight_confirmed)
         ? 'ชั่งน้ำหนัก / Weigh'
@@ -671,6 +671,18 @@ function toggleDetail(orderId) {
 // ================= 帳票(伝票)表示 + 印刷 =================
 let receiptModalOrderId = null;
 
+// 「Check / ตรวจสอบ」ボタン: お客様向けのreceipt.html(ロゴ入り・エリア表示・支払いQR付き)を
+// 別タブで開く。以前はopenReceiptModal()の簡易モーダルを表示していたが、
+// まことさんの指示で正式なreceipt.htmlを表示するように変更。
+// staff=1を付けることで、receipt.html側は「これはスタッフが開いた」と判定できる。
+// 印刷済み(is_slip_printed)フラグは、内容を見るだけの人もいるため、
+// このCheckボタンを押した時点ではなく、receipt.html側で実際に印刷ボタンが押された時点で立てる。
+function openReceiptPage(order) {
+  window.open('receipt.html?order_id=' + order.id + '&staff=1', '_blank');
+}
+
+// 以下のopenReceiptModal()は現在どのボタンからも呼ばれていません(上のopenReceiptPage()に置き換え済み)。
+// 万一切り戻しが必要な場合のために残していますが、削除しても問題ありません。
 function openReceiptModal(order) {
   receiptModalOrderId = order.id;
 

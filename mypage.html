@@ -8,18 +8,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --yellow: #F5C200;
-    --yellow-dark: #e0af00;
-    --yellow-light: #fff8d6;
-    --orange: #e07c00;
-    --brown: #5c3a0a;
+    /* 他のページ(index.html/cart.html/product_list.html等)と同じ配色に統一。
+       変数名は元のまま(--yellow等)にしているので、下の個別CSSルールは変更不要。 */
+    --yellow: #8FB9A8;
+    --yellow-dark: #5F8B79;
+    --yellow-light: #EDF4EE;
+    --orange: #5F8B79;
+    --brown: #33322E;
     --white: #ffffff;
-    --border: #e8d88a;
-    --text: #3a2400;
-    --muted: #997755;
+    --border: #D9E6DC;
+    --text: #33322E;
+    --muted: #7A8B7F;
     --ok: #1a9a5c;
-    --red: #d43c3c;
-    --red-dim: rgba(212,60,60,0.08);
+    --red: #C5533F;
+    --red-dim: rgba(197,83,63,0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'M PLUS Rounded 1c', sans-serif; background: var(--yellow-light); color: var(--text); min-height: 100vh; padding-bottom: 48px; }
@@ -84,6 +86,10 @@
   .order-total { font-size: 15px; font-weight: 800; color: var(--orange); }
   .reorder-btn { width: 100%; margin-top: 10px; padding: 9px; border-radius: 8px; border: 1.5px solid var(--yellow-dark); background: var(--yellow-light); color: var(--brown); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
   .reorder-btn:hover { background: var(--yellow); }
+  .order-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .order-actions .reorder-btn { margin-top: 0; flex: 1; }
+  .receipt-btn { flex: 1; padding: 9px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .receipt-btn:hover { background: var(--yellow-light); }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .skeleton-box { background: linear-gradient(90deg, var(--yellow-light) 25%, #fdf0c0 37%, var(--yellow-light) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 5px; }
@@ -401,6 +407,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 
 let currentCustomer = null;
 let allOrders = [];
+let originalAreaId = null; // エリア変更時の確認ダイアログ用(保存前の元の値)
 
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
@@ -602,6 +609,7 @@ async function loadMyPage(user) {
   document.getElementById('profile-tel1').value = customerRow.tel1 || '';
   document.getElementById('profile-address1').value = customerRow.address1 || '';
   document.getElementById('profile-address2').value = customerRow.address2 || '';
+  originalAreaId = customerRow.area_id || null;
   await loadAreaOptions(customerRow.area_id);
 
   await loadOrderHistory(customerRow.id);
@@ -683,7 +691,10 @@ function renderOrderCard(order, index) {
       <span style="font-size:12px;color:var(--muted);">${order.payment_method === 'qr' ? 'QR振込み' : '現金'}</span>
       <span class="order-total">${order.total_amount || 0} THB</span>
     </div>
-    <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
+    <div class="order-actions">
+      <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
+      <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
+    </div>
   `;
   return div;
 }
@@ -743,7 +754,20 @@ async function saveProfile() {
   const tel1 = document.getElementById('profile-tel1').value.trim();
   const address1 = document.getElementById('profile-address1').value.trim();
   const address2 = document.getElementById('profile-address2').value.trim();
-  const areaId = document.getElementById('profile-area').value || null;
+  const areaSelect = document.getElementById('profile-area');
+  const areaId = areaSelect.value || null;
+
+  // エリアを変更しようとしている場合のみ、誤操作防止の確認ダイアログを出す
+  // (配送可能な曜日・時間帯・コンドミニアムの選択肢が変わるため)
+  const areaChanged = String(areaId || '') !== String(originalAreaId || '');
+  if (areaChanged) {
+    const areaLabel = areaSelect.options[areaSelect.selectedIndex]?.textContent || '';
+    const confirmed = confirm(
+      `お届けエリアを「${areaLabel}」に変更します。よろしいですか?\n` +
+      `配送可能な曜日・時間帯やコンドミニアムの選択肢が変わります。`
+    );
+    if (!confirmed) return;
+  }
 
   const { error } = await supabaseClient.rpc('update_own_profile', {
     new_address1: address1 || null,
@@ -753,6 +777,7 @@ async function saveProfile() {
   });
 
   if (error) { showProfileMsg('保存に失敗しました: ' + error.message, true); return; }
+  originalAreaId = areaId; // 保存成功後は新しい値を基準にする(次回以降、未変更なら再確認しない)
   showProfileMsg('保存しました。');
 }
 

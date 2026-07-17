@@ -216,11 +216,19 @@
       </div>
       <div class="field" id="points-field" style="display:none;">
         <label>ポイントを使う / Use points (残高 <span id="points-available">0</span> pt)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--ink);margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()" style="width:auto;flex:0 0 auto;">
+          今回の注文でポイントを使う / Use points on this order
+        </label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()">
-          <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="flex:1;" disabled oninput="onPointsAmountChange()">
+          <span style="font-size:12.5px;color:#666;white-space:nowrap;">使用ポイント数 / Amount to use</span>
+          <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="max-width:100px;flex:none;" disabled oninput="onPointsAmountChange()">
+          <span style="font-size:12.5px;color:#666;">pt</span>
         </div>
-        <div style="font-size:11px;color:#999;margin-top:4px;">1pt = ฿1 割引 / 1 pt = ฿1 discount</div>
+        <div style="font-size:11px;color:#999;margin-top:6px;line-height:1.6;">
+          チェックを入れると残高が自動で入力されます。数量を減らせば一部だけ使うことも可能です。<br>
+          Checking the box fills in your full balance — lower the number if you'd rather use only part of it. 1 pt = ฿1 discount.
+        </div>
       </div>
       <div class="totals-row"><span>小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
       <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
@@ -253,7 +261,7 @@
         ※ ご注文確定後、スリップアップロード用リンクが表示されます
       </div>
       <div class="cod-info-box" id="cod-info-box" style="display:none;">
-        配達時に配達員へ直接お支払いください。おつりのないようご準備いただけると助かります。
+        配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。
       </div>
     </div>
 

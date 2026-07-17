@@ -108,7 +108,7 @@
 
   <div class="toolbar no-print">
     <button class="btn back-link" onclick="goBack()">← Back</button>
-    <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+    <button class="btn btn-primary" onclick="handlePrint()">🖨️ Print / Save as PDF</button>
   </div>
 
   <div id="state-loading">Loading...</div>
@@ -254,9 +254,14 @@ function buildPromptPayPayload(amount) {
   return withCrcTag + ppCrc16(withCrcTag);
 }
 
+let currentOrderId = null;
+let isStaffView = false;
+
 async function loadReceipt() {
   const params = new URLSearchParams(location.search);
   const orderId = params.get('order_id');
+  currentOrderId = orderId;
+  isStaffView = params.get('staff') === '1';
   if (!orderId) { showError(); return; }
 
   const { data: order, error } = await supabaseClient
@@ -275,6 +280,15 @@ async function loadReceipt() {
   renderReceipt(order);
   loadPointsExpiry(order.customer_id);
   loadOrderPoints(order);
+}
+
+// 印刷ボタンが押された時だけ実行。orders.htmlのCheckボタンから開かれた場合(staff=1)のみ、
+// 「印刷済み(is_slip_printed)」フラグを立てる。内容を見るだけでCheckボタンを押した人には影響しない。
+function handlePrint() {
+  if (isStaffView && currentOrderId) {
+    supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId).then(() => {});
+  }
+  window.print();
 }
 
 function showError() {
