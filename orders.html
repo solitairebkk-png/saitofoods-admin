@@ -247,6 +247,7 @@
   <div class="area-tabs">
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
+    <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in / หน้าร้าน</button>
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
   </div>
 
@@ -460,7 +461,9 @@ async function loadOrders() {
   if (error) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
 
   let rows = data || [];
-  if (currentAreaFilter) {
+  if (currentAreaFilter === '__WALKIN__') {
+    rows = rows.filter(o => o.order_type === 'walk_in');
+  } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
     rows = rows.filter(o => filterList.includes(o.customers?.areas?.name));
   }
