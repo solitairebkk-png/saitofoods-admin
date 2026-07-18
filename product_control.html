@@ -341,11 +341,26 @@ function renderProductRow(p) {
   return tr;
 }
 
+// 保存されていない新規商品(_isNew)を一覧から取り除く。excludeIdは今まさに開こうとしている行(あれば残す)
+function discardUnsavedNewProducts(excludeId) {
+  const before = allProducts.length;
+  allProducts = allProducts.filter(p => !(p._isNew && p.id !== excludeId));
+  (Object.keys(productCategoryMap) || []).forEach(pid => {
+    if (pid.startsWith('new-') && pid !== excludeId) delete productCategoryMap[pid];
+  });
+  if (allProducts.length !== before) applyFilters();
+}
+
 function toggleEdit(productId) {
   const existing = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
-  if (existing) { existing.remove(); return; }
+  if (existing) {
+    existing.remove();
+    discardUnsavedNewProducts(); // 保存せずに閉じたら、未保存の新規商品は一覧から消す
+    return;
+  }
 
   document.querySelectorAll('tr.edit-row').forEach(el => el.remove());
+  discardUnsavedNewProducts(productId); // 他に開いたままの未保存新規商品があれば消す(今開くものは除く)
 
   const p = allProducts.find(x => x.id === productId);
   if (!p) return;
@@ -392,7 +407,9 @@ function toggleEdit(productId) {
       <div class="cat-checks">${catChecks || '<span style="color:var(--text-muted);font-size:12px;">カテゴリ未登録</span>'}</div>
       <button class="btn save small" onclick="saveProduct('${productId}')">保存 / Save</button>
       <button class="btn ghost small" onclick="toggleEdit('${productId}')">閉じる / Close</button>
-      ${p._isNew ? '' : `<button class="btn warn small" onclick="deleteProduct('${productId}')" style="float:right;">削除 / Delete</button>`}
+      ${p._isNew
+        ? `<button class="btn warn small" onclick="toggleEdit('${productId}')" style="float:right;">キャンセル / Cancel</button>`
+        : `<button class="btn warn small" onclick="deleteProduct('${productId}')" style="float:right;">削除 / Delete</button>`}
     </td>
   `;
   baseRow.after(editRow);
