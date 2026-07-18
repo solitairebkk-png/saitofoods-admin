@@ -81,9 +81,9 @@
 
   .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
   .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
-  #save-msg { font-size: 13px; margin-top: 8px; }
-  #save-msg.success { color: var(--green); }
-  #save-msg.error { color: var(--red-accent); }
+  #save-msg { font-size: 13px; margin-top: 8px; padding: 8px 10px; border-radius: 6px; }
+  #save-msg.success { color: var(--green); background: #e7f3ec; }
+  #save-msg.error { color: var(--red-accent); background: #fdeceA; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -542,10 +542,31 @@ async function saveProduct(productId) {
   loadProducts();
 }
 
+// 商品を削除する。ただし過去の注文(order_items)から参照されている商品は、
+// データベースの外部キー制約により削除できない(409 Conflict)。
+// その場合は「削除」ではなく「非公開」にすることを案内する。
 async function deleteProduct(productId) {
   if (!confirm('この商品を削除しますか？(過去の注文データには影響しません) / Delete this product?')) return;
+
   const { error } = await supabaseClient.from('products').delete().eq('id', productId);
-  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+
+  if (error) {
+    const isForeignKeyError = error.code === '23503' || /foreign key|violates/i.test(error.message || '');
+    if (isForeignKeyError) {
+      alert(
+        'この商品は過去の注文履歴で使われているため削除できません。\n' +
+        'This product cannot be deleted because it is referenced in past order history.\n\n' +
+        '代わりに「公開」のチェックを外して非公開にすることをおすすめします。\n' +
+        'Please uncheck "Published" instead to hide it from the catalog.'
+      );
+      showSaveMsg('削除できませんでした(注文履歴あり)。「非公開」をご利用ください / Cannot delete — has order history. Please unpublish instead.', true);
+    } else {
+      alert('削除に失敗しました / Delete failed:\n' + error.message);
+      showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true);
+    }
+    return;
+  }
+
   showSaveMsg('ลบแล้ว / Deleted');
   loadProducts();
 }
@@ -570,7 +591,7 @@ function showSaveMsg(msg, isError) {
   const el = document.getElementById('save-msg');
   el.textContent = msg;
   el.className = isError ? 'error' : 'success';
-  setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, isError ? 8000 : 3000);
 }
 
 // ---------------- 在庫再インポート(CSV) ----------------
