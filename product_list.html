@@ -72,7 +72,7 @@
   .fav-btn.active { color: #E0554E; }
   .heart-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; display: block; }
   .fav-btn.active .heart-icon, .pmodal-fav-btn.active .heart-icon { fill: currentColor; }
-  .product-cat-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800; color: var(--brand-dark); background: #fff; border: 1.5px solid var(--brand); padding: 3px 9px 3px 7px; border-radius: 10px; margin-bottom: 5px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .product-cat-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800; color: var(--brand-dark); background: #fff; border: 1.5px solid var(--brand); padding: 3px 9px 3px 7px; border-radius: 10px; margin-top: 6px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
   .product-cat-badge::before { content: '🏷️'; font-size: 9px; }
   .product-cat-badge:hover { background: var(--brand); color: #fff; border-color: var(--brand-dark); }
   .product-cat-badge:active { transform: scale(0.96); }
@@ -264,7 +264,7 @@
     <button class="pmodal-close" onclick="closePModal()">✕</button>
     <button class="pmodal-back" id="pmodal-back-btn" onclick="goBackPModal()" style="display:none;">← 戻る / Back</button>
     <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button>
-    <div class="pmodal-fav-label">← お気に入りに追加する / Add to favorites</div>
+    <div class="pmodal-fav-label">← お気に入りに追加 / Add to favorite</div>
     <div class="pmodal-inner">
       <div class="pmodal-gallery" id="pmodal-gallery">
         <div class="pmodal-gallery-main" id="pmodal-gallery-main"></div>
@@ -653,10 +653,10 @@ function productCardHtml(p) {
         : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
     : `<span class="out-of-stock">在庫切れ</span>`;
   const primaryCat = getPrimaryCategoryForProduct(p.id);
-  const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${primaryCat.name_ja}</div>` : '';
+  const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${primaryCat.name_ja} カテゴリへ→</div>` : '';
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body">${catBadge}<div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div>${catBadge}</div></div>`;
 }
 
 // 検索欄の×(クリア)ボタン共通処理

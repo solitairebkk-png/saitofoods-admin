@@ -580,9 +580,22 @@ async function saveProduct(productId) {
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
 
   // カテゴリ紐付けを一旦削除して選択分を入れ直す
-  await supabaseClient.from('product_categories').delete().eq('product_id', productRowId);
+  const { error: catDeleteErr } = await supabaseClient.from('product_categories').delete().eq('product_id', productRowId);
+  if (catDeleteErr) {
+    alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
+    showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
+    loadProducts();
+    return;
+  }
+
   if (selectedCatIds.length > 0) {
-    await supabaseClient.from('product_categories').insert(selectedCatIds.map(cid => ({ product_id: productRowId, category_id: cid })));
+    const { error: catInsertErr } = await supabaseClient.from('product_categories').insert(selectedCatIds.map(cid => ({ product_id: productRowId, category_id: cid })));
+    if (catInsertErr) {
+      alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
+      showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catInsertErr.message, true);
+      loadProducts();
+      return;
+    }
   }
 
   showSaveMsg('บันทึกแล้ว / Saved');
