@@ -401,8 +401,8 @@ function toggleEdit(productId) {
         <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
         <label>YouTube URL<input type="text" class="e-youtube" value="${p.youtube_url || ''}" placeholder="https://www.youtube.com/watch?v=..."></label>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大3枚 / up to 3 photos)</div>
-      <div class="image-slots">${[1, 2, 3].map(slot => imageSlotHtml(p, slot)).join('')}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大8枚 / up to 8 photos)</div>
+      <div class="image-slots">${[1, 2, 3, 4, 5, 6, 7, 8].map(slot => imageSlotHtml(p, slot)).join('')}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
       <div class="cat-checks">${catChecks || '<span style="color:var(--text-muted);font-size:12px;">カテゴリ未登録</span>'}</div>
       <button class="btn save small" onclick="saveProduct('${productId}')">保存 / Save</button>
@@ -525,6 +525,11 @@ async function saveProduct(productId) {
     image_url: g('.e-image-1').value.trim() || null,
     image_url_2: g('.e-image-2').value.trim() || null,
     image_url_3: g('.e-image-3').value.trim() || null,
+    image_url_4: g('.e-image-4').value.trim() || null,
+    image_url_5: g('.e-image-5').value.trim() || null,
+    image_url_6: g('.e-image-6').value.trim() || null,
+    image_url_7: g('.e-image-7').value.trim() || null,
+    image_url_8: g('.e-image-8').value.trim() || null,
     is_local_special: g('.e-special').checked,
     is_published: g('.e-published').checked,
     is_available_en: g('.e-availen').checked,
@@ -595,6 +600,7 @@ function addNewProduct() {
     price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
     stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
     image_url: null, image_url_2: null, image_url_3: null,
+    image_url_4: null, image_url_5: null, image_url_6: null, image_url_7: null, image_url_8: null,
     instagram_url: null, youtube_url: null,
     _isNew: true,
   };

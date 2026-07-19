@@ -69,7 +69,10 @@
   .fav-btn.active { color: #E0554E; }
   .heart-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; display: block; }
   .fav-btn.active .heart-icon, .pmodal-fav-btn.active .heart-icon { fill: currentColor; }
+  .product-cat-badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--brand-dark); background: var(--line-soft); padding: 2px 8px; border-radius: 9px; margin-bottom: 4px; cursor: pointer; }
+  .product-cat-badge:hover { background: var(--brand); color: #fff; }
   .pmodal-fav-btn { position: absolute; top: 54px; left: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); z-index: 6; }
+  .pmodal-fav-label { position: absolute; top: 54px; left: 50px; height: 34px; display: flex; align-items: center; background: rgba(255,255,255,0.92); padding: 0 10px; border-radius: 14px; font-size: 10.5px; font-weight: 700; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.15); white-space: nowrap; z-index: 6; pointer-events: none; }
   .pmodal-fav-btn.active { color: #E0554E; }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
@@ -253,6 +256,7 @@
     <button class="pmodal-close" onclick="closePModal()">✕</button>
     <button class="pmodal-back" id="pmodal-back-btn" onclick="goBackPModal()" style="display:none;">← 戻る / Back</button>
     <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button>
+    <div class="pmodal-fav-label">← お気に入りに追加する / Add to favorites</div>
     <div class="pmodal-inner">
       <div class="pmodal-gallery" id="pmodal-gallery">
         <div class="pmodal-gallery-main" id="pmodal-gallery-main"></div>
@@ -606,6 +610,27 @@ function renderProducts() {
   wrap.innerHTML = `<div class="section-title">${title}</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
 }
 
+const EXCLUDED_CATEGORY_ID = 'baacb658-aaf2-4445-943a-851755244b38'; // 「全商品一覧」= 全部を表す特殊カテゴリなのでバッジには出さない
+
+// 商品が属するカテゴリのうち、一番並び順が若いもの(「全商品一覧」を除く)を代表カテゴリとしてカードに表示する
+function getPrimaryCategoryForProduct(productId) {
+  const catIds = allProductCategories.filter(pc => pc.product_id === productId).map(pc => pc.category_id);
+  const candidates = catIds
+    .filter(id => id !== EXCLUDED_CATEGORY_ID)
+    .map(id => allCategories.find(c => c.id === id))
+    .filter(Boolean);
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+  return candidates[0];
+}
+
+// 商品カードのカテゴリバッジを押した時、そのカテゴリで絞り込む(カードのクリック=商品詳細を開くのは止める)
+function filterByCategoryFromCard(catId, event) {
+  event.stopPropagation();
+  const btn = document.querySelector(`.cat-drawer-item[data-cat-id="${catId}"]`);
+  if (btn) setCategoryFilter(catId, btn);
+}
+
 function productCardHtml(p) {
   const img = p.image_url ? `<img src="${p.image_url}" loading="lazy" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
   const available = isAvailable(p);
@@ -618,9 +643,11 @@ function productCardHtml(p) {
         ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button></div>`
         : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
     : `<span class="out-of-stock">在庫切れ</span>`;
+  const primaryCat = getPrimaryCategoryForProduct(p.id);
+  const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${primaryCat.name_ja}</div>` : '';
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body">${catBadge}<div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
 }
 
 function handleSearch(q) {
@@ -677,7 +704,7 @@ let pmodalGalleryImages = [];
 let pmodalGalleryIndex = 0;
 
 function buildGalleryImages(p) {
-  return [p.image_url, p.image_url_2, p.image_url_3].filter(Boolean);
+  return [p.image_url, p.image_url_2, p.image_url_3, p.image_url_4, p.image_url_5, p.image_url_6, p.image_url_7, p.image_url_8].filter(Boolean);
 }
 
 function renderGallery(images) {
