@@ -111,12 +111,18 @@
   .scroll-fab.hidden { opacity: 0; pointer-events: none; }
   .scroll-fab.top { background: var(--brand); color: #fff; border-color: var(--brand); }
 
+  .cart-fab { position: fixed; right: 20px; bottom: 160px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
+  .cart-fab:hover { transform: translateY(-2px); }
+  .cart-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+
   /* ── 商品詳細モーダル ── */
   .pmodal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 120; align-items: center; justify-content: center; padding: 20px; }
   .pmodal-overlay.open { display: flex; }
   .pmodal { background: #fff; width: 100%; max-width: 840px; border-radius: 20px; overflow: hidden; position: relative; }
   .pmodal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+  .pmodal-back { position: absolute; top: 12px; left: 12px; height: 32px; padding: 0 14px; border-radius: 16px; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 12.5px; font-weight: 700; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
   .pmodal-inner { display: grid; grid-template-columns: 380px 1fr; }
+  .pmodal-inner > * { min-width: 0; }
   .pmodal-gallery { width: 100%; height: 100%; min-height: 320px; background: var(--line-soft); display: flex; flex-direction: column; }
   .pmodal-gallery-main { flex: 1; overflow: hidden; min-height: 0; }
   .pmodal-gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -243,6 +249,7 @@
 <div class="pmodal-overlay" id="pmodal-overlay" onclick="if(event.target===this) closePModal()">
   <div class="pmodal">
     <button class="pmodal-close" onclick="closePModal()">✕</button>
+    <button class="pmodal-back" id="pmodal-back-btn" onclick="goBackPModal()" style="display:none;">← 戻る / Back</button>
     <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()">♡</button>
     <div class="pmodal-inner">
       <div class="pmodal-gallery" id="pmodal-gallery">
@@ -273,6 +280,8 @@
     </div>
   </div>
 </div>
+
+<a class="cart-fab" href="cart.html">🛒<span class="cart-fab-badge" id="cart-fab-badge">0</span></a>
 
 <div class="scroll-fab-group">
   <button class="scroll-fab down" id="scroll-down-btn" onclick="scrollByViewport(1)">↓</button>
@@ -371,6 +380,7 @@ let cart = {};
 let currentSearchQuery = '';
 let currentCategoryFilter = null; // null = すべて
 let pmodalProductId = null;
+let pmodalNavStack = []; // サジェスト品を辿った時の「戻る」履歴
 let pmodalQty = 1;
 let pmodalDescLang = 'ja';
 
@@ -514,13 +524,24 @@ function toggleFavoriteFromModal() {
 }
 
 // トップページ(index.html)などからの「?view=商品ID」リンクで、該当商品の詳細モーダルを自動的に開く
+// 「?search=キーワード」で来た場合は検索欄にキーワードを反映して検索する
 function handleQuickViewFromQuery() {
   const params = new URLSearchParams(location.search);
   const viewId = params.get('view');
-  if (!viewId) return;
-  const product = allProducts.find(p => p.id === viewId);
-  if (product) openPModal(product.id);
-  history.replaceState(null, '', location.pathname);
+  const searchQuery = params.get('search');
+
+  if (searchQuery) {
+    const input = document.getElementById('product-search');
+    input.value = searchQuery;
+    handleSearch(searchQuery);
+  }
+
+  if (viewId) {
+    const product = allProducts.find(p => p.id === viewId);
+    if (product) openPModal(product.id);
+  }
+
+  if (viewId || searchQuery) history.replaceState(null, '', location.pathname);
 }
 
 function renderCatTabs() {
@@ -621,6 +642,7 @@ function updateCartBar() {
   document.getElementById('cart-total').textContent = total;
   document.getElementById('cart-bar').classList.toggle('show', count > 0);
   document.getElementById('header-cart-count').textContent = count;
+  document.getElementById('cart-fab-badge').textContent = count;
 }
 
 function togglePModalDescLang() {
@@ -688,9 +710,25 @@ function switchGalleryImage(index) {
   });
 }
 
-function openPModal(productId) {
+function openPModal(productId, fromBack) {
   const p = allProducts.find(x => x.id === productId);
   if (!p) return;
+
+  const modalCurrentlyOpen = document.getElementById('pmodal-overlay').classList.contains('open');
+
+  if (fromBack) {
+    // 戻る操作: 履歴は既にpop済みなのでここでは何もしない
+  } else if (!modalCurrentlyOpen) {
+    // 商品一覧などから新規に開く場合は履歴をリセットする
+    pmodalNavStack = [];
+  } else if (pmodalProductId && pmodalProductId !== productId) {
+    // モーダルを開いたまま別の商品(サジェスト品など)に切り替える場合、
+    // 「戻る」で元の商品に戻れるよう、直前の商品IDを履歴に積んでおく
+    pmodalNavStack.push(pmodalProductId);
+  }
+
+  document.getElementById('pmodal-back-btn').style.display = pmodalNavStack.length > 0 ? 'flex' : 'none';
+
   pmodalProductId = productId;
   pmodalQty = 1;
   pmodalDescLang = 'ja';
@@ -772,6 +810,14 @@ async function loadPModalSuggestions(productId) {
 
 function closePModal() {
   document.getElementById('pmodal-overlay').classList.remove('open');
+  pmodalNavStack = [];
+}
+
+// サジェスト品などを辿った後、直前に見ていた商品に戻る
+function goBackPModal() {
+  if (pmodalNavStack.length === 0) return;
+  const previousId = pmodalNavStack.pop();
+  openPModal(previousId, true);
 }
 
 function pmodalChangeQty(delta) {
