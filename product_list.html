@@ -525,10 +525,17 @@ function toggleFavoriteFromModal() {
 
 // トップページ(index.html)などからの「?view=商品ID」リンクで、該当商品の詳細モーダルを自動的に開く
 // 「?search=キーワード」で来た場合は検索欄にキーワードを反映して検索する
+// 「?category=カテゴリID」で来た場合は、そのカテゴリを選択した状態で表示する
 function handleQuickViewFromQuery() {
   const params = new URLSearchParams(location.search);
   const viewId = params.get('view');
   const searchQuery = params.get('search');
+  const categoryId = params.get('category');
+
+  if (categoryId) {
+    const btn = document.querySelector(`.cat-drawer-item[data-cat-id="${categoryId}"]`);
+    if (btn) setCategoryFilter(categoryId, btn);
+  }
 
   if (searchQuery) {
     const input = document.getElementById('product-search');
@@ -541,14 +548,14 @@ function handleQuickViewFromQuery() {
     if (product) openPModal(product.id);
   }
 
-  if (viewId || searchQuery) history.replaceState(null, '', location.pathname);
+  if (viewId || searchQuery || categoryId) history.replaceState(null, '', location.pathname);
 }
 
 function renderCatTabs() {
   const wrap = document.getElementById('cat-drawer-list');
   // カテゴリテーブルが取得できない/空でも「すべて」項目だけで正常動作する
-  wrap.innerHTML = `<button class="cat-drawer-item active" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
-    allCategories.map(c => `<button class="cat-drawer-item" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
+  wrap.innerHTML = `<button class="cat-drawer-item active" data-cat-id="" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
+    allCategories.map(c => `<button class="cat-drawer-item" data-cat-id="${c.id}" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja} / ${c.name_en || ''}</button>`).join('');
 }
 
 function openCatDrawer() {

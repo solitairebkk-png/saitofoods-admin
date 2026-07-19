@@ -869,9 +869,20 @@ async function deleteCouponRow(btn) {
 }
 
 // ---------------- お知らせ管理 ----------------
+let announcementCategoryOptions = ''; // カテゴリへのリンクを選ぶドロップダウンの中身(初回のみ読み込みキャッシュ)
+
+async function loadAnnouncementCategoryOptions() {
+  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('sort_order');
+  if (error || !data) return;
+  announcementCategoryOptions = data.map(c =>
+    `<option value="${c.id}" data-name="${(c.name_ja || '').replace(/"/g, '&quot;')}">${c.name_ja}${c.name_en ? ' / ' + c.name_en : ''}</option>`
+  ).join('');
+}
+
 async function loadAnnouncements() {
   const wrap = document.getElementById('announce-tbody');
   wrap.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+  if (!announcementCategoryOptions) await loadAnnouncementCategoryOptions();
 
   const { data, error } = await supabaseClient
     .from('announcements').select('*').order('published_at', { ascending: false });
@@ -892,6 +903,12 @@ function renderAnnouncementRow(a) {
       <label style="flex:1;min-width:160px;">タイトル / Title<input type="text" class="ann-title" value="${a.title ? a.title.replace(/"/g, '&quot;') : ''}" placeholder="タイトル"></label>
       <label style="flex:2;min-width:220px;">本文 / Body<textarea class="ann-body" placeholder="本文(省略可)" style="min-height:44px;resize:vertical;">${a.body || ''}</textarea></label>
       <label style="flex:1;min-width:200px;">リンク先URL / Link URL<input type="text" class="ann-link" value="${a.link_url ? a.link_url.replace(/"/g, '&quot;') : ''}" placeholder="例: https://www.yahoo.co.jp"></label>
+      <label style="flex:1;min-width:200px;">サイト内カテゴリへ移動 / Link to category
+        <select class="ann-category-select" onchange="applyAnnouncementCategoryLink(this)">
+          <option value="">-- カテゴリを選択(自動でURL作成) / Choose category --</option>
+          ${announcementCategoryOptions}
+        </select>
+      </label>
       <label style="flex:1;min-width:140px;">リンクの文言 / Link Text<input type="text" class="ann-link-text" value="${a.link_text ? a.link_text.replace(/"/g, '&quot;') : ''}" placeholder="例: ヤフージャパンへ"></label>
       <label>有効 / Active<input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
     </div>
@@ -907,6 +924,21 @@ function addNewAnnouncementRow() {
   const wrap = document.getElementById('announce-tbody');
   const todayStr = new Date().toISOString().slice(0, 10);
   wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', link_text: '', is_active: true }));
+}
+
+// カテゴリを選ぶと、そのカテゴリ一覧へのリンクURLを自動でリンク先URL欄に入れる
+// (product_list.htmlは「?category=カテゴリID」を見て、そのカテゴリで自動的に絞り込み表示する)
+function applyAnnouncementCategoryLink(selectEl) {
+  const catId = selectEl.value;
+  if (!catId) return;
+  const card = selectEl.closest('.entry-card');
+  const linkInput = card.querySelector('.ann-link');
+  const linkTextInput = card.querySelector('.ann-link-text');
+  linkInput.value = `product_list.html?category=${catId}`;
+  if (!linkTextInput.value.trim()) {
+    const opt = selectEl.selectedOptions[0];
+    linkTextInput.value = (opt?.dataset.name || 'この商品') + 'を見る';
+  }
 }
 
 async function saveAnnouncementRow(btn) {
