@@ -158,6 +158,11 @@
       <div id="cart-items-list"></div>
     </div>
 
+    <div class="card" id="addto-banner" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);">
+      <div style="font-weight:800;font-size:13.5px;margin-bottom:4px;">➕ 追加注文 / Additional order</div>
+      <div id="addto-banner-text" style="font-size:12.5px;color:var(--ink);line-height:1.7;"></div>
+    </div>
+
     <div class="card" id="delivery-card">
       <h2>🚚 配送日時 / Delivery date &amp; schedule</h2>
 
@@ -396,6 +401,8 @@ let appliedCoupon = null;
 let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
 let customerAreaName = 'Bangkok'; // areas.nameそのもの。注文時にorders.area_nameとして保存し、後でお客様がエリアを変更しても伝票の表示が変わらないようにする
+let addToOrderId = null; // マイページの「追加注文する」から来た場合、元の注文ID
+let addToOrderInfo = null; // 元の注文の配送日時・コンドミニアム情報(自動で引き継ぐ)
 let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
 let gpsTrackingInfo = null;  // { url, username, password }
 
@@ -429,6 +436,44 @@ async function loadCustomerAndInit(userId) {
   await Promise.all([loadShippingSettings(), loadCartItems()]);
   onPaymentChange();
   initPointsUI();
+  await checkAddToOrderMode();
+}
+
+// マイページの「この注文に追加する」から来た場合(?addto=注文ID)、
+// その注文がまだ本人のもの・かつ伝票未印刷(準備開始前)であることを確認し、
+// 配送日時をその注文と同じ内容に固定して、配送日時の選択欄を隠す。
+async function checkAddToOrderMode() {
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get('addto');
+  if (!orderId) return;
+
+  const { data: order, error } = await supabaseClient
+    .from('orders')
+    .select('id, customer_id, delivery_date, delivery_time_slot, condo_name, area_name, subtotal, is_completed, is_cancelled, is_slip_printed')
+    .eq('id', orderId)
+    .single();
+
+  const bannerEl = document.getElementById('addto-banner');
+  const bannerTextEl = document.getElementById('addto-banner-text');
+
+  if (error || !order || order.customer_id !== currentCustomer.id) {
+    return; // 見つからない/本人の注文でない場合は通常注文として続行
+  }
+  if (order.is_completed || order.is_cancelled || order.is_slip_printed) {
+    bannerEl.style.display = 'block';
+    bannerEl.style.background = '#fbe9e6';
+    bannerEl.style.borderColor = 'var(--red)';
+    bannerTextEl.textContent = `ご注文 #${orderId.slice(0, 8).toUpperCase()} はすでに準備が始まっているため、追加注文できません。恐れ入りますが、通常のご注文としてお進みいただくか、直接お問い合わせください。 / This order has already started preparation, so items can no longer be added. Please place a new regular order, or contact us directly.`;
+    return;
+  }
+
+  addToOrderId = order.id;
+  addToOrderInfo = order;
+
+  document.getElementById('delivery-card').style.display = 'none';
+  bannerEl.style.display = 'block';
+  bannerTextEl.innerHTML = `🎉 ご注文 #${orderId.slice(0, 8).toUpperCase()} はまだ準備開始前なので、追加で商品を選べます!配送日時はその注文と同じになります。<br>` +
+    `📅 ${order.delivery_date || '-'}　${order.condo_name ? '🏢 ' + order.condo_name : (order.delivery_time_slot || '')}`;
 }
 
 // ---------------- エリア判定(バンコク/シラチャ/パタヤ)して配送フォームを出し分け ----------------
@@ -664,7 +709,9 @@ function updateTotals() {
   // 量り売り商品は「単価(目安)×数量」を目安金額として小計・送料無料判定に含める。
   // 実際の請求額は重量確定後にスタッフが確定するが、送料は注文時点で一度決めたら変更しない。
   const subtotal = cart.reduce((sum, i) => sum + (i.sale_type === 'weight' ? (i.unit_price || 0) : i.price) * i.quantity, 0);
-  const shippingCost = subtotal > 0 && subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
+  // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
+  const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
+  const shippingCost = subtotal > 0 && shippingJudgeSubtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
   const afterDiscount = preDiscountTotal - discount;
@@ -918,7 +965,12 @@ async function submitOrder() {
   let deliveryTimeSlot = null;
   let condoName = null;
 
-  if (customerAreaType === 'bangkok') {
+  if (addToOrderId && addToOrderInfo) {
+    // 追加注文モード: 配送日時は元の注文と同じものをそのまま使う
+    deliveryDate = addToOrderInfo.delivery_date;
+    deliveryTimeSlot = addToOrderInfo.delivery_time_slot;
+    condoName = addToOrderInfo.condo_name;
+  } else if (customerAreaType === 'bangkok') {
     deliveryDate = document.getElementById('delivery-date').value;
     deliveryTimeSlot = document.getElementById('delivery-time-slot').value;
     if (!deliveryDate || !deliveryTimeSlot) { msgEl.textContent = '配送日時を選択してください(日曜以外) / Please choose a valid delivery date and time.'; msgEl.className = 'error'; return; }
@@ -951,7 +1003,10 @@ async function submitOrder() {
   const hasWeightItems = cart.some(i => i.sale_type === 'weight');
   // 量り売り商品は「単価(目安)×数量」を目安金額として小計・送料無料判定に含める(updateTotalsと同じロジック)
   const subtotal = cart.reduce((sum, i) => sum + (i.sale_type === 'weight' ? (i.unit_price || 0) : i.price) * i.quantity, 0);
-  const shippingCost = subtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
+  // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
+  // (元の注文の送料自体はさかのぼって変更しない。追加分だけの単体判定にはしない)
+  const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
+  const shippingCost = shippingJudgeSubtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
   const afterDiscount = preDiscountTotal - discount;
@@ -966,6 +1021,7 @@ async function submitOrder() {
     delivery_time_slot: deliveryTimeSlot,
     condo_name: condoName,
     area_name: customerAreaName,
+    related_order_id: addToOrderId || null,
     has_weight_items: hasWeightItems,
     payment_method: paymentMethod,
     payment_status: 'unpaid',
@@ -975,7 +1031,7 @@ async function submitOrder() {
     discount_amount: discount,
     points_used: appliedPoints,
     total_amount: total,
-    comment: comment || null,
+    comment: addToOrderId ? `[追加注文] 元注文 #${addToOrderId.slice(0, 8).toUpperCase()}${comment ? ' / ' + comment : ''}` : (comment || null),
     created_by: null,
   };
 

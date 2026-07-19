@@ -624,20 +624,25 @@ async function loadMyPage(user) {
   await loadFavorites(customerRow.id);
 }
 
+const ORDER_PAGE_SIZE = 50;
+let orderHistoryOffset = 0;
+let orderHistoryCustomerId = null;
+
 async function loadOrderHistory(customerId) {
   const listEl = document.getElementById('order-list');
   listEl.innerHTML = orderHistorySkeletonHtml();
+  orderHistoryCustomerId = customerId;
 
   const { data, error } = await supabaseClient
     .from('orders')
     .select(`
       id, delivery_date, delivery_time_slot, payment_method, payment_status,
-      is_completed, is_cancelled, total_amount,
+      is_completed, is_cancelled, is_slip_printed, total_amount,
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price )
     `)
     .eq('customer_id', customerId)
     .order('delivery_date', { ascending: false })
-    .limit(50);
+    .range(0, ORDER_PAGE_SIZE - 1);
 
   if (error) { listEl.innerHTML = '<div class="empty-state">読み込みに失敗しました: ' + error.message + '</div>'; return; }
 
@@ -647,8 +652,56 @@ async function loadOrderHistory(customerId) {
   }
 
   allOrders = data;
+  orderHistoryOffset = data.length;
   listEl.innerHTML = '';
   data.forEach((order, index) => listEl.appendChild(renderOrderCard(order, index)));
+  renderLoadMoreButton(data.length === ORDER_PAGE_SIZE);
+}
+
+// 「もっと見る」ボタン押下時に、続きの50件を追加読み込みする
+async function loadMoreOrders() {
+  const btn = document.getElementById('load-more-orders-btn');
+  if (btn) { btn.textContent = '読み込み中... / Loading...'; btn.disabled = true; }
+
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select(`
+      id, delivery_date, delivery_time_slot, payment_method, payment_status,
+      is_completed, is_cancelled, is_slip_printed, total_amount,
+      order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price )
+    `)
+    .eq('customer_id', orderHistoryCustomerId)
+    .order('delivery_date', { ascending: false })
+    .range(orderHistoryOffset, orderHistoryOffset + ORDER_PAGE_SIZE - 1);
+
+  if (error || !data) {
+    if (btn) { btn.textContent = 'エラーが発生しました / Error'; }
+    return;
+  }
+
+  const listEl = document.getElementById('order-list');
+  const wrap = document.getElementById('load-more-orders-wrap');
+  const startIndex = allOrders.length;
+  data.forEach((order, i) => {
+    const card = renderOrderCard(order, startIndex + i);
+    listEl.insertBefore(card, wrap || null);
+  });
+  allOrders = allOrders.concat(data);
+  orderHistoryOffset += data.length;
+  renderLoadMoreButton(data.length === ORDER_PAGE_SIZE);
+}
+
+// 続きがありそうな時だけ「もっと見る」ボタンを表示(取得件数がページサイズちょうどの時のみ)
+function renderLoadMoreButton(hasMore) {
+  const listEl = document.getElementById('order-list');
+  const existing = document.getElementById('load-more-orders-wrap');
+  if (existing) existing.remove();
+  if (!hasMore) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'load-more-orders-wrap';
+  wrap.style.cssText = 'text-align:center;margin-top:14px;';
+  wrap.innerHTML = '<button id="load-more-orders-btn" class="receipt-btn" style="flex:none;padding:10px 26px;" onclick="loadMoreOrders()">もっと見る / Load more</button>';
+  listEl.appendChild(wrap);
 }
 
 function orderHistorySkeletonHtml() {
@@ -703,6 +756,11 @@ function renderOrderCard(order, index) {
       <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
+    ${(!order.is_completed && !order.is_cancelled && !order.is_slip_printed)
+      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--brand-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🎉 まだ間に合います!追加注文する / Still time to add items</button>`
+      : (!order.is_completed && !order.is_cancelled
+          ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">準備が始まったためこの画面からの追加はできません。配送出発前であればお電話でも対応できる場合があります。 / Preparation has started — this screen can no longer be used, but a phone call may still work if delivery hasn't left yet.</div>`
+          : '')}
   `;
   return div;
 }
