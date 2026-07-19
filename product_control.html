@@ -46,6 +46,9 @@
   .search-clear-wrap input[type=text] { padding-right: 30px; }
   .search-clear-btn { display: none; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border-radius: 50%; border: none; background: #ccc; color: #fff; font-size: 12px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
   .search-clear-btn:hover { background: #999; }
+  .scroll-fab-wrap { position: fixed; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 500; }
+  .scroll-fab { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: #fff; color: var(--navy); font-size: 15px; cursor: pointer; opacity: 0.85; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .scroll-fab:hover { opacity: 1; border-color: var(--navy); }
 
   .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .summary-note.alert { color: var(--red-accent); font-weight: 600; }
@@ -233,13 +236,29 @@ async function loadCategories() {
   });
 }
 
+// Supabase/PostgRESTは1回のリクエストで返す件数にデフォルト上限(通常1000件)があるため、
+// product_categoriesのように件数が多くなり得るテーブルは、範囲指定で全件を確実に取得する。
+async function fetchAllRows(table, selectCols) {
+  const pageSize = 1000;
+  let from = 0;
+  let allRows = [];
+  while (true) {
+    const { data, error } = await supabaseClient.from(table).select(selectCols).range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: allRows, error: null };
+}
+
 async function loadProducts() {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
   const [{ data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
     supabaseClient.from('products').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_ja'),
-    supabaseClient.from('product_categories').select('product_id, category_id'),
+    fetchAllRows('product_categories', 'product_id, category_id'),
   ]);
 
   if (prodErr || pcErr) {
@@ -256,6 +275,9 @@ async function loadProducts() {
   allProducts = products || [];
   applyFilters();
 }
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 
 // 検索欄の×(クリア)ボタン共通処理
 function toggleSearchClearBtn(inputId, btnId) {
@@ -809,6 +831,11 @@ async function runStockImport() {
 }
 
 </script>
+
+<div class="scroll-fab-wrap">
+  <button class="scroll-fab" onclick="scrollToTop()" title="Top / บนสุด">▲</button>
+  <button class="scroll-fab" onclick="scrollToBottom()" title="Bottom / ล่างสุด">▼</button>
+</div>
 
 </body>
 </html>

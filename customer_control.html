@@ -79,6 +79,10 @@
   .pagination { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 16px; font-size: 13px; }
   .pagination button { padding: 6px 12px; }
   .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .scroll-fab-wrap { position: fixed; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 500; }
+  .scroll-fab { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: #fff; color: var(--navy); font-size: 15px; cursor: pointer; opacity: 0.85; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .scroll-fab:hover { opacity: 1; border-color: var(--navy); }
 </style>
 </head>
 <body>
@@ -150,6 +154,11 @@
   <div id="save-msg"></div>
 </main>
 
+<div class="scroll-fab-wrap">
+  <button class="scroll-fab" onclick="scrollToTop()" title="Top / บนสุด">▲</button>
+  <button class="scroll-fab" onclick="scrollToBottom()" title="Bottom / ล่างสุด">▼</button>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -158,6 +167,9 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentCustomer = null;
 let allCustomers = [];
 let allAreas = [];
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();

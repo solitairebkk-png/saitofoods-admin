@@ -65,6 +65,10 @@
   .pagination { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 16px; font-size: 13px; }
   .pagination button { padding: 6px 12px; }
   .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .scroll-fab-wrap { position: fixed; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 500; }
+  .scroll-fab { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: #fff; color: var(--navy); font-size: 15px; cursor: pointer; opacity: 0.85; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+  .scroll-fab:hover { opacity: 1; border-color: var(--navy); }
 </style>
 </head>
 <body>
@@ -127,6 +131,11 @@
 
 </main>
 
+<div class="scroll-fab-wrap">
+  <button class="scroll-fab" onclick="scrollToTop()" title="Top / บนสุด">▲</button>
+  <button class="scroll-fab" onclick="scrollToBottom()" title="Bottom / ล่างสุด">▼</button>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -137,6 +146,9 @@ let allProducts = [];
 let currentFiltered = [];
 let currentPage = 1;
 const PAGE_SIZE_DISPLAY = 100;
+
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -179,21 +191,34 @@ function showMain() {
   }
 })();
 
+// Supabase/PostgRESTは1回のリクエストで返す件数にデフォルト上限(通常1000件)があるため、
+// 商品数がそれを超えると一部が黙って取得できなくなる。範囲指定で全件を確実に取得する。
 async function loadProducts() {
   const tbody = document.getElementById('stock-tbody');
   tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
-  const { data, error } = await supabaseClient
-    .from('products')
-    .select('id, name_ja, name_en, name_th, sale_type, stock_qty, is_unlimited_stock, is_published, is_coming_soon, image_url')
-    .order('name_ja');
+  const PAGE_SIZE = 1000;
+  let all = [];
+  let from = 0;
 
-  if (error) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>';
-    return;
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('id, name_ja, name_en, name_th, sale_type, stock_qty, is_unlimited_stock, is_published, is_coming_soon, image_url')
+      .order('name_ja')
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (error) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>';
+      return;
+    }
+
+    all = all.concat(data || []);
+    if (!data || data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
 
-  allProducts = data || [];
+  allProducts = all;
   applyFilters();
 }
 
