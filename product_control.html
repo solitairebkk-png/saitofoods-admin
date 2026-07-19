@@ -460,6 +460,7 @@ function toggleEdit(productId) {
     </td>
   `;
   baseRow.after(editRow);
+  editRow.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function imageFieldName(slot) {
