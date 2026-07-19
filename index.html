@@ -88,6 +88,13 @@
 
   /* calendar */
   .calendar-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 12px; padding: 10px; max-width: 300px; }
+  .hours-block { margin-bottom: 10px; }
+  .hours-block:last-child { margin-bottom: 0; }
+  .hours-block-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 3px; }
+  .hours-line { font-size: 11.5px; color: var(--ink); line-height: 1.6; }
+  .hours-cal-link { display: block; margin-top: 2px; color: var(--brand-dark); font-weight: 700; text-decoration: underline; }
+  .announce-wide-section { padding: 22px 20px; background: #fff; border-bottom: 2px solid var(--line); }
+  .announce-list-wide { max-width: 900px; margin: 0 auto; }
   .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .calendar-nav-btn { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 13px; cursor: pointer; line-height: 1; }
   .calendar-month-label { font-size: 12.5px; font-weight: 800; color: var(--brand-dark); }
@@ -100,10 +107,15 @@
   .calendar-cell.morning { background: #FFF3D9; color: #8A6300; font-weight: 700; }
   .calendar-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; font-size: 9.5px; color: #777; }
   .calendar-legend span { display: flex; align-items: center; gap: 4px; }
-  .calendar-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-  .calendar-dot.closed { background: #FBE4E1; border: 1px solid #B03A30; }
-  .calendar-dot.morning { background: #FFF3D9; border: 1px solid #8A6300; }
-  .calendar-dot.pattaya { background: #E0E9FB; border: 1px solid #3A5FB0; }
+  .calendar-cell.open-weekday { background: #DCEFE3; color: #1a6b45; font-weight: 800; border-radius: 6px; }
+  .calendar-cell.open-saturday { background: #FFF3D9; color: #8A6300; font-weight: 800; border-radius: 6px; }
+  .calendar-cell.closed-day { color: #c4c4c4; }
+  .area-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; bottom: 3px; }
+  .area-dot.sriracha { left: 5px; background: #3A5FB0; }
+  .area-dot.pattaya { right: 5px; background: #B03A9E; }
+  .calendar-dot-small { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .calendar-dot-small.sriracha { background: #3A5FB0; }
+  .calendar-dot-small.pattaya { background: #B03A9E; }
   .calendar-cell.pattaya { background: #E0E9FB; color: #3A5FB0; font-weight: 700; }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
@@ -168,9 +180,23 @@
 
 <div class="top-info-row">
   <div class="top-info-col">
-    <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">📣 お知らせ / Announcements</div>
-    <div id="announce-list">
-      <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+    <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">🕒 営業時間案内 / Business Hours</div>
+    <div class="calendar-card" id="hours-card">
+      <div class="hours-block">
+        <div class="hours-block-title">直売店営業時間</div>
+        <div class="hours-line">月～金　8:20-17:30</div>
+        <div class="hours-line">土曜日　9:00-12:00　月2回営業。<a href="#calendar-card" class="hours-cal-link">カレンダーでご確認ください→</a></div>
+      </div>
+      <div class="hours-block">
+        <div class="hours-block-title">配達時間</div>
+        <div class="hours-line">月～金　9:00-12:00　13:00-18:00</div>
+        <div class="hours-line">土曜日　9:00-12:00　月2回営業。<a href="#calendar-card" class="hours-cal-link">カレンダーでご確認ください→</a></div>
+      </div>
+      <div class="hours-block">
+        <div class="hours-block-title">お問い合わせ</div>
+        <div class="hours-line">月～金　8:20-12:00　13:00-17:45</div>
+        <div class="hours-line">土曜日　9:00-12:00　月2回営業。<a href="#calendar-card" class="hours-cal-link">カレンダーでご確認ください→</a></div>
+      </div>
     </div>
   </div>
   <div class="top-info-col">
@@ -186,11 +212,19 @@
       </div>
       <div class="calendar-grid" id="calendar-grid"></div>
       <div class="calendar-legend">
-        <span><i class="calendar-dot closed"></i>定休日・配達不可 / Closed</span>
-        <span><i class="calendar-dot morning"></i>午前配送のみ / Morning only</span>
-        <span><i class="calendar-dot pattaya"></i>パタヤ配送日 / Pattaya delivery</span>
+        <span><i class="calendar-dot-small" style="background:#DCEFE3;border:1px solid #1a6b45;"></i>営業日 / Open</span>
+        <span><i class="calendar-dot-small" style="background:#FFF3D9;border:1px solid #8A6300;"></i>土曜午前のみ / Saturday morning only</span>
+        <span><i class="calendar-dot-small sriracha"></i>シラチャ配送日(火・木) / Sriracha (Tue/Thu)</span>
+        <span><i class="calendar-dot-small pattaya"></i>パタヤ配送日 / Pattaya delivery day</span>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="announce-wide-section">
+  <div class="section-title" style="padding:0 0 8px;font-size:14px;">📣 お知らせ / Announcements</div>
+  <div id="announce-list" class="announce-list-wide">
+    <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
   </div>
 </div>
 
@@ -498,14 +532,26 @@ function renderCalendar() {
     const dateStr = formatDateLocal(dateObj);
     const dayOfWeek = dateObj.getDay();
     const isToday = dateStr === todayStr;
+    const isHoliday = holidaySet.has(dateStr);
+    const isSrirachaDay = dayOfWeek === 2 || dayOfWeek === 4; // シラチャは火曜日・木曜日固定
+    const isPattayaDay = pattayaDaySet.has(dateStr); // パタヤは管理画面で指定した日(月1回程度)
 
     let cls = 'calendar-cell';
     if (isToday) cls += ' today';
-    if (pattayaDaySet.has(dateStr)) cls += ' pattaya';
-    else if (dayOfWeek === 0 || holidaySet.has(dateStr)) cls += ' closed';
-    else if (dayOfWeek === 6) cls += ' morning';
 
-    html += `<div class="${cls}">${d}</div>`;
+    if (dayOfWeek === 0 || isHoliday) {
+      cls += ' closed-day';
+    } else if (dayOfWeek === 6) {
+      cls += ' open-saturday'; // 土曜日は午前のみ営業(定休の土曜はholidaysで登録済みのためここには来ない)
+    } else {
+      cls += ' open-weekday'; // 月〜金は通常営業日
+    }
+
+    let dots = '';
+    if (isSrirachaDay) dots += '<span class="area-dot sriracha" title="シラチャ配送日 / Sriracha delivery"></span>';
+    if (isPattayaDay) dots += '<span class="area-dot pattaya" title="パタヤ配送日 / Pattaya delivery"></span>';
+
+    html += `<div class="${cls}">${d}${dots}</div>`;
   }
 
   gridEl.innerHTML = html;
