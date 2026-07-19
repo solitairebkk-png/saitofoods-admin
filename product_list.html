@@ -67,7 +67,9 @@
   .product-img-wrap { width: 100%; aspect-ratio: 1/1; background: var(--line-soft); display: flex; align-items: center; justify-content: center; font-size: 36px; overflow: hidden; position: relative; }
   .fav-btn { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 2; }
   .fav-btn.active { color: #E0554E; }
-  .pmodal-fav-btn { position: absolute; top: 12px; left: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); z-index: 6; }
+  .heart-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; display: block; }
+  .fav-btn.active .heart-icon, .pmodal-fav-btn.active .heart-icon { fill: currentColor; }
+  .pmodal-fav-btn { position: absolute; top: 54px; left: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); z-index: 6; }
   .pmodal-fav-btn.active { color: #E0554E; }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
@@ -111,7 +113,7 @@
   .scroll-fab.hidden { opacity: 0; pointer-events: none; }
   .scroll-fab.top { background: var(--brand); color: #fff; border-color: var(--brand); }
 
-  .cart-fab { position: fixed; right: 20px; bottom: 160px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
+  .cart-fab { position: fixed; right: 20px; bottom: 220px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
   .cart-fab:hover { transform: translateY(-2px); }
   .cart-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
 
@@ -250,7 +252,7 @@
   <div class="pmodal">
     <button class="pmodal-close" onclick="closePModal()">✕</button>
     <button class="pmodal-back" id="pmodal-back-btn" onclick="goBackPModal()" style="display:none;">← 戻る / Back</button>
-    <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()">♡</button>
+    <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button>
     <div class="pmodal-inner">
       <div class="pmodal-gallery" id="pmodal-gallery">
         <div class="pmodal-gallery-main" id="pmodal-gallery-main"></div>
@@ -508,13 +510,11 @@ async function toggleFavorite(productId, btnEl) {
   document.querySelectorAll(`.fav-btn[data-pid="${productId}"]`).forEach(el => {
     const active = favoriteProductIds.has(productId);
     el.classList.toggle('active', active);
-    el.textContent = active ? '♥' : '♡';
   });
   const modalBtn = document.getElementById('pmodal-fav-btn');
   if (modalBtn && modalBtn.dataset.pid === productId) {
     const active = favoriteProductIds.has(productId);
     modalBtn.classList.toggle('active', active);
-    modalBtn.textContent = active ? '♥' : '♡';
   }
 }
 
@@ -613,7 +613,7 @@ function productCardHtml(p) {
     : `<span class="out-of-stock">在庫切れ</span>`;
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)">${isFav ? '♥' : '♡'}</button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
 }
 
 function handleSearch(q) {
@@ -739,7 +739,6 @@ function openPModal(productId, fromBack) {
   const favBtn = document.getElementById('pmodal-fav-btn');
   favBtn.dataset.pid = productId;
   const isFav = favoriteProductIds.has(productId);
-  favBtn.textContent = isFav ? '♥' : '♡';
   favBtn.classList.toggle('active', isFav);
 
   document.getElementById('pmodal-name-ja').textContent = p.name_ja;
