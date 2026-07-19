@@ -1042,6 +1042,8 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
   const panel = document.getElementById('success-panel');
   const noteEl = document.getElementById('success-note');
   panel.style.display = 'block';
+  // QRコードや完了メッセージが見えるよう、画面を一番上までスクロールする
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   const pointsLine = pointsUsed > 0 ? `<br>ポイント利用: ${pointsUsed} pt (-฿${pointsUsed})` : '';
 
