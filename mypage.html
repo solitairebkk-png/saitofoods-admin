@@ -756,7 +756,7 @@ function renderOrderCard(order, index) {
       <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
-    ${(!order.is_completed && !order.is_cancelled && !order.is_slip_printed)
+    ${(!order.is_completed && !order.is_cancelled && !order.is_slip_printed && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10)))
       ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🎉 まだ間に合います!追加注文する / Still time to add items</button>`
       : (!order.is_completed && !order.is_cancelled
           ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">準備が始まったためこの画面からの追加はできません。配送出発前であればお電話でも対応できる場合があります。 / Preparation has started — this screen can no longer be used, but a phone call may still work if delivery hasn't left yet.</div>`
