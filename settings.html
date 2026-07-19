@@ -164,8 +164,8 @@
   </div>
 
   <div class="card">
-    <h2>今月のプロモーション商品 / Monthly Promotion Products(最大2件)</h2>
-    <div class="sub">トップページ(index.html)の「今月のプロモーション品」に表示されます。割引価格を入れると、元の価格に取り消し線が付いて割引額も表示されます。</div>
+    <h2>只今プロモーション中 / Currently on Promotion(最大2件)</h2>
+    <div class="sub">トップページ(index.html)の「只今プロモーション中」に表示されます。割引価格を入れると、元の価格に取り消し線が付いて割引額も表示されます。「ストーリー・コメント」に理由(例: 賞味期限8/2までにつき、在庫一掃セール等)を入れると価格の下に表示されます。</div>
 
     <div id="promo-current-list">
       <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
@@ -518,7 +518,7 @@ async function loadMonthlyPromotions() {
   listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
 
   const { data, error } = await supabaseClient
-    .from('products').select('id, name_ja, name_en, price, promotion_price')
+    .from('products').select('id, name_ja, name_en, price, promotion_price, promotion_comment')
     .eq('is_monthly_promotion', true);
 
   if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
@@ -537,6 +537,9 @@ async function loadMonthlyPromotions() {
       <label style="font-size:11px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;">割引後価格(THB) / Promo price
         <input type="number" min="0" step="1" id="promo-price-input-${p.id}" value="${p.promotion_price ?? ''}" style="width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;">
       </label>
+      <label style="font-size:11px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;flex:1;min-width:200px;">ストーリー・コメント / Story comment
+        <input type="text" id="promo-comment-input-${p.id}" value="${p.promotion_comment ? p.promotion_comment.replace(/"/g, '&quot;') : ''}" placeholder="例: 賞味期限8/2までにつき" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:5px;font-size:13px;">
+      </label>
       <button class="btn-save-row" onclick="savePromotionPrice('${p.id}')">保存 / Save</button>
       <button class="btn-delete-row" onclick="removeMonthlyPromotion('${p.id}')">削除 / Remove</button>
     </div>
@@ -549,7 +552,10 @@ async function savePromotionPrice(productId) {
   const promoPrice = value === '' ? null : parseFloat(value);
   if (value !== '' && (isNaN(promoPrice) || promoPrice < 0)) { showSaveMsg('割引後価格を正しく入力してください / Please enter a valid price', true); return; }
 
-  const { error } = await supabaseClient.from('products').update({ promotion_price: promoPrice }).eq('id', productId);
+  const commentEl = document.getElementById(`promo-comment-input-${productId}`);
+  const comment = commentEl.value.trim() || null;
+
+  const { error } = await supabaseClient.from('products').update({ promotion_price: promoPrice, promotion_comment: comment }).eq('id', productId);
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
   loadMonthlyPromotions();
@@ -557,7 +563,7 @@ async function savePromotionPrice(productId) {
 
 async function removeMonthlyPromotion(productId) {
   if (!confirm('プロモーションから外しますか？ / Remove this product from monthly promotion?')) return;
-  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: false, promotion_price: null }).eq('id', productId);
+  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: false, promotion_price: null, promotion_comment: null }).eq('id', productId);
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
   loadMonthlyPromotions();
@@ -589,7 +595,7 @@ async function addMonthlyPromotion(productId) {
     .from('products').select('id', { count: 'exact', head: true }).eq('is_monthly_promotion', true);
 
   if (!countErr && count >= 2) {
-    showSaveMsg('今月のプロモーション品は最大2件までです。先に他の商品を削除してください / Monthly promotion is limited to 2 products at a time.', true);
+    showSaveMsg('只今プロモーション中の商品は最大2件までです。先に他の商品を削除してください / Currently on Promotion is limited to 2 products at a time.', true);
     return;
   }
 
