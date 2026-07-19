@@ -41,8 +41,11 @@
   }
 
   .toolbar-sticky { position: sticky; top: 61px; z-index: 20; background: #fff; border-bottom: 1px solid var(--line-soft); padding: 12px 16px 0; }
-  .search-input { width: 100%; padding: 10px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; margin-bottom: 10px; background: var(--cream); }
+  .search-input { width: 100%; padding: 10px 32px 10px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; margin-bottom: 10px; background: var(--cream); }
   .search-input:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .search-clear-wrap { position: relative; }
+  .search-clear-btn { display: none; position: absolute; right: 10px; top: 10px; width: 20px; height: 20px; border-radius: 50%; border: none; background: #ddd; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .search-clear-btn:hover { background: #bbb; }
   .cat-select-row { padding: 0 0 12px; }
   .cat-select-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 14px; border-radius: 22px; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: left; }
   .cat-select-btn .cat-select-icon { flex-shrink: 0; }
@@ -69,8 +72,10 @@
   .fav-btn.active { color: #E0554E; }
   .heart-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; display: block; }
   .fav-btn.active .heart-icon, .pmodal-fav-btn.active .heart-icon { fill: currentColor; }
-  .product-cat-badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--brand-dark); background: var(--line-soft); padding: 2px 8px; border-radius: 9px; margin-bottom: 4px; cursor: pointer; }
-  .product-cat-badge:hover { background: var(--brand); color: #fff; }
+  .product-cat-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800; color: var(--brand-dark); background: #fff; border: 1.5px solid var(--brand); padding: 3px 9px 3px 7px; border-radius: 10px; margin-bottom: 5px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .product-cat-badge::before { content: '🏷️'; font-size: 9px; }
+  .product-cat-badge:hover { background: var(--brand); color: #fff; border-color: var(--brand-dark); }
+  .product-cat-badge:active { transform: scale(0.96); }
   .pmodal-fav-btn { position: absolute; top: 54px; left: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); z-index: 6; }
   .pmodal-fav-label { position: absolute; top: 54px; left: 50px; height: 34px; display: flex; align-items: center; background: rgba(255,255,255,0.92); padding: 0 10px; border-radius: 14px; font-size: 10.5px; font-weight: 700; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.15); white-space: nowrap; z-index: 6; pointer-events: none; }
   .pmodal-fav-btn.active { color: #E0554E; }
@@ -223,7 +228,10 @@
 </header>
 
 <div class="toolbar-sticky">
-  <input type="text" id="product-search" class="search-input" placeholder="🔍 商品を検索 / Search product" oninput="handleSearch(this.value)">
+  <div class="search-clear-wrap">
+    <input type="text" id="product-search" class="search-input" placeholder="🔍 商品を検索 / Search product" oninput="handleSearch(this.value); toggleSearchClearBtn('product-search','product-search-clear-btn');">
+    <button type="button" class="search-clear-btn" id="product-search-clear-btn" onclick="clearSearchInput('product-search','product-search-clear-btn', () => handleSearch(''))">×</button>
+  </div>
   <div class="cat-select-row">
     <button class="cat-select-btn" onclick="openCatDrawer()">
       <span class="cat-select-icon">📂</span>
@@ -544,6 +552,7 @@ function handleQuickViewFromQuery() {
   if (searchQuery) {
     const input = document.getElementById('product-search');
     input.value = searchQuery;
+    toggleSearchClearBtn('product-search', 'product-search-clear-btn');
     handleSearch(searchQuery);
   }
 
@@ -648,6 +657,23 @@ function productCardHtml(p) {
   // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
   // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
   return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body">${catBadge}<div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
+}
+
+// 検索欄の×(クリア)ボタン共通処理
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
 }
 
 function handleSearch(q) {

@@ -74,6 +74,10 @@
   .filter-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
   .filter-bar label .th { font-weight: 600; color: var(--text); font-size: 12px; }
   .filter-bar input, .filter-bar select { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; }
+  .search-clear-wrap { position: relative; display: inline-block; }
+  .search-clear-wrap input[type=text] { padding-right: 26px; }
+  .search-clear-btn { display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; border-radius: 50%; border: none; background: #ccc; color: #fff; font-size: 11px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .search-clear-btn:hover { background: #999; }
 
   .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
@@ -252,8 +256,18 @@
   </div>
 
   <div class="filter-bar">
-    <label><span class="th">เบอร์โทร</span>Tel.<input type="text" id="filter-tel"></label>
-    <label><span class="th">ชื่อ</span>Name<input type="text" id="filter-name"></label>
+    <label><span class="th">เบอร์โทร</span>Tel.
+      <div class="search-clear-wrap">
+        <input type="text" id="filter-tel" oninput="toggleSearchClearBtn('filter-tel','filter-tel-clear-btn')">
+        <button type="button" class="search-clear-btn" id="filter-tel-clear-btn" onclick="clearSearchInput('filter-tel','filter-tel-clear-btn', loadOrders)">×</button>
+      </div>
+    </label>
+    <label><span class="th">ชื่อ</span>Name
+      <div class="search-clear-wrap">
+        <input type="text" id="filter-name" oninput="toggleSearchClearBtn('filter-name','filter-name-clear-btn')">
+        <button type="button" class="search-clear-btn" id="filter-name-clear-btn" onclick="clearSearchInput('filter-name','filter-name-clear-btn', loadOrders)">×</button>
+      </div>
+    </label>
     <label><span class="th">วันที่เริ่ม</span>Start<input type="date" id="filter-start"></label>
     <label><span class="th">วันที่สิ้นสุด</span>End<input type="date" id="filter-end"></label>
     <label><span class="th">ประเภท</span>Type
@@ -400,12 +414,31 @@ function todayStr() {
   return bkk.toISOString().slice(0, 10);
 }
 
+// 検索欄の×(クリア)ボタン共通処理
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
+}
+
 function resetToToday() {
   document.getElementById('filter-start').value = todayStr();
   document.getElementById('filter-end').value = '';
   document.getElementById('filter-tel').value = '';
   document.getElementById('filter-name').value = '';
   document.getElementById('filter-type').value = '';
+  toggleSearchClearBtn('filter-tel', 'filter-tel-clear-btn');
+  toggleSearchClearBtn('filter-name', 'filter-name-clear-btn');
   loadOrders();
 }
 
@@ -440,7 +473,7 @@ async function loadOrders() {
   let query = supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot, customer_id,
+      id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
@@ -515,6 +548,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const paymentBadges = [];
   if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
+  if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ 追加注文 #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');

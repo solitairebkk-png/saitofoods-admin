@@ -42,6 +42,10 @@
     padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 160px;
   }
   .filter-bar .checkbox-label { flex-direction: row; align-items: center; gap: 6px; font-size: 12px; color: var(--text); }
+  .search-clear-wrap { position: relative; display: inline-block; }
+  .search-clear-wrap input[type=text] { padding-right: 30px; }
+  .search-clear-btn { display: none; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border-radius: 50%; border: none; background: #ccc; color: #fff; font-size: 12px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .search-clear-btn:hover { background: #999; }
 
   .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .summary-note.alert { color: var(--red-accent); font-weight: 600; }
@@ -116,7 +120,10 @@
 
   <div class="filter-bar">
     <label>ค้นหา / Search
-      <input type="text" id="filter-search" placeholder="name_ja / name_en / name_th" oninput="applyFilters()">
+      <div class="search-clear-wrap">
+        <input type="text" id="filter-search" placeholder="name_ja / name_en / name_th" oninput="applyFilters(); toggleSearchClearBtn('filter-search','filter-search-clear-btn');">
+        <button type="button" class="search-clear-btn" id="filter-search-clear-btn" onclick="clearSearchInput('filter-search','filter-search-clear-btn', applyFilters)">×</button>
+      </div>
     </label>
     <label>หมวดหมู่ / Category
       <select id="filter-category" onchange="applyFilters()">
@@ -250,12 +257,30 @@ async function loadProducts() {
   applyFilters();
 }
 
+// 検索欄の×(クリア)ボタン共通処理
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
+}
+
 function clearFilters() {
   document.getElementById('filter-search').value = '';
   document.getElementById('filter-category').value = '';
   document.getElementById('filter-saletype').value = '';
   document.getElementById('filter-noprice').checked = false;
   document.getElementById('filter-unpublished').checked = false;
+  toggleSearchClearBtn('filter-search', 'filter-search-clear-btn');
   applyFilters();
 }
 

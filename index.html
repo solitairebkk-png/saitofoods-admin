@@ -31,9 +31,12 @@
   .hero p { font-size: 12.5px; color: #777; line-height: 1.8; margin-bottom: 18px; }
   .hero-cta { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px 32px; border-radius: 26px; text-decoration: none; box-shadow: 0 6px 16px rgba(95,139,121,0.25); }
   .hero-search { display: flex; gap: 8px; max-width: 380px; margin: 0 auto 16px; }
-  .hero-search input { flex: 1; padding: 11px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: #fff; }
+  .hero-search input { flex: 1; padding: 11px 32px 11px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: #fff; }
   .hero-search input:focus { outline: none; border-color: var(--brand); }
   .hero-search button { flex-shrink: 0; padding: 0 20px; border: none; border-radius: 22px; background: var(--brand-dark); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .search-clear-wrap { position: relative; flex: 1; }
+  .search-clear-btn { display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; border: none; background: #ddd; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .search-clear-btn:hover { background: #bbb; }
 
   main { padding: 20px 16px; }
   .section-block { margin-bottom: 28px; }
@@ -169,10 +172,13 @@
 
 <div class="hero">
   <div class="hero-icon">🍱</div>
-  <h1>26年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
+  <h1><span id="years-in-business">29</span>年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
   <p>日本食デリバリー・サイトウフーズの通販サイトです。<br>冷凍食品からお米、調味料まで幅広く取り揃えています。</p>
   <div class="hero-search">
-    <input type="text" id="hero-search-input" placeholder="🔍 商品を検索 / Search product" onkeydown="if(event.key==='Enter') submitHeroSearch()">
+    <div class="search-clear-wrap">
+      <input type="text" id="hero-search-input" placeholder="🔍 商品を検索 / Search product" oninput="toggleSearchClearBtn('hero-search-input','hero-search-clear-btn')" onkeydown="if(event.key==='Enter') submitHeroSearch()">
+      <button type="button" class="search-clear-btn" id="hero-search-clear-btn" onclick="clearSearchInput('hero-search-input','hero-search-clear-btn')">×</button>
+    </div>
     <button onclick="submitHeroSearch()">検索 / Search</button>
   </div>
   <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
@@ -196,6 +202,8 @@
         <div class="hours-block-title">お問い合わせ</div>
         <div class="hours-line">月～金　8:20-12:00　13:00-17:45</div>
         <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
+        <div class="hours-line">TEL: 02-258-9878 / 06-5618-9906</div>
+        <div class="hours-line">Email: orders@saitofoods.com</div>
       </div>
     </div>
   </div>
@@ -334,6 +342,23 @@ async function supabase(method, path) {
 }
 
 // ヘッダーのカート個数(product_list.html/cart.htmlと同じlocalStorageキー)
+// 検索欄の×(クリア)ボタン共通処理。他の検索欄でも同じ2関数を使い回す想定。
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
+}
+
 function submitHeroSearch() {
   const q = document.getElementById('hero-search-input').value.trim();
   location.href = 'product_list.html' + (q ? '?search=' + encodeURIComponent(q) : '');
@@ -560,6 +585,9 @@ function renderCalendar() {
 function formatDateLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+// 創業1997年からの営業年数を自動計算(毎年書き換えなくていいように)
+document.getElementById('years-in-business').textContent = new Date().getFullYear() - 1997;
 
 updateHeaderCartCount();
 loadTop3();

@@ -173,7 +173,10 @@
 
     <div style="margin-top:14px; position:relative;">
       <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">商品を検索して追加 / Search to add</label>
-      <input type="text" id="promo-search-input" oninput="searchProductsForPromotion()" placeholder="商品名で検索" style="width:100%;max-width:360px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <div style="position:relative;max-width:360px;">
+        <input type="text" id="promo-search-input" oninput="searchProductsForPromotion(); toggleSearchClearBtn('promo-search-input','promo-search-clear-btn');" placeholder="商品名で検索" style="width:100%;padding:8px 30px 8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+        <button type="button" id="promo-search-clear-btn" onclick="clearSearchInput('promo-search-input','promo-search-clear-btn', searchProductsForPromotion)" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;border:none;background:#ccc;color:#fff;font-size:12px;line-height:1;cursor:pointer;align-items:center;justify-content:center;">×</button>
+      </div>
       <div id="promo-search-result" style="max-width:360px;border:1px solid var(--border);border-radius:8px;max-height:220px;overflow-y:auto;margin-top:4px;display:none;background:#fff;position:absolute;z-index:10;"></div>
     </div>
   </div>
@@ -308,6 +311,23 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 const DAY_LABELS = ['日曜 / Sun', '月曜 / Mon', '火曜 / Tue', '水曜 / Wed', '木曜 / Thu', '金曜 / Fri', '土曜 / Sat'];
 
 let currentCustomer = null;
+
+// 検索欄の×(クリア)ボタン共通処理
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
+}
 let categoryOrderList = [];
 
 async function login() {
@@ -602,6 +622,7 @@ async function addMonthlyPromotion(productId) {
   const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: true }).eq('id', productId);
   document.getElementById('promo-search-input').value = '';
   document.getElementById('promo-search-result').style.display = 'none';
+  toggleSearchClearBtn('promo-search-input', 'promo-search-clear-btn');
 
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
