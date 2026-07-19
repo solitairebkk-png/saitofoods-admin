@@ -141,6 +141,26 @@
   .slip-thumb { width: 140px; height: 180px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; }
   .slip-thumb:hover { border-color: var(--navy); }
 
+  /* スリップ列: 左に出発管理(スタッフ選択+出発ボタン)、右にスリップサムネイルを並べる */
+  .slip-cell-inner { display: flex; align-items: flex-start; justify-content: center; gap: 8px; }
+  .dispatch-controls { display: flex; flex-direction: column; gap: 4px; min-width: 96px; text-align: left; }
+  .dispatch-controls select {
+    padding: 4px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; font-family: inherit; width: 100%;
+  }
+  .btn-dispatch {
+    background: var(--navy); color: #fff; border: none; border-radius: 4px; padding: 5px 6px;
+    font-size: 11px; cursor: pointer; font-family: inherit; width: 100%;
+  }
+  .btn-dispatch:hover { background: var(--navy-light); }
+  .dispatch-done { font-size: 11px; line-height: 1.5; }
+  .dispatch-done .label { color: var(--text-muted); }
+  .dispatch-done .name { font-weight: 700; }
+  .dispatch-done .time { color: var(--navy); font-weight: 700; }
+  .btn-undo-dispatch {
+    background: #6b7280; color: #fff; border: none; border-radius: 4px; padding: 3px 6px;
+    font-size: 10px; cursor: pointer; font-family: inherit; margin-top: 2px;
+  }
+
   #slip-modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999;
     align-items: center; justify-content: center; cursor: zoom-out;
@@ -298,7 +318,7 @@
         <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
         <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
-        <th style="width:160px;">สลิป<span class="en">Slip</span></th>
+        <th style="width:250px;">出発 / สลิป<span class="en">Dispatch / Slip</span></th>
       </tr>
     </thead>
     <tbody id="orders-tbody">
@@ -356,6 +376,9 @@ let currentAreaFilter = 'Bangkok';
 let shippingFreeThreshold = 600;
 let shippingFeeAmount = 100;
 
+// 出発ボタンのプルダウン用スタッフ一覧(settings.htmlで登録された有効スタッフ、選択回数の多い順)
+let staffList = [];
+
 async function loadShippingSettings() {
   const { data, error } = await supabaseClient
     .from('settings')
@@ -366,6 +389,14 @@ async function loadShippingSettings() {
     if (row.key === 'min_order_free_shipping') shippingFreeThreshold = parseFloat(row.value) || 600;
     if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
   });
+}
+
+async function loadStaffList() {
+  const { data, error } = await supabaseClient
+    .from('staff').select('id, name, selection_count').eq('is_active', true)
+    .order('selection_count', { ascending: false }).order('name', { ascending: true });
+  if (error) { console.error('staff読み込みエラー:', error); return; }
+  staffList = data || [];
 }
 
 // ---------------- Auth ----------------
@@ -405,7 +436,7 @@ function showMain() {
   document.getElementById('filter-start').value = todayStr();
   document.getElementById('filter-end').value = '';
   loadShippingSettings();
-  loadOrders();
+  loadStaffList().then(() => loadOrders());
 }
 
 function todayStr() {
@@ -477,6 +508,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
+      assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
@@ -528,6 +560,63 @@ function getStatusColor(order) {
   return 'var(--status-unprinted)';
 }
 
+// 出発管理ブロック(スタッフ選択プルダウン+出発ボタン、または出発済み表示)を組み立てる。
+// 配送(delivery)注文で、かつキャンセルされていないものだけ対象。walk_inには表示しない。
+function renderDispatchBlock(order) {
+  if (order.order_type !== 'delivery' || order.is_cancelled) return '';
+
+  if (order.departed_at) {
+    const staffName = order.staff?.name || '(unknown)';
+    const timeStr = new Date(order.departed_at).toLocaleTimeString('en-GB', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+    });
+    return `
+      <div class="dispatch-done">
+        <div class="label">出発済み / Departed</div>
+        <div class="name">${staffName}</div>
+        <div class="time">${timeStr}</div>
+        <button class="btn-undo-dispatch" onclick="resetDeparture('${order.id}')">取消 / Undo</button>
+      </div>`;
+  }
+
+  const options = staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  return `
+    <div class="dispatch-controls">
+      <select id="staff-select-${order.id}">
+        <option value="">-- スタッフ / Staff --</option>
+        ${options}
+      </select>
+      <button class="btn-dispatch" onclick="departOrder('${order.id}')">🚴 出発 / Depart</button>
+    </div>`;
+}
+
+// 出発ボタン押下: 注文にスタッフと出発時刻を記録し、staffテーブルのselection_countを+1する
+async function departOrder(orderId) {
+  const sel = document.getElementById('staff-select-' + orderId);
+  const staffId = sel ? sel.value : '';
+  if (!staffId) { alert('กรุณาเลือกพนักงาน / Please select a staff member.'); return; }
+
+  const nowIso = new Date().toISOString();
+  const { error } = await supabaseClient
+    .from('orders').update({ assigned_staff_id: staffId, departed_at: nowIso }).eq('id', orderId);
+  if (error) { alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message); return; }
+
+  const staffRow = staffList.find(s => s.id === staffId);
+  if (staffRow) {
+    await supabaseClient.from('staff').update({ selection_count: (staffRow.selection_count || 0) + 1 }).eq('id', staffId);
+  }
+  loadOrders();
+}
+
+// 出発記録の取消(選択ミスなどの訂正用)。selection_countは戻さない(実際の押下履歴として残す)。
+async function resetDeparture(orderId) {
+  if (!confirm('出発記録を取り消しますか？ / Undo this departure record?')) return;
+  const { error } = await supabaseClient
+    .from('orders').update({ assigned_staff_id: null, departed_at: null }).eq('id', orderId);
+  if (error) { alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message); return; }
+  loadOrders();
+}
+
 function renderOrderRow(order, idx, showDate, countForDate) {
   const tr = document.createElement('tr');
   tr.style.background = getStatusColor(order);
@@ -557,7 +646,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
     : '';
 
-  const slipCell = order.slip_image_url
+  const slipThumbHtml = order.slip_image_url
     ? `<img src="${driveImageUrl(order.slip_image_url)}" class="slip-thumb" onclick="openSlipModal('${driveImageUrl(order.slip_image_url, true)}')">`
     : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
@@ -577,7 +666,12 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
-    <td class="center">${slipCell}</td>
+    <td class="center">
+      <div class="slip-cell-inner">
+        ${renderDispatchBlock(order)}
+        ${slipThumbHtml}
+      </div>
+    </td>
   `;
 
   const manageCol = tr.querySelector('.manage-col');
@@ -682,7 +776,7 @@ async function awardPointsForOrder(order) {
 }
 
 // まるごとキャンセル: 削除(Delete)とは異なり記録は残す。スタッフ全員が実行可能。
-// Sales Summary(未実装)は is_cancelled=true の注文を必ず除外すること。
+// Sales Summaryは is_cancelled=true の注文を必ず除外すること。
 async function cancelOrder(orderId) {
   if (!confirm('ต้องการยกเลิกคำสั่งซื้อนี้ทั้งหมดหรือไม่? รายการนี้จะไม่ถูกนับในยอดขาย\nCancel this entire order? It will be excluded from sales totals but kept on record.')) return;
   await updateOrder(orderId, {

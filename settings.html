@@ -75,6 +75,10 @@
   .shipping-row label { font-size: 13px; display: flex; align-items: center; gap: 8px; }
   .shipping-row input { width: 100px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; }
 
+  .staff-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px; background: #fafafa; }
+  .staff-row .staff-name { flex: 1; font-size: 13px; font-weight: 600; }
+  .staff-row .staff-count { font-size: 12px; color: var(--text-muted); min-width: 90px; }
+
   #save-msg { font-size: 13px; margin-top: 8px; }
   #save-msg.success { color: var(--green); }
   #save-msg.error { color: var(--red-accent); }
@@ -245,6 +249,18 @@
     </div>
   </div>
 
+  <div class="card" id="section-staff">
+    <h2>スタッフ管理 / Staff</h2>
+    <div class="sub">orders.htmlの「出発」ボタンのプルダウンに表示されるスタッフ名です。選ばれた回数(selection_count)が多い人ほど上位に表示されます。並び順は自動計算で、手動での並び替えはできません。</div>
+    <div id="staff-list">
+      <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <input type="text" id="new-staff-name" placeholder="スタッフ名" style="flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <button class="btn" onclick="addNewStaff()">+ 追加 / Add</button>
+    </div>
+  </div>
+
   <div class="card" id="section-condos">
     <h2>コンドミニアム管理 / Condominiums</h2>
     <div class="sub">シラチャ・パタヤのお客様が注文時に選択するコンドミニアムのリストです。「シラチャ火曜日グループ(海側)」「シラチャ木曜日グループ(山側)」「パタヤグループ」の3種類に分かれています。</div>
@@ -358,6 +374,7 @@ function afterLogin() {
   document.getElementById('main').style.display = 'block';
   loadCondos();
   loadPattayaDays();
+  loadStaff();
   loadGpsSettings();
   loadMonthlyPromotions();
   loadHolidays();
@@ -501,6 +518,58 @@ async function deletePattayaDay(dateVal) {
   if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
   showSaveMsg('ลบแล้ว / Deleted');
   loadPattayaDays();
+}
+
+// ---------------- スタッフ管理(orders.htmlの出発ボタン用) ----------------
+// selection_count: orders.htmlで「出発」が押されるたびに+1される想定。ここでは登録・削除・表示のみ行う。
+async function loadStaff() {
+  const listEl = document.getElementById('staff-list');
+  listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('staff').select('*').order('selection_count', { ascending: false }).order('name', { ascending: true });
+
+  if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">読み込みに失敗しました: ' + error.message + '</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">まだ登録がありません。下からスタッフを追加してください。</div>';
+    return;
+  }
+
+  listEl.innerHTML = data.map(s => `
+    <div class="staff-row">
+      <span class="staff-name">${s.name}</span>
+      <span class="staff-count">選択回数 / Times used: ${s.selection_count ?? 0}</span>
+      <input type="checkbox" ${s.is_active !== false ? 'checked' : ''} onchange="toggleStaffActive('${s.id}', this.checked)" title="有効/無効(無効にするとorders.htmlのプルダウンに出ません)">
+      <button class="btn-delete-row" onclick="deleteStaff('${s.id}')">削除</button>
+    </div>
+  `).join('');
+}
+
+async function addNewStaff() {
+  const nameInput = document.getElementById('new-staff-name');
+  const name = nameInput.value.trim();
+  if (!name) { showSaveMsg('スタッフ名を入力してください / Please enter a name', true); return; }
+
+  const { error } = await supabaseClient.from('staff').insert({ name, is_active: true, selection_count: 0 });
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  nameInput.value = '';
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadStaff();
+}
+
+async function toggleStaffActive(id, isActive) {
+  const { error } = await supabaseClient.from('staff').update({ is_active: isActive }).eq('id', id);
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  showSaveMsg('บันทึกแล้ว / Saved');
+}
+
+async function deleteStaff(id) {
+  if (!confirm('このスタッフを削除しますか？(過去の出発記録は残ります) / Delete this staff member? (past delivery records are kept)')) return;
+  const { error } = await supabaseClient.from('staff').delete().eq('id', id);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadStaff();
 }
 
 // ---------------- GPS車両追跡情報 ----------------
