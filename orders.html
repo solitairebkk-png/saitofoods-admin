@@ -160,6 +160,7 @@
     background: #6b7280; color: #fff; border: none; border-radius: 4px; padding: 3px 6px;
     font-size: 10px; cursor: pointer; font-family: inherit; margin-top: 2px;
   }
+  .dispatch-blocked { font-size: 10.5px; line-height: 1.5; color: var(--text-muted); min-width: 96px; background: #f1f1ee; border: 1px dashed var(--border); border-radius: 4px; padding: 6px; text-align: left; }
 
   #slip-modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 999;
@@ -562,6 +563,8 @@ function getStatusColor(order) {
 
 // 出発管理ブロック(スタッフ選択プルダウン+出発ボタン、または出発済み表示)を組み立てる。
 // 配送(delivery)注文で、かつキャンセルされていないものだけ対象。walk_inには表示しない。
+// また、①量り売り商品の重量が未確定、②伝票が未印刷、のいずれかに該当する間は
+// 出発操作自体をできないようにする(現場で「印刷前に出発してしまう」事故を防ぐため)。
 function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
 
@@ -576,6 +579,20 @@ function renderDispatchBlock(order) {
         <div class="name">${staffName}</div>
         <div class="time">${timeStr}</div>
         <button class="btn-undo-dispatch" onclick="resetDeparture('${order.id}')">取消 / Undo</button>
+      </div>`;
+  }
+
+  const weightNotConfirmed = order.has_weight_items && !order.is_weight_confirmed;
+  const slipNotPrinted = !order.is_slip_printed;
+
+  if (weightNotConfirmed || slipNotPrinted) {
+    const reasons = [];
+    if (weightNotConfirmed) reasons.push('⚖️ 重量未確定 / Weight not confirmed');
+    if (slipNotPrinted) reasons.push('🧾 伝票未印刷 / Slip not printed');
+    return `
+      <div class="dispatch-blocked">
+        <div style="font-weight:700;margin-bottom:2px;">🚫 出発不可 / Cannot depart</div>
+        ${reasons.map(r => `<div>${r}</div>`).join('')}
       </div>`;
   }
 
@@ -913,6 +930,21 @@ function closeSlipModal() {
 // ================= 量り売り 重量確定モーダル =================
 let weightModalOrder = null;
 
+// products.unit_label(例: "100g" "1kg" "kg" など)から、
+// 「1(quantity=1)が何グラムに相当するか」を読み取る。
+// これにより、スタッフは常に実測グラムをそのまま入力でき、
+// 「100gあたりの単価だから1.3と入力する」といった換算ミスを防げる。
+function parseGramsPerUnit(unitLabel) {
+  const str = String(unitLabel || '').trim();
+  const m = str.match(/([\d.]+)\s*(kg|g)/i);
+  if (m) {
+    const num = parseFloat(m[1]);
+    return m[2].toLowerCase() === 'kg' ? num * 1000 : num;
+  }
+  if (/kg/i.test(str)) return 1000; // 数字なしで「kg」とだけ書かれている場合
+  return 100; // 読み取れない場合は安全側として100g単位を仮定
+}
+
 function openWeightModal(order) {
   weightModalOrder = order;
   const listEl = document.getElementById('weight-modal-items');
@@ -924,15 +956,20 @@ function openWeightModal(order) {
     const row = document.createElement('div');
     row.className = 'weight-item-row';
     const unitLabel = item.products?.unit_label || '';
+    const gramsPerUnit = parseGramsPerUnit(unitLabel);
     const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    // 既存の quantity は「unit_label(例:100g)を1とした倍数」で保存されているため、
+    // 編集時にグラム表示へ変換して見せる(例: quantity=1.3, unit_label=100g → 130g)
+    const prefillGrams = (item.quantity && item.quantity > 0) ? Math.round(item.quantity * gramsPerUnit) : '';
     row.innerHTML = `
       <div class="weight-item-name">${item.product_name_snapshot}${thName}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">単価: ${item.unit_price || 0} THB / ${unitLabel || '?'} ※実測グラムをそのまま入力してください</div>
       <div class="weight-item-input-row">
-        <input type="number" step="0.001" min="0" class="weight-input"
-          data-item-id="${item.id}" data-unit-price="${item.unit_price || 0}"
-          value="${item.quantity && item.quantity > 0 ? item.quantity : ''}"
-          placeholder="0.000" oninput="recalcWeightTotal()">
-        <span class="weight-unit">${unitLabel}</span>
+        <input type="number" step="1" min="0" class="weight-input"
+          data-item-id="${item.id}" data-unit-price="${item.unit_price || 0}" data-grams-per-unit="${gramsPerUnit}"
+          value="${prefillGrams}"
+          placeholder="例: 130" oninput="recalcWeightTotal()">
+        <span class="weight-unit">g</span>
         <span class="weight-item-price" id="weight-item-price-${item.id}">0 THB</span>
       </div>
     `;
@@ -963,8 +1000,10 @@ function recalcWeightTotal() {
   let weightTotal = 0;
   document.querySelectorAll('.weight-input').forEach(inp => {
     const unitPrice = parseFloat(inp.dataset.unitPrice) || 0;
-    const weight = parseFloat(inp.value) || 0;
-    const price = Math.round(unitPrice * weight);
+    const gramsPerUnit = parseFloat(inp.dataset.gramsPerUnit) || 100;
+    const grams = parseFloat(inp.value) || 0;
+    const quantity = grams / gramsPerUnit; // unit_label換算後の数量(保存形式に合わせる)
+    const price = Math.round(unitPrice * quantity);
     weightTotal += price;
     const priceEl = document.getElementById('weight-item-price-' + inp.dataset.itemId);
     if (priceEl) priceEl.textContent = price + ' THB';
@@ -985,9 +1024,9 @@ async function confirmWeight() {
   const inputs = document.querySelectorAll('.weight-input');
 
   for (const inp of inputs) {
-    const weight = parseFloat(inp.value);
-    if (!weight || weight <= 0) {
-      alert('กรุณากรอกน้ำหนักให้ครบทุกรายการ / Please enter weight for all items.');
+    const grams = parseFloat(inp.value);
+    if (!grams || grams <= 0) {
+      alert('กรุณากรอกน้ำหนัก (กรัม) ให้ครบทุกรายการ / Please enter weight in grams for all items.');
       return;
     }
   }
@@ -997,15 +1036,18 @@ async function confirmWeight() {
   btn.textContent = 'กำลังบันทึก... / Saving...';
 
   try {
-    // 1. 各 order_item を実測重量で更新(quantityを実測重量として扱う)
+    // 1. 各 order_item を実測重量で更新
+    // 入力はグラムだが、保存はこれまで通り unit_label 換算後の quantity(unit_priceとの整合性維持)
     for (const inp of inputs) {
       const itemId = inp.dataset.itemId;
       const unitPrice = parseFloat(inp.dataset.unitPrice) || 0;
-      const weight = parseFloat(inp.value);
-      const price = Math.round(unitPrice * weight);
+      const gramsPerUnit = parseFloat(inp.dataset.gramsPerUnit) || 100;
+      const grams = parseFloat(inp.value);
+      const quantity = grams / gramsPerUnit;
+      const price = Math.round(unitPrice * quantity);
       const { error } = await supabaseClient
         .from('order_items')
-        .update({ quantity: weight, price: price, total_price: price })
+        .update({ quantity: quantity, price: price, total_price: price })
         .eq('id', itemId);
       if (error) throw error;
     }
@@ -1016,11 +1058,20 @@ async function confirmWeight() {
       .from('order_items').select('total_price').eq('order_id', order.id);
     if (itemsErr) throw itemsErr;
     const newSubtotal = (items || []).reduce((sum, i) => sum + (i.total_price || 0), 0);
-    const newTotal = newSubtotal + (order.shipping_cost || 0);
+
+    // 送料は注文作成時点の見積り小計で一度決まるが、量り売り商品の実測結果によって
+    // 確定小計が無料ラインを超えるケースがある。追加請求は絶対にしない方針は維持しつつ、
+    // 「見積りでは600未満だったが実測後は600以上」の場合は送料を無料に修正する。
+    // (逆に「見積りでは600以上だったが実測で600未満」になった場合も、追加請求はしないため送料は据え置き=無料のまま)
+    let newShippingCost = order.shipping_cost || 0;
+    if (newShippingCost > 0 && newSubtotal >= shippingFreeThreshold) {
+      newShippingCost = 0;
+    }
+    const newTotal = newSubtotal + newShippingCost;
 
     const { error: orderErr } = await supabaseClient
       .from('orders')
-      .update({ subtotal: newSubtotal, total_amount: newTotal, is_weight_confirmed: true })
+      .update({ subtotal: newSubtotal, total_amount: newTotal, shipping_cost: newShippingCost, is_weight_confirmed: true })
       .eq('id', order.id);
     if (orderErr) throw orderErr;
 
