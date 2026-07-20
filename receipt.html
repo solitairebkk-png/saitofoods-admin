@@ -218,6 +218,19 @@ function baht(n) {
   return '฿' + v.toLocaleString('en-US', { maximumFractionDigits: 2 });
 }
 
+// products.unit_label(例: "100g" "1kg" "kg")から、quantity=1が何グラムに相当するかを読み取る。
+// orders.html側と全く同じロジック(実測グラムをそのまま入力する仕組みに合わせている)。
+function parseGramsPerUnit(unitLabel) {
+  const str = String(unitLabel || '').trim();
+  const m = str.match(/([\d.]+)\s*(kg|g)/i);
+  if (m) {
+    const num = parseFloat(m[1]);
+    return m[2].toLowerCase() === 'kg' ? num * 1000 : num;
+  }
+  if (/kg/i.test(str)) return 1000;
+  return 100;
+}
+
 function goBack() {
   if (window.history.length > 1) {
     history.back();
@@ -277,12 +290,18 @@ async function loadReceipt() {
   loadOrderPoints(order);
 }
 
+// 印刷ダイアログが閉じた後(afterprint)にのみ実行する。
+// 印刷を開く前にSupabaseへの書き込みを挟むと、通信状況によっては印刷ダイアログの表示自体が
+// 遅延・停止して見えることがあるため、印刷アクションとは切り離す。
 function handlePrint() {
+  window.print();
+}
+
+window.addEventListener('afterprint', () => {
   if (isStaffView && currentOrderId) {
     supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId).then(() => {});
   }
-  window.print();
-}
+});
 
 function showError() {
   document.getElementById('state-loading').style.display = 'none';
@@ -326,7 +345,9 @@ function renderReceipt(order) {
   const itemsBody = document.getElementById('f-items-body');
   itemsBody.innerHTML = (order.order_items || []).map(item => {
     const isWeight = item.sale_type === 'weight';
-    const qtyLabel = isWeight ? `${item.quantity} ${item.products?.unit_label || ''}`.trim() : String(item.quantity);
+    const qtyLabel = isWeight
+      ? `${Math.round((item.quantity || 0) * parseGramsPerUnit(item.products?.unit_label))}g`
+      : String(item.quantity);
     const unitLabel = isWeight ? (item.unit_price ? baht(item.unit_price) + '/unit' : 'Pending') : baht(item.price);
     const subtotalLabel = isWeight
       ? (order.is_weight_confirmed ? baht(item.total_price) : 'TBC')
