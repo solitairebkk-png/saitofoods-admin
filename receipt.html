@@ -290,18 +290,15 @@ async function loadReceipt() {
   loadOrderPoints(order);
 }
 
-// 印刷ダイアログが閉じた後(afterprint)にのみ実行する。
-// 印刷を開く前にSupabaseへの書き込みを挟むと、通信状況によっては印刷ダイアログの表示自体が
-// 遅延・停止して見えることがあるため、印刷アクションとは切り離す。
+// 印刷ボタンを押した瞬間に更新する(awaitしないので印刷アクション自体はブロックしない)。
+// 以前afterprintイベントに切り替えたが、ブラウザによってはafterprintが確実に発火しないため、
+// 「伝票未印刷のままになる」不具合が発生した。こちらの方式に戻す。
 function handlePrint() {
-  window.print();
-}
-
-window.addEventListener('afterprint', () => {
   if (isStaffView && currentOrderId) {
     supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId).then(() => {});
   }
-});
+  window.print();
+}
 
 function showError() {
   document.getElementById('state-loading').style.display = 'none';
