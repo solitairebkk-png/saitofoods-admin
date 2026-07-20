@@ -440,6 +440,18 @@ function showMain() {
   document.getElementById('filter-end').value = '';
   loadShippingSettings();
   loadStaffList().then(() => loadOrders());
+
+  // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
+  // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
+  // 短時間に連続でフォーカスが発生しても再読み込みが重複しないよう間引く。
+  let lastAutoRefresh = Date.now();
+  window.addEventListener('focus', () => {
+    if (!currentCustomer) return;
+    const now = Date.now();
+    if (now - lastAutoRefresh < 2000) return; // 2秒以内の連続フォーカスは無視
+    lastAutoRefresh = now;
+    loadOrders();
+  });
 }
 
 function todayStr() {
