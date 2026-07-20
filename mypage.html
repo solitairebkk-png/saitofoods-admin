@@ -106,6 +106,7 @@
   .status-completed { background: #e6fff5; color: var(--ok); }
   .status-cancelled { background: #eee; color: #777; }
   .status-pending { background: var(--yellow-light); color: var(--orange); border: 1px solid var(--border); }
+  .status-departed { background: var(--yellow-dark); color: #fff; }
 
   .departure-info { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--yellow-dark); background: var(--yellow-light); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
 
@@ -742,15 +743,18 @@ function renderOrderCard(order, index) {
     statusHtml = '<span class="status-badge status-cancelled">キャンセル済み</span>';
   } else if (order.is_completed) {
     statusHtml = '<span class="status-badge status-completed">お届け完了</span>';
+  } else if (order.departed_at) {
+    // 出発ボタンが押されている場合、「準備中」の代わりにここで「出発済み」を表示する
+    statusHtml = '<span class="status-badge status-departed">🚴 出発済み</span>';
   } else {
     statusHtml = '<span class="status-badge status-pending">準備中</span>';
   }
 
-  // 出発ボタンが押されている場合(配送注文でスタッフが出発済み)の表示
+  // 出発済みの場合、担当者名・時刻の詳細はバッジの下に補足表示する
   let departureHtml = '';
   if (order.departed_at && !order.is_cancelled) {
     const staffName = order.staff?.name || '担当者';
-    departureHtml = `<div class="departure-info">🚴 出発済み(担当: ${staffName} ${formatDepartedTime(order.departed_at)})</div>`;
+    departureHtml = `<div class="departure-info">🚴 担当: ${staffName}　出発時刻: ${formatDepartedTime(order.departed_at)}</div>`;
   }
 
   const itemsHtml = (order.order_items || []).map(item => {
