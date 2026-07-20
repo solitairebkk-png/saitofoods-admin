@@ -295,7 +295,13 @@ async function loadReceipt() {
 // 「伝票未印刷のままになる」不具合が発生した。こちらの方式に戻す。
 function handlePrint() {
   if (isStaffView && currentOrderId) {
-    supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId).then(() => {});
+    supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId)
+      .then(({ error }) => {
+        if (error) {
+          console.error('is_slip_printed更新エラー:', error);
+          alert('伝票を印刷済みにする処理でエラーが発生しました / Failed to mark as printed:\n' + error.message);
+        }
+      });
   }
   window.print();
 }
