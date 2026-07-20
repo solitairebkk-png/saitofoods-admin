@@ -46,6 +46,7 @@
   .card.total .count { color: #cdd8e6; }
 
   .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
+  .info-box { background: #eaf1f8; border: 1px solid #b9d0e6; color: var(--navy); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
 
   .section-title { font-size: 14px; font-weight: 700; color: var(--navy); margin: 24px 0 10px; }
 
@@ -96,6 +97,7 @@
   </div>
 
   <div class="warn-box" id="unconfirmed-warn"></div>
+  <div class="info-box" id="outofarea-info"></div>
 
   <div class="summary-cards" id="summary-cards">
     <div class="loading">กำลังโหลด... / Loading...</div>
@@ -112,6 +114,19 @@
     </thead>
     <tbody id="prod-tbody">
       <tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-title">スタッフ別配送件数 / Deliveries by Staff</div>
+  <table class="prod">
+    <thead>
+      <tr>
+        <th>スタッフ / Staff</th>
+        <th class="num">配送件数 / Deliveries</th>
+      </tr>
+    </thead>
+    <tbody id="staff-tbody">
+      <tr><td colspan="2" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
 
@@ -178,9 +193,11 @@ function resetToToday() {
 })();
 
 // ---------------- 集計 ----------------
+// assigned_staff_id / departed_at / staff(name) はスタッフ別配送件数の集計に使用
 const ORDER_SELECT = `
   id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost,
   is_cancelled, has_weight_items, is_weight_confirmed,
+  assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
   customers!customer_id ( areas ( name ) ),
   order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
@@ -191,7 +208,9 @@ async function loadSummary() {
 
   document.getElementById('summary-cards').innerHTML = '<div class="loading">กำลังโหลด... / Loading...</div>';
   document.getElementById('prod-tbody').innerHTML = '<tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  document.getElementById('staff-tbody').innerHTML = '<tr><td colspan="2" class="loading">กำลังโหลด... / Loading...</td></tr>';
   document.getElementById('unconfirmed-warn').style.display = 'none';
+  document.getElementById('outofarea-info').style.display = 'none';
 
   // 配送分(delivery): delivery_date で判定
   const deliveryPromise = supabaseClient
@@ -213,24 +232,29 @@ async function loadSummary() {
   if (err1 || err2) {
     document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message) + '</div>';
     document.getElementById('prod-tbody').innerHTML = '';
+    document.getElementById('staff-tbody').innerHTML = '';
     return;
   }
 
   const allOrders = [...(deliveryData || []), ...(walkinData || [])].filter(o => !o.is_cancelled);
 
   renderSummary(allOrders);
+  renderStaffDeliveries(allOrders);
 }
 
 function renderSummary(orders) {
+  // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   const buckets = {
     walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
     Bangkok: { label: 'Bangkok', orders: 0, amount: 0 },
     Sriracha: { label: 'Sriracha', orders: 0, amount: 0 },
-    other: { label: 'Other / ไม่ระบุพื้นที่', orders: 0, amount: 0 },
+    Pattaya: { label: 'Pattaya', orders: 0, amount: 0 },
   };
 
   const productMap = new Map(); // product_id -> { name, unit, qty, revenue }
   let unconfirmedCount = 0;
+  let outOfAreaCount = 0;
+  const KNOWN_AREAS = ['Sriracha', 'Pattaya'];
 
   orders.forEach(order => {
     let bucketKey;
@@ -238,7 +262,12 @@ function renderSummary(orders) {
       bucketKey = 'walk_in';
     } else {
       const areaName = order.customers?.areas?.name;
-      bucketKey = (areaName === 'Bangkok' || areaName === 'Sriracha') ? areaName : 'other';
+      if (KNOWN_AREAS.includes(areaName)) {
+        bucketKey = areaName;
+      } else {
+        bucketKey = 'Bangkok'; // バンコク本体 + エリア外/未設定は全てバンコクに算入
+        if (areaName !== 'Bangkok') outOfAreaCount += 1;
+      }
     }
     buckets[bucketKey].orders += 1;
     buckets[bucketKey].amount += Number(order.total_amount) || 0;
@@ -262,9 +291,10 @@ function renderSummary(orders) {
   const cardsEl = document.getElementById('summary-cards');
   cardsEl.innerHTML = '';
 
-  const order = ['Bangkok', 'Sriracha', 'walk_in'];
+  const order = ['Bangkok', 'Sriracha', 'Pattaya', 'walk_in'];
   order.forEach(key => {
     const b = buckets[key];
+    if (key !== 'Bangkok' && key !== 'walk_in' && b.orders === 0) return; // Sriracha/Pattayaは件数0なら非表示
     cardsEl.innerHTML += `
       <div class="card">
         <div class="label">${b.label}</div>
@@ -272,14 +302,6 @@ function renderSummary(orders) {
         <div class="count">${b.orders} orders / คำสั่งซื้อ</div>
       </div>`;
   });
-  if (buckets.other.orders > 0) {
-    cardsEl.innerHTML += `
-      <div class="card">
-        <div class="label">${buckets.other.label}</div>
-        <div class="amount">${buckets.other.amount.toLocaleString()} THB</div>
-        <div class="count">${buckets.other.orders} orders / คำสั่งซื้อ</div>
-      </div>`;
-  }
   cardsEl.innerHTML += `
     <div class="card total">
       <div class="label">Total / รวมทั้งหมด</div>
@@ -293,6 +315,12 @@ function renderSummary(orders) {
     warnEl.textContent = `⚠️ 量り売り重量未確定の注文が${unconfirmedCount}件含まれています。該当分の金額は仮の数値です。 / ${unconfirmedCount} order(s) have unconfirmed weight — their amounts are estimates.`;
   }
 
+  const infoEl = document.getElementById('outofarea-info');
+  if (outOfAreaCount > 0) {
+    infoEl.style.display = 'block';
+    infoEl.textContent = `ℹ️ 配送エリア外(その他)のご注文が${outOfAreaCount}件含まれています。集計上はバンコクに含めています。 / ${outOfAreaCount} out-of-area order(s) are included, counted under Bangkok.`;
+  }
+
   const prodTbody = document.getElementById('prod-tbody');
   const products = [...productMap.values()].sort((a, b) => b.revenue - a.revenue);
   if (products.length === 0) {
@@ -304,6 +332,33 @@ function renderSummary(orders) {
       <td>${p.name}</td>
       <td class="num">${formatQty(p.qty)} ${p.unit}</td>
       <td class="num">${Math.round(p.revenue).toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+// スタッフ別配送件数: 「出発済み(assigned_staff_id・departed_atが設定されている)」配送注文をスタッフごとに集計する。
+// ウォークイン注文は対象外(出発の概念が無いため)。
+function renderStaffDeliveries(orders) {
+  const staffTbody = document.getElementById('staff-tbody');
+  const counts = new Map(); // staff名 -> 件数
+
+  orders.forEach(order => {
+    if (order.order_type !== 'delivery') return;
+    if (!order.assigned_staff_id || !order.departed_at) return;
+    const name = order.staff?.name || '(unknown)';
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+
+  if (counts.size === 0) {
+    staffTbody.innerHTML = '<tr><td colspan="2" class="empty-state">ไม่มีข้อมูล / No dispatch data for this date</td></tr>';
+    return;
+  }
+
+  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  staffTbody.innerHTML = rows.map(([name, count]) => `
+    <tr>
+      <td>${name}</td>
+      <td class="num">${count}</td>
     </tr>
   `).join('');
 }
