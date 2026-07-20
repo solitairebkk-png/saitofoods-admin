@@ -143,6 +143,8 @@
   #submit-msg.success { color: var(--green); }
   #submit-msg.error { color: var(--red-accent); }
 
+  #back-to-orders-btn { display: none; margin-top: 10px; }
+
   #slip-link-card {
     margin-top: 12px; padding: 14px; border-radius: 6px; background: #eef2f7;
     border: 1px solid #c9d6e5; font-size: 13px; display: none;
@@ -331,6 +333,7 @@
     </div>
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
+    <button class="btn secondary" id="back-to-orders-btn" style="width:100%;" onclick="location.href='orders.html'">← กลับไปหน้ารายการคำสั่งซื้อ / Back to Order List</button>
 
     <!-- Slip upload link + PromptPay QR (shown after a QR-payment order is saved) -->
     <div id="slip-link-card">
@@ -383,6 +386,10 @@ async function loadShippingSettings() {
 // 編集モード(orders.html の Edit ボタンから ?edit=<注文ID> で遷移してきた場合)
 const editOrderId = new URLSearchParams(location.search).get('edit');
 let editingOrderId = null;
+// 編集開始時点の「量り売り商品の確定状態・内容」を記録しておき、
+// 保存時に実際に変更が無ければ is_weight_confirmed を不必要にリセットしないようにする
+let editingOrderOriginalIsWeightConfirmed = false;
+let editingOrderOriginalWeightItemsKey = null;
 
 // ---------------- Auth ----------------
 async function login() {
@@ -847,7 +854,7 @@ async function loadOrderForEdit(orderId) {
   const { data: order, error } = await supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot, payment_method, comment,
+      id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
       order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
@@ -861,6 +868,13 @@ async function loadOrderForEdit(orderId) {
   }
 
   editingOrderId = order.id;
+  editingOrderOriginalIsWeightConfirmed = !!order.is_weight_confirmed;
+  editingOrderOriginalWeightItemsKey = JSON.stringify(
+    (order.order_items || [])
+      .filter(i => i.sale_type === 'weight')
+      .map(i => ({ pid: i.product_id, qty: i.quantity }))
+      .sort((a, b) => (a.pid > b.pid ? 1 : -1))
+  );
 
   // ヘッダー・保存ボタンの表示をEditモードに切り替え
   const titleEl = document.querySelector('header h1');
@@ -973,6 +987,7 @@ async function submitOrder() {
   const msgEl = document.getElementById('submit-msg');
   msgEl.textContent = '';
   msgEl.className = '';
+  document.getElementById('back-to-orders-btn').style.display = 'none';
   hideSlipLinkCard();
 
   const isWalkin = document.getElementById('is-walkin').checked;
@@ -1063,9 +1078,23 @@ async function submitOrder() {
 
   // ---------------- 編集モード: 既存注文をUPDATE ----------------
   if (editingOrderId) {
-    // 内容が変わるため、再印刷・再計量が必要という前提でフラグをリセットする
+    // 内容が変わるため印刷済みフラグは常にリセットする(再印刷が必要という前提)。
     orderPayload.is_slip_printed = false;
-    if (hasWeightItems) orderPayload.is_weight_confirmed = false;
+
+    // 量り売り商品の「確定状態」は、編集前後で対象商品・実測重量が
+    // 一切変わっていない場合に限り維持する(無変更なのに毎回orders.htmlで
+    // 再入力が必要になる不便を避けるため)。少しでも変わっていれば再確認のためfalseにする。
+    let weightItemsUnchanged = false;
+    if (hasWeightItems) {
+      const currentWeightItemsKey = JSON.stringify(
+        cart.filter(i => i.sale_type === 'weight')
+          .map(i => ({ pid: i.product_id, qty: i.quantity }))
+          .sort((a, b) => (a.pid > b.pid ? 1 : -1))
+      );
+      weightItemsUnchanged = editingOrderOriginalIsWeightConfirmed
+        && currentWeightItemsKey === editingOrderOriginalWeightItemsKey;
+      orderPayload.is_weight_confirmed = weightItemsUnchanged;
+    }
 
     const { error: updErr } = await supabaseClient
       .from('orders').update(orderPayload).eq('id', editingOrderId);
@@ -1093,8 +1122,10 @@ async function submitOrder() {
       sale_type: item.sale_type,
       quantity: item.quantity,
       unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-      price: item.sale_type === 'weight' ? 0 : item.price,
-      total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
+      // 量り売り商品: 内容が変わっていなければ既に確定済みの金額(item.price)をそのまま維持し、
+      // 変わっていれば0(未確定)に戻して、orders.html側での再確認を促す
+      price: item.sale_type === 'weight' ? (weightItemsUnchanged ? (item.price || 0) : 0) : item.price,
+      total_price: item.sale_type === 'weight' ? (weightItemsUnchanged ? (item.price || 0) : 0) : item.price * item.quantity,
     }));
 
     const { error: editItemsErr } = await supabaseClient.from('order_items').insert(editItemsPayload);
@@ -1115,6 +1146,11 @@ async function submitOrder() {
         hasWeightItems: hasWeightItems,
         customerName: isWalkin ? '' : customerName,
       });
+      // QR振込みの場合はスリップリンクをコピーする時間が必要なため自動では戻らず、ボタンで戻る
+      document.getElementById('back-to-orders-btn').style.display = 'block';
+    } else {
+      // それ以外は少し成功メッセージを見せてから自動で注文一覧に戻る
+      setTimeout(() => { location.href = 'orders.html'; }, 900);
     }
     return; // 編集モードはここで終了(新規作成のinsert処理には進まない)
   }
