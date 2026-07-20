@@ -462,7 +462,7 @@ async function checkAddToOrderMode() {
     .from('orders')
     .select(`
       id, customer_id, delivery_date, delivery_time_slot, condo_name, area_name,
-      subtotal, total_amount, is_completed, is_cancelled, is_slip_printed,
+      subtotal, total_amount, is_completed, is_cancelled, is_slip_printed, departed_at,
       order_items ( product_name_snapshot, quantity, sale_type, total_price )
     `)
     .eq('id', orderId)
@@ -475,7 +475,7 @@ async function checkAddToOrderMode() {
     return; // 見つからない/本人の注文でない場合は通常注文として続行
   }
   const deliveryDatePassed = order.delivery_date && order.delivery_date < new Date().toISOString().slice(0, 10);
-  if (order.is_completed || order.is_cancelled || order.is_slip_printed || deliveryDatePassed) {
+  if (order.is_completed || order.is_cancelled || order.is_slip_printed || order.departed_at || deliveryDatePassed) {
     bannerEl.style.display = 'block';
     bannerEl.style.background = '#fbe9e6';
     bannerEl.style.borderColor = 'var(--red)';
