@@ -141,6 +141,7 @@
       </select>
     </label>
     <label class="checkbox-label"><input type="checkbox" id="filter-noprice" onchange="applyFilters()"> 価格未入力のみ / No price only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-outofstock" onchange="applyFilters()"> 在庫0のみ / Out of stock only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
     <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
     <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
@@ -301,6 +302,7 @@ function clearFilters() {
   document.getElementById('filter-category').value = '';
   document.getElementById('filter-saletype').value = '';
   document.getElementById('filter-noprice').checked = false;
+  document.getElementById('filter-outofstock').checked = false;
   document.getElementById('filter-unpublished').checked = false;
   toggleSearchClearBtn('filter-search', 'filter-search-clear-btn');
   applyFilters();
@@ -310,11 +312,17 @@ function isMissingPrice(p) {
   return p.sale_type !== 'weight' && (!p.price || p.price === 0);
 }
 
+// 在庫0判定: 在庫無制限の商品は対象外。stock_qtyがちょうど0の商品のみ「品切れ」として扱う。
+function isOutOfStock(p) {
+  return !p.is_unlimited_stock && p.stock_qty === 0;
+}
+
 function applyFilters() {
   const q = document.getElementById('filter-search').value.trim().toLowerCase();
   const catId = document.getElementById('filter-category').value;
   const saleType = document.getElementById('filter-saletype').value;
   const noPriceOnly = document.getElementById('filter-noprice').checked;
+  const outOfStockOnly = document.getElementById('filter-outofstock').checked;
   const unpublishedOnly = document.getElementById('filter-unpublished').checked;
 
   let filtered = allProducts.filter(p => {
@@ -328,15 +336,18 @@ function applyFilters() {
     }
     if (saleType && p.sale_type !== saleType) return false;
     if (noPriceOnly && !isMissingPrice(p)) return false;
+    if (outOfStockOnly && !isOutOfStock(p)) return false;
     if (unpublishedOnly && p.is_published !== false) return false;
     return true;
   });
 
   const missingCount = allProducts.filter(isMissingPrice).length;
+  const outOfStockCount = allProducts.filter(isOutOfStock).length;
   const noteEl = document.getElementById('summary-note');
-  noteEl.className = missingCount > 0 ? 'summary-note alert' : 'summary-note';
+  noteEl.className = (missingCount > 0 || outOfStockCount > 0) ? 'summary-note alert' : 'summary-note';
   noteEl.textContent = `全${allProducts.length}件中 ${filtered.length}件を表示 / Showing ${filtered.length} of ${allProducts.length}` +
-    (missingCount > 0 ? ` — ⚠️ 価格未入力 ${missingCount}件` : '');
+    (missingCount > 0 ? ` — ⚠️ 価格未入力 ${missingCount}件` : '') +
+    (outOfStockCount > 0 ? ` — 📦 在庫0 ${outOfStockCount}件` : '');
 
   renderTable(filtered);
 }
