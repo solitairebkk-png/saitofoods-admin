@@ -161,6 +161,13 @@
     <div class="card" id="addto-banner" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);">
       <div style="font-weight:800;font-size:13.5px;margin-bottom:4px;">➕ 追加注文 / Additional order</div>
       <div id="addto-banner-text" style="font-size:12.5px;color:var(--ink);line-height:1.7;"></div>
+      <div id="addto-original-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--accent);">
+        <div style="font-size:11.5px;font-weight:700;color:#7A5C1E;margin-bottom:6px;">📦 元のご注文内容(確定済み・変更不可) / Original order (already confirmed)</div>
+        <div id="addto-original-list" style="font-size:12px;color:var(--ink);line-height:1.8;"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);">
+          <span>小計 / Subtotal</span><span id="addto-original-subtotal">฿0</span>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="delivery-card">
@@ -235,11 +242,13 @@
           Checking the box fills in your full balance — lower the number if you'd rather use only part of it. 1 pt = ฿1 discount.
         </div>
       </div>
-      <div class="totals-row"><span>小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
+      <div class="totals-row" id="totals-original-row" style="display:none;color:#7A5C1E;"><span>元のご注文小計 / Original order subtotal</span><span id="totals-original">฿0</span></div>
+      <div class="totals-row"><span id="totals-subtotal-label">小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
       <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
       <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span>割引 / Discount</span><span id="totals-discount">-฿0</span></div>
       <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span>ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
-      <div class="totals-row total"><span>合計 / Total</span><span id="totals-total">฿0</span></div>
+      <div class="totals-row total"><span id="totals-total-label">合計 / Total</span><span id="totals-total">฿0</span></div>
+      <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span>総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
       <div style="font-size:11px;color:#999;margin-top:6px;">※ 量り売り商品は単価×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
     </div>
 
@@ -442,6 +451,8 @@ async function loadCustomerAndInit(userId) {
 // マイページの「この注文に追加する」から来た場合(?addto=注文ID)、
 // その注文がまだ本人のもの・かつ伝票未印刷(準備開始前)であることを確認し、
 // 配送日時をその注文と同じ内容に固定して、配送日時の選択欄を隠す。
+// あわせて、元の注文の商品明細・小計を画面に表示し、合計金額のイメージが
+// 掴めるようにする(元注文小計 + 今回の追加分 = 総合計)。
 async function checkAddToOrderMode() {
   const params = new URLSearchParams(location.search);
   const orderId = params.get('addto');
@@ -449,7 +460,11 @@ async function checkAddToOrderMode() {
 
   const { data: order, error } = await supabaseClient
     .from('orders')
-    .select('id, customer_id, delivery_date, delivery_time_slot, condo_name, area_name, subtotal, is_completed, is_cancelled, is_slip_printed')
+    .select(`
+      id, customer_id, delivery_date, delivery_time_slot, condo_name, area_name,
+      subtotal, total_amount, is_completed, is_cancelled, is_slip_printed,
+      order_items ( product_name_snapshot, quantity, sale_type, total_price )
+    `)
     .eq('id', orderId)
     .single();
 
@@ -475,6 +490,26 @@ async function checkAddToOrderMode() {
   bannerEl.style.display = 'block';
   bannerTextEl.innerHTML = `🎉 ご注文 #${orderId.slice(0, 8).toUpperCase()} はまだ準備開始前なので、追加で商品を選べます!配送日時はその注文と同じになります。<br>` +
     `📅 ${order.delivery_date || '-'}　${order.condo_name ? '🏢 ' + order.condo_name : (order.delivery_time_slot || '')}`;
+
+  renderAddToOriginalItems(order);
+  updateTotals(); // 元注文小計・総合計の表示を反映する
+}
+
+// 元の注文の商品明細・小計を「追加注文」バナー内に表示する
+function renderAddToOriginalItems(order) {
+  const wrapEl = document.getElementById('addto-original-wrap');
+  const listEl = document.getElementById('addto-original-list');
+  const subtotalEl = document.getElementById('addto-original-subtotal');
+  const items = order.order_items || [];
+
+  if (items.length === 0) { wrapEl.style.display = 'none'; return; }
+
+  listEl.innerHTML = items.map(it => {
+    const qty = it.sale_type === 'weight' ? `${it.quantity}` : `${it.quantity}点`;
+    return `${it.product_name_snapshot} × ${qty} — ฿${it.total_price}`;
+  }).join('<br>');
+  subtotalEl.textContent = `฿${order.subtotal || 0}`;
+  wrapEl.style.display = 'block';
 }
 
 // ---------------- エリア判定(バンコク/シラチャ/パタヤ)して配送フォームを出し分け ----------------
@@ -747,6 +782,26 @@ function updateTotals() {
   }
 
   document.getElementById('totals-total').textContent = `฿${total}`;
+
+  // 追加注文モードの場合、元のご注文小計・追加分ラベル・総合計(元注文+追加分)を表示する
+  const originalRow = document.getElementById('totals-original-row');
+  const subtotalLabelEl = document.getElementById('totals-subtotal-label');
+  const totalLabelEl = document.getElementById('totals-total-label');
+  const grandRow = document.getElementById('totals-grand-row');
+
+  if (addToOrderId && addToOrderInfo) {
+    originalRow.style.display = 'flex';
+    document.getElementById('totals-original').textContent = `฿${addToOrderInfo.subtotal || 0}`;
+    subtotalLabelEl.textContent = '追加分小計 / Additional subtotal';
+    totalLabelEl.textContent = '追加分の合計 / Total for this addition';
+    grandRow.style.display = 'flex';
+    document.getElementById('totals-grand').textContent = `฿${(addToOrderInfo.total_amount || 0) + total}`;
+  } else {
+    originalRow.style.display = 'none';
+    subtotalLabelEl.textContent = '小計 / Subtotal';
+    totalLabelEl.textContent = '合計 / Total';
+    grandRow.style.display = 'none';
+  }
 }
 
 // ---------------- ポイント利用(オンライン注文限定。1pt = ฿1割引。上限なし=残高全部まで使用可) ----------------
