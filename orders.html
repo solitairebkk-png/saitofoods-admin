@@ -58,6 +58,7 @@
     padding: 8px 18px; font-size: 13px; cursor: pointer; border-radius: 4px 4px 0 0; font-family: inherit;
   }
   .area-tabs button.active { background: var(--panel); font-weight: 700; }
+  .tab-badge { display: inline-block; min-width: 16px; padding: 0 5px; margin-left: 5px; border-radius: 999px; background: var(--red-accent); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 
   .filter-bar {
     background: var(--panel); border: 1px solid var(--border); border-radius: 0 4px 4px 4px;
@@ -273,6 +274,7 @@
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
     <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in / หน้าร้าน</button>
+    <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">配送エリア外 / Out-of-area<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
   </div>
 
@@ -526,9 +528,25 @@ async function loadOrders() {
 
   if (error) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
 
+  // 「配送エリア外」件数は、今どのタブを見ているかに関わらず常に更新する
+  // (バンコク・シラチャ・パタヤのいずれでもなく、ウォークインでもない配送注文)
+  const KNOWN_AREAS = ['Bangkok', 'Sriracha', 'Pattaya'];
+  const outOfAreaCount = (data || []).filter(o =>
+    o.order_type !== 'walk_in' && !o.is_cancelled && !KNOWN_AREAS.includes(o.customers?.areas?.name)
+  ).length;
+  const badgeEl = document.getElementById('outofarea-badge');
+  if (outOfAreaCount > 0) {
+    badgeEl.textContent = outOfAreaCount;
+    badgeEl.style.display = 'inline-block';
+  } else {
+    badgeEl.style.display = 'none';
+  }
+
   let rows = data || [];
   if (currentAreaFilter === '__WALKIN__') {
     rows = rows.filter(o => o.order_type === 'walk_in');
+  } else if (currentAreaFilter === '__OUTOFAREA__') {
+    rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.customers?.areas?.name));
   } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
     rows = rows.filter(o => filterList.includes(o.customers?.areas?.name));
@@ -977,13 +995,9 @@ function openWeightModal(order) {
   });
 
   const mailNote = document.getElementById('weight-modal-mail-note');
-  if (order.payment_method === 'qr') {
-    mailNote.innerHTML = order.customers?.email
-      ? `✉️ ยืนยันแล้วจะส่งอีเมลพร้อมลิงก์ชำระเงิน (QR) ไปที่ ${order.customers.email} โดยอัตโนมัติ<br>An email with the payment QR link will be sent automatically to ${order.customers.email}.`
-      : `⚠️ ลูกค้ารายนี้ไม่มีอีเมลในระบบ จะไม่ส่งอีเมลอัตโนมัติ กรุณาแจ้งยอดด้วยวิธีอื่น<br>No email on file for this customer — the confirmation email cannot be sent automatically. Please notify them another way.`;
-  } else {
-    mailNote.innerHTML = '💵 ชำระเงินสด — จะไม่ส่งอีเมลอัตโนมัติ<br>Cash payment — no automatic email will be sent.';
-  }
+  mailNote.innerHTML = order.customers?.email
+    ? `✉️ ยืนยันแล้วจะส่งอีเมลแจ้งน้ำหนัก/ยอดเงินที่ยืนยันแล้วไปที่ ${order.customers.email} โดยอัตโนมัติ (ทุกวิธีชำระเงิน)<br>An email confirming the weight and final amount will be sent automatically to ${order.customers.email} (regardless of payment method).`
+    : `⚠️ ลูกค้ารายนี้ไม่มีอีเมลในระบบ จะไม่ส่งอีเมลอัตโนมัติ กรุณาแจ้งยอดด้วยวิธีอื่น<br>No email on file for this customer — the confirmation email cannot be sent automatically. Please notify them another way.`;
 
   document.getElementById('weight-modal-confirm-btn').disabled = false;
   document.getElementById('weight-modal-confirm-btn').textContent = 'ยืนยันน้ำหนัก / Confirm Weight';
@@ -1075,8 +1089,9 @@ async function confirmWeight() {
       .eq('id', order.id);
     if (orderErr) throw orderErr;
 
-    // 3. QR振込み・かつメールアドレスがある場合のみ、確定金額入りリンクを自動メール送信
-    if (order.payment_method === 'qr' && order.customers?.email) {
+    // 3. 支払い方法に関わらず、メールアドレスがある場合は重量確定メールを自動送信する
+    // (現金・銀行振込のお客様にも、確定した重量・金額は情報として必ずお知らせする)
+    if (order.customers?.email) {
       await sendWeightConfirmedEmail(order, newTotal);
     }
 
@@ -1094,10 +1109,21 @@ async function confirmWeight() {
 // このメールにQR画像を添付する必要はない
 async function sendWeightConfirmedEmail(order, amount) {
   const customerName = `${order.customers?.family_name || ''} ${order.customers?.first_name || ''}`.trim();
-  const params = new URLSearchParams({ amount: amount, name: customerName, ref: order.id });
-  const link = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
 
-  const body = `${customerName} 様\n\nお待たせいたしました。ご注文の量り売り商品の重量が確定し、合計金額は ${amount} THB となりました。\n\n下記のリンクよりお支払い(QR振込み)とスリップのアップロードをお願いいたします。\n${link}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
+  let paymentBlock;
+  if (order.payment_method === 'qr') {
+    const params = new URLSearchParams({ amount: amount, name: customerName, ref: order.id });
+    const link = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+    paymentBlock = `下記のリンクよりお支払い(QR振込み)とスリップのアップロードをお願いいたします。\n${link}`;
+  } else if (order.payment_method === 'cash') {
+    paymentBlock = `お届け時に代金引換にてお支払いください。`;
+  } else if (order.payment_method === 'transfer') {
+    paymentBlock = `SCB (Siam Commercial Bank) 口座番号 071-296992-2 (口座名義: SAITO FOODS CO.,LTD.) へお振込みをお願いいたします。`;
+  } else {
+    paymentBlock = ``;
+  }
+
+  const body = `${customerName} 様\n\nお待たせいたしました。ご注文の量り売り商品の重量が確定し、合計金額は ${amount} THB となりました。\n\n${paymentBlock}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
 
   try {
     const url = `${GAS_URL}?action=sendMail&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(order.customers.email)}&body=${encodeURIComponent(body)}`;
