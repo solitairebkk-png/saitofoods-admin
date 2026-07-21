@@ -69,6 +69,11 @@
     .sidebar-categories-title { padding: 0 16px 8px; }
 
     .promo-scroll { -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+    .top3-list { flex-direction: column; }
+    .top3-item { width: 100%; max-width: 100%; }
+    .top3-info, .top3-name, .top3-count { overflow-wrap: break-word; word-break: break-word; }
+
+    .footer-delivery-area { order: -1; }
 
     .top-info-row { flex-direction: column; align-items: center; gap: 20px; padding: 20px 16px; }
     .top-info-col { flex: 1 1 auto; width: 100%; max-width: 340px; min-width: 0; }
@@ -360,7 +365,7 @@
       </div>
 
       <div class="footer-row">
-        <div class="footer-section">
+        <div class="footer-section footer-company-info">
           <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
           <div class="footer-store-media">
             <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
@@ -379,7 +384,7 @@
           </p>
         </div>
 
-        <div class="footer-section">
+        <div class="footer-section footer-delivery-area">
           <h3>配送エリアについて / Delivery Area</h3>
           <p>
             バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
