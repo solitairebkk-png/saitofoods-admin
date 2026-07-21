@@ -13,30 +13,41 @@
   body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
   a { color: inherit; }
 
-  .app-shell { max-width: 480px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 40px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+  .app-shell { max-width: 1100px; margin: 0 auto; background: var(--cream); min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
 
   .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
-  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 12px 20px; }
-  .site-logo-mark { font-weight: 800; font-size: 16px; color: #fff; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,0.12); }
-  .site-logo-mark small { display: block; font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; }
+  .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
+  .site-logo-mark img { height: 40px; width: auto; display: block; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
-  .site-nav a { color: #fff; text-decoration: none; opacity: .8; }
+  .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
   .site-cart-btn { background: #fff; color: var(--brand-dark); font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-  /* category nav (horizontal scroll) */
-  .category-nav-wrap { background: var(--line-soft); border-bottom: 2px solid var(--line); }
-  .category-nav-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
-  .category-nav-scroll::-webkit-scrollbar { display: none; }
-  .category-pill { flex: 0 0 auto; background: #fff; border: 1.5px solid var(--line); color: var(--ink); font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 20px; text-decoration: none; white-space: nowrap; }
-  .category-pill:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
-  .category-pill-skeleton { flex: 0 0 auto; width: 90px; height: 32px; border-radius: 20px; }
+  /* two-column layout: sidebar categories + main content */
+  .layout-wrap { display: flex; align-items: flex-start; }
+  .sidebar-categories { width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 2px solid var(--line); padding: 16px 0; }
+  .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); padding: 0 20px 10px; }
+  .sidebar-category-list { display: flex; flex-direction: column; }
+  .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .sidebar-category-item:hover { background: #fff; color: var(--brand-dark); }
+  .sidebar-category-skeleton { height: 14px; margin: 12px 20px; border-radius: 6px; }
+  .main-col { flex: 1; min-width: 0; padding-bottom: 40px; }
+
+  @media (max-width: 760px) {
+    .layout-wrap { flex-direction: column; }
+    .sidebar-categories { width: 100%; border-right: none; border-bottom: 2px solid var(--line); padding: 10px 0; }
+    .sidebar-category-list { flex-direction: row; overflow-x: auto; padding: 0 16px; gap: 8px; scrollbar-width: none; }
+    .sidebar-category-list::-webkit-scrollbar { display: none; }
+    .sidebar-category-item { flex: 0 0 auto; border: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-radius: 20px; background: #fff; white-space: nowrap; }
+    .sidebar-categories-title { padding: 0 16px 8px; }
+  }
 
   /* hero */
-  .hero { padding: 28px 20px 24px; text-align: center; background: linear-gradient(180deg, var(--cream) 0%, var(--line-soft) 100%); }
-  .hero-icon { font-size: 40px; margin-bottom: 8px; }
-  .hero h1 { font-size: 19px; font-weight: 800; color: var(--brand-dark); line-height: 1.5; margin-bottom: 8px; }
-  .hero p { font-size: 12.5px; color: #8A7A5E; line-height: 1.8; margin-bottom: 18px; }
+  .hero { padding: 32px 20px 24px; text-align: center; background: linear-gradient(180deg, var(--cream) 0%, var(--line-soft) 100%); }
+  .hero-mascot { width: 150px; height: auto; margin: 0 auto 14px; display: block; }
+  .hero h1 { font-size: 18px; font-weight: 800; color: var(--brand-dark); line-height: 1.6; margin-bottom: 10px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .hero p { font-size: 13px; color: #8A7A5E; line-height: 1.9; margin-bottom: 18px; max-width: 560px; margin-left: auto; margin-right: auto; }
   .hero-cta { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px 32px; border-radius: 26px; text-decoration: none; box-shadow: 0 6px 16px rgba(201,122,31,0.28); }
   .hero-search { display: flex; gap: 8px; max-width: 380px; margin: 0 auto 16px; }
   .hero-search input { flex: 1; padding: 11px 32px 11px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: #fff; }
@@ -136,11 +147,8 @@
   .skeleton-promo-card { flex: 0 0 260px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; }
   .skeleton-announce-item { background: #fff; border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
 
-  @media (min-width: 700px) { .app-shell { max-width: 700px; } }
-  @media (min-width: 1000px) { .app-shell { max-width: 900px; } }
-
   /* footer */
-  .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; margin-top: 24px; font-size: 12.5px; color: #666; }
+  .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; font-size: 12.5px; color: #666; }
   .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
   .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
   .footer-social a:hover { background: var(--brand-dark); }
@@ -169,7 +177,9 @@
 
 <header class="site-header">
   <div class="site-header-inner">
-    <a href="index.html" class="site-logo-mark">サイトウフーズ<small>SAITO FOODS</small></a>
+    <a href="index.html" class="site-logo-mark">
+      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.jpg" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+    </a>
     <nav class="site-nav">
       <a href="index.html" class="active">トップ / Home</a>
       <a href="product_list.html">商品一覧 / Products</a>
@@ -179,168 +189,178 @@
   </div>
 </header>
 
-<div class="category-nav-wrap">
-  <div class="category-nav-scroll" id="category-nav-scroll">
-    <div class="skeleton-box category-pill-skeleton"></div>
-    <div class="skeleton-box category-pill-skeleton"></div>
-    <div class="skeleton-box category-pill-skeleton"></div>
-    <div class="skeleton-box category-pill-skeleton"></div>
-  </div>
-</div>
+<div class="layout-wrap">
 
-<div class="hero">
-  <div class="hero-icon">🍱</div>
-  <h1><span id="years-in-business">29</span>年間バンコクの食卓に<br>日本の美味しさをお届け</h1>
-  <p>日本食デリバリー・サイトウフーズの通販サイトです。<br>冷凍食品からお米、調味料まで幅広く取り揃えています。</p>
-  <div class="hero-search">
-    <div class="search-clear-wrap">
-      <input type="text" id="hero-search-input" placeholder="🔍 商品を検索 / Search product" oninput="toggleSearchClearBtn('hero-search-input','hero-search-clear-btn')" onkeydown="if(event.key==='Enter') submitHeroSearch()">
-      <button type="button" class="search-clear-btn" id="hero-search-clear-btn" onclick="clearSearchInput('hero-search-input','hero-search-clear-btn')">×</button>
+  <aside class="sidebar-categories">
+    <div class="sidebar-categories-title">商品カテゴリ / Categories</div>
+    <div class="sidebar-category-list" id="sidebar-category-list">
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
     </div>
-    <button onclick="submitHeroSearch()">検索 / Search</button>
-  </div>
-  <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
-</div>
+  </aside>
 
-<div class="top-info-row">
-  <div class="top-info-col">
-    <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">🕒 営業時間案内 / Business Hours</div>
-    <div class="calendar-card" id="hours-card">
-      <div class="hours-block">
-        <div class="hours-block-title">配達時間</div>
-        <div class="hours-line">月～金　9:00-12:00　13:00-18:00</div>
-        <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
-        <div class="hours-line">(<a href="#calendar-card">カレンダーでご確認ください→</a>)</div>
-      </div>
-      <div class="hours-block">
-        <div class="hours-block-title">直売店営業時間</div>
-        <div class="hours-line">月～金　8:20-17:30</div>
-        <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
-        <div class="hours-line">(<a href="#calendar-card">カレンダーでご確認ください→</a>)</div>
-      </div>
-      <div class="hours-block">
-        <div class="hours-block-title">お問い合わせ</div>
-        <div class="hours-line">月～金　8:20-12:00　13:00-17:45</div>
-        <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
-        <div class="hours-line">TEL: 02-258-9878 / 06-5618-9906</div>
-        <div class="hours-line">（コン・イープンと呼び出してください。）</div>
-        <div class="hours-line">Email: orders@saitofoods.com</div>
-      </div>
-    </div>
-  </div>
-  <div class="top-info-col">
-    <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">📅 配送カレンダー / Delivery Calendar</div>
-    <div class="calendar-card" id="calendar-card">
-      <div class="calendar-header">
-        <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
-        <div class="calendar-month-label" id="calendar-month-label"></div>
-        <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
-      </div>
-      <div class="calendar-weekdays">
-        <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
-      </div>
-      <div class="calendar-grid" id="calendar-grid"></div>
-      <div class="calendar-legend">
-        <span><i class="calendar-dot-small" style="background:#DCEFE3;border:1px solid #1a6b45;"></i>営業日 / Open</span>
-        <span><i class="calendar-dot-small" style="background:#FFF3D9;border:1px solid #8A6300;"></i>土曜午前のみ / Saturday morning only</span>
-        <span><i class="calendar-dot-small sriracha"></i>シラチャ配送日(火・木) / Sriracha (Tue/Thu)</span>
-        <span><i class="calendar-dot-small pattaya"></i>パタヤ配送日 / Pattaya delivery day</span>
-      </div>
-    </div>
-  </div>
-</div>
+  <div class="main-col">
 
-<div class="announce-wide-section">
-  <div class="section-title" style="padding:0 0 8px;font-size:14px;">📣 お知らせ / Announcements</div>
-  <div id="announce-list" class="announce-list-wide">
-    <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
-  </div>
-</div>
-
-<main>
-
-  <div class="section-block">
-    <div class="section-title">🎉 只今プロモーション中 / Currently on Promotion</div>
-    <div class="promo-scroll" id="promo-scroll">
-      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
-      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
-    </div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-title">🏆 TOP3 / 人気商品ランキング</div>
-    <div class="top3-list" id="top3-list">
-      <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
-      <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
-      <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
-    </div>
-  </div>
-
-  <div class="section-block">
-    <div class="section-title">🏷️ お買い得商品 / On Sale</div>
-    <div class="promo-scroll" id="bargain-scroll">
-      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
-      <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
-    </div>
-  </div>
-
-</main>
-
-<footer class="site-footer">
-  <div class="footer-social">
-    <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
-    <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
-  </div>
-
-  <div class="footer-row">
-    <div class="footer-section">
-      <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
-      <div class="footer-store-media">
-        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
-        <div id="footer-map" class="footer-store-map"></div>
-      </div>
-      <p>
-        SAITO FOODS CO.,LTD.<br>
-        23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36,<br>
-        Klongtoey, Bangkok 10110<br>
-        TEL: 02-258-9878 / 06-5618-9906<br>
-        Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
-        Tax ID: 0-1055-40079-19-1<br>
-        ※ 直売店も同住所で営業しております。<br>
-        店頭でも商品をお買い求めいただけます。<br>
-        <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
-      </p>
-    </div>
-
-    <div class="footer-section">
-      <h3>配送エリアについて / Delivery Area</h3>
-      <p>
-        バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
-        それ以外の地域は、外部のクール便<br>(冷蔵・冷凍配送サービス)を利用して<br>全国どこへでもお届け可能です。<br>詳しくはお問い合わせください。
-      </p>
-      <div class="footer-area-images">
-        <div class="footer-area-image-item">
-          <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
-            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
-          </a>
-          <span>バンコクエリア</span>
+    <div class="hero">
+      <img class="hero-mascot" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/9.jpg" alt="サイトウフーズ カオポン君">
+      <h1>私たちサイトウフーズの想い、、、それはおいしい生活@タイランド！</h1>
+      <p>おいしいね！ってみんなが笑顔になれる幸せは万国共通。<br>おいしいものを囲んでほっとできるひとときへ、少しのお手伝いが出来たら、、、と願い、<br>今日も皆様の食卓へ美味しさと笑顔をお届けします。美味宅配。</p>
+      <div class="hero-search">
+        <div class="search-clear-wrap">
+          <input type="text" id="hero-search-input" placeholder="🔍 商品を検索 / Search product" oninput="toggleSearchClearBtn('hero-search-input','hero-search-clear-btn')" onkeydown="if(event.key==='Enter') submitHeroSearch()">
+          <button type="button" class="search-clear-btn" id="hero-search-clear-btn" onclick="clearSearchInput('hero-search-input','hero-search-clear-btn')">×</button>
         </div>
-        <div class="footer-area-image-item">
-          <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
-            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
-          </a>
-          <span>シラチャエリア</span>
+        <button onclick="submitHeroSearch()">検索 / Search</button>
+      </div>
+      <a class="hero-cta" href="product_list.html">商品一覧を見る / Shop Now →</a>
+    </div>
+
+    <div class="top-info-row">
+      <div class="top-info-col">
+        <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">🕒 営業時間案内 / Business Hours</div>
+        <div class="calendar-card" id="hours-card">
+          <div class="hours-block">
+            <div class="hours-block-title">配達時間</div>
+            <div class="hours-line">月～金　9:00-12:00　13:00-18:00</div>
+            <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
+            <div class="hours-line">(<a href="#calendar-card">カレンダーでご確認ください→</a>)</div>
+          </div>
+          <div class="hours-block">
+            <div class="hours-block-title">直売店営業時間</div>
+            <div class="hours-line">月～金　8:20-17:30</div>
+            <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
+            <div class="hours-line">(<a href="#calendar-card">カレンダーでご確認ください→</a>)</div>
+          </div>
+          <div class="hours-block">
+            <div class="hours-block-title">お問い合わせ</div>
+            <div class="hours-line">月～金　8:20-12:00　13:00-17:45</div>
+            <div class="hours-line">土曜日　9:00-12:00　月2回営業</div>
+            <div class="hours-line">TEL: 02-258-9878 / 06-5618-9906</div>
+            <div class="hours-line">（コン・イープンと呼び出してください。）</div>
+            <div class="hours-line">Email: orders@saitofoods.com</div>
+          </div>
+        </div>
+      </div>
+      <div class="top-info-col">
+        <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;">📅 配送カレンダー / Delivery Calendar</div>
+        <div class="calendar-card" id="calendar-card">
+          <div class="calendar-header">
+            <button class="calendar-nav-btn" onclick="changeCalendarMonth(-1)">‹</button>
+            <div class="calendar-month-label" id="calendar-month-label"></div>
+            <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+          <div class="calendar-legend">
+            <span><i class="calendar-dot-small" style="background:#DCEFE3;border:1px solid #1a6b45;"></i>営業日 / Open</span>
+            <span><i class="calendar-dot-small" style="background:#FFF3D9;border:1px solid #8A6300;"></i>土曜午前のみ / Saturday morning only</span>
+            <span><i class="calendar-dot-small sriracha"></i>シラチャ配送日(火・木) / Sriracha (Tue/Thu)</span>
+            <span><i class="calendar-dot-small pattaya"></i>パタヤ配送日 / Pattaya delivery day</span>
+          </div>
         </div>
       </div>
     </div>
+
+    <div class="announce-wide-section">
+      <div class="section-title" style="padding:0 0 8px;font-size:14px;">📣 お知らせ / Announcements</div>
+      <div id="announce-list" class="announce-list-wide">
+        <div class="skeleton-announce-item"><div class="skeleton-box" style="width:60px;height:10px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:90%;height:11px;"></div></div>
+      </div>
+    </div>
+
+    <main>
+
+      <div class="section-block">
+        <div class="section-title">🎉 只今プロモーション中 / Currently on Promotion</div>
+        <div class="promo-scroll" id="promo-scroll">
+          <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+          <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-title">🏆 TOP3 / 人気商品ランキング</div>
+        <div class="top3-list" id="top3-list">
+          <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
+          <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
+          <div class="skeleton-top3-item"><div class="skeleton-box" style="width:34px;height:22px;"></div><div class="skeleton-box" style="width:56px;height:56px;border-radius:10px;"></div><div style="flex:1;"><div class="skeleton-box" style="width:70%;height:13px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:40%;height:12px;"></div></div></div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-title">🏷️ お買い得商品 / On Sale</div>
+        <div class="promo-scroll" id="bargain-scroll">
+          <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+          <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-social">
+        <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
+        <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
+      </div>
+
+      <div class="footer-row">
+        <div class="footer-section">
+          <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+          <div class="footer-store-media">
+            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+            <div id="footer-map" class="footer-store-map"></div>
+          </div>
+          <p>
+            SAITO FOODS CO.,LTD.<br>
+            23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36,<br>
+            Klongtoey, Bangkok 10110<br>
+            TEL: 02-258-9878 / 06-5618-9906<br>
+            Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
+            Tax ID: 0-1055-40079-19-1<br>
+            ※ 直売店も同住所で営業しております。<br>
+            店頭でも商品をお買い求めいただけます。<br>
+            <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+          </p>
+        </div>
+
+        <div class="footer-section">
+          <h3>配送エリアについて / Delivery Area</h3>
+          <p>
+            バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
+            それ以外の地域は、外部のクール便<br>(冷蔵・冷凍配送サービス)を利用して<br>全国どこへでもお届け可能です。<br>詳しくはお問い合わせください。
+          </p>
+          <div class="footer-area-images">
+            <div class="footer-area-image-item">
+              <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
+                <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+              </a>
+              <span>バンコクエリア</span>
+            </div>
+            <div class="footer-area-image-item">
+              <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
+                <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+              </a>
+              <span>シラチャエリア</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-section footer-links">
+        <a href="terms.html">利用規約 / Terms of Service</a>
+      </div>
+
+      <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
+    </footer>
+
   </div>
 
-  <div class="footer-section footer-links">
-    <a href="terms.html">利用規約 / Terms of Service</a>
-  </div>
-
-  <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
-</footer>
+</div>
 
 </div>
 
@@ -393,19 +413,19 @@ function updateHeaderCartCount() {
   } catch (e) {}
 }
 
-// ---------------- カテゴリ横並びナビ ----------------
+// ---------------- カテゴリ(左サイドバー) ----------------
 // settings.html側でカテゴリのsort_orderを変更すれば、ここの並び順も自動で追従する
 async function loadCategoryNav() {
-  const scrollEl = document.getElementById('category-nav-scroll');
+  const listEl = document.getElementById('sidebar-category-list');
   try {
     const categories = await supabase('GET', 'categories?select=id,name_ja,sort_order&order=sort_order.asc');
-    if (!categories.length) { scrollEl.innerHTML = ''; return; }
+    if (!categories.length) { listEl.innerHTML = ''; return; }
 
-    scrollEl.innerHTML = categories.map(c =>
-      `<a class="category-pill" href="product_list.html?category_id=${c.id}">${c.name_ja}</a>`
+    listEl.innerHTML = categories.map(c =>
+      `<a class="sidebar-category-item" href="product_list.html?category_id=${c.id}">${c.name_ja}</a>`
     ).join('');
   } catch (e) {
-    scrollEl.innerHTML = '';
+    listEl.innerHTML = '';
   }
 }
 
@@ -622,9 +642,6 @@ function renderCalendar() {
 function formatDateLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-
-// 創業1997年からの営業年数を自動計算(毎年書き換えなくていいように)
-document.getElementById('years-in-business').textContent = new Date().getFullYear() - 1997;
 
 updateHeaderCartCount();
 loadCategoryNav();
