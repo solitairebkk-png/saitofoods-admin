@@ -207,8 +207,29 @@
 </style>
 </head>
 <body>
-<div id="debug-width-badge" style="position:fixed; top:4px; right:4px; z-index:99999; background:#ff0000; color:#fff; font-size:14px; font-weight:800; padding:4px 8px; border-radius:6px;"></div>
-<script>document.getElementById('debug-width-badge').textContent = 'W:' + window.innerWidth + ' / DPR:' + window.devicePixelRatio;</script>
+<div id="debug-width-badge" style="position:fixed; top:4px; right:4px; z-index:99999; background:#ff0000; color:#fff; font-size:12px; font-weight:800; padding:4px 8px; border-radius:6px; max-width:90vw; text-align:right;"></div>
+<script>
+function runOverflowDebug() {
+  const badge = document.getElementById('debug-width-badge');
+  const vw = window.innerWidth;
+  const sw = document.documentElement.scrollWidth;
+  let lines = ['W:' + vw + ' scrollW:' + sw + ' DPR:' + window.devicePixelRatio];
+  if (sw > vw) {
+    const all = document.body.querySelectorAll('*');
+    const offenders = [];
+    all.forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.right > vw + 2) {
+        offenders.push((el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.split(' ').join('.') : '') + ' right:' + Math.round(r.right));
+      }
+    });
+    lines.push('OVERFLOW x' + offenders.length + ':');
+    lines = lines.concat(offenders.slice(0, 6));
+  }
+  badge.innerHTML = lines.join('<br>');
+}
+window.addEventListener('load', () => setTimeout(runOverflowDebug, 800));
+</script>
 <div class="app-shell">
 
 <header class="site-header">
