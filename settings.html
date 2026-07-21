@@ -249,6 +249,16 @@
     </div>
   </div>
 
+  <div class="card" id="section-sriracha-days">
+    <h2>シラチャ配送日 / Sriracha Delivery Days</h2>
+    <div class="sub">通常は火・木がシラチャ配送日ですが、タイの祝日の入り方によって前後することがあるため、ここに追加した日付だけがトップページ(index.html)のカレンダーに「シラチャ配送日」として表示されるようにしています。</div>
+    <div id="sriracha-days-list"></div>
+    <div style="display:flex; gap:10px; margin-top:12px;">
+      <input type="date" id="new-sriracha-date" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+      <button class="btn" onclick="addSrirachaDay()">+ 追加 / Add</button>
+    </div>
+  </div>
+
   <div class="card" id="section-staff">
     <h2>スタッフ管理 / Staff</h2>
     <div class="sub">orders.htmlの「出発」ボタンのプルダウンに表示されるスタッフ名です。選ばれた回数(selection_count)が多い人ほど上位に表示されます。並び順は自動計算で、手動での並び替えはできません。</div>
@@ -374,6 +384,7 @@ function afterLogin() {
   document.getElementById('main').style.display = 'block';
   loadCondos();
   loadPattayaDays();
+  loadSrirachaDays();
   loadStaff();
   loadGpsSettings();
   loadMonthlyPromotions();
@@ -518,6 +529,50 @@ async function deletePattayaDay(dateVal) {
   if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
   showSaveMsg('ลบแล้ว / Deleted');
   loadPattayaDays();
+}
+
+// ---------------- シラチャ配送日 ----------------
+// 通常は火・木だが、タイの祝日の入り方で前後することがあるため、パタヤと同じ方式で個別に日付管理する
+async function loadSrirachaDays() {
+  const listEl = document.getElementById('sriracha-days-list');
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await supabaseClient
+    .from('sriracha_delivery_days').select('*').gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
+
+  if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">読み込みに失敗しました</div>'; return; }
+
+  if (!data || data.length === 0) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">今後のシラチャ配送日はまだ設定されていません。</div>';
+    return;
+  }
+
+  listEl.innerHTML = data.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:#fafafa;">
+      <span style="flex:1;font-size:13px;font-weight:600;">${d.delivery_date}</span>
+      <button class="btn-delete-row" onclick="deleteSrirachaDay('${d.delivery_date}')">削除</button>
+    </div>
+  `).join('');
+}
+
+async function addSrirachaDay() {
+  const dateInput = document.getElementById('new-sriracha-date');
+  const dateVal = dateInput.value;
+  if (!dateVal) { showSaveMsg('日付を選択してください / Please choose a date', true); return; }
+
+  const { error } = await supabaseClient.from('sriracha_delivery_days').insert({ delivery_date: dateVal });
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+  dateInput.value = '';
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadSrirachaDays();
+}
+
+async function deleteSrirachaDay(dateVal) {
+  if (!confirm(`${dateVal} を削除しますか？ / Delete this date?`)) return;
+  const { error } = await supabaseClient.from('sriracha_delivery_days').delete().eq('delivery_date', dateVal);
+  if (error) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true); return; }
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadSrirachaDays();
 }
 
 // ---------------- スタッフ管理(orders.htmlの出発ボタン用) ----------------

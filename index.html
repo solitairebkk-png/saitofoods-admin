@@ -301,7 +301,7 @@
           <div class="calendar-legend">
             <span><i class="calendar-dot-small" style="background:#DCEFE3;border:1px solid #1a6b45;"></i>営業日 / Open</span>
             <span><i class="calendar-dot-small" style="background:#FFF3D9;border:1px solid #8A6300;"></i>土曜午前のみ / Saturday morning only</span>
-            <span><i class="calendar-dot-small sriracha"></i>シラチャ配送日(火・木) / Sriracha (Tue/Thu)</span>
+            <span><i class="calendar-dot-small sriracha"></i>シラチャ配送日 / Sriracha delivery day</span>
             <span><i class="calendar-dot-small pattaya"></i>パタヤ配送日 / Pattaya delivery day</span>
           </div>
         </div>
@@ -608,6 +608,7 @@ let calendarYear, calendarMonth; // calendarMonth: 0-11
 let holidaySet = new Set();
 
 let pattayaDaySet = new Set();
+let srirachaDaySet = new Set();
 
 async function loadHolidaysAndRenderCalendar() {
   const today = new Date();
@@ -626,6 +627,13 @@ async function loadHolidaysAndRenderCalendar() {
     pattayaDaySet = new Set((rows || []).map(r => r.delivery_date));
   } catch (e) {
     pattayaDaySet = new Set();
+  }
+
+  try {
+    const rows = await supabase('GET', 'sriracha_delivery_days?select=delivery_date');
+    srirachaDaySet = new Set((rows || []).map(r => r.delivery_date));
+  } catch (e) {
+    srirachaDaySet = new Set();
   }
 
   renderCalendar();
@@ -657,7 +665,7 @@ function renderCalendar() {
     const dayOfWeek = dateObj.getDay();
     const isToday = dateStr === todayStr;
     const isHoliday = holidaySet.has(dateStr);
-    const isSrirachaDay = dayOfWeek === 2 || dayOfWeek === 4; // シラチャは火曜日・木曜日固定
+    const isSrirachaDay = srirachaDaySet.has(dateStr); // シラチャは管理画面(settings.html)で指定した日
     const isPattayaDay = pattayaDaySet.has(dateStr); // パタヤは管理画面で指定した日(月1回程度)
 
     let cls = 'calendar-cell';
@@ -672,8 +680,9 @@ function renderCalendar() {
     }
 
     let dots = '';
-    if (isSrirachaDay) dots += '<span class="area-dot sriracha" title="シラチャ配送日 / Sriracha delivery"></span>';
-    if (isPattayaDay) dots += '<span class="area-dot pattaya" title="パタヤ配送日 / Pattaya delivery"></span>';
+    const isDeliveryDay = !(dayOfWeek === 0 || isHoliday); // 休業日(日曜・祝日/定休日)には配送自体が無いので、シラチャ・パタヤの印も出さない
+    if (isDeliveryDay && isSrirachaDay) dots += '<span class="area-dot sriracha" title="シラチャ配送日 / Sriracha delivery"></span>';
+    if (isDeliveryDay && isPattayaDay) dots += '<span class="area-dot pattaya" title="パタヤ配送日 / Pattaya delivery"></span>';
 
     html += `<div class="${cls}">${d}${dots}</div>`;
   }

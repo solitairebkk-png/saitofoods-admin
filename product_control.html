@@ -417,7 +417,7 @@ function renderReorderPanel(catId) {
   const rows = (categoryPcRows[catId] || []).slice()
     .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
 
-  const cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(Boolean);
+  const cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(p => p && p.is_published !== false);
 
   panel.style.display = 'block';
 
