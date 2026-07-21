@@ -11,7 +11,7 @@
     --shadow-sm: 0 2px 8px rgba(58,46,31,0.07); --shadow-md: 0 8px 22px rgba(58,46,31,0.14);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { overflow-x: clip; width: 100%; }
+  html, body { overflow-x: hidden; overflow-x: clip; width: 100%; }
   img { max-width: 100%; height: auto; }
   body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
   a { color: inherit; }
@@ -61,18 +61,25 @@
     .site-nav::-webkit-scrollbar { display: none; }
     .site-nav a { white-space: nowrap; }
 
-    .layout-wrap { flex-direction: column; }
+    /* 縦並びに切り替えたら子要素は必ず画面幅いっぱいに広げる
+       (align-items:flex-start のままだと .main-col が中身の幅=画面より広くなり、
+        全体が右にズレる/右側が切れる/横スクロールが効かない原因になる) */
+    .layout-wrap { flex-direction: column; align-items: stretch; }
+    .main-col { width: 100%; max-width: 100%; }
     .sidebar-categories { width: 100%; height: auto; position: static; overflow-y: visible; border-right: none; border-bottom: 2px solid var(--line); padding: 10px 0; }
     .sidebar-category-list { flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x; padding: 0 16px; gap: 8px; scrollbar-width: none; }
     .sidebar-category-list::-webkit-scrollbar { display: none; }
     .sidebar-category-item { flex: 0 0 auto; border: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-radius: 20px; background: #fff; white-space: nowrap; }
     .sidebar-categories-title { padding: 0 16px 8px; }
 
-    .promo-scroll { -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+    .promo-scroll { max-width: 100%; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
     .top3-list { flex-direction: column; }
     .top3-item { width: 100%; max-width: 100%; }
     .top3-info, .top3-name, .top3-count { overflow-wrap: break-word; word-break: break-word; }
 
+    /* フッターはスマホでは必ず縦積みにする(配送エリア→会社案内の順) */
+    .footer-row { flex-direction: column; gap: 20px; }
+    .footer-row .footer-section { min-width: 0; max-width: 100%; }
     .footer-delivery-area { order: -1; }
 
     .top-info-row { flex-direction: column; align-items: center; gap: 20px; padding: 20px 16px; }
@@ -93,10 +100,10 @@
   .hero-cta { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px 32px; border-radius: 26px; text-decoration: none; box-shadow: 0 6px 16px rgba(201,122,31,0.28); transition: transform 0.15s ease, box-shadow 0.15s ease; }
   .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(201,122,31,0.34); }
   .hero-search { display: flex; gap: 8px; max-width: 380px; margin: 0 auto 16px; }
-  .hero-search input { flex: 1; padding: 11px 32px 11px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: #fff; }
+  .hero-search input { flex: 1; padding: 11px 32px 11px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: #fff; width: 100%; }
   .hero-search input:focus { outline: none; border-color: var(--brand); }
   .hero-search button { flex-shrink: 0; padding: 0 20px; border: none; border-radius: 22px; background: var(--brand-dark); color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; }
-  .search-clear-wrap { position: relative; flex: 1; }
+  .search-clear-wrap { position: relative; flex: 1; min-width: 0; }
   .search-clear-btn { display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; border-radius: 50%; border: none; background: #ddd; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
   .search-clear-btn:hover { background: #bbb; }
 
@@ -144,7 +151,7 @@
   .announce-link-btn:hover { background: var(--brand-dark); }
   .announce-date { font-size: 10px; color: #B08A3A; font-weight: 700; margin-bottom: 2px; }
   .announce-title { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
-  .announce-body { font-size: 11px; color: #666; line-height: 1.5; white-space: pre-wrap; }
+  .announce-body { font-size: 11px; color: #666; line-height: 1.5; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
 
   .empty-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
   .loading-note { text-align: center; color: #999; font-size: 12.5px; padding: 16px 0; }
@@ -200,7 +207,7 @@
   .footer-social a:hover { background: var(--brand-dark); }
   .footer-section { margin-bottom: 18px; }
   .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
-  .footer-section p { line-height: 1.9; }
+  .footer-section p { line-height: 1.9; overflow-wrap: break-word; word-break: break-word; }
   .footer-section a { color: var(--brand-dark); text-decoration: underline; }
   .footer-row { display: flex; gap: 24px; flex-wrap: wrap; }
   .footer-row .footer-section { flex: 1 1 240px; min-width: 220px; }
