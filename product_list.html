@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイトウフーズ | Saito Foods — 商品一覧</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
+    --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', 'Sarabun', sans-serif; color: var(--ink); font-size: 15px;
+    background: var(--cream);
+  }
+  a { color: inherit; }
+
+  .app-shell { max-width: 1100px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 90px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+
+  /* ── ヘッダー(index.htmlと共通) ── */
+  .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; }
+  .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
+  .site-logo-mark img { height: 40px; width: auto; display: block; }
+  .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
+  .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
+  .site-nav a.active { opacity: 1; text-decoration: underline; }
+  .site-cart-btn { background: #fff; color: var(--brand-dark); font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  /* ── レイアウト: 左サイドバー(カテゴリ)は固定・内部スクロール、右がメイン ── */
+  .layout-wrap { display: flex; align-items: flex-start; }
+  .sidebar-categories {
+    width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 2px solid var(--line);
+    position: sticky; top: 61px; align-self: flex-start;
+    height: calc(100vh - 61px); overflow-y: auto; padding: 16px 0;
+  }
+  .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); padding: 0 20px 10px; }
+  .sidebar-category-list { display: flex; flex-direction: column; }
+  .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border: none; background: none; text-align: left; cursor: pointer; border-bottom: 1px solid var(--line); border-left: 3px solid transparent; }
+  .sidebar-category-item:hover { background: #fff; color: var(--brand-dark); }
+  .sidebar-category-item.active { color: var(--brand-dark); background: #fff; border-left-color: var(--brand); }
+  .sidebar-category-skeleton { height: 14px; margin: 12px 20px; border-radius: 6px; }
+  .main-col { flex: 1; min-width: 0; }
+
+  @media (max-width: 760px) {
+    .layout-wrap { flex-direction: column; }
+    .sidebar-categories { width: 100%; height: auto; position: static; border-right: none; border-bottom: 2px solid var(--line); padding: 10px 0; }
+    .sidebar-category-list { flex-direction: row; overflow-x: auto; padding: 0 16px; gap: 8px; scrollbar-width: none; }
+    .sidebar-category-list::-webkit-scrollbar { display: none; }
+    .sidebar-category-item { flex: 0 0 auto; border: 1.5px solid var(--line); border-radius: 20px; background: #fff; white-space: nowrap; }
+    .sidebar-category-item.active { border-color: var(--brand); }
+    .sidebar-categories-title { padding: 0 16px 8px; }
+  }
+
+  .toolbar-sticky { position: sticky; top: 61px; z-index: 20; background: #fff; border-bottom: 1px solid var(--line-soft); padding: 12px 16px; }
+  .search-input { width: 100%; padding: 10px 32px 10px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: var(--cream); }
+  .search-input:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .search-clear-wrap { position: relative; }
+  .search-clear-btn { display: none; position: absolute; right: 10px; top: 10px; width: 20px; height: 20px; border-radius: 50%; border: none; background: #ddd; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
+  .search-clear-btn:hover { background: #bbb; }
+
+  .section-title { padding: 18px 16px 8px; font-size: 15px; font-weight: 800; color: var(--brand-dark); display:flex; align-items:center; gap:8px; }
+  .section-title .badge-local { font-size:10.5px; font-weight:700; background: var(--accent); color:#5A3E00; padding:2px 8px; border-radius:10px; }
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 16px; }
+  .product-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; }
+  .product-img-wrap { width: 100%; aspect-ratio: 1/1; background: var(--line-soft); display: flex; align-items: center; justify-content: center; font-size: 36px; overflow: hidden; position: relative; }
+  .fav-btn { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 2; }
+  .fav-btn.active { color: #E0554E; }
+  .heart-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; display: block; }
+  .fav-btn.active .heart-icon, .pmodal-fav-btn.active .heart-icon { fill: currentColor; }
+  .product-cat-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 800; color: var(--brand-dark); background: #fff; border: 1.5px solid var(--brand); padding: 3px 9px 3px 7px; border-radius: 10px; margin-top: 6px; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .product-cat-badge::before { content: '🏷️'; font-size: 9px; }
+  .product-cat-badge:hover { background: var(--brand); color: #fff; border-color: var(--brand-dark); }
+  .product-cat-badge:active { transform: scale(0.96); }
+  .pmodal-fav-btn { position: absolute; top: 54px; left: 12px; width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.9); color: #ccc; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); z-index: 6; }
+  .pmodal-fav-label { position: absolute; top: 54px; left: 50px; height: 34px; display: flex; align-items: center; background: rgba(255,255,255,0.92); padding: 0 10px; border-radius: 14px; font-size: 10.5px; font-weight: 700; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.15); white-space: nowrap; z-index: 6; pointer-events: none; }
+  .pmodal-fav-btn.active { color: #E0554E; }
+
+  @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+  .skeleton-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; }
+  .skeleton-box { background: linear-gradient(90deg, var(--line-soft) 25%, #f7e8c4 37%, var(--line-soft) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; }
+  .skeleton-img { width: 100%; aspect-ratio: 1/1; }
+  .skeleton-lines { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .skeleton-line { height: 11px; border-radius: 5px; }
+  .skeleton-line.w60 { width: 60%; }
+  .skeleton-line.w40 { width: 40%; }
+  .skeleton-line.w30 { width: 30%; margin-top: 4px; }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .product-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .product-name-ja { font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+  .product-name-en { font-size: 11.5px; color: #999; }
+  .product-local-tag { font-size: 10.5px; font-weight: 700; color: #8A6B1E; }
+  .product-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .product-price { font-size: 15px; font-weight: 800; color: var(--brand-dark); }
+  .product-price span { font-size: 11px; font-weight: 600; }
+  .qty-stepper { display: flex; align-items: center; gap: 8px; }
+  .qty-btn { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--brand); background: #fff; color: var(--brand-dark); font-size: 15px; font-weight: 700; cursor: pointer; line-height: 1; }
+  .qty-btn.add { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .qty-num { font-size: 14px; font-weight: 700; min-width: 16px; text-align: center; }
+  .out-of-stock { font-size: 11px; color: var(--red); font-weight: 700; }
+
+  .cart-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 1100px; background: var(--brand-dark); color: #fff; padding: 14px 18px; display: none; align-items: center; justify-content: space-between; z-index: 50; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); }
+  .cart-bar.show { display: flex; }
+  .cart-bar-info { font-size: 13px; }
+  .cart-bar-info b { font-size: 16px; }
+  .cart-bar-btn { background: #fff; color: var(--brand-dark); border: none; padding: 10px 20px; border-radius: 24px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration:none; display:inline-block; }
+
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13.5px; z-index: 999; display: none; }
+  .toast.show { display: block; }
+  .toast.error { background: #9B2C2C; }
+
+  .loading { text-align: center; padding: 40px; color: #AAA; font-size: 14px; grid-column: 1/-1; }
+
+  .scroll-fab-group { position: fixed; right: 20px; bottom: 100px; z-index: 60; display: flex; flex-direction: column; gap: 10px; }
+  .scroll-fab { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; background: #fff; color: var(--ink); font-size: 18px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.15s; }
+  .scroll-fab:hover { transform: translateY(-2px); border-color: var(--brand); }
+  .scroll-fab.hidden { opacity: 0; pointer-events: none; }
+  .scroll-fab.top { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+  .cart-fab { position: fixed; right: 20px; bottom: 220px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
+  .cart-fab:hover { transform: translateY(-2px); }
+  .cart-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+
+  /* ── 商品詳細モーダル ── */
+  .pmodal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 120; align-items: center; justify-content: center; padding: 20px; }
+  .pmodal-overlay.open { display: flex; }
+  .pmodal { background: #fff; width: 100%; max-width: 840px; border-radius: 20px; overflow: hidden; position: relative; }
+  .pmodal-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 16px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+  .pmodal-back { position: absolute; top: 12px; left: 12px; height: 32px; padding: 0 14px; border-radius: 16px; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 12.5px; font-weight: 700; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
+  .pmodal-inner { display: grid; grid-template-columns: 380px 1fr; }
+  .pmodal-inner > * { min-width: 0; }
+  .pmodal-gallery { width: 100%; height: 100%; min-height: 320px; background: var(--line-soft); display: flex; flex-direction: column; }
+  .pmodal-gallery-main { flex: 1; overflow: hidden; min-height: 0; }
+  .pmodal-gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pmodal-gallery-thumbs { display: flex; gap: 6px; padding: 8px; background: #fff; flex-shrink: 0; overflow-x: auto; }
+  .pmodal-gallery-thumb { width: 56px; height: 56px; border-radius: 6px; overflow: hidden; border: 2px solid transparent; cursor: pointer; flex-shrink: 0; opacity: 0.7; }
+  .pmodal-gallery-thumb.active { border-color: var(--brand); opacity: 1; }
+  .pmodal-gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pmodal-body { padding: 22px 22px 24px; display: flex; flex-direction: column; }
+  .pmodal-name-ja { font-size: 18px; font-weight: 800; line-height: 1.3; }
+  .pmodal-name-en { font-size: 12px; color: #999; margin-top: 2px; }
+  .pmodal-desc-row { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; }
+  .pmodal-desc { font-size: 12.5px; color: #666; line-height: 1.6; flex: 1; }
+  .pmodal-lang-btn { flex-shrink: 0; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 10.5px; font-weight: 700; border-radius: 10px; padding: 3px 9px; cursor: pointer; margin-top: 1px; }
+  .pmodal-lang-btn:hover { border-color: var(--brand); }
+  .pmodal-price { font-size: 24px; font-weight: 800; color: var(--brand-dark); margin-top: 12px; }
+  .pmodal-local-tag { font-size: 11.5px; font-weight: 700; color: #8A6B1E; margin-top: 6px; }
+  .pmodal-qty-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .pmodal-qty-btn { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--brand); background: #fff; color: var(--brand-dark); font-size: 16px; font-weight: 700; cursor: pointer; }
+  .pmodal-qty-num { font-size: 15px; font-weight: 700; min-width: 18px; text-align: center; }
+  .pmodal-addcart-btn { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; border: none; background: var(--brand); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+  .pmodal-addcart-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .pmodal-sns-row { display: flex; gap: 8px; margin-top: 12px; }
+  .pmodal-sns-link { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--brand-dark); border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 10px; text-decoration: none; }
+  .pmodal-sns-link:hover { border-color: var(--brand); }
+
+  .pmodal-suggest { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pmodal-suggest h4 { font-size: 11.5px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.03em; margin-bottom: 8px; }
+  .pmodal-suggest-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .pmodal-suggest-card { flex: 0 0 84px; cursor: pointer; }
+  .pmodal-suggest-card img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; background: var(--line-soft); display: block; }
+  .pmodal-suggest-card .name { font-size: 10.5px; line-height: 1.3; margin-top: 4px; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .pmodal-suggest-card .price { font-size: 11px; font-weight: 700; color: var(--brand-dark); margin-top: 2px; }
+
+  @media (max-width: 640px) {
+    .pmodal-overlay { padding: 0; align-items: flex-end; }
+    .pmodal { border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; }
+    .pmodal-inner { grid-template-columns: 1fr; }
+    .pmodal-gallery { min-height: 0; border-radius: 20px 20px 0 0; }
+    .pmodal-gallery-main { aspect-ratio: 1/1; }
+  }
+
+  @media (min-width: 900px) {
+    .product-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (min-width: 1200px) {
+    .product-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* footer */
+  .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; margin-top: 24px; font-size: 12.5px; color: #666; }
+  .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
+  .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
+  .footer-social a:hover { background: var(--brand-dark); }
+  .footer-section { margin-bottom: 18px; }
+  .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
+  .footer-section p { line-height: 1.9; }
+  .footer-section a { color: var(--brand-dark); text-decoration: underline; }
+  .footer-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-row .footer-section { flex: 1 1 240px; min-width: 220px; }
+  .footer-area-images { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+  .footer-area-image-item { flex: 0 0 auto; width: 100px; text-align: center; }
+  .footer-area-image-item a { display: block; }
+  .footer-area-image-item img { width: 100%; border-radius: 8px; border: 1px solid var(--line-soft); display: block; object-fit: cover; aspect-ratio: 4/3; cursor: zoom-in; transition: transform 0.25s ease, box-shadow 0.25s ease; position: relative; }
+  .footer-area-image-item img:hover { transform: scale(2.6); box-shadow: 0 12px 32px rgba(0,0,0,0.3); z-index: 30; }
+  .footer-area-image-item span { display: block; font-size: 11px; color: #777; margin-top: 4px; font-weight: 600; }
+  .footer-store-media { display: flex; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; max-width: 520px; }
+  .footer-store-photo, .footer-store-map { flex: 0 0 auto; width: 150px; aspect-ratio: 4/3; border-radius: 10px; border: 1px solid var(--line-soft); }
+  .footer-store-photo { object-fit: cover; display: block; }
+  .footer-store-map { border: 1px solid var(--line-soft); overflow: hidden; background: #eee; }
+  .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+  .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-shell">
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="index.html" class="site-logo-mark">
+      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.jpg" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">トップ / Home</a>
+      <a href="product_list.html" class="active">商品一覧 / Products</a>
+      <a href="mypage.html">マイページ / My Page</a>
+    </nav>
+    <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="layout-wrap">
+
+  <aside class="sidebar-categories">
+    <div class="sidebar-categories-title">商品カテゴリ / Categories</div>
+    <div class="sidebar-category-list" id="sidebar-category-list">
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+    </div>
+  </aside>
+
+  <div class="main-col">
+
+    <div class="toolbar-sticky">
+      <div class="search-clear-wrap">
+        <input type="text" id="product-search" class="search-input" placeholder="🔍 商品を検索 / Search product" oninput="handleSearch(this.value); toggleSearchClearBtn('product-search','product-search-clear-btn');">
+        <button type="button" class="search-clear-btn" id="product-search-clear-btn" onclick="clearSearchInput('product-search','product-search-clear-btn', () => handleSearch(''))">×</button>
+      </div>
+    </div>
+
+    <div id="product-sections"></div>
+
+    <footer class="site-footer">
+      <div class="footer-social">
+        <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
+        <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
+      </div>
+
+      <div class="footer-row">
+        <div class="footer-section">
+          <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+          <div class="footer-store-media">
+            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
+            <div id="footer-map" class="footer-store-map"></div>
+          </div>
+          <p>
+            SAITO FOODS CO.,LTD.<br>
+            23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36,<br>
+            Klongtoey, Bangkok 10110<br>
+            TEL: 02-258-9878 / 06-5618-9906<br>
+            Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
+            Tax ID: 0-1055-40079-19-1<br>
+            ※ 直売店も同住所で営業しております。<br>
+            店頭でも商品をお買い求めいただけます。<br>
+            <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+          </p>
+        </div>
+
+        <div class="footer-section">
+          <h3>配送エリアについて / Delivery Area</h3>
+          <p>
+            バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
+            それ以外の地域は、外部のクール便<br>(冷蔵・冷凍配送サービス)を利用して<br>全国どこへでもお届け可能です。<br>詳しくはお問い合わせください。
+          </p>
+          <div class="footer-area-images">
+            <div class="footer-area-image-item">
+              <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
+                <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
+              </a>
+              <span>バンコクエリア</span>
+            </div>
+            <div class="footer-area-image-item">
+              <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
+                <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャエリア">
+              </a>
+              <span>シラチャエリア</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-section footer-links">
+        <a href="terms.html">利用規約 / Terms of Service</a>
+      </div>
+
+      <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
+    </footer>
+
+  </div>
+
+</div>
+
+<div class="cart-bar" id="cart-bar">
+  <div class="cart-bar-info"><b id="cart-count">0</b> 点 &nbsp;·&nbsp; ฿<b id="cart-total">0</b></div>
+  <a class="cart-bar-btn" href="cart.html">カートを見る / View cart →</a>
+</div>
+
+<!-- PRODUCT DETAIL MODAL -->
+<div class="pmodal-overlay" id="pmodal-overlay" onclick="if(event.target===this) closePModal()">
+  <div class="pmodal">
+    <button class="pmodal-close" onclick="closePModal()">✕</button>
+    <button class="pmodal-back" id="pmodal-back-btn" onclick="goBackPModal()" style="display:none;">← 戻る / Back</button>
+    <button class="pmodal-fav-btn" id="pmodal-fav-btn" onclick="toggleFavoriteFromModal()"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button>
+    <div class="pmodal-fav-label">← お気に入りに追加 / Add to favorite</div>
+    <div class="pmodal-inner">
+      <div class="pmodal-gallery" id="pmodal-gallery">
+        <div class="pmodal-gallery-main" id="pmodal-gallery-main"></div>
+        <div class="pmodal-gallery-thumbs" id="pmodal-gallery-thumbs"></div>
+      </div>
+      <div class="pmodal-body">
+        <div class="pmodal-name-ja" id="pmodal-name-ja"></div>
+        <div class="pmodal-name-en" id="pmodal-name-en"></div>
+        <div class="pmodal-local-tag" id="pmodal-local-tag" style="display:none;">🏠 ローカル限定商品 / Local special item</div>
+        <div class="pmodal-desc-row">
+          <div class="pmodal-desc" id="pmodal-desc"></div>
+          <button class="pmodal-lang-btn" id="pmodal-lang-btn" onclick="togglePModalDescLang()" style="display:none;">EN</button>
+        </div>
+        <div class="pmodal-price" id="pmodal-price"></div>
+        <div class="pmodal-qty-row">
+          <button class="pmodal-qty-btn" onclick="pmodalChangeQty(-1)">−</button>
+          <span class="pmodal-qty-num" id="pmodal-qty-num">1</span>
+          <button class="pmodal-qty-btn" onclick="pmodalChangeQty(1)">+</button>
+        </div>
+        <button class="pmodal-addcart-btn" id="pmodal-addcart-btn" onclick="pmodalAddToCart()">カートに入れる / Add to cart</button>
+        <div class="pmodal-sns-row" id="pmodal-sns-row" style="display:none;"></div>
+        <div class="pmodal-suggest" id="pmodal-suggest" style="display:none;">
+          <h4>一緒に購入されている商品 / Frequently bought together</h4>
+          <div class="pmodal-suggest-row" id="pmodal-suggest-row"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<a class="cart-fab" href="cart.html">🛒<span class="cart-fab-badge" id="cart-fab-badge">0</span></a>
+
+<div class="scroll-fab-group">
+  <button class="scroll-fab down" id="scroll-down-btn" onclick="scrollByViewport(1)">↓</button>
+  <button class="scroll-fab top hidden" id="scroll-top-btn" onclick="scrollToTop()">↑</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   設定 — Supabaseプロジェクト: sdjgmgyghnlpqydrnllj (サイトウフーズ新バックエンド)
+   ※ SUPABASE_KEY は anon/public key に差し替えてください
+   ========================================================= */
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0'; // anon/public key(公開して問題ない設計のキー)
+
+// お気に入り機能用(mypage.html/cart.htmlと同じセッションを共有)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let currentCustomerId = null;    // ログイン中のお客様のcustomers.id(未ログインならnull)
+let favoriteProductIds = new Set(); // お気に入り登録済みの商品ID一覧
+
+/*
+  テーブル構造 (Supabase RLSポリシー確認済み・2026/07時点):
+  products: id, name_ja, name_en, description_ja, description_en, price,
+            stock, is_unlimited_stock, image_url,
+            is_published, is_local_special, sort_order
+  categories: id, name_ja, name_en, sort_order
+  product_categories: product_id, category_id (商品とカテゴリの中間テーブル・多対多)
+
+  ※ RLSポリシー "products_select_published" により、
+     is_published = true かつ is_local_special = false の商品のみ
+     anonキーで取得可能。ローカル限定商品(97件)はこのポリシーの時点で
+     自動的に除外されるため、フロント側での追加フィルタは不要。
+*/
+
+let allCategories = [];
+let allProducts = [];
+let allProductCategories = []; // product_categories中間テーブル(product_id, category_id)
+let cart = {};
+let currentSearchQuery = '';
+let currentCategoryFilter = null; // null = すべて
+let pmodalProductId = null;
+let pmodalNavStack = []; // サジェスト品を辿った時の「戻る」履歴
+let pmodalQty = 1;
+let pmodalDescLang = 'ja';
+
+function saveCartToStorage() {
+  try {
+    const map = {};
+    Object.values(cart).forEach(i => { map[i.product.id] = i.qty; });
+    localStorage.setItem('saitofoods_cart', JSON.stringify(map));
+  } catch (e) {}
+}
+
+function loadCartFromStorage() {
+  try {
+    const raw = localStorage.getItem('saitofoods_cart');
+    if (!raw) return;
+    const map = JSON.parse(raw);
+    Object.entries(map).forEach(([pid, qty]) => {
+      const product = allProducts.find(p => p.id === pid);
+      if (!product) return;
+      const maxQty = isAvailable(product) ? (product.is_unlimited_stock ? 999 : product.stock_qty) : 0;
+      const safeQty = Math.max(0, Math.min(maxQty, qty));
+      if (safeQty > 0) cart[product.id] = { product, qty: safeQty };
+    });
+  } catch (e) {}
+}
+
+function isAvailable(p) {
+  return !!(p.is_unlimited_stock || (p.stock_qty && p.stock_qty > 0));
+}
+
+function maxQtyFor(p) {
+  return p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
+}
+
+async function supabaseRest(method, path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) { throw new Error(await res.text()); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+async function init() {
+  showSkeletonGrid();
+  try {
+    const [cats, prods, prodCats] = await Promise.all([
+      supabaseRest('GET', 'categories?order=sort_order'),
+      supabaseRest('GET', 'products?is_published=eq.true&order=sort_order'),
+      supabaseRest('GET', 'product_categories?select=product_id,category_id'),
+      loadFavoritesState(),
+    ]);
+    allCategories = cats;
+    allProducts = prods;
+    allProductCategories = prodCats;
+    loadCartFromStorage();
+    renderSidebarCategories();
+    renderProducts();
+    updateCartBar();
+    handleQuickViewFromQuery();
+  } catch (e) {
+    document.getElementById('product-sections').innerHTML = `<div class="loading">読み込みに失敗しました / Failed to load<br><span style="font-size:11px;">${e.message}</span></div>`;
+  }
+}
+
+// 商品データ取得中に表示するスケルトン(骨組み)カード
+function showSkeletonGrid() {
+  const skeletonCard = `
+    <div class="skeleton-card">
+      <div class="skeleton-box skeleton-img"></div>
+      <div class="skeleton-lines">
+        <div class="skeleton-box skeleton-line w60"></div>
+        <div class="skeleton-box skeleton-line w40"></div>
+        <div class="skeleton-box skeleton-line w30"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('product-sections').innerHTML =
+    `<div class="product-grid">${skeletonCard.repeat(8)}</div>`;
+}
+
+// ---------------- お気に入り(ログイン中のみ) ----------------
+async function loadFavoritesState() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+
+    const { data: customerRows } = await supabaseClient
+      .from('customers').select('id').eq('auth_user_id', session.user.id).limit(1);
+    if (!customerRows || !customerRows.length) return;
+    currentCustomerId = customerRows[0].id;
+
+    const { data: favRows } = await supabaseClient
+      .from('customer_favorites').select('product_id').eq('customer_id', currentCustomerId);
+    favoriteProductIds = new Set((favRows || []).map(r => r.product_id));
+  } catch (e) { /* 未ログイン・エラー時はお気に入り機能を単に無効のままにする */ }
+}
+
+async function toggleFavorite(productId, btnEl) {
+  if (!currentCustomerId) {
+    if (confirm('お気に入り登録にはログインが必要です。マイページへ移動しますか？ / Please log in to save favorites. Go to My Page?')) {
+      location.href = 'mypage.html';
+    }
+    return;
+  }
+
+  const isFav = favoriteProductIds.has(productId);
+  try {
+    if (isFav) {
+      await supabaseClient.from('customer_favorites').delete().eq('customer_id', currentCustomerId).eq('product_id', productId);
+      favoriteProductIds.delete(productId);
+    } else {
+      await supabaseClient.from('customer_favorites').insert({ customer_id: currentCustomerId, product_id: productId });
+      favoriteProductIds.add(productId);
+    }
+  } catch (e) { return; }
+
+  document.querySelectorAll(`.fav-btn[data-pid="${productId}"]`).forEach(el => {
+    const active = favoriteProductIds.has(productId);
+    el.classList.toggle('active', active);
+  });
+  const modalBtn = document.getElementById('pmodal-fav-btn');
+  if (modalBtn && modalBtn.dataset.pid === productId) {
+    const active = favoriteProductIds.has(productId);
+    modalBtn.classList.toggle('active', active);
+  }
+}
+
+function toggleFavoriteFromModal() {
+  const modalBtn = document.getElementById('pmodal-fav-btn');
+  if (modalBtn && modalBtn.dataset.pid) toggleFavorite(modalBtn.dataset.pid, modalBtn);
+}
+
+// index.htmlなどからの「?view=商品ID」リンクで、該当商品の詳細モーダルを自動的に開く
+// 「?search=キーワード」で来た場合は検索欄にキーワードを反映して検索する
+// 「?category_id=カテゴリID」で来た場合は、そのカテゴリを選択した状態で表示する(index.htmlのカテゴリリンクと同じパラメータ名)
+function handleQuickViewFromQuery() {
+  const params = new URLSearchParams(location.search);
+  const viewId = params.get('view');
+  const searchQuery = params.get('search');
+  const categoryId = params.get('category_id');
+
+  if (categoryId) {
+    const btn = document.querySelector(`.sidebar-category-item[data-cat-id="${categoryId}"]`);
+    if (btn) setCategoryFilter(categoryId, btn);
+  }
+
+  if (searchQuery) {
+    const input = document.getElementById('product-search');
+    input.value = searchQuery;
+    toggleSearchClearBtn('product-search', 'product-search-clear-btn');
+    handleSearch(searchQuery);
+  }
+
+  if (viewId) {
+    const product = allProducts.find(p => p.id === viewId);
+    if (product) openPModal(product.id);
+  }
+
+  if (viewId || searchQuery || categoryId) history.replaceState(null, '', location.pathname);
+}
+
+function renderSidebarCategories() {
+  const wrap = document.getElementById('sidebar-category-list');
+  // カテゴリテーブルが取得できない/空でも「すべて」項目だけで正常動作する
+  wrap.innerHTML = `<button class="sidebar-category-item active" data-cat-id="" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
+    allCategories.map(c => `<button class="sidebar-category-item" data-cat-id="${c.id}" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja}</button>`).join('');
+}
+
+function setCategoryFilter(catId, btn) {
+  currentCategoryFilter = catId;
+  document.querySelectorAll('.sidebar-category-item').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderProducts();
+}
+
+function getFilteredProducts() {
+  let matches = allProducts;
+  if (currentCategoryFilter !== null) {
+    const idsInCategory = new Set(
+      allProductCategories.filter(pc => pc.category_id == currentCategoryFilter).map(pc => pc.product_id)
+    );
+    matches = matches.filter(p => idsInCategory.has(p.id));
+  }
+  if (currentSearchQuery) {
+    const q = currentSearchQuery.toLowerCase();
+    matches = matches.filter(p =>
+      (p.name_ja || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q)
+    );
+  }
+  return matches;
+}
+
+function renderProducts() {
+  const wrap = document.getElementById('product-sections');
+  if (!allProducts.length) { wrap.innerHTML = `<div class="loading">商品がまだありません / No products yet</div>`; return; }
+  const matches = getFilteredProducts();
+  if (!matches.length) { wrap.innerHTML = `<div class="loading">該当する商品がありません / No products found</div>`; return; }
+  const title = currentSearchQuery
+    ? `検索結果 (${matches.length})`
+    : (currentCategoryFilter === null ? `商品一覧 / All products (${matches.length})` : `${matches.length}件`);
+  wrap.innerHTML = `<div class="section-title">${title}</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
+}
+
+const EXCLUDED_CATEGORY_ID = 'baacb658-aaf2-4445-943a-851755244b38'; // 「全商品一覧」= 全部を表す特殊カテゴリなのでバッジには出さない
+
+// 商品が属するカテゴリのうち、一番並び順が若いもの(「全商品一覧」を除く)を代表カテゴリとしてカードに表示する
+function getPrimaryCategoryForProduct(productId) {
+  const catIds = allProductCategories.filter(pc => pc.product_id === productId).map(pc => pc.category_id);
+  const candidates = catIds
+    .filter(id => id !== EXCLUDED_CATEGORY_ID)
+    .map(id => allCategories.find(c => c.id === id))
+    .filter(Boolean);
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+  return candidates[0];
+}
+
+// 商品カードのカテゴリバッジを押した時、そのカテゴリで絞り込む(カードのクリック=商品詳細を開くのは止める)
+function filterByCategoryFromCard(catId, event) {
+  event.stopPropagation();
+  const btn = document.querySelector(`.sidebar-category-item[data-cat-id="${catId}"]`);
+  if (btn) setCategoryFilter(catId, btn);
+}
+
+function productCardHtml(p) {
+  const img = p.image_url ? `<img src="${p.image_url}" loading="lazy" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
+  const available = isAvailable(p);
+  const inCart = cart[p.id]?.qty || 0;
+  const isFav = favoriteProductIds.has(p.id);
+  const isWeight = p.sale_type === 'weight';
+  const priceLabel = isWeight ? `฿${p.unit_price} <span>/ ${p.unit_label}</span>` : `฿${p.price}<span></span>`;
+  const stepper = available
+    ? (inCart > 0
+        ? `<div class="qty-stepper"><button class="qty-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button><span class="qty-num">${inCart}</span><button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button></div>`
+        : `<button class="qty-btn add" onclick="event.stopPropagation(); changeQty('${p.id}', 1)" style="width:auto;border-radius:16px;padding:0 12px;height:28px;">+ 追加</button>`)
+    : `<span class="out-of-stock">在庫切れ</span>`;
+  const primaryCat = getPrimaryCategoryForProduct(p.id);
+  const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${primaryCat.name_ja} カテゴリへ→</div>` : '';
+  // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
+  // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div>${catBadge}</div></div>`;
+}
+
+// 検索欄の×(クリア)ボタン共通処理
+function toggleSearchClearBtn(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (!input || !btn) return;
+  btn.style.display = input.value ? 'flex' : 'none';
+}
+
+function clearSearchInput(inputId, btnId, callback) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.value = '';
+  toggleSearchClearBtn(inputId, btnId);
+  input.focus();
+  if (typeof callback === 'function') callback();
+}
+
+function handleSearch(q) {
+  currentSearchQuery = q.trim();
+  renderProducts();
+}
+
+function changeQty(productId, delta) {
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) return;
+  const current = cart[productId]?.qty || 0;
+  const next = Math.max(0, Math.min(maxQtyFor(product), current + delta));
+  if (next === 0) delete cart[productId];
+  else cart[productId] = { product, qty: next };
+  renderProducts();
+  updateCartBar();
+  saveCartToStorage();
+}
+
+function updateCartBar() {
+  const items = Object.values(cart);
+  const count = items.reduce((s, i) => s + i.qty, 0);
+  // 量り売り商品は単価(目安)×数量を合計に含める(実際の請求額は重量確定後に確定)
+  const total = items.reduce((s, i) => s + i.qty * (i.product.sale_type === 'weight' ? (i.product.unit_price || 0) : i.product.price), 0);
+  document.getElementById('cart-count').textContent = count;
+  document.getElementById('cart-total').textContent = total;
+  document.getElementById('cart-bar').classList.toggle('show', count > 0);
+  document.getElementById('header-cart-count').textContent = count;
+  document.getElementById('cart-fab-badge').textContent = count;
+}
+
+function togglePModalDescLang() {
+  const p = allProducts.find(x => x.id === pmodalProductId);
+  if (!p) return;
+  pmodalDescLang = pmodalDescLang === 'ja' ? 'en' : 'ja';
+  applyPModalDescLang(p);
+}
+
+function applyPModalDescLang(p) {
+  const descEl = document.getElementById('pmodal-desc');
+  const btn = document.getElementById('pmodal-lang-btn');
+  const hasEn = !!(p.description_en && p.description_en.trim());
+  if (!hasEn) {
+    descEl.textContent = p.description_ja || '';
+    btn.style.display = 'none';
+    return;
+  }
+  descEl.textContent = pmodalDescLang === 'ja' ? (p.description_ja || '') : p.description_en;
+  btn.textContent = pmodalDescLang === 'ja' ? 'EN' : '日本語';
+  btn.style.display = 'inline-block';
+}
+
+let pmodalGalleryImages = [];
+let pmodalGalleryIndex = 0;
+
+function buildGalleryImages(p) {
+  return [p.image_url, p.image_url_2, p.image_url_3, p.image_url_4, p.image_url_5, p.image_url_6, p.image_url_7, p.image_url_8].filter(Boolean);
+}
+
+function renderGallery(images) {
+  pmodalGalleryImages = images;
+  pmodalGalleryIndex = 0;
+  const mainEl = document.getElementById('pmodal-gallery-main');
+  const thumbsEl = document.getElementById('pmodal-gallery-thumbs');
+
+  if (images.length === 0) {
+    mainEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:60px;">🍱</div>`;
+    thumbsEl.innerHTML = '';
+    thumbsEl.style.display = 'none';
+    return;
+  }
+
+  mainEl.innerHTML = `<img src="${images[0]}" alt="" onerror="this.parentElement.innerHTML='🍱'">`;
+
+  if (images.length > 1) {
+    thumbsEl.style.display = 'flex';
+    thumbsEl.innerHTML = images.map((url, i) => `
+      <div class="pmodal-gallery-thumb ${i === 0 ? 'active' : ''}" onclick="switchGalleryImage(${i})">
+        <img src="${url}" alt="" onerror="this.parentElement.style.display='none'">
+      </div>
+    `).join('');
+  } else {
+    thumbsEl.style.display = 'none';
+    thumbsEl.innerHTML = '';
+  }
+}
+
+function switchGalleryImage(index) {
+  pmodalGalleryIndex = index;
+  const mainEl = document.getElementById('pmodal-gallery-main');
+  mainEl.innerHTML = `<img src="${pmodalGalleryImages[index]}" alt="" onerror="this.parentElement.innerHTML='🍱'">`;
+  document.querySelectorAll('.pmodal-gallery-thumb').forEach((el, i) => {
+    el.classList.toggle('active', i === index);
+  });
+}
+
+function openPModal(productId, fromBack) {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+
+  const modalCurrentlyOpen = document.getElementById('pmodal-overlay').classList.contains('open');
+
+  if (fromBack) {
+    // 戻る操作: 履歴は既にpop済みなのでここでは何もしない
+  } else if (!modalCurrentlyOpen) {
+    // 商品一覧などから新規に開く場合は履歴をリセットする
+    pmodalNavStack = [];
+  } else if (pmodalProductId && pmodalProductId !== productId) {
+    // モーダルを開いたまま別の商品(サジェスト品など)に切り替える場合、
+    // 「戻る」で元の商品に戻れるよう、直前の商品IDを履歴に積んでおく
+    pmodalNavStack.push(pmodalProductId);
+  }
+
+  document.getElementById('pmodal-back-btn').style.display = pmodalNavStack.length > 0 ? 'flex' : 'none';
+
+  pmodalProductId = productId;
+  pmodalQty = 1;
+  pmodalDescLang = 'ja';
+  document.getElementById('pmodal-qty-num').textContent = '1';
+
+  renderGallery(buildGalleryImages(p));
+
+  const favBtn = document.getElementById('pmodal-fav-btn');
+  favBtn.dataset.pid = productId;
+  const isFav = favoriteProductIds.has(productId);
+  favBtn.classList.toggle('active', isFav);
+
+  document.getElementById('pmodal-name-ja').textContent = p.name_ja;
+  document.getElementById('pmodal-name-en').textContent = p.name_en || '';
+  document.getElementById('pmodal-local-tag').style.display = p.is_local_special ? 'block' : 'none';
+  applyPModalDescLang(p);
+  document.getElementById('pmodal-price').textContent = p.sale_type === 'weight'
+    ? `฿${p.unit_price} / ${p.unit_label}`
+    : `฿${p.price}`;
+
+  const addBtn = document.getElementById('pmodal-addcart-btn');
+  const alreadyInCart = cart[productId]?.qty || 0;
+  const available = isAvailable(p);
+  if (!available || alreadyInCart >= maxQtyFor(p)) {
+    addBtn.textContent = '在庫切れ / Out of stock';
+    addBtn.disabled = true;
+  } else {
+    addBtn.textContent = 'カートに入れる / Add to cart';
+    addBtn.disabled = false;
+  }
+
+  // SNSリンク(Instagram/YouTube)。商品ごとに設定されている場合だけ表示
+  const snsRow = document.getElementById('pmodal-sns-row');
+  const snsLinks = [];
+  if (p.instagram_url) snsLinks.push(`<a class="pmodal-sns-link" href="${p.instagram_url}" target="_blank" rel="noopener noreferrer">📷 Instagram</a>`);
+  if (p.youtube_url) snsLinks.push(`<a class="pmodal-sns-link" href="${p.youtube_url}" target="_blank" rel="noopener noreferrer">▶️ YouTube</a>`);
+  if (snsLinks.length > 0) {
+    snsRow.innerHTML = snsLinks.join('');
+    snsRow.style.display = 'flex';
+  } else {
+    snsRow.style.display = 'none';
+  }
+
+  loadPModalSuggestions(productId);
+
+  document.getElementById('pmodal-overlay').classList.add('open');
+}
+
+// 「一緒に購入されている商品」サジェスト表示
+// product_co_purchase_counts(注文データから集計した公開ビュー)を参照する
+async function loadPModalSuggestions(productId) {
+  const wrap = document.getElementById('pmodal-suggest');
+  const row = document.getElementById('pmodal-suggest-row');
+  wrap.style.display = 'none';
+  row.innerHTML = '';
+
+  try {
+    const counts = await supabaseRest('GET', `product_co_purchase_counts?product_id=eq.${productId}&order=times_bought_together.desc&limit=8`);
+    const suggestions = counts
+      .map(c => allProducts.find(p => p.id === c.co_product_id))
+      .filter(p => p && p.is_published !== false && isAvailable(p))
+      .slice(0, 6);
+
+    if (suggestions.length === 0) return;
+
+    row.innerHTML = suggestions.map(p => `
+      <div class="pmodal-suggest-card" onclick="openPModal('${p.id}')">
+        <img src="${p.image_url || ''}" alt="${p.name_ja || ''}" onerror="this.style.visibility='hidden'">
+        <div class="name">${p.name_ja || ''}</div>
+        <div class="price">${p.sale_type === 'weight' ? `฿${p.unit_price}/${p.unit_label}` : `฿${p.price}`}</div>
+      </div>
+    `).join('');
+    wrap.style.display = 'block';
+  } catch (e) {
+    // ビュー未作成・取得失敗時は静かに非表示のまま(致命的エラーにしない)
+  }
+}
+
+function closePModal() {
+  document.getElementById('pmodal-overlay').classList.remove('open');
+  pmodalNavStack = [];
+}
+
+// サジェスト品などを辿った後、直前に見ていた商品に戻る
+function goBackPModal() {
+  if (pmodalNavStack.length === 0) return;
+  const previousId = pmodalNavStack.pop();
+  openPModal(previousId, true);
+}
+
+function pmodalChangeQty(delta) {
+  const p = allProducts.find(x => x.id === pmodalProductId);
+  if (!p) return;
+  const alreadyInCart = cart[pmodalProductId]?.qty || 0;
+  const maxAddable = Math.max(1, maxQtyFor(p) - alreadyInCart);
+  pmodalQty = Math.max(1, Math.min(maxAddable, pmodalQty + delta));
+  document.getElementById('pmodal-qty-num').textContent = pmodalQty;
+}
+
+function pmodalAddToCart() {
+  if (!pmodalProductId) return;
+  changeQty(pmodalProductId, pmodalQty);
+  closePModal();
+  showToast('カートに追加しました ✓');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type || ''}`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function scrollByViewport(direction) { window.scrollBy({ top: direction * window.innerHeight * 0.85, behavior: 'smooth' }); }
+function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+window.addEventListener('scroll', () => {
+  const atTop = window.scrollY < 200;
+  const atBottom = (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 40;
+  document.getElementById('scroll-top-btn').classList.toggle('hidden', atTop);
+  document.getElementById('scroll-down-btn').classList.toggle('hidden', atBottom);
+});
+
+init();
+
+// フッターの地図(ホテル等のPOIアイコンを非表示にするカスタムスタイル)
+function initFooterMap() {
+  const mapEl = document.getElementById('footer-map');
+  if (!mapEl) return;
+  const location = { lat: 13.7225193, lng: 100.5741505 };
+  const map = new google.maps.Map(mapEl, {
+    center: location,
+    zoom: 17,
+    disableDefaultUI: true,
+    zoomControl: true,
+    styles: [
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] }
+    ]
+  });
+  new google.maps.Marker({ position: location, map: map, title: 'サイトウフーズ SAITO FOODS' });
+}
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNH0d4VA9S0ocLKb5TiGghubIL8MigOTA&callback=initFooterMap" async defer></script>
+</div>
+</body>
+</html>
