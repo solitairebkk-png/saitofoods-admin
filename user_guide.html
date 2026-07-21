@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ユーザーガイド | サイトウフーズ</title>
+<style>
+  :root {
+    --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
+    --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
+    --shadow-sm: 0 2px 8px rgba(58,46,31,0.07); --shadow-md: 0 8px 22px rgba(58,46,31,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
+  a { color: inherit; }
+
+  .app-shell { max-width: 1100px; margin: 0 auto; background: var(--cream); min-height: 100vh; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
+
+  .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; }
+  .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
+  .site-logo-mark img { height: 40px; width: auto; display: block; }
+  .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
+  .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
+  .site-nav a.active { opacity: 1; text-decoration: underline; }
+  .site-cart-btn { background: #fff; color: var(--brand-dark); font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .layout-wrap { display: flex; align-items: flex-start; }
+  .sidebar-categories {
+    width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 1px solid rgba(0,0,0,0.05);
+    position: sticky; top: 61px; align-self: flex-start;
+    height: calc(100vh - 61px); overflow-y: auto; padding: 16px 0;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .sidebar-categories::-webkit-scrollbar { width: 0px; background: transparent; }
+  .sidebar-categories:hover { scrollbar-width: thin; }
+  .sidebar-categories:hover::-webkit-scrollbar { width: 6px; }
+  .sidebar-categories::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+  .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); padding: 0 20px 10px; }
+  .sidebar-quicklinks { border-bottom: 1px solid var(--line); margin-bottom: 8px; padding-bottom: 4px; }
+  .sidebar-quicklink { display: flex; align-items: center; gap: 12px; padding: 12px 20px; text-decoration: none; color: var(--ink); }
+  .sidebar-quicklink:hover { background: #fff; }
+  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .sidebar-quicklink-icon.square { border-radius: 9px; }
+  .sidebar-quicklink-title { font-weight: 800; font-size: 13px; display: block; }
+  .sidebar-quicklink-sub { font-size: 9px; color: var(--brand-dark); letter-spacing: 0.06em; font-weight: 700; }
+  .sidebar-category-list { display: flex; flex-direction: column; }
+  .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); transition: background 0.15s ease, color 0.15s ease; }
+  .sidebar-category-item:hover { background: #fff; color: var(--brand-dark); }
+  .sidebar-category-skeleton { height: 14px; margin: 12px 20px; border-radius: 6px; }
+  .main-col { flex: 1; min-width: 0; padding-bottom: 40px; }
+
+  @media (max-width: 760px) {
+    .site-header-inner { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
+    .site-logo-mark { order: 1; }
+    .site-cart-btn { order: 2; margin-left: auto; }
+    .site-nav { order: 3; flex: 1 1 100%; overflow-x: auto; white-space: nowrap; gap: 14px; scrollbar-width: none; }
+    .site-nav::-webkit-scrollbar { display: none; }
+    .site-nav a { white-space: nowrap; }
+
+    .layout-wrap { flex-direction: column; }
+    .sidebar-categories { width: 100%; height: auto; position: static; border-right: none; border-bottom: 2px solid var(--line); padding: 10px 0; }
+    .sidebar-quicklinks { display: flex; border-bottom: none; }
+    .sidebar-category-list { flex-direction: row; overflow-x: auto; padding: 0 16px; gap: 8px; scrollbar-width: none; }
+    .sidebar-category-list::-webkit-scrollbar { display: none; }
+    .sidebar-category-item { flex: 0 0 auto; border: 1.5px solid var(--line); border-radius: 20px; background: #fff; white-space: nowrap; }
+    .sidebar-categories-title { padding: 0 16px 8px; }
+  }
+
+  .guide-header { padding: 28px 20px 8px; }
+  .guide-header h1 { font-size: 20px; font-weight: 800; color: var(--brand-dark); }
+  .guide-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 16px; margin: 16px 20px 40px; padding: 28px 30px; box-shadow: var(--shadow-sm); max-width: 900px; }
+  .guide-list { list-style: none; counter-reset: guide-counter; }
+  .guide-list li { counter-increment: guide-counter; position: relative; padding: 0 0 22px 34px; font-size: 14px; line-height: 1.9; }
+  .guide-list li:last-child { padding-bottom: 0; }
+  .guide-list li::before { content: counter(guide-counter) "."; position: absolute; left: 0; top: 0; font-weight: 800; color: var(--brand-dark); }
+  .guide-list li .sub { display: block; color: #8A7A5E; font-size: 12.5px; margin-top: 2px; }
+
+  /* footer */
+  .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; font-size: 12.5px; color: #666; }
+  .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
+  .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
+  .footer-social a:hover { background: var(--brand-dark); }
+  .footer-section { margin-bottom: 18px; }
+  .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
+  .footer-section p { line-height: 1.9; }
+  .footer-section a { color: var(--brand-dark); text-decoration: underline; }
+  .footer-row { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-row .footer-section { flex: 1 1 240px; min-width: 220px; }
+  .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+  .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="index.html" class="site-logo-mark">
+      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.jpg" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+    </a>
+    <nav class="site-nav">
+      <a href="index.html">トップ / Home</a>
+      <a href="product_list.html">商品一覧 / Products</a>
+      <a href="mypage.html">マイページ / My Page</a>
+    </nav>
+    <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
+  </div>
+</header>
+
+<div class="layout-wrap">
+
+  <aside class="sidebar-categories">
+    <div class="sidebar-quicklinks">
+      <a href="user_guide.html" class="sidebar-quicklink">
+        <span class="sidebar-quicklink-icon">i</span>
+        <span><span class="sidebar-quicklink-title">ご利用ガイド</span><span class="sidebar-quicklink-sub">USER GUIDE</span></span>
+      </a>
+      <a href="product_list.html" class="sidebar-quicklink">
+        <span class="sidebar-quicklink-icon square">+</span>
+        <span><span class="sidebar-quicklink-title">商品一覧</span><span class="sidebar-quicklink-sub">PRODUCTS</span></span>
+      </a>
+    </div>
+    <div class="sidebar-categories-title">商品カテゴリ / Categories</div>
+    <div class="sidebar-category-list" id="sidebar-category-list">
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+      <div class="skeleton-box sidebar-category-skeleton"></div>
+    </div>
+  </aside>
+
+  <div class="main-col">
+
+    <div class="guide-header">
+      <h1>ユーザーガイド / User Guide</h1>
+    </div>
+
+    <div class="guide-card">
+      <ol class="guide-list">
+        <li>トップページの配送エリアをご確認くださいませ。</li>
+        <li>配送エリア内はご購入代金合計600baht以上で送料無料で配送サービスを承っております。<span class="sub">※お買い物合計金額600baht以下の配送は行っておりません。</span></li>
+        <li>会員登録を完了してからご注文をお願いいたします。お支払いは商品到着時にタイバーツ現金にてお支払いいただくか、銀行振込みをご利用いただけます。<span class="sub">※口座番号等々はご注文完了時の自動配信メール内にてご案内しております。</span></li>
+        <li>配送エリア外への配送に関しましてはお問い合わせくださいませ。</li>
+        <li>県外への配送も可能です。SCGヤマト様のクール便を利用配送料はSCGヤマト様の実費を頂いております。別途発泡スチロール箱やドライアイスの手配も別料金にて可能です。</li>
+        <li>配送の混み具合により早期に当日の配送受付を締め切る場合が御座います。</li>
+        <li>webサイトからご購入の場合はご購入金額の約1%のポイントが取得でき次回のお買い物の際に1ポイント＝1bahtとしてご利用いただけます。<span class="sub">最後にご利用いただいてからご利用がないまま90日が経過しますとポイントは失効となりますのでご注意くださいませ。また、ポイントの換金は致しかねます。</span></li>
+        <li>タイの国民の祝日及び毎週日曜日、第三土曜日を定休日とさせて頂いております。</li>
+      </ol>
+    </div>
+
+    <footer class="site-footer">
+      <div class="footer-social">
+        <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
+        <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">📷</a>
+      </div>
+
+      <div class="footer-row">
+        <div class="footer-section">
+          <h3>会社情報 / Company</h3>
+          <p>
+            SAITO FOODS CO.,LTD.<br>
+            23/7 Soi Naphasub Yeak 2, Sukhumvit Soi 36,<br>
+            Klongtoey, Bangkok 10110<br>
+            TEL: 02-258-9878 / 06-5618-9906<br>
+            Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a>
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-section footer-links">
+        <a href="terms.html">利用規約 / Terms of Service</a>
+      </div>
+
+      <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
+    </footer>
+
+  </div>
+
+</div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
+
+async function supabase(method, path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+function updateHeaderCartCount() {
+  try {
+    const map = JSON.parse(localStorage.getItem('saitofoods_cart') || '{}');
+    const count = Object.values(map).reduce((sum, qty) => sum + (parseInt(qty, 10) || 0), 0);
+    document.getElementById('header-cart-count').textContent = count;
+  } catch (e) {}
+}
+
+async function loadCategoryNav() {
+  const listEl = document.getElementById('sidebar-category-list');
+  try {
+    const categories = await supabase('GET', 'categories?select=id,name_ja,sort_order&order=sort_order.asc');
+    if (!categories.length) { listEl.innerHTML = ''; return; }
+    listEl.innerHTML = categories.map(c =>
+      `<a class="sidebar-category-item" href="product_list.html?category_id=${c.id}">${c.name_ja}</a>`
+    ).join('');
+  } catch (e) {
+    listEl.innerHTML = '';
+  }
+}
+
+updateHeaderCartCount();
+loadCategoryNav();
+</script>
+
+</body>
+</html>

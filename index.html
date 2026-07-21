@@ -38,6 +38,13 @@
   .sidebar-categories:hover::-webkit-scrollbar { width: 6px; }
   .sidebar-categories::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
   .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); padding: 0 20px 10px; }
+  .sidebar-quicklinks { border-bottom: 1px solid var(--line); margin-bottom: 8px; padding-bottom: 4px; }
+  .sidebar-quicklink { display: flex; align-items: center; gap: 12px; padding: 12px 20px; text-decoration: none; color: var(--ink); }
+  .sidebar-quicklink:hover { background: #fff; }
+  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .sidebar-quicklink-icon.square { border-radius: 9px; }
+  .sidebar-quicklink-title { font-weight: 800; font-size: 13px; display: block; }
+  .sidebar-quicklink-sub { font-size: 9px; color: var(--brand-dark); letter-spacing: 0.06em; font-weight: 700; }
   .sidebar-category-list { display: flex; flex-direction: column; }
   .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); transition: background 0.15s ease, color 0.15s ease; }
   .sidebar-category-item:hover { background: #fff; color: var(--brand-dark); }
@@ -217,6 +224,16 @@
 <div class="layout-wrap">
 
   <aside class="sidebar-categories">
+    <div class="sidebar-quicklinks">
+      <a href="user_guide.html" class="sidebar-quicklink">
+        <span class="sidebar-quicklink-icon">i</span>
+        <span><span class="sidebar-quicklink-title">ご利用ガイド</span><span class="sidebar-quicklink-sub">USER GUIDE</span></span>
+      </a>
+      <a href="product_list.html" class="sidebar-quicklink">
+        <span class="sidebar-quicklink-icon square">+</span>
+        <span><span class="sidebar-quicklink-title">商品一覧</span><span class="sidebar-quicklink-sub">PRODUCTS</span></span>
+      </a>
+    </div>
     <div class="sidebar-categories-title">商品カテゴリ / Categories</div>
     <div class="sidebar-category-list" id="sidebar-category-list">
       <div class="skeleton-box sidebar-category-skeleton"></div>
