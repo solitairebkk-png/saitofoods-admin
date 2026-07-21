@@ -480,7 +480,7 @@ async function init() {
     const [cats, prods, prodCats] = await Promise.all([
       supabaseRest('GET', 'categories?order=sort_order'),
       supabaseRest('GET', 'products?is_published=eq.true&order=sort_order'),
-      supabaseRest('GET', 'product_categories?select=product_id,category_id'),
+      supabaseRest('GET', 'product_categories?select=product_id,category_id,sort_order'),
       loadFavoritesState(),
     ]);
     allCategories = cats;
@@ -610,18 +610,33 @@ function setCategoryFilter(catId, btn) {
 
 function getFilteredProducts() {
   let matches = allProducts;
+  let categoryOrderMap = null;
+
   if (currentCategoryFilter !== null) {
-    const idsInCategory = new Set(
-      allProductCategories.filter(pc => pc.category_id == currentCategoryFilter).map(pc => pc.product_id)
-    );
+    const pcRowsForCat = allProductCategories.filter(pc => pc.category_id == currentCategoryFilter);
+    const idsInCategory = new Set(pcRowsForCat.map(pc => pc.product_id));
     matches = matches.filter(p => idsInCategory.has(p.id));
+
+    // カテゴリ内の並び順(product_control.htmlのドラッグ&ドロップで保存したsort_order)を適用する
+    categoryOrderMap = {};
+    pcRowsForCat.forEach(pc => { categoryOrderMap[pc.product_id] = pc.sort_order; });
   }
+
   if (currentSearchQuery) {
     const q = currentSearchQuery.toLowerCase();
     matches = matches.filter(p =>
       (p.name_ja || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q)
     );
   }
+
+  if (categoryOrderMap) {
+    matches = matches.slice().sort((a, b) => {
+      const oa = categoryOrderMap[a.id] ?? 999999;
+      const ob = categoryOrderMap[b.id] ?? 999999;
+      return oa - ob;
+    });
+  }
+
   return matches;
 }
 
