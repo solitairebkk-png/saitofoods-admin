@@ -33,6 +33,7 @@
   .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
   .btn.save { background: var(--green); }
   .btn.warn { background: var(--red-accent); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   main { padding: 24px; max-width: 1200px; margin: 0 auto; display: none; }
 
@@ -52,6 +53,25 @@
 
   .summary-note { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
   .summary-note.alert { color: var(--red-accent); font-weight: 600; }
+
+  /* ── カテゴリ内 並べ替え(ドラッグ&ドロップ) ── */
+  .reorder-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 18px; }
+  .reorder-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .reorder-panel-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .reorder-panel-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .reorder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .reorder-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px; text-align: center; cursor: grab; user-select: none; position: relative; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  .reorder-card:active { cursor: grabbing; }
+  .reorder-card.sortable-ghost { opacity: 0.35; }
+  .reorder-card.sortable-chosen { box-shadow: 0 6px 16px rgba(0,0,0,0.18); transform: scale(1.03); }
+  .reorder-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 5px; background: var(--bg); display: block; margin-bottom: 5px; }
+  .reorder-card .no-img { width: 100%; aspect-ratio: 1/1; border-radius: 5px; background: var(--bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; margin-bottom: 5px; }
+  .reorder-card .name { font-size: 11px; line-height: 1.3; }
+  .reorder-card .num { position: absolute; top: 4px; left: 4px; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .reorder-empty { font-size: 12.5px; color: var(--text-muted); padding: 10px 0; }
+  .reorder-save-msg { font-size: 12px; margin-left: 10px; }
+  .reorder-save-msg.success { color: var(--green); }
+  .reorder-save-msg.error { color: var(--red-accent); }
 
   table.products { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   table.products th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
@@ -147,6 +167,20 @@
     <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
   </div>
 
+  <div class="reorder-panel" id="reorder-panel" style="display:none;">
+    <div class="reorder-panel-header">
+      <div>
+        <div class="reorder-panel-title" id="reorder-panel-title">並べ替え / Reorder</div>
+        <div class="reorder-panel-hint">カードをドラッグして順番を入れ替え、「保存」を押してください / Drag cards to reorder, then click Save.</div>
+      </div>
+      <div>
+        <button class="btn save small" id="reorder-save-btn" onclick="saveReorder()" disabled>並び順を保存 / Save order</button>
+        <span class="reorder-save-msg" id="reorder-save-msg"></span>
+      </div>
+    </div>
+    <div class="reorder-grid" id="reorder-grid"></div>
+  </div>
+
   <div class="summary-note" id="summary-note"></div>
 
   <table class="products">
@@ -171,6 +205,7 @@
   <div id="save-msg"></div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -180,6 +215,9 @@ let currentCustomer = null;
 let allProducts = [];
 let allCategories = [];
 let productCategoryMap = {}; // product_id -> [category_id, ...]
+let categoryPcRows = {};     // category_id -> [{product_id, sort_order}, ...]  (並べ替え用)
+let reorderSortable = null;
+let reorderDirty = false;
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -259,7 +297,7 @@ async function loadProducts() {
 
   const [{ data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
     supabaseClient.from('products').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_ja'),
-    fetchAllRows('product_categories', 'product_id, category_id'),
+    fetchAllRows('product_categories', 'product_id, category_id, sort_order'),
   ]);
 
   if (prodErr || pcErr) {
@@ -268,9 +306,12 @@ async function loadProducts() {
   }
 
   productCategoryMap = {};
+  categoryPcRows = {};
   (pcRows || []).forEach(row => {
     if (!productCategoryMap[row.product_id]) productCategoryMap[row.product_id] = [];
     productCategoryMap[row.product_id].push(row.category_id);
+    if (!categoryPcRows[row.category_id]) categoryPcRows[row.category_id] = [];
+    categoryPcRows[row.category_id].push({ product_id: row.product_id, sort_order: row.sort_order });
   });
 
   allProducts = products || [];
@@ -350,6 +391,101 @@ function applyFilters() {
     (outOfStockCount > 0 ? ` — 📦 在庫0 ${outOfStockCount}件` : '');
 
   renderTable(filtered);
+  renderReorderPanel(catId);
+}
+
+// ---------------- カテゴリ内 並べ替え(ドラッグ&ドロップ) ----------------
+function renderReorderPanel(catId) {
+  const panel = document.getElementById('reorder-panel');
+  const grid = document.getElementById('reorder-grid');
+  const titleEl = document.getElementById('reorder-panel-title');
+  const saveBtn = document.getElementById('reorder-save-btn');
+  const msgEl = document.getElementById('reorder-save-msg');
+
+  if (reorderSortable) { reorderSortable.destroy(); reorderSortable = null; }
+  msgEl.textContent = '';
+  reorderDirty = false;
+  saveBtn.disabled = true;
+
+  if (!catId) { panel.style.display = 'none'; return; }
+
+  const cat = allCategories.find(c => c.id === catId);
+  titleEl.textContent = '並べ替え / Reorder — ' + (cat ? cat.name_ja : '');
+
+  const rows = (categoryPcRows[catId] || []).slice()
+    .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
+
+  const cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(Boolean);
+
+  panel.style.display = 'block';
+
+  if (cards.length === 0) {
+    grid.innerHTML = '<div class="reorder-empty">このカテゴリに商品がありません / No products in this category</div>';
+    return;
+  }
+
+  grid.innerHTML = cards.map((p, i) => {
+    const img = p.image_url
+      ? `<img src="${p.image_url}" alt="">`
+      : `<div class="no-img">No Image</div>`;
+    return `
+      <div class="reorder-card" data-product-id="${p.id}">
+        <span class="num">${i + 1}</span>
+        ${img}
+        <div class="name">${p.name_ja || '(no name)'}</div>
+      </div>
+    `;
+  }).join('');
+
+  // カード番号を再採番して表示するだけの処理(保存はしない)
+  function renumber() {
+    grid.querySelectorAll('.reorder-card').forEach((el, i) => {
+      el.querySelector('.num').textContent = i + 1;
+    });
+  }
+
+  reorderSortable = Sortable.create(grid, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onEnd: () => {
+      renumber();
+      reorderDirty = true;
+      saveBtn.disabled = false;
+      msgEl.textContent = '';
+    },
+  });
+}
+
+async function saveReorder() {
+  const catId = document.getElementById('filter-category').value;
+  if (!catId || !reorderDirty) return;
+
+  const grid = document.getElementById('reorder-grid');
+  const saveBtn = document.getElementById('reorder-save-btn');
+  const msgEl = document.getElementById('reorder-save-msg');
+  const ids = [...grid.querySelectorAll('.reorder-card')].map(el => el.dataset.productId);
+
+  saveBtn.disabled = true;
+  msgEl.className = 'reorder-save-msg';
+  msgEl.textContent = '保存中... / Saving...';
+
+  try {
+    await Promise.all(ids.map((pid, i) =>
+      supabaseClient.from('product_categories').update({ sort_order: i }).eq('product_id', pid).eq('category_id', catId)
+    ));
+
+    // ローカルのキャッシュ(categoryPcRows)にも反映しておく
+    categoryPcRows[catId] = ids.map((pid, i) => ({ product_id: pid, sort_order: i }));
+
+    msgEl.className = 'reorder-save-msg success';
+    msgEl.textContent = '保存しました ✓ / Saved';
+    reorderDirty = false;
+  } catch (err) {
+    msgEl.className = 'reorder-save-msg error';
+    msgEl.textContent = '保存に失敗しました / Save failed: ' + err.message;
+    saveBtn.disabled = false;
+  }
 }
 
 function renderTable(products) {
@@ -623,7 +759,13 @@ async function saveProduct(productId) {
   }
 
   if (selectedCatIds.length > 0) {
-    const { error: catInsertErr } = await supabaseClient.from('product_categories').insert(selectedCatIds.map(cid => ({ product_id: productRowId, category_id: cid })));
+    // 新規に紐付けたカテゴリでは、そのカテゴリの末尾に追加する(既存の並び順を壊さないため)
+    const insertRows = selectedCatIds.map(cid => {
+      const existing = categoryPcRows[cid] || [];
+      const maxOrder = existing.reduce((max, r) => Math.max(max, r.sort_order ?? -1), -1);
+      return { product_id: productRowId, category_id: cid, sort_order: maxOrder + 1 };
+    });
+    const { error: catInsertErr } = await supabaseClient.from('product_categories').insert(insertRows);
     if (catInsertErr) {
       alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
       showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catInsertErr.message, true);
