@@ -22,6 +22,7 @@
     --ok: #1a9a5c;
     --red: #C5533F;
     --red-dim: rgba(197,83,63,0.08);
+    --shadow-sm: 0 2px 8px rgba(58,46,31,0.07); --shadow-md: 0 8px 22px rgba(58,46,31,0.14);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'M PLUS Rounded 1c', sans-serif; background: var(--yellow-light); color: var(--text); min-height: 100vh; }
@@ -53,7 +54,7 @@
   .sidebar-categories::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
   .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--orange); padding: 0 20px 10px; }
   .sidebar-category-list { display: flex; flex-direction: column; }
-  .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--text); text-decoration: none; border: none; background: none; text-align: left; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--text); text-decoration: none; border: none; background: none; text-align: left; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.15s ease, color 0.15s ease; }
   .sidebar-category-item:hover { background: var(--yellow-light); color: var(--orange); }
   .sidebar-category-skeleton { height: 14px; margin: 12px 20px; border-radius: 6px; }
   .main-col { flex: 1; min-width: 0; padding-bottom: 48px; }
@@ -80,7 +81,8 @@
   @media (min-width: 1000px) { .container { max-width: 720px; } }
 
   .card { background: var(--white); border-radius: 16px; padding: 22px; margin-bottom: 18px; border: 1.5px solid var(--border); box-shadow: 0 2px 12px rgba(200,160,0,0.1); }
-  .card-title { font-size: 13px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; margin-bottom: 14px; }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--orange); letter-spacing: 0.05em; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .ttl-icon { width: 15px; height: 15px; flex-shrink: 0; }
 
   .auth-tabs { display: flex; gap: 4px; margin-bottom: 18px; background: var(--yellow-light); border-radius: 10px; padding: 4px; }
   .auth-tab-btn { flex: 1; padding: 9px; border: none; border-radius: 8px; background: transparent; color: var(--brown); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -119,7 +121,8 @@
   .point-num { font-size: 40px; font-weight: 800; color: var(--orange); line-height: 1; }
   .point-label { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-  .order-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fffdf5; }
+  .order-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; background: #fffdf5; box-shadow: var(--shadow-sm); transition: box-shadow 0.18s ease; }
+  .order-card:hover { box-shadow: var(--shadow-md); }
   .order-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
   .order-date { font-size: 14px; font-weight: 700; color: var(--brown); }
   .order-time { font-size: 11px; color: var(--muted); }
@@ -323,14 +326,14 @@
         </div>
 
         <div class="card">
-          <div class="card-title">📦 ご注文履歴 / Order History</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> ご注文履歴 / Order History</div>
           <div id="order-list">
             <div class="loading">読み込み中...</div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">👤 アカウント情報 / Account Info</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg> アカウント情報 / Account Info</div>
 
           <div class="email-row">
             <div class="email-current" id="current-email-display">-</div>
@@ -389,7 +392,7 @@
         </div>
 
         <div class="card">
-          <div class="card-title">⭐ お気に入り商品 / Favorite Products</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 5 1.3 7-6.3-3.3L5.7 21.4 7 14.4l-5-5 7-.9z"></path></svg> お気に入り商品 / Favorite Products</div>
           <div class="form-group">
             <input type="text" class="form-input" id="fav-search-input" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
             <div class="fav-search-result" id="fav-search-result"></div>
