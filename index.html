@@ -27,10 +27,15 @@
   /* two-column layout: sidebar categories + main content */
   .layout-wrap { display: flex; align-items: flex-start; }
   .sidebar-categories {
-    width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 2px solid var(--line);
+    width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 1px solid rgba(0,0,0,0.05);
     position: sticky; top: 61px; align-self: flex-start;
     height: calc(100vh - 61px); overflow-y: auto; padding: 16px 0;
+    scrollbar-width: none; -ms-overflow-style: none;
   }
+  .sidebar-categories::-webkit-scrollbar { width: 0px; background: transparent; }
+  .sidebar-categories:hover { scrollbar-width: thin; }
+  .sidebar-categories:hover::-webkit-scrollbar { width: 6px; }
+  .sidebar-categories::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
   .sidebar-categories-title { font-size: 12px; font-weight: 800; color: var(--brand-dark); padding: 0 20px 10px; }
   .sidebar-category-list { display: flex; flex-direction: column; }
   .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
