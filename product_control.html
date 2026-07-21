@@ -68,6 +68,8 @@
   .reorder-card .no-img { width: 100%; aspect-ratio: 1/1; border-radius: 5px; background: var(--bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; margin-bottom: 5px; }
   .reorder-card .name { font-size: 11px; line-height: 1.3; }
   .reorder-card .num { position: absolute; top: 4px; left: 4px; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .reorder-card-edit-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+  .reorder-card-edit-btn:hover { background: var(--navy); }
   .reorder-empty { font-size: 12.5px; color: var(--text-muted); padding: 10px 0; }
   .reorder-save-msg { font-size: 12px; margin-left: 10px; }
   .reorder-save-msg.success { color: var(--green); }
@@ -431,6 +433,7 @@ function renderReorderPanel(catId) {
     return `
       <div class="reorder-card" data-product-id="${p.id}">
         <span class="num">${i + 1}</span>
+        <button type="button" class="reorder-card-edit-btn" title="編集 / Edit" onclick="event.stopPropagation(); jumpToEdit('${p.id}')">✎</button>
         ${img}
         <div class="name">${p.name_ja || '(no name)'}</div>
       </div>
@@ -448,6 +451,8 @@ function renderReorderPanel(catId) {
     animation: 150,
     ghostClass: 'sortable-ghost',
     chosenClass: 'sortable-chosen',
+    filter: '.reorder-card-edit-btn',
+    preventOnFilter: true,
     onEnd: () => {
       renumber();
       reorderDirty = true;
@@ -455,6 +460,16 @@ function renderReorderPanel(catId) {
       msgEl.textContent = '';
     },
   });
+}
+
+// 並べ替えカードの編集ボタンから、下のテーブルの編集欄を開いてスクロールする
+function jumpToEdit(productId) {
+  let editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  if (!editRow) {
+    toggleEdit(productId);
+    editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  }
+  if (editRow) editRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 async function saveReorder() {
