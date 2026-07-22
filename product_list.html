@@ -671,7 +671,9 @@ function productCardHtml(p) {
   const primaryCatLabel = primaryCat ? (lang === 'en' && primaryCat.name_en ? primaryCat.name_en : primaryCat.name_ja) : '';
   const catLabel = lang === 'en' ? `${primaryCatLabel} →` : `${primaryCatLabel} カテゴリへ→`;
   const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${catLabel}</div>` : '';
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">${i18nText('plist.localSpecial')}</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">${i18nText('plist.weightSale')}</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div>${catBadge}</div></div>`;
+  const primaryName = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
+  const secondaryName = lang === 'en' && p.name_en ? (p.name_ja || '') : (p.name_en || '');
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${primaryName}</div><div class="product-name-en">${secondaryName}</div>${p.is_local_special ? `<div class="product-local-tag">${i18nText('plist.localSpecial')}</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">${i18nText('plist.weightSale')}</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div>${catBadge}</div></div>`;
 }
 
 function toggleSearchClearBtn(inputId, btnId) {
@@ -800,7 +802,7 @@ function openPModal(productId, fromBack) {
 
   pmodalProductId = productId;
   pmodalQty = 1;
-  pmodalDescLang = 'ja';
+  pmodalDescLang = i18nGetLang() === 'en' ? 'en' : 'ja';
   document.getElementById('pmodal-qty-num').textContent = '1';
 
   renderGallery(buildGalleryImages(p));
@@ -810,8 +812,9 @@ function openPModal(productId, fromBack) {
   const isFav = favoriteProductIds.has(productId);
   favBtn.classList.toggle('active', isFav);
 
-  document.getElementById('pmodal-name-ja').textContent = p.name_ja;
-  document.getElementById('pmodal-name-en').textContent = p.name_en || '';
+  const pModalLang = i18nGetLang();
+  document.getElementById('pmodal-name-ja').textContent = pModalLang === 'en' && p.name_en ? p.name_en : p.name_ja;
+  document.getElementById('pmodal-name-en').textContent = pModalLang === 'en' && p.name_en ? (p.name_ja || '') : (p.name_en || '');
   document.getElementById('pmodal-local-tag').style.display = p.is_local_special ? 'block' : 'none';
   applyPModalDescLang(p);
   document.getElementById('pmodal-price').textContent = p.sale_type === 'weight'

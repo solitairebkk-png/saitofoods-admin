@@ -210,6 +210,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const TRANSLATE_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzXChe3qs1YALywdYvfG_MFUGoFqdVjSqdd8-v_cydXcNzZhkFd1S73VWjwaknLD6NljQ/exec';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -610,6 +611,15 @@ function toggleEdit(productId) {
         <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
         <label>YouTube URL<input type="text" class="e-youtube" value="${p.youtube_url || ''}" placeholder="https://www.youtube.com/watch?v=..."></label>
       </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">説明文 / Description</div>
+      <div class="edit-grid">
+        <label style="grid-column: span 2;">説明文(日) / Description (JA)<textarea class="e-desc-ja" rows="3" style="resize:vertical;font-family:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:13px;">${p.description_ja || ''}</textarea></label>
+        <label style="grid-column: span 2;">
+          <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;">説明文(英) / Description (EN) <button type="button" class="btn small ghost e-translate-btn" onclick="translateDescription(this)" style="font-size:11px;padding:3px 9px;">🌐 翻訳 / Translate</button></span>
+          <textarea class="e-desc-en" rows="3" style="resize:vertical;font-family:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:13px;">${p.description_en || ''}</textarea>
+          <span class="e-translate-status" style="font-size:10px;color:var(--text-muted);min-height:14px;display:block;margin-top:2px;"></span>
+        </label>
+      </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大8枚 / up to 8 photos)</div>
       <div class="image-slots">${[1, 2, 3, 4, 5, 6, 7, 8].map(slot => imageSlotHtml(p, slot)).join('')}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
@@ -703,6 +713,49 @@ function clearImageSlot(btn, slot) {
   slotEl.querySelector('.image-preview-wrap').innerHTML = `<span class="no-image-text">No Image</span>`;
 }
 
+// ---------------- 説明文の翻訳(GAS経由でClaude APIを呼ぶ) ----------------
+async function translateDescription(btn) {
+  const editGrid = btn.closest('.edit-grid');
+  const jaTextarea = editGrid.querySelector('.e-desc-ja');
+  const enTextarea = editGrid.querySelector('.e-desc-en');
+  const statusEl = editGrid.querySelector('.e-translate-status');
+
+  const jaText = jaTextarea.value.trim();
+  if (!jaText) {
+    statusEl.style.color = 'var(--red-accent)';
+    statusEl.textContent = '先に日本語の説明文を入力してください / Please write the Japanese description first';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.style.color = 'var(--text-muted)';
+  statusEl.textContent = '翻訳中... / Translating...';
+
+  try {
+    const res = await fetch(TRANSLATE_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // GAS Web AppはContent-Type: application/jsonのPOSTだとCORSプリフライトで失敗するため text/plain で送る
+      body: JSON.stringify({ text: jaText }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      statusEl.style.color = 'var(--red-accent)';
+      statusEl.textContent = '翻訳に失敗しました / Translation failed: ' + data.error;
+      return;
+    }
+
+    enTextarea.value = data.translated || '';
+    statusEl.style.color = 'var(--green)';
+    statusEl.textContent = '翻訳しました ✓ 内容を確認してから保存してください / Translated ✓ Please review before saving';
+  } catch (err) {
+    statusEl.style.color = 'var(--red-accent)';
+    statusEl.textContent = '通信エラー / Network error: ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function toggleWeightFields(sel) {
   const grid = sel.closest('.edit-grid');
   const isWeight = sel.value === 'weight';
@@ -723,6 +776,8 @@ async function saveProduct(productId) {
     name_ja: g('.e-name-ja').value.trim(),
     name_en: g('.e-name-en').value.trim() || null,
     name_th: g('.e-name-th').value.trim() || null,
+    description_ja: g('.e-desc-ja').value.trim() || null,
+    description_en: g('.e-desc-en').value.trim() || null,
     group_type: g('.e-group').value,
     sale_type: saleType,
     price: saleType === 'weight' ? null : (parseFloat(g('.e-price').value) || 0),
