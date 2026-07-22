@@ -27,7 +27,7 @@
   .site-anniversary-text { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .site-anniversary-text::after { content: ''; position: absolute; top: 0; left: -150%; width: 55%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.85), transparent); transform: skewX(-20deg); animation: anniversary-shine 3s ease-in-out infinite; }
   @keyframes anniversary-shine { 0% { left: -150%; } 45% { left: 150%; } 100% { left: 150%; } }
-  .site-anniversary-main { color: var(--red); font-size: 15px; font-weight: 900; text-align: center; white-space: nowrap; line-height: 1.2; }
+  .site-anniversary-main { color: var(--red); font-size: 19px; font-weight: 900; text-align: center; white-space: nowrap; line-height: 1.2; }
   .site-anniversary-since { display: block; font-size: 8px; font-weight: 700; color: #3A2410; text-align: center; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
@@ -238,7 +238,7 @@
 <header class="site-header">
   <div class="site-header-inner">
     <div class="site-brand">
-      <div class="site-anniversary"><div class="site-anniversary-text"><span class="site-anniversary-main">感謝 <span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since">since 1997</span></div></div>
+      <div class="site-anniversary"><div class="site-anniversary-text"><span class="site-anniversary-main"><span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since">since 1997</span></div></div>
       <a href="index.html" class="site-logo-mark">
         <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
       </a>
