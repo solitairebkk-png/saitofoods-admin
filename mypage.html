@@ -42,6 +42,7 @@
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
   .site-cart-btn { background: #fff; color: var(--yellow-dark); font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .site-lang-btn { background: #fff; color: var(--yellow-dark); font-weight: 800; border: none; border-radius: 20px; padding: 7px 14px; font-size: 12px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
   .logout-btn { padding: 7px 14px; border: 1.5px solid #fff; border-radius: 20px; background: transparent; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none; flex-shrink: 0; }
   .layout-wrap { display: flex; align-items: flex-start; }
   .sidebar-categories {
@@ -70,6 +71,7 @@
   @media (max-width: 760px) {
     .site-header-inner { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
     .site-brand { order: 1; }
+    .site-lang-btn { order: 2; }
     .logout-btn { order: 2; margin-left: auto; }
     .site-cart-btn { order: 3; }
     .site-nav { order: 4; flex: 1 1 100%; overflow-x: auto; white-space: nowrap; gap: 14px; scrollbar-width: none; }
@@ -181,23 +183,25 @@
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 <div class="app-shell">
 <header class="site-header">
   <div class="site-header-inner">
     <div class="site-brand">
-      <div class="site-anniversary"><div class="site-anniversary-text"><span class="site-anniversary-main"><span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since">since 1997</span></div></div>
+      <div class="site-anniversary"><div class="site-anniversary-text"><span class="site-anniversary-main"><span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since" data-i18n="anniversary.since">since 1997</span></div></div>
       <a href="index.html" class="site-logo-mark">
         <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
       </a>
     </div>
     <nav class="site-nav">
-      <a href="index.html">トップ / Home</a>
-      <a href="product_list.html">商品一覧 / Products</a>
-      <a href="mypage.html" class="active">マイページ / My Page</a>
+      <a href="index.html" data-i18n="nav.home">トップ / Home</a>
+      <a href="product_list.html" data-i18n="nav.products">商品一覧 / Products</a>
+      <a href="mypage.html" class="active" data-i18n="nav.mypage">マイページ / My Page</a>
     </nav>
-    <button class="logout-btn" id="logout-btn" onclick="logout()">ログアウト</button>
+    <button type="button" class="site-lang-btn" id="lang-toggle-btn" onclick="i18nToggle()">EN</button>
+    <button class="logout-btn" id="logout-btn" onclick="logout()" data-i18n="nav.logout">ログアウト</button>
     <a class="site-cart-btn" href="cart.html">🛒 <span id="header-cart-count">0</span></a>
   </div>
 </header>
@@ -206,14 +210,14 @@
     <div class="sidebar-quicklinks">
       <a href="user_guide.html" class="sidebar-quicklink">
         <img class="sidebar-quicklink-icon" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/guide.png" alt="ご利用ガイド">
-        <span><span class="sidebar-quicklink-title">ご利用ガイド</span><span class="sidebar-quicklink-sub">USER GUIDE</span></span>
+        <span><span class="sidebar-quicklink-title" data-i18n="sidebar.guideTitle">ご利用ガイド</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.guideSub">USER GUIDE</span></span>
       </a>
       <a href="product_list.html" class="sidebar-quicklink">
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
-        <span><span class="sidebar-quicklink-title">商品一覧</span><span class="sidebar-quicklink-sub">PRODUCTS</span></span>
+        <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
       </a>
     </div>
-    <div class="sidebar-categories-title">商品カテゴリ / Categories</div>
+    <div class="sidebar-categories-title" data-i18n="sidebar.categoriesTitle">商品カテゴリ / Categories</div>
     <div class="sidebar-category-list" id="sidebar-category-list">
       <div class="skeleton-box sidebar-category-skeleton"></div>
       <div class="skeleton-box sidebar-category-skeleton"></div>
@@ -227,75 +231,74 @@
       <div id="auth-panel">
         <div class="card">
           <div class="auth-tabs">
-            <button class="auth-tab-btn active" id="tab-login" onclick="switchAuthTab('login')">ログイン</button>
-            <button class="auth-tab-btn" id="tab-signup" onclick="switchAuthTab('signup')">初めての方</button>
+            <button class="auth-tab-btn active" id="tab-login" onclick="switchAuthTab('login')" data-i18n="my.tabLogin">ログイン</button>
+            <button class="auth-tab-btn" id="tab-signup" onclick="switchAuthTab('signup')" data-i18n="my.tabSignup">初めての方</button>
           </div>
           <div class="auth-panel-inner active" id="panel-login">
             <div class="form-group">
-              <label>メールアドレス</label>
+              <label data-i18n="my.emailLabel">メールアドレス</label>
               <input type="email" class="form-input" id="login-email" placeholder="taro@example.com">
             </div>
             <div class="form-group">
-              <label>パスワード</label>
+              <label data-i18n="my.passwordLabel">パスワード</label>
               <div class="password-field">
                 <input type="password" class="form-input" id="login-password">
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('login-password', this)">👁</button>
               </div>
             </div>
-            <button class="submit-btn" id="login-btn" onclick="login()">ログイン</button>
+            <button class="submit-btn" id="login-btn" onclick="login()" data-i18n="my.loginBtn">ログイン</button>
             <div style="text-align:center;margin-top:12px;">
-              <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('forgot');return false;">パスワードをお忘れですか？</a>
+              <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('forgot');return false;" data-i18n="my.forgotLink">パスワードをお忘れですか？</a>
             </div>
           </div>
           <div class="auth-panel-inner" id="panel-forgot">
-            <div class="form-hint" style="margin-bottom:14px;">
+            <div class="form-hint" style="margin-bottom:14px;" data-i18n="my.forgotHint">
               ご登録のメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。
             </div>
             <div class="form-group">
-              <label>メールアドレス</label>
+              <label data-i18n="my.emailLabel">メールアドレス</label>
               <input type="email" class="form-input" id="forgot-email" placeholder="taro@example.com">
             </div>
-            <button class="submit-btn" id="forgot-btn" onclick="requestPasswordReset()">再設定メールを送る</button>
+            <button class="submit-btn" id="forgot-btn" onclick="requestPasswordReset()" data-i18n="my.forgotBtn">再設定メールを送る</button>
             <div style="text-align:center;margin-top:12px;">
-              <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('login');return false;">ログインに戻る</a>
+              <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('login');return false;" data-i18n="my.backToLogin">ログインに戻る</a>
             </div>
           </div>
           <div class="auth-panel-inner" id="panel-reset">
-            <div class="form-hint" style="margin-bottom:14px;">新しいパスワードを設定してください。</div>
+            <div class="form-hint" style="margin-bottom:14px;" data-i18n="my.resetHint">新しいパスワードを設定してください。</div>
             <div class="form-group">
-              <label>新しいパスワード</label>
+              <label data-i18n="my.newPasswordLabel">新しいパスワード</label>
               <input type="password" class="form-input" id="reset-password" placeholder="6文字以上">
             </div>
             <div class="form-group">
-              <label>パスワード(確認)</label>
+              <label data-i18n="my.passwordConfirmLabel">パスワード(確認)</label>
               <input type="password" class="form-input" id="reset-password-confirm">
             </div>
-            <button class="submit-btn" id="reset-btn" onclick="submitNewPassword()">パスワードを更新する</button>
+            <button class="submit-btn" id="reset-btn" onclick="submitNewPassword()" data-i18n="my.resetBtn">パスワードを更新する</button>
           </div>
           <div class="auth-panel-inner" id="panel-signup">
-            <div class="form-hint" style="margin-bottom:14px;">
-              ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。
-              <br>これまでのご注文履歴・ポイント残高がそのまま引き継がれます。
+            <div class="form-hint" style="margin-bottom:14px;" data-i18n="my.signupHint">
+              ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。これまでのご注文履歴・ポイント残高がそのまま引き継がれます。
             </div>
             <div class="form-group">
-              <label>ご登録のメールアドレス</label>
+              <label data-i18n="my.signupEmailLabel">ご登録のメールアドレス</label>
               <input type="email" class="form-input" id="signup-email" placeholder="taro@example.com">
             </div>
             <div class="form-group">
-              <label>新しいパスワード</label>
+              <label data-i18n="my.newPasswordLabel">新しいパスワード</label>
               <div class="password-field">
                 <input type="password" class="form-input" id="signup-password" placeholder="6文字以上">
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password', this)">👁</button>
               </div>
             </div>
             <div class="form-group">
-              <label>パスワード(確認)</label>
+              <label data-i18n="my.passwordConfirmLabel">パスワード(確認)</label>
               <div class="password-field">
                 <input type="password" class="form-input" id="signup-password-confirm">
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('signup-password-confirm', this)">👁</button>
               </div>
             </div>
-            <button class="submit-btn" id="signup-btn" onclick="signup()">パスワードを設定する</button>
+            <button class="submit-btn" id="signup-btn" onclick="signup()" data-i18n="my.signupBtn">パスワードを設定する</button>
           </div>
           <div class="auth-msg" id="auth-msg"></div>
         </div>
@@ -305,78 +308,78 @@
           <div class="welcome" id="welcome-name"></div>
           <div class="point-box">
             <div class="point-num" id="point-balance">0</div>
-            <div class="point-label">保有ポイント / Points Balance</div>
+            <div class="point-label" data-i18n="my.pointsLabel">保有ポイント / Points Balance</div>
           </div>
         </div>
         <div class="card">
-          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> ご注文履歴 / Order History</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> <span data-i18n="my.orderHistoryTitle">ご注文履歴 / Order History</span></div>
           <div id="order-list">
-            <div class="loading">読み込み中...</div>
+            <div class="loading" data-i18n="my.loading">読み込み中...</div>
           </div>
         </div>
         <div class="card">
-          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg> アカウント情報 / Account Info</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg> <span data-i18n="my.accountInfoTitle">アカウント情報 / Account Info</span></div>
           <div class="email-row">
             <div class="email-current" id="current-email-display">-</div>
-            <button class="email-change-btn" onclick="toggleEmailChangeForm()">変更する</button>
+            <button class="email-change-btn" onclick="toggleEmailChangeForm()" data-i18n="my.changeBtn">変更する</button>
           </div>
           <div id="email-change-form">
             <div class="form-group">
-              <label>新しいメールアドレス</label>
+              <label data-i18n="my.newEmailLabel">新しいメールアドレス</label>
               <input type="email" class="form-input" id="new-email-input" placeholder="new@example.com">
             </div>
-            <button class="submit-btn" id="email-change-btn" onclick="submitEmailChange()">メールアドレスを変更する</button>
-            <div class="form-hint">変更には確認メールが<b>新しいメールアドレスと現在のメールアドレスの両方</b>に届きます。<b>両方</b>のメール内のリンクをクリックしていただく必要があります(片方だけでは変更が完了しません)。</div>
+            <button class="submit-btn" id="email-change-btn" onclick="submitEmailChange()" data-i18n="my.emailChangeBtn">メールアドレスを変更する</button>
+            <div class="form-hint"><span data-i18n="my.emailChangeHintPre">変更には確認メールが</span><b data-i18n="my.emailChangeHintBold">新しいメールアドレスと現在のメールアドレスの両方</b><span data-i18n="my.emailChangeHintMid">に届きます。</span><b data-i18n="my.emailChangeHintBold2">両方</b><span data-i18n="my.emailChangeHintPost">のメール内のリンクをクリックしていただく必要があります(片方だけでは変更が完了しません)。</span></div>
           </div>
           <div class="email-row" style="margin-top:16px;">
-            <div class="email-current">パスワード / Password</div>
-            <button class="email-change-btn" onclick="togglePasswordChangeForm()">変更する</button>
+            <div class="email-current" data-i18n="my.passwordLabelPlain">パスワード / Password</div>
+            <button class="email-change-btn" onclick="togglePasswordChangeForm()" data-i18n="my.changeBtn">変更する</button>
           </div>
           <div id="password-change-form">
             <div class="form-group">
-              <label>新しいパスワード / New Password</label>
+              <label data-i18n="my.newPasswordLabelEn">新しいパスワード / New Password</label>
               <div class="password-field">
                 <input type="password" class="form-input" id="new-password-input" placeholder="6文字以上">
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-password-input', this)">👁</button>
               </div>
             </div>
             <div class="form-group">
-              <label>新しいパスワード(確認) / Confirm</label>
+              <label data-i18n="my.passwordConfirmLabelEn">新しいパスワード(確認) / Confirm</label>
               <div class="password-field">
                 <input type="password" class="form-input" id="new-password-confirm-input">
                 <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('new-password-confirm-input', this)">👁</button>
               </div>
             </div>
-            <button class="submit-btn" id="password-change-btn" onclick="submitPasswordChange()">パスワードを変更する</button>
+            <button class="submit-btn" id="password-change-btn" onclick="submitPasswordChange()" data-i18n="my.passwordChangeBtn">パスワードを変更する</button>
           </div>
           <div class="form-group" style="margin-top:16px;">
-            <label>電話番号</label>
+            <label data-i18n="my.telLabel">電話番号</label>
             <input type="text" class="form-input" id="profile-tel1">
           </div>
           <div class="form-group">
-            <label>住所1</label>
+            <label data-i18n="my.address1Label">住所1</label>
             <input type="text" class="form-input" id="profile-address1">
           </div>
           <div class="form-group">
-            <label>住所2</label>
+            <label data-i18n="my.address2Label">住所2</label>
             <input type="text" class="form-input" id="profile-address2">
           </div>
           <div class="form-group">
-            <label>エリア / Area</label>
+            <label data-i18n="my.areaLabel">エリア / Area</label>
             <select class="form-input" id="profile-area"></select>
-            <div class="form-hint">引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。</div>
+            <div class="form-hint" data-i18n="my.areaHint">引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。</div>
           </div>
-          <button class="submit-btn" onclick="saveProfile()">住所・電話番号を保存する</button>
+          <button class="submit-btn" onclick="saveProfile()" data-i18n="my.saveProfileBtn">住所・電話番号を保存する</button>
           <div class="profile-msg" id="profile-msg"></div>
         </div>
         <div class="card">
-          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 5 1.3 7-6.3-3.3L5.7 21.4 7 14.4l-5-5 7-.9z"></path></svg> お気に入り商品 / Favorite Products</div>
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 5 1.3 7-6.3-3.3L5.7 21.4 7 14.4l-5-5 7-.9z"></path></svg> <span data-i18n="my.favoritesTitle">お気に入り商品 / Favorite Products</span></div>
           <div class="form-group">
-            <input type="text" class="form-input" id="fav-search-input" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
+            <input type="text" class="form-input" id="fav-search-input" data-i18n-placeholder="my.favSearchPlaceholder" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
             <div class="fav-search-result" id="fav-search-result"></div>
           </div>
           <div id="fav-list">
-            <div class="loading">読み込み中...</div>
+            <div class="loading" data-i18n="my.loading">読み込み中...</div>
           </div>
         </div>
       </div>
@@ -388,7 +391,7 @@
       </div>
       <div class="footer-row">
         <div class="footer-section">
-          <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+          <h3 data-i18n="footer.companyTitle">会社情報・直売店のご案内 / Company &amp; Store</h3>
           <div class="footer-store-media">
             <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
             <div id="footer-map" class="footer-store-map"></div>
@@ -400,35 +403,33 @@
             TEL: 02-258-9878 / 06-5618-9906<br>
             Email: <a href="mailto:orders@saitofoods.com">orders@saitofoods.com</a><br>
             Tax ID: 0-1055-40079-19-1<br>
-            ※ 直売店も同住所で営業しております。<br>
-            店頭でも商品をお買い求めいただけます。<br>
-            <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+            <span data-i18n="footer.addressNote">※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。</span><br>
+            <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer"><span data-i18n="footer.mapLink">📍 地図で見る / View on map</span></a>
           </p>
         </div>
         <div class="footer-section">
-          <h3>配送エリアについて / Delivery Area</h3>
+          <h3 data-i18n="footer.deliveryAreaTitle">配送エリアについて / Delivery Area</h3>
           <p>
-            バンコク・シラチャ・パタヤは<br>自社配送でお届けします。<br>
-            それ以外の地域は、外部のクール便<br>(冷蔵・冷凍配送サービス)を利用して<br>全国どこへでもお届け可能です。<br>詳しくはお問い合わせください。
+<span data-i18n="footer.deliveryAreaText">バンコク・シラチャ・パタヤは自社配送でお届けします。それ以外の地域は、外部のクール便(冷蔵・冷凍配送サービス)を利用して全国どこへでもお届け可能です。詳しくはお問い合わせください。</span>
           </p>
           <div class="footer-area-images">
             <div class="footer-area-image-item">
               <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" target="_blank" rel="noopener noreferrer">
                 <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-bangkok.jpg" alt="バンコク配送エリア">
               </a>
-              <span>バンコクエリア</span>
+              <span data-i18n="footer.bangkokArea">バンコクエリア</span>
             </div>
             <div class="footer-area-image-item">
               <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
                 <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャエリア">
               </a>
-              <span>シラチャエリア</span>
+              <span data-i18n="footer.srirachaArea">シラチャエリア</span>
             </div>
           </div>
         </div>
       </div>
       <div class="footer-section footer-links">
-        <a href="terms.html">利用規約 / Terms of Service</a>
+        <a href="terms.html" data-i18n="footer.terms">利用規約 / Terms of Service</a>
       </div>
       <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
     </footer>
@@ -444,10 +445,10 @@ let allOrders = [];
 let originalAreaId = null;
 async function loadSidebarCategories() {
   const listEl = document.getElementById('sidebar-category-list');
-  const { data, error } = await supabaseClient.from('categories').select('id,name_ja,sort_order').order('sort_order');
+  const { data, error } = await supabaseClient.from('categories').select('id,name_ja,name_en,sort_order').order('sort_order');
   if (error || !data || !data.length) { listEl.innerHTML = ''; return; }
   listEl.innerHTML = data.map(c =>
-    `<a class="sidebar-category-item" href="product_list.html?category_id=${c.id}">${c.name_ja}</a>`
+    `<a class="sidebar-category-item" href="product_list.html?category_id=${c.id}">${i18nGetLang() === 'en' && c.name_en ? c.name_en : c.name_ja}</a>`
   ).join('');
 }
 function updateHeaderCartCount() {
@@ -686,7 +687,7 @@ function renderLoadMoreButton(hasMore) {
   const wrap = document.createElement('div');
   wrap.id = 'load-more-orders-wrap';
   wrap.style.cssText = 'text-align:center;margin-top:14px;';
-  wrap.innerHTML = '<button id="load-more-orders-btn" class="receipt-btn" style="flex:none;padding:10px 26px;" onclick="loadMoreOrders()">もっと見る / Load more</button>';
+  wrap.innerHTML = '<button id="load-more-orders-btn" class="receipt-btn" style="flex:none;padding:10px 26px;" onclick="loadMoreOrders()">' + i18nText('my.loadMoreBtn') + '</button>';
   listEl.appendChild(wrap);
 }
 function orderHistorySkeletonHtml() {
@@ -719,13 +720,13 @@ function renderOrderCard(order, index) {
   div.className = 'order-card';
   let statusHtml = '';
   if (order.is_cancelled) {
-    statusHtml = '<span class="status-badge status-cancelled">キャンセル済み</span>';
+    statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
   } else if (order.is_completed) {
-    statusHtml = '<span class="status-badge status-completed">お届け完了</span>';
+    statusHtml = '<span class="status-badge status-completed">' + i18nText('my.statusCompleted') + '</span>';
   } else if (order.departed_at) {
-    statusHtml = '<span class="status-badge status-departed">🚴 出発済み</span>';
+    statusHtml = '<span class="status-badge status-departed">' + i18nText('my.statusDeparted') + '</span>';
   } else {
-    statusHtml = '<span class="status-badge status-pending">準備中</span>';
+    statusHtml = '<span class="status-badge status-pending">' + i18nText('my.statusPending') + '</span>';
   }
   let departureHtml = '';
   if (order.departed_at && !order.is_cancelled) {
@@ -745,9 +746,9 @@ function renderOrderCard(order, index) {
       ${statusHtml}
     </div>
     ${departureHtml}
-    <div class="order-items-list">${itemsHtml || '(商品情報なし)'}</div>
+    <div class="order-items-list">${itemsHtml || i18nText('my.noProductInfo')}</div>
     <div class="order-footer">
-      <span style="font-size:12px;color:var(--muted);">${order.payment_method === 'qr' ? 'QR振込み' : '現金'}</span>
+      <span style="font-size:12px;color:var(--muted);">${order.payment_method === 'qr' ? i18nText('my.paymentQr') : i18nText('my.paymentCash')}</span>
       <span class="order-total">${order.total_amount || 0} THB</span>
     </div>
     <div class="order-actions">
@@ -755,9 +756,9 @@ function renderOrderCard(order, index) {
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
     ${(!order.is_completed && !order.is_cancelled && !order.is_slip_printed && !order.departed_at && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10)))
-      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">🎉 まだ間に合います!追加注文する / Still time to add items</button>`
+      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">${i18nText('my.addMoreBtn')}</button>`
       : (!order.is_completed && !order.is_cancelled
-          ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? '配送に出発したため、この画面からの追加はできません。お急ぎの場合はお電話でお問い合わせください。 / The delivery has already departed, so items can no longer be added here. Please call us if urgent.' : '準備が始まったためこの画面からの追加はできません。配送出発前であればお電話でも対応できる場合があります。 / Preparation has started — this screen can no longer be used, but a phone call may still work if delivery hasn\'t left yet.'}</div>`
+          ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
           : '')}
   `;
   return div;
@@ -954,6 +955,16 @@ function initFooterMap() {
   });
   new google.maps.Marker({ position: location, map: map, title: 'サイトウフーズ SAITO FOODS' });
 }
+
+document.addEventListener('saitofoods-langchange', function () {
+  loadSidebarCategories();
+  if (allOrders && allOrders.length) {
+    const listEl = document.getElementById('order-list');
+    const wrap = document.getElementById('load-more-orders-wrap');
+    listEl.querySelectorAll('.order-card').forEach(function (el) { el.remove(); });
+    allOrders.forEach((order, index) => listEl.insertBefore(renderOrderCard(order, index), wrap || null));
+  }
+});
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNH0d4VA9S0ocLKb5TiGghubIL8MigOTA&callback=initFooterMap" async defer></script>
 </body>
