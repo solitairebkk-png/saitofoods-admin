@@ -8,8 +8,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
-    --brand: #8FB9A8; --brand-dark: #5F8B79; --accent: #F4C77B;
-    --cream: #FAF6EE; --ink: #33322E; --line: #D9E6DC; --line-soft: #EDF4EE; --red: #C5533F;
+    --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
+    --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans Thai', 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 12.5px; line-height: 1.35; background: var(--line-soft); }
@@ -21,7 +21,7 @@
   .toolbar .back-link { font-size: 12.5px; color: var(--brand-dark); font-weight: 700; text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
   .btn { border: none; border-radius: 8px; padding: 9px 15px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
   .btn-primary { background: var(--brand-dark); color: #fff; }
-  .btn-primary:hover { background: #4d735f; }
+  .btn-primary:hover { background: #A8631A; }
   .hint-text { font-size: 11px; color: #8a8a86; margin-top: 5px; text-align: right; }
 
   .receipt-paper { background: #fff; border-radius: 10px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); padding: 18px 22px; }
@@ -116,7 +116,7 @@
     <div class="receipt-paper">
 
       <div class="receipt-head">
-        <div class="receipt-logo"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo2mono.jpg" alt="Saito Foods Co.,Ltd."></div>
+        <div class="receipt-logo"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="Saito Foods Co.,Ltd."></div>
         <div class="receipt-title-block">
           <h1>Order Receipt</h1>
           <div class="order-no">Order No. <b id="f-order-no"></b></div>
@@ -279,7 +279,7 @@ async function loadReceipt() {
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
-      order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_th, unit_label ) )
+      order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .eq('id', orderId)
     .single();
@@ -355,10 +355,11 @@ function renderReceipt(order) {
     const subtotalLabel = isWeight
       ? (order.is_weight_confirmed ? baht(item.total_price) : 'TBC')
       : baht(item.total_price);
+    const nameEn = item.products?.name_en ? `<div class="sub">${item.products.name_en}</div>` : '';
     const nameTh = item.products?.name_th ? `<div class="sub">${item.products.name_th}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     return `<tr>
-      <td class="item-name">${item.product_name_snapshot || ''}${nameTh}${weightTag}</td>
+      <td class="item-name">${item.product_name_snapshot || ''}${nameEn}${nameTh}${weightTag}</td>
       <td class="num">${qtyLabel}</td>
       <td class="num">${unitLabel}</td>
       <td class="num">${subtotalLabel}</td>
