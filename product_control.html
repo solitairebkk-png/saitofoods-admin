@@ -587,7 +587,11 @@ function toggleEdit(productId) {
   editRow.innerHTML = `
     <td colspan="9">
       <div class="edit-grid">
-        <label>名前(日) / Name (JA)<input type="text" class="e-name-ja" value="${p.name_ja || ''}"></label>
+        <label>
+          <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;">名前(日) / Name (JA) <button type="button" class="btn small ghost e-translate-all-btn" onclick="translateAllFields(this)" style="font-size:11px;padding:3px 9px;">🌐 まとめて翻訳 / Translate all</button></span>
+          <input type="text" class="e-name-ja" value="${p.name_ja || ''}">
+          <span class="e-translate-all-status" style="font-size:10px;color:var(--text-muted);min-height:14px;display:block;margin-top:2px;"></span>
+        </label>
         <label>名前(英) / Name (EN)<input type="text" class="e-name-en" value="${p.name_en || ''}"></label>
         <label>名前(タイ) / Name (TH)<input type="text" class="e-name-th" value="${p.name_th || ''}"></label>
         <label>Group<select class="e-group">
@@ -615,9 +619,8 @@ function toggleEdit(productId) {
       <div class="edit-grid">
         <label style="grid-column: span 2;">説明文(日) / Description (JA)<textarea class="e-desc-ja" rows="3" style="resize:vertical;font-family:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:13px;">${p.description_ja || ''}</textarea></label>
         <label style="grid-column: span 2;">
-          <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;">説明文(英) / Description (EN) <button type="button" class="btn small ghost e-translate-btn" onclick="translateDescription(this)" style="font-size:11px;padding:3px 9px;">🌐 翻訳 / Translate</button></span>
+          <span>説明文(英) / Description (EN)</span>
           <textarea class="e-desc-en" rows="3" style="resize:vertical;font-family:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:13px;">${p.description_en || ''}</textarea>
-          <span class="e-translate-status" style="font-size:10px;color:var(--text-muted);min-height:14px;display:block;margin-top:2px;"></span>
         </label>
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大8枚 / up to 8 photos)</div>
@@ -736,16 +739,22 @@ function jsonpRequest(baseUrl, params) {
   });
 }
 
-async function translateDescription(btn) {
-  const editGrid = btn.closest('.edit-grid');
-  const jaTextarea = editGrid.querySelector('.e-desc-ja');
-  const enTextarea = editGrid.querySelector('.e-desc-en');
-  const statusEl = editGrid.querySelector('.e-translate-status');
+// ---------------- まとめて翻訳(名前EN/名前TH/説明EN を一括で埋める) ----------------
+async function translateAllFields(btn) {
+  const editRow = btn.closest('tr.edit-row') || document;
+  const nameJaInput = editRow.querySelector('.e-name-ja');
+  const nameEnInput = editRow.querySelector('.e-name-en');
+  const nameThInput = editRow.querySelector('.e-name-th');
+  const descJaTextarea = editRow.querySelector('.e-desc-ja');
+  const descEnTextarea = editRow.querySelector('.e-desc-en');
+  const statusEl = editRow.querySelector('.e-translate-all-status');
 
-  const jaText = jaTextarea.value.trim();
-  if (!jaText) {
+  const nameJa = nameJaInput.value.trim();
+  const descJa = descJaTextarea.value.trim();
+
+  if (!nameJa && !descJa) {
     statusEl.style.color = 'var(--red-accent)';
-    statusEl.textContent = '先に日本語の説明文を入力してください / Please write the Japanese description first';
+    statusEl.textContent = '先に日本語の商品名か説明文を入力してください / Please write the Japanese name or description first';
     return;
   }
 
@@ -754,15 +763,29 @@ async function translateDescription(btn) {
   statusEl.textContent = '翻訳中... / Translating...';
 
   try {
-    const data = await jsonpRequest(TRANSLATE_PROXY_URL, { text: jaText });
+    const jobs = [];
+    if (nameJa) jobs.push(jsonpRequest(TRANSLATE_PROXY_URL, { text: nameJa }).then(data => ({ field: 'name', data })));
+    if (descJa) jobs.push(jsonpRequest(TRANSLATE_PROXY_URL, { text: descJa }).then(data => ({ field: 'desc', data })));
 
-    if (data.error) {
+    const results = await Promise.all(jobs);
+    const errors = [];
+
+    results.forEach(({ field, data }) => {
+      if (data.error) { errors.push(data.error); return; }
+      if (field === 'name') {
+        nameEnInput.value = data.en || '';
+        nameThInput.value = data.th || '';
+      } else if (field === 'desc') {
+        descEnTextarea.value = data.en || '';
+      }
+    });
+
+    if (errors.length) {
       statusEl.style.color = 'var(--red-accent)';
-      statusEl.textContent = '翻訳に失敗しました / Translation failed: ' + data.error;
+      statusEl.textContent = '翻訳に失敗しました / Translation failed: ' + errors.join(' / ');
       return;
     }
 
-    enTextarea.value = data.translated || '';
     statusEl.style.color = 'var(--green)';
     statusEl.textContent = '翻訳しました ✓ 内容を確認してから保存してください / Translated ✓ Please review before saving';
   } catch (err) {
