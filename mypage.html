@@ -32,8 +32,11 @@
   .site-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
   .site-logo-mark img { height: 56px; width: auto; display: block; }
-  .site-anniversary { color: #fff; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
-  .site-anniversary-since { display: block; font-size: 9px; font-weight: 600; opacity: 0.85; }
+  .site-anniversary { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 128px; aspect-ratio: 601 / 266; background-image: url('https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/medal.png'); background-size: 100% 100%; background-repeat: no-repeat; flex-shrink: 0; padding: 2px 16px; }
+  .site-anniversary::after { content: ''; position: absolute; top: 0; left: -150%; width: 55%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.85), transparent); transform: skewX(-20deg); animation: anniversary-shine 3s ease-in-out infinite; }
+  @keyframes anniversary-shine { 0% { left: -150%; } 45% { left: 150%; } 100% { left: 150%; } }
+  .site-anniversary-main { color: var(--red); font-size: 11px; font-weight: 800; text-align: center; white-space: nowrap; line-height: 1.2; }
+  .site-anniversary-since { display: block; font-size: 8px; font-weight: 700; color: #3A2410; text-align: center; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
@@ -186,7 +189,7 @@
       <a href="index.html" class="site-logo-mark">
         <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
       </a>
-      <div class="site-anniversary">おかげさまで<span id="anniversary-years"></span>周年！<span class="site-anniversary-since">since 1997</span></div>
+      <div class="site-anniversary"><span class="site-anniversary-main">おかげさまで<span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since">since 1997</span></div>
     </div>
     <nav class="site-nav">
       <a href="index.html">トップ / Home</a>
