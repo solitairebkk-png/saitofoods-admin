@@ -614,7 +614,7 @@ async function loadMyPage(user) {
   document.getElementById('mypage-main').style.display = 'block';
   document.getElementById('logout-btn').style.display = 'inline-block';
   const name = `${customerRow.family_name || ''} ${customerRow.first_name || ''}`.trim();
-  document.getElementById('welcome-name').innerHTML = `${name} 様、いつもありがとうございます。`;
+  document.getElementById('welcome-name').innerHTML = `${name} ${i18nText('my.welcomeSuffix')}`;
   document.getElementById('point-balance').textContent = customerRow.point_balance ?? 0;
   document.getElementById('current-email-display').textContent = customerRow.email || user.email || '-';
   document.getElementById('profile-tel1').value = customerRow.tel1 || '';
@@ -632,7 +632,7 @@ const ORDER_SELECT_FIELDS = `
       id, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, is_slip_printed, total_amount,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
-      order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price )
+      order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
 async function loadOrderHistory(customerId) {
   const listEl = document.getElementById('order-list');
@@ -730,12 +730,14 @@ function renderOrderCard(order, index) {
   }
   let departureHtml = '';
   if (order.departed_at && !order.is_cancelled) {
-    const staffName = order.staff?.name || '担当者';
-    departureHtml = `<div class="departure-info">🚴 担当: ${staffName}　出発時刻: ${formatDepartedTime(order.departed_at)}</div>`;
+    const staffName = order.staff?.name || i18nText('my.staffFallback');
+    departureHtml = `<div class="departure-info">🚴 ${i18nText('my.staffLabel')}: ${staffName}　${i18nText('my.departedAtLabel')}: ${formatDepartedTime(order.departed_at)}</div>`;
   }
   const itemsHtml = (order.order_items || []).map(item => {
-    const qty = item.sale_type === 'weight' ? `${item.quantity}` : `${item.quantity}点`;
-    return `${item.product_name_snapshot} × ${qty} — ${item.total_price} THB`;
+    const isEn = i18nGetLang() === 'en';
+    const itemName = isEn && item.products?.name_en ? item.products.name_en : item.product_name_snapshot;
+    const qty = item.sale_type === 'weight' ? `${item.quantity}` : (isEn ? `x${item.quantity}` : `${item.quantity}点`);
+    return `${itemName} × ${qty} — ${item.total_price} THB`;
   }).join('<br>');
   div.innerHTML = `
     <div class="order-card-header">
@@ -958,6 +960,10 @@ function initFooterMap() {
 
 document.addEventListener('saitofoods-langchange', function () {
   loadSidebarCategories();
+  if (currentCustomer) {
+    const name = `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim();
+    document.getElementById('welcome-name').innerHTML = `${name} ${i18nText('my.welcomeSuffix')}`;
+  }
   if (allOrders && allOrders.length) {
     const listEl = document.getElementById('order-list');
     const wrap = document.getElementById('load-more-orders-wrap');

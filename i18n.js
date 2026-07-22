@@ -152,6 +152,10 @@
     'my.addMoreBtn': { ja: '🎉 まだ間に合います！追加注文する / Still time to add items', en: '🎉 Still time to add items' },
     'my.departedNote': { ja: '配送に出発したため、この画面からの追加はできません。お急ぎの場合はお電話でお問い合わせください。 / The delivery has already departed, so items can no longer be added here. Please call us if urgent.', en: 'The delivery has already departed, so items can no longer be added here. Please call us if urgent.' },
     'my.preparingNote': { ja: '準備が始まったためこの画面からの追加はできません。配送出発前であればお電話でも対応できる場合があります。 / Preparation has started — this screen can no longer be used, but a phone call may still work if delivery hasn\'t left yet.', en: 'Preparation has started — this screen can no longer be used, but a phone call may still work if delivery hasn\'t left yet.' },
+    'my.welcomeSuffix': { ja: '様、いつもありがとうございます。', en: ', thank you for your continued support.' },
+    'my.staffLabel': { ja: '担当', en: 'Staff' },
+    'my.staffFallback': { ja: '担当者', en: 'Staff member' },
+    'my.departedAtLabel': { ja: '出発時刻', en: 'Departed at' },
 
     // ---- cart.html ----
     'cart.navCart': { ja: 'カート / Cart', en: 'Cart' },
