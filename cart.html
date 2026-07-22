@@ -6,8 +6,8 @@
 <title>サイトウフーズ | Saito Foods — カート</title>
 <style>
   :root {
-    --brand: #8FB9A8; --brand-dark: #5F8B79; --accent: #F4C77B;
-    --cream: #FAF6EE; --ink: #33322E; --line: #D9E6DC; --line-soft: #EDF4EE; --red: #C5533F;
+    --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
+    --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Noto Sans JP', sans-serif; color: var(--ink); font-size: 15px; background: var(--cream); }
@@ -15,13 +15,25 @@
 
   .app-shell { max-width: 480px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 40px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
 
-  .site-header { background: #fff; position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--line); }
-  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 12px 20px; }
-  .site-logo-mark { font-weight: 800; font-size: 16px; color: var(--brand-dark); white-space: nowrap; }
-  .site-logo-mark small { display: block; font-size: 10px; font-weight: 600; color: #999; }
+  .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
+  .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; flex-wrap: wrap; }
+  .site-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
+  .site-logo-mark img { height: 56px; width: auto; display: block; }
+  .site-anniversary { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; aspect-ratio: 601 / 266; background-image: url('https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/medal.png'); background-size: 100% 100%; background-repeat: no-repeat; flex-shrink: 0; padding: 2px 20px; }
+  .site-anniversary-text { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(9px, -6px); }
+  .site-anniversary-text::after { content: ''; position: absolute; top: 0; left: -150%; width: 55%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.85), transparent); transform: skewX(-20deg); animation: anniversary-shine 3s ease-in-out infinite; }
+  @keyframes anniversary-shine { 0% { left: -150%; } 45% { left: 150%; } 100% { left: 150%; } }
+  .site-anniversary-main { color: var(--red); font-size: 19px; font-weight: 900; text-align: center; white-space: nowrap; line-height: 1.2; }
+  .site-anniversary-since { display: block; font-size: 10.5px; font-weight: 700; color: #3A2410; text-align: center; margin-top: 1px; }
+  .site-lang-btn { background: #fff; color: var(--brand-dark); font-weight: 800; border: none; border-radius: 20px; padding: 7px 14px; font-size: 12px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
-  .site-nav a { color: var(--ink); text-decoration: none; opacity: .7; }
-  .site-nav a.active { opacity: 1; color: var(--brand-dark); }
+  .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
+  .site-nav a.active { opacity: 1; text-decoration: underline; }
+  @media (max-width: 480px) {
+    .site-anniversary { width: 128px; }
+    .site-anniversary-main { font-size: 15px; }
+  }
 
   main { padding: 16px; }
 
@@ -120,197 +132,203 @@
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="i18n.js"></script>
 </head>
 <body>
 <div class="app-shell">
 
 <header class="site-header">
   <div class="site-header-inner">
-    <a href="index.html" class="site-logo-mark">サイトウフーズ<small>SAITO FOODS</small></a>
+    <div class="site-brand">
+      <div class="site-anniversary"><div class="site-anniversary-text"><span class="site-anniversary-main"><span id="anniversary-years"></span>周年！</span><span class="site-anniversary-since" data-i18n="anniversary.since">since 1997</span></div></div>
+      <a href="index.html" class="site-logo-mark">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+      </a>
+    </div>
     <nav class="site-nav">
-      <a href="index.html">トップ / Home</a>
-      <a href="product_list.html">商品一覧 / Products</a>
-      <a href="cart.html" class="active">カート / Cart</a>
-      <a href="mypage.html">マイページ / My Page</a>
+      <a href="index.html" data-i18n="nav.home">トップ / Home</a>
+      <a href="product_list.html" data-i18n="nav.products">商品一覧 / Products</a>
+      <a href="cart.html" class="active" data-i18n="cart.navCart">カート / Cart</a>
+      <a href="mypage.html" data-i18n="nav.mypage">マイページ / My Page</a>
     </nav>
+    <button type="button" class="site-lang-btn" id="lang-toggle-btn" onclick="i18nToggle()">EN</button>
   </div>
 </header>
 
 <main>
-  <div class="page-title">カート / Cart</div>
+  <div class="page-title" data-i18n="cart.pageTitle">カート / Cart</div>
 
   <!-- ログインが必要な場合 -->
   <div class="card" id="login-card" style="display:none;">
-    <h2>🔒 ログインしてください / Please log in</h2>
-    <div style="font-size:12px;color:#999;margin-bottom:12px;">ご注文にはログインが必要です。カートの中身はこのまま保持されます。</div>
+    <h2 data-i18n="cart.loginTitle">🔒 ログインしてください / Please log in</h2>
+    <div style="font-size:12px;color:#999;margin-bottom:12px;" data-i18n="cart.loginHint">ご注文にはログインが必要です。カートの中身はこのまま保持されます。</div>
     <div id="login-error"></div>
-    <input type="email" id="login-email" placeholder="メールアドレス / Email">
-    <input type="password" id="login-password" placeholder="パスワード / Password" onkeydown="if(event.key==='Enter')login()">
-    <button class="btn-primary" onclick="login()">ログイン / Log in</button>
-    <div class="signup-hint">アカウントをお持ちでない方は <a href="mypage.html">マイページ</a> から新規登録できます</div>
+    <input type="email" id="login-email" data-i18n-placeholder="cart.emailPlaceholder" placeholder="メールアドレス / Email">
+    <input type="password" id="login-password" data-i18n-placeholder="cart.passwordPlaceholder" placeholder="パスワード / Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-primary" onclick="login()" data-i18n="cart.loginBtn">ログイン / Log in</button>
+    <div class="signup-hint"><span data-i18n="cart.signupHintPre">アカウントをお持ちでない方は</span> <a href="mypage.html" data-i18n="cart.signupHintLink">マイページ</a> <span data-i18n="cart.signupHintPost">から新規登録できます</span></div>
   </div>
 
   <!-- ログイン後のカート・注文フォーム -->
   <div id="cart-content" style="display:none;">
 
     <div class="card">
-      <h2>🛒 商品 / Items</h2>
+      <h2 data-i18n="cart.itemsTitle">🛒 商品 / Items</h2>
       <div id="cart-items-list"></div>
     </div>
 
     <div class="card" id="addto-banner" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);">
-      <div style="font-weight:800;font-size:13.5px;margin-bottom:4px;">➕ 追加注文 / Additional order</div>
+      <div style="font-weight:800;font-size:13.5px;margin-bottom:4px;" data-i18n="cart.addtoTitle">➕ 追加注文 / Additional order</div>
       <div id="addto-banner-text" style="font-size:12.5px;color:var(--ink);line-height:1.7;"></div>
       <div id="addto-original-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--accent);">
-        <div style="font-size:11.5px;font-weight:700;color:#7A5C1E;margin-bottom:6px;">📦 元のご注文内容(確定済み・変更不可) / Original order (already confirmed)</div>
+        <div style="font-size:11.5px;font-weight:700;color:#7A5C1E;margin-bottom:6px;" data-i18n="cart.addtoOriginalTitle">📦 元のご注文内容(確定済み・変更不可) / Original order (already confirmed)</div>
         <div id="addto-original-list" style="font-size:12px;color:var(--ink);line-height:1.8;"></div>
         <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);">
-          <span>小計 / Subtotal</span><span id="addto-original-subtotal">฿0</span>
+          <span data-i18n="cart.subtotal">小計 / Subtotal</span><span id="addto-original-subtotal">฿0</span>
         </div>
       </div>
     </div>
 
     <div class="card" id="delivery-card">
-      <h2>🚚 配送日時 / Delivery date &amp; schedule</h2>
+      <h2 data-i18n="cart.deliveryTitle">🚚 配送日時 / Delivery date &amp; schedule</h2>
 
       <div id="delivery-fields-bangkok" style="display:none;">
         <div class="row-2">
           <div class="field">
-            <label>配送日 / Delivery date</label>
+            <label data-i18n="cart.deliveryDateLabel">配送日 / Delivery date</label>
             <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
             <div class="date-note" id="delivery-date-note"></div>
           </div>
           <div class="field">
-            <label>時間帯 / Time slot</label>
+            <label data-i18n="cart.timeSlotLabel">時間帯 / Time slot</label>
             <select id="delivery-time-slot"></select>
           </div>
         </div>
-        <div style="font-size:11px;color:#999;">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
+        <div style="font-size:11px;color:#999;" data-i18n="cart.closedNote">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
       </div>
 
       <div id="delivery-fields-sriracha" style="display:none;">
         <div class="field">
-          <label>配送日 / Delivery date(火曜日または木曜日)</label>
+          <label data-i18n="cart.srirachaDateLabel">配送日 / Delivery date(火曜日または木曜日)</label>
           <select id="sriracha-date-select" onchange="onSrirachaDateChange()"></select>
         </div>
         <div class="field">
-          <label>コンドミニアム / Condominium</label>
+          <label data-i18n="cart.condoLabel">コンドミニアム / Condominium</label>
           <select id="sriracha-condo-select" onchange="onCondoSelectChange('sriracha')"></select>
-          <input type="text" id="sriracha-condo-other" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
+          <input type="text" id="sriracha-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
         </div>
-        <div style="font-size:11px;color:#999;">※ シラチャエリアは時間指定不可・配送順に順次お届けします(注文確定後、車両位置情報のご案内をいたします)</div>
+        <div style="font-size:11px;color:#999;" data-i18n="cart.srirachaNote">※ シラチャエリアは時間指定不可・配送順に順次お届けします(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
 
       <div id="delivery-fields-pattaya" style="display:none;">
         <div class="field">
-          <label>配送日 / Delivery date</label>
+          <label data-i18n="cart.deliveryDateLabel">配送日 / Delivery date</label>
           <select id="pattaya-date-select"></select>
         </div>
         <div class="field">
-          <label>コンドミニアム / Condominium</label>
+          <label data-i18n="cart.condoLabel">コンドミニアム / Condominium</label>
           <select id="pattaya-condo-select" onchange="onCondoSelectChange('pattaya')"></select>
-          <input type="text" id="pattaya-condo-other" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
+          <input type="text" id="pattaya-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
         </div>
-        <div style="font-size:11px;color:#999;">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
+        <div style="font-size:11px;color:#999;" data-i18n="cart.pattayaNote">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
     </div>
 
     <div class="card">
-      <h2>💰 配送料について / Shipping fee</h2>
+      <h2 data-i18n="cart.shippingTitle">💰 配送料について / Shipping fee</h2>
       <div class="shipping-banner" id="shipping-banner"></div>
       <div class="field">
-        <label>クーポンコード / Coupon code</label>
+        <label data-i18n="cart.couponLabel">クーポンコード / Coupon code</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="coupon-input" placeholder="例: SUMMER50" style="flex:1;text-transform:uppercase;" oninput="onCouponInputChange()">
-          <button type="button" class="btn-secondary" onclick="applyCoupon()">適用 / Apply</button>
+          <button type="button" class="btn-secondary" onclick="applyCoupon()" data-i18n="cart.applyBtn">適用 / Apply</button>
         </div>
         <div id="coupon-status" style="font-size:12px;margin-top:6px;"></div>
       </div>
       <div class="field" id="points-field" style="display:none;">
-        <label>ポイントを使う / Use points (残高 <span id="points-available">0</span> pt)</label>
+        <label><span data-i18n="cart.usePointsLabel">ポイントを使う / Use points</span> (<span id="points-available">0</span> pt)</label>
         <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--ink);margin-bottom:8px;cursor:pointer;">
           <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()" style="width:auto;flex:0 0 auto;">
-          今回の注文でポイントを使う / Use points on this order
+          <span data-i18n="cart.usePointsCheckbox">今回の注文でポイントを使う / Use points on this order</span>
         </label>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12.5px;color:#666;white-space:nowrap;">使用ポイント数 / Amount to use</span>
+          <span style="font-size:12.5px;color:#666;white-space:nowrap;" data-i18n="cart.pointsAmountLabel">使用ポイント数 / Amount to use</span>
           <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="max-width:100px;flex:none;" disabled oninput="onPointsAmountChange()">
           <span style="font-size:12.5px;color:#666;">pt</span>
         </div>
         <div style="font-size:11px;color:#999;margin-top:6px;line-height:1.6;">
-          チェックを入れると残高が自動で入力されます。数量を減らせば一部だけ使うことも可能です。<br>
-          Checking the box fills in your full balance — lower the number if you'd rather use only part of it. 1 pt = ฿1 discount.
+          <span data-i18n="cart.pointsHint">チェックを入れると残高が自動で入力されます。数量を減らせば一部だけ使うことも可能です。</span>
         </div>
       </div>
-      <div class="totals-row" id="totals-original-row" style="display:none;color:#7A5C1E;"><span>元のご注文小計 / Original order subtotal</span><span id="totals-original">฿0</span></div>
+      <div class="totals-row" id="totals-original-row" style="display:none;color:#7A5C1E;"><span data-i18n="cart.originalSubtotal">元のご注文小計 / Original order subtotal</span><span id="totals-original">฿0</span></div>
       <div class="totals-row"><span id="totals-subtotal-label">小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
-      <div class="totals-row" id="totals-shipping-row"><span>配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
-      <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span>割引 / Discount</span><span id="totals-discount">-฿0</span></div>
-      <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span>ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
+      <div class="totals-row" id="totals-shipping-row"><span data-i18n="cart.shippingRow">配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
+      <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.discountRow">割引 / Discount</span><span id="totals-discount">-฿0</span></div>
+      <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.pointsUsedRow">ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
       <div class="totals-row total"><span id="totals-total-label">合計 / Total</span><span id="totals-total">฿0</span></div>
-      <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span>総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
-      <div style="font-size:11px;color:#999;margin-top:6px;">※ 量り売り商品は単価×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
+      <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span data-i18n="cart.grandTotal">総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
+      <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は単価×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
     </div>
 
     <div class="card">
-      <h2>💳 支払い方法 / Payment method</h2>
+      <h2 data-i18n="cart.paymentTitle">💳 支払い方法 / Payment method</h2>
       <div class="pay-options">
         <label class="pay-option" id="pay-option-qr">
           <input type="radio" name="payment" value="qr" checked onchange="onPaymentChange()">
-          <div><div class="pay-label">📱 PromptPay QR</div><div class="pay-sub">QRコードを読み取って送金</div></div>
+          <div><div class="pay-label" data-i18n="cart.payQrLabel">📱 PromptPay QR</div><div class="pay-sub" data-i18n="cart.payQrSub">QRコードを読み取って送金</div></div>
         </label>
         <label class="pay-option" id="pay-option-transfer">
           <input type="radio" name="payment" value="transfer" onchange="onPaymentChange()">
-          <div><div class="pay-label">🏦 銀行振込 / Bank transfer</div><div class="pay-sub">SCB口座へお振込み</div></div>
+          <div><div class="pay-label" data-i18n="cart.payTransferLabel">🏦 銀行振込 / Bank transfer</div><div class="pay-sub" data-i18n="cart.payTransferSub">SCB口座へお振込み</div></div>
         </label>
         <label class="pay-option" id="pay-option-cod">
           <input type="radio" name="payment" value="cash" onchange="onPaymentChange()">
-          <div><div class="pay-label">💵 代金引換 / Cash on delivery</div><div class="pay-sub">配達員にお支払い</div></div>
+          <div><div class="pay-label" data-i18n="cart.payCodLabel">💵 代金引換 / Cash on delivery</div><div class="pay-sub" data-i18n="cart.payCodSub">配達員にお支払い</div></div>
         </label>
       </div>
       <div class="bank-info-box" id="bank-info-box" style="display:none;">
         <b>SCB (Siam Commercial Bank)</b><br>
         口座番号 / Account No.: <b>071-296992-2</b><br>
         口座名義 / Account name: <b>SAITO FOODS CO.,LTD.</b><br>
-        ※ ご注文確定後、スリップアップロード用リンクが表示されます
+        <span data-i18n="cart.bankNote">※ ご注文確定後、スリップアップロード用リンクが表示されます</span>
       </div>
       <div class="cod-info-box" id="cod-info-box" style="display:none;">
-        配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。
+        <span data-i18n="cart.codNote">配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。</span>
       </div>
     </div>
 
     <div class="card">
       <div class="field">
-        <label>備考 / Comment</label>
-        <input type="text" id="order-comment" placeholder="例: 玄関前に置いてください">
+        <label data-i18n="cart.commentLabel">備考 / Comment</label>
+        <input type="text" id="order-comment" data-i18n-placeholder="cart.commentPlaceholder" placeholder="例: 玄関前に置いてください">
       </div>
-      <button class="btn-primary" style="width:100%;" onclick="submitOrder()">注文を確定する / Place order</button>
+      <button class="btn-primary" style="width:100%;" onclick="submitOrder()" data-i18n="cart.placeOrderBtn">注文を確定する / Place order</button>
       <div id="submit-msg"></div>
     </div>
 
     <!-- 注文完了後の表示 -->
     <div class="card" id="success-panel" style="display:none;">
       <div class="icon">🎉</div>
-      <h2 style="justify-content:center;">ご注文ありがとうございます！ / Order placed!</h2>
+      <h2 style="justify-content:center;" data-i18n="cart.successTitle">ご注文ありがとうございます！ / Order placed!</h2>
       <div id="success-note" style="font-size:13px;color:#666;"></div>
       <div id="order-qr-wrap">
         <div id="order-qr-code"></div>
-        <div style="font-size:11px;color:#999;">PromptPay QR — <span id="order-qr-amount"></span> THB</div>
+        <div style="font-size:11px;color:#999;"><span data-i18n="cart.qrCaption">PromptPay QR —</span> <span id="order-qr-amount"></span> THB</div>
       </div>
       <div class="slip-link-row" id="slip-link-row" style="display:none;">
         <input type="text" id="slip-link-input" readonly onclick="this.select()">
-        <button class="btn-secondary" onclick="copySlipLink()">コピー / Copy</button>
+        <button class="btn-secondary" onclick="copySlipLink()" data-i18n="cart.copyBtn">コピー / Copy</button>
       </div>
       <div id="gps-info-box" style="display:none;text-align:left;margin-top:14px;padding:12px 14px;background:var(--line-soft);border-radius:10px;font-size:12.5px;line-height:1.9;">
-        <b>🚚 配送車両の位置情報 / Vehicle tracking</b><br>
-        配送日の朝、下記リンクから配送車両の現在地をご確認いただけます。<br>
+        <b data-i18n="cart.gpsTitle">🚚 配送車両の位置情報 / Vehicle tracking</b><br>
+        <span data-i18n="cart.gpsNote1">配送日の朝、下記リンクから配送車両の現在地をご確認いただけます。</span><br>
         URL: <a id="gps-info-url" href="#" target="_blank" rel="noopener noreferrer" style="color:var(--brand-dark);"></a><br>
-        ユーザー名 / Username: <span id="gps-info-username"></span><br>
-        パスワード / Password: <span id="gps-info-password"></span><br>
-        <span style="font-size:11px;color:#999;">※ スマホアプリ「sinotrack pro」でも同じ情報でログインできます</span>
+        <span data-i18n="cart.gpsUsernameLabel">ユーザー名 / Username</span>: <span id="gps-info-username"></span><br>
+        <span data-i18n="cart.gpsPasswordLabel">パスワード / Password</span>: <span id="gps-info-password"></span><br>
+        <span style="font-size:11px;color:#999;" data-i18n="cart.gpsAppNote">※ スマホアプリ「sinotrack pro」でも同じ情報でログインできます</span>
       </div>
-      <button class="btn-secondary" id="receipt-link-btn" style="width:100%;margin-top:14px;display:none;">🧾 伝票を表示・印刷する / View &amp; print receipt</button>
-      <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="location.href='product_list.html'">商品一覧に戻る / Back to products</button>
+      <button class="btn-secondary" id="receipt-link-btn" style="width:100%;margin-top:14px;display:none;" data-i18n="cart.viewReceiptBtn">🧾 伝票を表示・印刷する / View &amp; print receipt</button>
+      <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="location.href='product_list.html'" data-i18n="cart.backToProductsBtn">商品一覧に戻る / Back to products</button>
     </div>
 
 
@@ -325,7 +343,7 @@
 
   <div class="footer-row">
     <div class="footer-section">
-      <h3>会社情報・直売店のご案内 / Company &amp; Store</h3>
+      <h3 data-i18n="footer.companyTitle">会社情報・直売店のご案内 / Company &amp; Store</h3>
       <div class="footer-store-media">
         <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
         <div id="footer-map" class="footer-store-map"></div>
@@ -339,7 +357,7 @@
         Tax ID: 0-1055-40079-19-1<br>
         ※ 直売店も同住所で営業しております。<br>
         店頭でも商品をお買い求めいただけます。<br>
-        <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer">📍 地図で見る / View on map</a>
+        <a href="https://maps.app.goo.gl/QKdhHvcsrUkLti857" target="_blank" rel="noopener noreferrer"><span data-i18n="footer.mapLink">📍 地図で見る / View on map</span></a>
       </p>
     </div>
 
@@ -367,7 +385,7 @@
   </div>
 
   <div class="footer-section footer-links">
-    <a href="terms.html">利用規約 / Terms of Service</a>
+    <a href="terms.html" data-i18n="footer.terms">利用規約 / Terms of Service</a>
   </div>
 
   <div class="footer-copyright">© 2026 SAITO FOODS CO.,LTD. All rights reserved.</div>
@@ -622,6 +640,16 @@ function onCondoSelectChange(area) {
 }
 
 // ---------------- 初期化 ----------------
+(function () {
+  var el = document.getElementById('anniversary-years');
+  if (el) el.textContent = new Date().getFullYear() - 1997;
+})();
+
+document.addEventListener('saitofoods-langchange', function () {
+  if (typeof cart !== 'undefined' && cart.length) renderCart();
+  if (typeof shippingFreeThreshold !== 'undefined') loadShippingSettings();
+});
+
 (async function init() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
@@ -643,9 +671,11 @@ async function loadShippingSettings() {
       if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
     });
   }
-  document.getElementById('shipping-banner').innerHTML =
-    `🚚 合計金額 <b>฿${shippingFreeThreshold}</b> 以上のご注文で配送料無料です。<br>` +
-    `฿${shippingFreeThreshold} 未満の場合、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+  document.getElementById('shipping-banner').innerHTML = i18nGetLang() === 'en'
+    ? `🚚 Orders of <b>฿${shippingFreeThreshold}</b> or more get free shipping.<br>` +
+      `Below ฿${shippingFreeThreshold}, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
+    : `🚚 合計金額 <b>฿${shippingFreeThreshold}</b> 以上のご注文で配送料無料です。<br>` +
+      `฿${shippingFreeThreshold} 未満の場合、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
 }
 
 // ---------------- カート読み込み(product_list.htmlのlocalStorageと同じキー) ----------------
@@ -657,7 +687,7 @@ async function loadCartItems() {
   const ids = Object.keys(map);
   if (ids.length === 0) {
     cart = [];
-    listEl.innerHTML = '<div class="empty-cart-note">カートに商品がありません / Your cart is empty</div>';
+    listEl.innerHTML = '<div class="empty-cart-note">' + i18nText('cart.empty') + '</div>';
     updateTotals();
     return;
   }
@@ -697,7 +727,7 @@ function saveCartToStorage() {
 function renderCart() {
   const listEl = document.getElementById('cart-items-list');
   if (cart.length === 0) {
-    listEl.innerHTML = '<div class="empty-cart-note">カートに商品がありません / Your cart is empty</div>';
+    listEl.innerHTML = '<div class="empty-cart-note">' + i18nText('cart.empty') + '</div>';
     updateTotals();
     return;
   }
@@ -706,11 +736,12 @@ function renderCart() {
     const isWeight = item.sale_type === 'weight';
     const img = item.image_url ? `<img src="${item.image_url}" class="cart-item-img" onerror="this.style.visibility='hidden'">` : `<div class="cart-item-img"></div>`;
     const priceLabel = isWeight ? `${item.unit_price} THB / ${item.unit_label}` : `฿${item.price}`;
+    const displayName = i18nGetLang() === 'en' && item.name_en ? item.name_en : item.name;
     return `
       <div class="cart-item-row">
         ${img}
         <div class="cart-item-info">
-          <div class="cart-item-name">${item.name}${isWeight ? '<span class="cart-item-weight-tag">量り売り</span>' : ''}</div>
+          <div class="cart-item-name">${displayName}${isWeight ? `<span class="cart-item-weight-tag">${i18nText('cart.weightTag')}</span>` : ''}</div>
           <div class="cart-item-price">${priceLabel}</div>
         </div>
         <div class="cart-item-controls">
