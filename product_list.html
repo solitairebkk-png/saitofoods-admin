@@ -28,11 +28,11 @@
   .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
   .site-logo-mark img { height: 56px; width: auto; display: block; }
   .site-anniversary { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 170px; aspect-ratio: 601 / 266; background-image: url('https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/medal.png'); background-size: 100% 100%; background-repeat: no-repeat; flex-shrink: 0; padding: 2px 20px; }
-  .site-anniversary-text { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .site-anniversary-text { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; transform: translate(9px, -6px); }
   .site-anniversary-text::after { content: ''; position: absolute; top: 0; left: -150%; width: 55%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.85), transparent); transform: skewX(-20deg); animation: anniversary-shine 3s ease-in-out infinite; }
   @keyframes anniversary-shine { 0% { left: -150%; } 45% { left: 150%; } 100% { left: 150%; } }
   .site-anniversary-main { color: var(--red); font-size: 19px; font-weight: 900; text-align: center; white-space: nowrap; line-height: 1.2; }
-  .site-anniversary-since { display: block; font-size: 8px; font-weight: 700; color: #3A2410; text-align: center; }
+  .site-anniversary-since { display: block; font-size: 10.5px; font-weight: 700; color: #3A2410; text-align: center; margin-top: 1px; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
@@ -41,8 +41,8 @@
   .layout-wrap { display: flex; align-items: flex-start; }
   .sidebar-categories {
     width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 1px solid rgba(0,0,0,0.05);
-    position: sticky; top: 61px; align-self: flex-start;
-    height: calc(100vh - 61px); overflow-y: auto; padding: 16px 0;
+    position: sticky; top: 98px; align-self: flex-start;
+    height: calc(100vh - 98px); overflow-y: auto; padding: 16px 0;
     scrollbar-width: none; -ms-overflow-style: none;
   }
   .sidebar-categories::-webkit-scrollbar { width: 0px; background: transparent; }
@@ -82,7 +82,7 @@
     .sidebar-categories-title { padding: 0 16px 8px; }
   }
 
-  .toolbar-sticky { position: sticky; top: 61px; z-index: 20; background: #fff; border-bottom: 1px solid var(--line-soft); padding: 12px 16px; }
+  .toolbar-sticky { position: sticky; top: 98px; z-index: 20; background: #fff; border-bottom: 1px solid var(--line-soft); padding: 12px 16px; }
   .search-input { width: 100%; padding: 10px 32px 10px 16px; border: 1.5px solid var(--line); border-radius: 22px; font-size: 13.5px; font-family: inherit; background: var(--cream); }
   .search-input:focus { outline: none; border-color: var(--brand); background: #fff; }
   .search-clear-wrap { position: relative; }
