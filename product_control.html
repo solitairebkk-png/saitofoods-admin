@@ -713,7 +713,29 @@ function clearImageSlot(btn, slot) {
   slotEl.querySelector('.image-preview-wrap').innerHTML = `<span class="no-image-text">No Image</span>`;
 }
 
-// ---------------- 説明文の翻訳(GAS経由でClaude APIを呼ぶ) ----------------
+// ---------------- 説明文の翻訳(GAS経由でClaude APIを呼ぶ・JSONP方式) ----------------
+// GAS Webアプリはfetch()から呼ぶとCORSで失敗するため、<script>タグ経由のJSONPで呼び出す
+function jsonpRequest(baseUrl, params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    const script = document.createElement('script');
+
+    const cleanup = () => {
+      delete window[callbackName];
+      script.remove();
+    };
+
+    window[callbackName] = (data) => { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); reject(new Error('スクリプトの読み込みに失敗しました / Failed to load script')); };
+
+    const qs = Object.entries({ ...params, callback: callbackName })
+      .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v))
+      .join('&');
+    script.src = baseUrl + '?' + qs;
+    document.body.appendChild(script);
+  });
+}
+
 async function translateDescription(btn) {
   const editGrid = btn.closest('.edit-grid');
   const jaTextarea = editGrid.querySelector('.e-desc-ja');
@@ -732,12 +754,7 @@ async function translateDescription(btn) {
   statusEl.textContent = '翻訳中... / Translating...';
 
   try {
-    const res = await fetch(TRANSLATE_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' }, // GAS Web AppはContent-Type: application/jsonのPOSTだとCORSプリフライトで失敗するため text/plain で送る
-      body: JSON.stringify({ text: jaText }),
-    });
-    const data = await res.json();
+    const data = await jsonpRequest(TRANSLATE_PROXY_URL, { text: jaText });
 
     if (data.error) {
       statusEl.style.color = 'var(--red-accent)';
