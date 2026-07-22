@@ -20,8 +20,11 @@
 
   .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
   .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; }
+  .site-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
-  .site-logo-mark img { height: 40px; width: auto; display: block; }
+  .site-logo-mark img { height: 56px; width: auto; display: block; }
+  .site-anniversary { color: #fff; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+  .site-anniversary-since { display: block; font-size: 9px; font-weight: 600; opacity: 0.85; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
@@ -43,7 +46,7 @@
   .sidebar-quicklinks { border-bottom: 1px solid var(--line); margin-bottom: 8px; padding-bottom: 4px; }
   .sidebar-quicklink { display: flex; align-items: center; gap: 12px; padding: 12px 20px; text-decoration: none; color: var(--ink); }
   .sidebar-quicklink:hover { background: #fff; }
-  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; object-fit: cover; }
   .sidebar-quicklink-icon.square { border-radius: 9px; }
   .sidebar-quicklink-title { font-weight: 800; font-size: 13px; display: block; }
   .sidebar-quicklink-sub { font-size: 9px; color: var(--brand-dark); letter-spacing: 0.06em; font-weight: 700; }
@@ -55,7 +58,7 @@
 
   @media (max-width: 760px) {
     .site-header-inner { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
-    .site-logo-mark { order: 1; }
+    .site-brand { order: 1; }
     .site-cart-btn { order: 2; margin-left: auto; }
     .site-nav { order: 3; flex: 1 1 100%; overflow-x: auto; white-space: nowrap; gap: 14px; scrollbar-width: none; }
     .site-nav::-webkit-scrollbar { display: none; }
@@ -230,9 +233,12 @@
 
 <header class="site-header">
   <div class="site-header-inner">
-    <a href="index.html" class="site-logo-mark">
-      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
-    </a>
+    <div class="site-brand">
+      <a href="index.html" class="site-logo-mark">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+      </a>
+      <div class="site-anniversary">おかげさまで<span id="anniversary-years"></span>周年！<span class="site-anniversary-since">since 1997</span></div>
+    </div>
     <nav class="site-nav">
       <a href="index.html" class="active">トップ / Home</a>
       <a href="product_list.html">商品一覧 / Products</a>
@@ -247,11 +253,11 @@
   <aside class="sidebar-categories">
     <div class="sidebar-quicklinks">
       <a href="user_guide.html" class="sidebar-quicklink">
-        <span class="sidebar-quicklink-icon">i</span>
+        <img class="sidebar-quicklink-icon" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/guide.png" alt="ご利用ガイド">
         <span><span class="sidebar-quicklink-title">ご利用ガイド</span><span class="sidebar-quicklink-sub">USER GUIDE</span></span>
       </a>
       <a href="product_list.html" class="sidebar-quicklink">
-        <span class="sidebar-quicklink-icon square">+</span>
+        <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title">商品一覧</span><span class="sidebar-quicklink-sub">PRODUCTS</span></span>
       </a>
     </div>
@@ -714,6 +720,11 @@ function renderCalendar() {
 function formatDateLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+(function () {
+  const el = document.getElementById('anniversary-years');
+  if (el) el.textContent = new Date().getFullYear() - 1997;
+})();
 
 updateHeaderCartCount();
 loadCategoryNav();

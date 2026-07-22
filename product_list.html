@@ -22,17 +22,18 @@
 
   .app-shell { max-width: 1100px; margin: 0 auto; background: var(--cream); min-height: 100vh; padding-bottom: 90px; position: relative; box-shadow: 0 0 40px rgba(0,0,0,0.06); }
 
-  /* ── ヘッダー(index.htmlと共通) ── */
   .site-header { background: linear-gradient(135deg, #FFCB4D 0%, var(--brand) 100%); position: sticky; top: 0; z-index: 25; border-bottom: 2px solid var(--brand-dark); }
   .site-header-inner { display: flex; align-items: center; gap: 20px; padding: 10px 20px; }
+  .site-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .site-logo-mark { flex-shrink: 0; display: flex; align-items: center; }
-  .site-logo-mark img { height: 40px; width: auto; display: block; }
+  .site-logo-mark img { height: 56px; width: auto; display: block; }
+  .site-anniversary { color: #fff; font-size: 11px; font-weight: 700; line-height: 1.4; white-space: nowrap; }
+  .site-anniversary-since { display: block; font-size: 9px; font-weight: 600; opacity: 0.85; }
   .site-nav { display: flex; gap: 16px; font-size: 12.5px; font-weight: 600; flex: 1; }
   .site-nav a { color: #fff; text-decoration: none; opacity: .85; }
   .site-nav a.active { opacity: 1; text-decoration: underline; }
   .site-cart-btn { background: #fff; color: var(--brand-dark); font-weight: 700; border-radius: 24px; padding: 8px 16px; font-size: 13px; text-decoration: none; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-  /* ── レイアウト: 左サイドバー(カテゴリ)は固定・内部スクロール、右がメイン ── */
   .layout-wrap { display: flex; align-items: flex-start; }
   .sidebar-categories {
     width: 220px; flex-shrink: 0; background: var(--line-soft); border-right: 1px solid rgba(0,0,0,0.05);
@@ -48,7 +49,7 @@
   .sidebar-quicklinks { border-bottom: 1px solid var(--line); margin-bottom: 8px; padding-bottom: 4px; }
   .sidebar-quicklink { display: flex; align-items: center; gap: 12px; padding: 12px 20px; text-decoration: none; color: var(--ink); }
   .sidebar-quicklink:hover { background: #fff; }
-  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .sidebar-quicklink-icon { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; object-fit: cover; }
   .sidebar-quicklink-icon.square { border-radius: 9px; }
   .sidebar-quicklink-title { font-weight: 800; font-size: 13px; display: block; }
   .sidebar-quicklink-sub { font-size: 9px; color: var(--brand-dark); letter-spacing: 0.06em; font-weight: 700; }
@@ -61,7 +62,7 @@
 
   @media (max-width: 760px) {
     .site-header-inner { flex-wrap: wrap; gap: 10px; padding: 10px 16px; }
-    .site-logo-mark { order: 1; }
+    .site-brand { order: 1; }
     .site-cart-btn { order: 2; margin-left: auto; }
     .site-nav { order: 3; flex: 1 1 100%; overflow-x: auto; white-space: nowrap; gap: 14px; scrollbar-width: none; }
     .site-nav::-webkit-scrollbar { display: none; }
@@ -147,7 +148,6 @@
   .cart-fab:hover { transform: translateY(-2px); }
   .cart-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
 
-  /* ── 商品詳細モーダル ── */
   .pmodal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 120; align-items: center; justify-content: center; padding: 20px; }
   .pmodal-overlay.open { display: flex; }
   .pmodal { background: #fff; width: 100%; max-width: 840px; border-radius: 20px; overflow: hidden; position: relative; }
@@ -204,7 +204,6 @@
     .product-grid { grid-template-columns: repeat(4, 1fr); }
   }
 
-  /* footer */
   .site-footer { background: #fff; border-top: 2px solid var(--line); padding: 24px 20px 18px; margin-top: 24px; font-size: 12.5px; color: #666; }
   .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
   .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
@@ -235,9 +234,12 @@
 
 <header class="site-header">
   <div class="site-header-inner">
-    <a href="index.html" class="site-logo-mark">
-      <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
-    </a>
+    <div class="site-brand">
+      <a href="index.html" class="site-logo-mark">
+        <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png" alt="サイトウフーズ SAITO FOODS CO.,LTD.">
+      </a>
+      <div class="site-anniversary">おかげさまで<span id="anniversary-years"></span>周年！<span class="site-anniversary-since">since 1997</span></div>
+    </div>
     <nav class="site-nav">
       <a href="index.html">トップ / Home</a>
       <a href="product_list.html" class="active">商品一覧 / Products</a>
@@ -252,11 +254,11 @@
   <aside class="sidebar-categories">
     <div class="sidebar-quicklinks">
       <a href="user_guide.html" class="sidebar-quicklink">
-        <span class="sidebar-quicklink-icon">i</span>
+        <img class="sidebar-quicklink-icon" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/guide.png" alt="ご利用ガイド">
         <span><span class="sidebar-quicklink-title">ご利用ガイド</span><span class="sidebar-quicklink-sub">USER GUIDE</span></span>
       </a>
       <a href="product_list.html" class="sidebar-quicklink">
-        <span class="sidebar-quicklink-icon square">+</span>
+        <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title">商品一覧</span><span class="sidebar-quicklink-sub">PRODUCTS</span></span>
       </a>
     </div>
@@ -346,7 +348,6 @@
   <a class="cart-bar-btn" href="cart.html">カートを見る / View cart →</a>
 </div>
 
-<!-- PRODUCT DETAIL MODAL -->
 <div class="pmodal-overlay" id="pmodal-overlay" onclick="if(event.target===this) closePModal()">
   <div class="pmodal">
     <button class="pmodal-close" onclick="closePModal()">✕</button>
@@ -393,40 +394,21 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* =========================================================
-   設定 — Supabaseプロジェクト: sdjgmgyghnlpqydrnllj (サイトウフーズ新バックエンド)
-   ※ SUPABASE_KEY は anon/public key に差し替えてください
-   ========================================================= */
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0'; // anon/public key(公開して問題ない設計のキー)
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
 
-// お気に入り機能用(mypage.html/cart.htmlと同じセッションを共有)
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-let currentCustomerId = null;    // ログイン中のお客様のcustomers.id(未ログインならnull)
-let favoriteProductIds = new Set(); // お気に入り登録済みの商品ID一覧
-
-/*
-  テーブル構造 (Supabase RLSポリシー確認済み・2026/07時点):
-  products: id, name_ja, name_en, description_ja, description_en, price,
-            stock, is_unlimited_stock, image_url,
-            is_published, is_local_special, sort_order
-  categories: id, name_ja, name_en, sort_order
-  product_categories: product_id, category_id (商品とカテゴリの中間テーブル・多対多)
-
-  ※ RLSポリシー "products_select_published" により、
-     is_published = true かつ is_local_special = false の商品のみ
-     anonキーで取得可能。ローカル限定商品(97件)はこのポリシーの時点で
-     自動的に除外されるため、フロント側での追加フィルタは不要。
-*/
+let currentCustomerId = null;
+let favoriteProductIds = new Set();
 
 let allCategories = [];
 let allProducts = [];
-let allProductCategories = []; // product_categories中間テーブル(product_id, category_id)
+let allProductCategories = [];
 let cart = {};
 let currentSearchQuery = '';
-let currentCategoryFilter = null; // null = すべて
+let currentCategoryFilter = null;
 let pmodalProductId = null;
-let pmodalNavStack = []; // サジェスト品を辿った時の「戻る」履歴
+let pmodalNavStack = [];
 let pmodalQty = 1;
 let pmodalDescLang = 'ja';
 
@@ -499,7 +481,6 @@ async function init() {
   }
 }
 
-// 商品データ取得中に表示するスケルトン(骨組み)カード
 function showSkeletonGrid() {
   const skeletonCard = `
     <div class="skeleton-card">
@@ -515,7 +496,6 @@ function showSkeletonGrid() {
     `<div class="product-grid">${skeletonCard.repeat(8)}</div>`;
 }
 
-// ---------------- お気に入り(ログイン中のみ) ----------------
 async function loadFavoritesState() {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -529,7 +509,7 @@ async function loadFavoritesState() {
     const { data: favRows } = await supabaseClient
       .from('customer_favorites').select('product_id').eq('customer_id', currentCustomerId);
     favoriteProductIds = new Set((favRows || []).map(r => r.product_id));
-  } catch (e) { /* 未ログイン・エラー時はお気に入り機能を単に無効のままにする */ }
+  } catch (e) { }
 }
 
 async function toggleFavorite(productId, btnEl) {
@@ -567,9 +547,6 @@ function toggleFavoriteFromModal() {
   if (modalBtn && modalBtn.dataset.pid) toggleFavorite(modalBtn.dataset.pid, modalBtn);
 }
 
-// index.htmlなどからの「?view=商品ID」リンクで、該当商品の詳細モーダルを自動的に開く
-// 「?search=キーワード」で来た場合は検索欄にキーワードを反映して検索する
-// 「?category_id=カテゴリID」で来た場合は、そのカテゴリを選択した状態で表示する(index.htmlのカテゴリリンクと同じパラメータ名)
 function handleQuickViewFromQuery() {
   const params = new URLSearchParams(location.search);
   const viewId = params.get('view');
@@ -598,7 +575,6 @@ function handleQuickViewFromQuery() {
 
 function renderSidebarCategories() {
   const wrap = document.getElementById('sidebar-category-list');
-  // カテゴリテーブルが取得できない/空でも「すべて」項目だけで正常動作する
   wrap.innerHTML = `<button class="sidebar-category-item active" data-cat-id="" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
     allCategories.map(c => `<button class="sidebar-category-item" data-cat-id="${c.id}" onclick="setCategoryFilter('${c.id}', this)">${c.name_ja}</button>`).join('');
 }
@@ -620,7 +596,6 @@ function getFilteredProducts() {
     const idsInCategory = new Set(pcRowsForCat.map(pc => pc.product_id));
     matches = matches.filter(p => idsInCategory.has(p.id));
 
-    // カテゴリ内の並び順(product_control.htmlのドラッグ&ドロップで保存したsort_order)を適用する
     categoryOrderMap = {};
     pcRowsForCat.forEach(pc => { categoryOrderMap[pc.product_id] = pc.sort_order; });
   }
@@ -654,9 +629,8 @@ function renderProducts() {
   wrap.innerHTML = `<div class="section-title">${title}</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
 }
 
-const EXCLUDED_CATEGORY_ID = 'baacb658-aaf2-4445-943a-851755244b38'; // 「全商品一覧」= 全部を表す特殊カテゴリなのでバッジには出さない
+const EXCLUDED_CATEGORY_ID = 'baacb658-aaf2-4445-943a-851755244b38';
 
-// 商品が属するカテゴリのうち、一番並び順が若いもの(「全商品一覧」を除く)を代表カテゴリとしてカードに表示する
 function getPrimaryCategoryForProduct(productId) {
   const catIds = allProductCategories.filter(pc => pc.product_id === productId).map(pc => pc.category_id);
   const candidates = catIds
@@ -668,7 +642,6 @@ function getPrimaryCategoryForProduct(productId) {
   return candidates[0];
 }
 
-// 商品カードのカテゴリバッジを押した時、そのカテゴリで絞り込む(カードのクリック=商品詳細を開くのは止める)
 function filterByCategoryFromCard(catId, event) {
   event.stopPropagation();
   const btn = document.querySelector(`.sidebar-category-item[data-cat-id="${catId}"]`);
@@ -689,12 +662,9 @@ function productCardHtml(p) {
     : `<span class="out-of-stock">在庫切れ</span>`;
   const primaryCat = getPrimaryCategoryForProduct(p.id);
   const catBadge = primaryCat ? `<div class="product-cat-badge" onclick="filterByCategoryFromCard('${primaryCat.id}', event)">${primaryCat.name_ja} カテゴリへ→</div>` : '';
-  // is_local_special=trueの商品はRLS(products_select_published)で既にSELECTされないため、
-  // このバッジは実質発火しない想定(将来ポリシーが変わった場合の保険として残しています)
   return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${p.name_ja}</div><div class="product-name-en">${p.name_en || ''}</div>${p.is_local_special ? `<div class="product-local-tag">🏠 ローカル限定</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">⚖️ 量り売り</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div>${catBadge}</div></div>`;
 }
 
-// 検索欄の×(クリア)ボタン共通処理
 function toggleSearchClearBtn(inputId, btnId) {
   const input = document.getElementById(inputId);
   const btn = document.getElementById(btnId);
@@ -731,7 +701,6 @@ function changeQty(productId, delta) {
 function updateCartBar() {
   const items = Object.values(cart);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  // 量り売り商品は単価(目安)×数量を合計に含める(実際の請求額は重量確定後に確定)
   const total = items.reduce((s, i) => s + i.qty * (i.product.sale_type === 'weight' ? (i.product.unit_price || 0) : i.product.price), 0);
   document.getElementById('cart-count').textContent = count;
   document.getElementById('cart-total').textContent = total;
@@ -812,13 +781,9 @@ function openPModal(productId, fromBack) {
   const modalCurrentlyOpen = document.getElementById('pmodal-overlay').classList.contains('open');
 
   if (fromBack) {
-    // 戻る操作: 履歴は既にpop済みなのでここでは何もしない
   } else if (!modalCurrentlyOpen) {
-    // 商品一覧などから新規に開く場合は履歴をリセットする
     pmodalNavStack = [];
   } else if (pmodalProductId && pmodalProductId !== productId) {
-    // モーダルを開いたまま別の商品(サジェスト品など)に切り替える場合、
-    // 「戻る」で元の商品に戻れるよう、直前の商品IDを履歴に積んでおく
     pmodalNavStack.push(pmodalProductId);
   }
 
@@ -855,7 +820,6 @@ function openPModal(productId, fromBack) {
     addBtn.disabled = false;
   }
 
-  // SNSリンク(Instagram/YouTube)。商品ごとに設定されている場合だけ表示
   const snsRow = document.getElementById('pmodal-sns-row');
   const snsLinks = [];
   if (p.instagram_url) snsLinks.push(`<a class="pmodal-sns-link" href="${p.instagram_url}" target="_blank" rel="noopener noreferrer">📷 Instagram</a>`);
@@ -872,8 +836,6 @@ function openPModal(productId, fromBack) {
   document.getElementById('pmodal-overlay').classList.add('open');
 }
 
-// 「一緒に購入されている商品」サジェスト表示
-// product_co_purchase_counts(注文データから集計した公開ビュー)を参照する
 async function loadPModalSuggestions(productId) {
   const wrap = document.getElementById('pmodal-suggest');
   const row = document.getElementById('pmodal-suggest-row');
@@ -898,7 +860,6 @@ async function loadPModalSuggestions(productId) {
     `).join('');
     wrap.style.display = 'block';
   } catch (e) {
-    // ビュー未作成・取得失敗時は静かに非表示のまま(致命的エラーにしない)
   }
 }
 
@@ -907,7 +868,6 @@ function closePModal() {
   pmodalNavStack = [];
 }
 
-// サジェスト品などを辿った後、直前に見ていた商品に戻る
 function goBackPModal() {
   if (pmodalNavStack.length === 0) return;
   const previousId = pmodalNavStack.pop();
@@ -946,9 +906,13 @@ window.addEventListener('scroll', () => {
   document.getElementById('scroll-down-btn').classList.toggle('hidden', atBottom);
 });
 
+(function () {
+  const el = document.getElementById('anniversary-years');
+  if (el) el.textContent = new Date().getFullYear() - 1997;
+})();
+
 init();
 
-// フッターの地図(ホテル等のPOIアイコンを非表示にするカスタムスタイル)
 function initFooterMap() {
   const mapEl = document.getElementById('footer-map');
   if (!mapEl) return;
