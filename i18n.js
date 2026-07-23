@@ -26,8 +26,8 @@
     'anniversary.since': { ja: 'since 1997', en: 'since 1997' },
 
     // ---- index.html hero ----
-    'hero.h1': { ja: '私たちサイトウフーズの想い、それはおいしい生活@タイランド！', en: 'Our wish at Saito Foods... a delicious life in Thailand!' },
-    'hero.p': { ja: 'おいしいね！ってみんなが笑顔になれる幸せは万国共通。おいしいものを囲んでほっとできるひとときへ、少しのお手伝いが出来たらと願い、今日も皆様の食卓へ美味しさと笑顔をお届けします。美味宅配', en: 'That happy "This is delicious!" feeling is universal. We hope to help create relaxing moments around good food. Today too, we deliver taste and smiles to your table.' },
+    'hero.h1': { ja: 'サイトウフーズの願い、それはおいしい生活@タイランド！', en: "Saito Foods' wish: a delicious life in Thailand!" },
+    'hero.p': { ja: '「おいしいね」ってみんなが笑顔になれる幸せは、万国共通。おいしいものを囲んでほっとできるひとときを、少しでもお手伝いできたら。今日も皆様の食卓に、美味しさと笑顔をお届けします。', en: 'That happy feeling when everyone says \'delicious!\' is universal. We hope to help create cozy moments around good food, even just a little. Today too, we deliver taste and smiles to your table.' },
     'hero.searchPlaceholder': { ja: '🔍 商品を検索 / Search product', en: '🔍 Search products' },
     'hero.searchBtn': { ja: '検索 / Search', en: 'Search' },
     'hero.cta': { ja: '商品一覧を見る / Shop Now →', en: 'View products / Shop Now →' },
@@ -91,12 +91,12 @@
     'guide.item2sub': { ja: '※お買い物合計金額600baht以下の配送は別途配送料がかかります。', en: '※ A separate delivery fee applies for orders totaling less than 600 baht.' },
     'guide.item3': { ja: '会員登録を完了してからご注文をお願いいたします。お支払いは商品到着時にタイバーツ現金にてお支払いいただくか、QRコード、銀行振込みをご利用いただけます。', en: 'Please complete member registration before ordering. Payment can be made in Thai baht cash on delivery, or by QR code / bank transfer.' },
     'guide.item3sub': { ja: '※口座番号等々はご注文時にご案内しております。', en: '※ Bank account details are provided at the time of your order.' },
-    'guide.item4': { ja: '配送エリア外への配送に関しましてはお問い合わせくださいませ。', en: 'Please contact us regarding delivery outside our regular delivery area.' },
+    'guide.item4': { ja: '配送エリア外への配送に関しましてはお問い合わせくださいませ。ご登録の際は必ずother Provincesを選択くださいませ。', en: 'Please contact us regarding delivery outside our regular delivery area. When registering, please be sure to select "Other Provinces."' },
     'guide.item5': { ja: '県外への配送も可能です。Nim Express様のクール便を利用配送料はNim Express様の実費を頂いております。海外へ持ち出される場合は別途発泡スチロール箱やドライアイスの手配も別料金にて可能です。', en: 'Delivery to other provinces is also possible using Nim Express cold-chain courier, charged at their actual cost. If you plan to take items abroad, styrofoam boxes and dry ice can be arranged for an additional fee.' },
     'guide.item6': { ja: '配送の混み具合により早期に当日の配送受付を締め切る場合が御座います。', en: 'Same-day delivery orders may close earlier than usual depending on how busy we are.' },
     'guide.item7': { ja: 'webサイトからご購入の場合はご購入金額の約1%のポイントが取得でき次回のお買い物の際に1ポイント＝1bahtとしてご利用いただけます。', en: 'Purchases made on the website earn approximately 1% in points, redeemable as 1 point = 1 baht on your next order.' },
-    'guide.item7sub': { ja: '最後にご利用いただいてからご利用がないまま90日が経過しますとポイントは失効となりますのでご注意くださいませ。また、ポイントの換金は致しかねます。', en: 'Points expire if unused for 90 days after your last order. Points cannot be exchanged for cash.' },
-    'guide.item8': { ja: 'タイの国民の祝日及び毎週日曜日、第三土曜日を定休日とさせて頂いております。', en: 'We are closed on Thai national holidays, every Sunday, and the third Saturday of the month.' },
+    'guide.item7sub': { ja: '最後にご利用いただいてからご利用がないまま伝票記載の有効期限を超過しますとポイントは失効となりますのでご注意くださいませ。また、ポイントの換金は致しかねます。', en: 'Points expire if unused past the expiry date shown on your receipt. Points cannot be exchanged for cash.' },
+    'guide.item8': { ja: 'タイの国民の祝日及び毎週日曜日、隔週土曜日を定休日とさせて頂いておりますが休日の並びにより変更になる場合がございますので、カレンダーにてご確認くださいませ。', en: 'We are closed on Thai national holidays, every Sunday, and every other Saturday, though this may shift depending on how holidays fall — please check the calendar for details.' },
 
     // ---- mypage.html ----
     'my.tabLogin': { ja: 'ログイン', en: 'Log in' },
@@ -136,6 +136,7 @@
     'my.address2Label': { ja: '住所2', en: 'Address line 2' },
     'my.areaLabel': { ja: 'エリア / Area', en: 'Area' },
     'my.areaHint': { ja: '引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。', en: 'If you have moved, please update this too. It is used to determine delivery days and methods.' },
+    'my.otherProvinceWarning': { ja: '登録のエリアがOther Provincesのお客様は、他の配送業者の配送料金実費をご請求させて頂きます。予めご了承ください。', en: 'Customers registered under "Other Provinces" will be charged the actual delivery fee from our courier partner. Thank you for your understanding.' },
     'my.saveProfileBtn': { ja: '住所・電話番号を保存する', en: 'Save address & phone number' },
     'my.favoritesTitle': { ja: 'お気に入り商品 / Favorite Products', en: 'Favorite Products' },
     'my.favSearchPlaceholder': { ja: '商品名で検索して追加', en: 'Search by product name to add' },

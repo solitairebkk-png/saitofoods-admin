@@ -160,8 +160,7 @@
       <div class="comment-note" id="f-comment-note" style="display:none;"><span class="k">Comment: </span><span id="f-comment-text"></span></div>
 
       <div class="points-box" id="f-points-box" style="display:none;">
-        <div>Points balance: <b id="f-points-balance"></b> pt</div>
-        <div id="f-points-expiry"></div>
+        <div>Points balance: <b id="f-points-balance"></b> pt <span id="f-points-expiry" style="color:var(--brand-dark);font-weight:600;"></span></div>
         <div id="f-points-pending" style="flex-basis:100%;"></div>
       </div>
 
@@ -356,7 +355,9 @@ function renderReceipt(order) {
       ? (order.is_weight_confirmed ? baht(item.total_price) : 'TBC')
       : baht(item.total_price);
     const nameEn = item.products?.name_en ? `<div class="sub">${item.products.name_en}</div>` : '';
-    const nameTh = item.products?.name_th ? `<div class="sub">${item.products.name_th}</div>` : '';
+    const nameThRaw = item.products?.name_th ? item.products.name_th.trim() : '';
+    const isDuplicateOfEn = nameThRaw && item.products?.name_en && nameThRaw.toLowerCase() === item.products.name_en.trim().toLowerCase();
+    const nameTh = (nameThRaw && !isDuplicateOfEn) ? `<div class="sub">${nameThRaw}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     return `<tr>
       <td class="item-name">${item.product_name_snapshot || ''}${nameEn}${nameTh}${weightTag}</td>
@@ -421,6 +422,21 @@ function renderReceipt(order) {
 
 async function loadPointsExpiry(customerId) {
   if (!customerId) return;
+  const expiryEl = document.getElementById('f-points-expiry');
+
+  // まず全体設定(settings.point_expiry_days)を取得し、ベースの案内文を出す。
+  // 個別のポイント失効日(points_ledger)が取得できればそちらの具体的な日付で上書きする。
+  let expiryDays = null;
+  try {
+    const { data } = await supabaseClient
+      .from('settings').select('value').eq('key', 'point_expiry_days').single();
+    if (data) expiryDays = parseInt(data.value, 10);
+  } catch (e) { }
+
+  if (expiryDays) {
+    expiryEl.textContent = `(expires after ${expiryDays} days without a new order)`;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
   try {
     const { data } = await supabaseClient
@@ -432,7 +448,7 @@ async function loadPointsExpiry(customerId) {
       .order('expires_at', { ascending: true })
       .limit(1);
     if (data && data.length > 0) {
-      document.getElementById('f-points-expiry').textContent = `Next expiry: ${data[0].expires_at}`;
+      expiryEl.textContent = `(next expiry: ${data[0].expires_at})`;
     }
   } catch (e) { }
 }

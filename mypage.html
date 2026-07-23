@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>マイページ | サイトウフーズ</title>
+<meta name="robots" content="noindex, nofollow">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -366,8 +367,9 @@
           </div>
           <div class="form-group">
             <label data-i18n="my.areaLabel">エリア / Area</label>
-            <select class="form-input" id="profile-area"></select>
+            <select class="form-input" id="profile-area" onchange="onProfileAreaChange()"></select>
             <div class="form-hint" data-i18n="my.areaHint">引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。</div>
+            <div id="area-other-warning" style="display:none;background:var(--red-dim);color:var(--red);border:1px solid var(--red);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:6px;line-height:1.6;" data-i18n="my.otherProvinceWarning">登録のエリアがOther Provincesのお客様は、他の配送業者の配送料金実費をご請求させて頂きます。予めご了承ください。</div>
           </div>
           <button class="submit-btn" onclick="saveProfile()" data-i18n="my.saveProfileBtn">住所・電話番号を保存する</button>
           <div class="profile-msg" id="profile-msg"></div>
@@ -802,6 +804,16 @@ async function loadAreaOptions(currentAreaId) {
     const selected = area.id === currentAreaId ? 'selected' : '';
     return `<option value="${area.id}" ${selected}>${label}</option>`;
   }).join('');
+  onProfileAreaChange();
+}
+
+// 選択中のエリアが「Other Provinces」の場合、配送料実費請求の注意書きを表示する
+function onProfileAreaChange() {
+  const select = document.getElementById('profile-area');
+  const warningEl = document.getElementById('area-other-warning');
+  const selectedLabel = select.options[select.selectedIndex]?.textContent || '';
+  const isOtherProvince = /other\s*provinces?/i.test(selectedLabel);
+  warningEl.style.display = isOtherProvince ? 'block' : 'none';
 }
 async function saveProfile() {
   const tel1 = document.getElementById('profile-tel1').value.trim();

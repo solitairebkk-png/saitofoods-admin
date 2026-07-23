@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>サイトウフーズ | Saito Foods — カート</title>
+<meta name="robots" content="noindex, nofollow">
 <style>
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
@@ -563,29 +564,30 @@ async function initDeliveryArea() {
 // ---------------- シラチャ(火曜/木曜 + コンドミニアム選択) ----------------
 async function initSrirachaFlow() {
   try {
-    const { data } = await supabaseClient.from('holidays').select('holiday_date');
-    holidaySet = new Set((data || []).map(r => r.holiday_date));
-  } catch (e) { holidaySet = new Set(); }
-
-  try {
     const { data } = await supabaseClient.from('condominiums').select('*')
       .in('area_group', ['sriracha_tuesday', 'sriracha_thursday']).eq('is_active', true).order('sort_order');
     allCondos = data || [];
   } catch (e) { allCondos = []; }
 
   const select = document.getElementById('sriracha-date-select');
-  const options = [];
-  const d = new Date();
-  for (let i = 0; i < 90 && options.length < 8; i++) {
-    const dow = d.getDay();
-    const dateStr = formatDateLocal(d);
-    if ((dow === 2 || dow === 4) && !holidaySet.has(dateStr)) {
-      const label = `${dateStr} (${dow === 2 ? '火' : '木'})`;
-      options.push(`<option value="${dateStr}" data-dow="${dow}">${label}</option>`);
-    }
-    d.setDate(d.getDate() + 1);
+  const todayStr = formatDateLocal(new Date());
+  try {
+    const { data } = await supabaseClient.from('sriracha_delivery_days').select('delivery_date')
+      .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
+    const dates = data || [];
+    select.innerHTML = dates.length
+      ? dates.map(d => {
+          // ローカルのタイムゾーンずれで曜日が1日ずれないよう、日付文字列から直接曜日を計算する
+          const parts = d.delivery_date.split('-').map(Number);
+          const dow = new Date(parts[0], parts[1] - 1, parts[2]).getDay();
+          const label = `${d.delivery_date} (${dow === 2 ? '火' : (dow === 4 ? '木' : '')})`;
+          return `<option value="${d.delivery_date}" data-dow="${dow}">${label}</option>`;
+        }).join('')
+      : '<option value="">配送日が設定されていません / No date set yet</option>';
+  } catch (e) {
+    select.innerHTML = '<option value="">読み込みに失敗しました</option>';
   }
-  select.innerHTML = options.length ? options.join('') : '<option value="">選択可能な日がありません</option>';
+
   onSrirachaDateChange();
 }
 
