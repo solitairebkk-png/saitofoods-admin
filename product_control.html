@@ -164,6 +164,7 @@
     </label>
     <label class="checkbox-label"><input type="checkbox" id="filter-noprice" onchange="applyFilters()"> 価格未入力のみ / No price only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-outofstock" onchange="applyFilters()"> 在庫0のみ / Out of stock only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-published" onchange="applyFilters()"> 公開のみ / Published only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
     <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
     <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
@@ -294,7 +295,7 @@ async function fetchAllRows(table, selectCols) {
   return { data: allRows, error: null };
 }
 
-async function loadProducts() {
+async function loadProducts(restoreScrollY) {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
@@ -319,6 +320,12 @@ async function loadProducts() {
 
   allProducts = products || [];
   applyFilters();
+
+  // 保存/削除の直前のスクロール位置が渡されていれば、再描画後にそこへ戻す
+  // (再描画で高さが変わるため、少し待ってから設定する)
+  if (typeof restoreScrollY === 'number') {
+    setTimeout(() => window.scrollTo({ top: restoreScrollY, behavior: 'auto' }), 30);
+  }
 }
 
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -347,6 +354,7 @@ function clearFilters() {
   document.getElementById('filter-saletype').value = '';
   document.getElementById('filter-noprice').checked = false;
   document.getElementById('filter-outofstock').checked = false;
+  document.getElementById('filter-published').checked = false;
   document.getElementById('filter-unpublished').checked = false;
   toggleSearchClearBtn('filter-search', 'filter-search-clear-btn');
   applyFilters();
@@ -367,6 +375,7 @@ function applyFilters() {
   const saleType = document.getElementById('filter-saletype').value;
   const noPriceOnly = document.getElementById('filter-noprice').checked;
   const outOfStockOnly = document.getElementById('filter-outofstock').checked;
+  const publishedOnly = document.getElementById('filter-published').checked;
   const unpublishedOnly = document.getElementById('filter-unpublished').checked;
 
   let filtered = allProducts.filter(p => {
@@ -381,6 +390,7 @@ function applyFilters() {
     if (saleType && p.sale_type !== saleType) return false;
     if (noPriceOnly && !isMissingPrice(p)) return false;
     if (outOfStockOnly && !isOutOfStock(p)) return false;
+    if (publishedOnly && p.is_published === false) return false;
     if (unpublishedOnly && p.is_published !== false) return false;
     return true;
   });
@@ -811,6 +821,8 @@ async function saveProduct(productId) {
   const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
   const g = sel => editRow.querySelector(sel);
 
+  const scrollY = window.scrollY;
+
   const saleType = g('.e-saletype').value;
   const payload = {
     name_ja: g('.e-name-ja').value.trim(),
@@ -864,7 +876,7 @@ async function saveProduct(productId) {
   if (catDeleteErr) {
     alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
     showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
-    loadProducts();
+    loadProducts(scrollY);
     return;
   }
 
@@ -879,13 +891,13 @@ async function saveProduct(productId) {
     if (catInsertErr) {
       alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
       showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catInsertErr.message, true);
-      loadProducts();
+      loadProducts(scrollY);
       return;
     }
   }
 
   showSaveMsg('บันทึกแล้ว / Saved');
-  loadProducts();
+  loadProducts(scrollY);
 }
 
 // 商品を削除する。ただし過去の注文(order_items)から参照されている商品は、
@@ -893,6 +905,8 @@ async function saveProduct(productId) {
 // その場合は「削除」ではなく「非公開」にすることを案内する。
 async function deleteProduct(productId) {
   if (!confirm('この商品を削除しますか？(過去の注文データには影響しません) / Delete this product?')) return;
+
+  const scrollY = window.scrollY;
 
   const { error } = await supabaseClient.from('products').delete().eq('id', productId);
 
@@ -914,7 +928,7 @@ async function deleteProduct(productId) {
   }
 
   showSaveMsg('ลบแล้ว / Deleted');
-  loadProducts();
+  loadProducts(scrollY);
 }
 
 function addNewProduct() {
