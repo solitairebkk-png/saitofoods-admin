@@ -618,9 +618,12 @@ function getFilteredProducts() {
 
   if (currentSearchQuery) {
     const q = currentSearchQuery.toLowerCase();
-    matches = matches.filter(p =>
-      (p.name_ja || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q)
-    );
+    matches = matches.filter(p => {
+      const haystack = [
+        p.name_ja, p.name_en, p.description_ja, p.description_en, p.search_keywords
+      ].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
   }
 
   if (categoryOrderMap) {

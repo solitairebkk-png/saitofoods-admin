@@ -567,6 +567,11 @@ function toggleEdit(productId) {
           <textarea class="e-desc-en" rows="3" style="resize:vertical;font-family:inherit;padding:7px 9px;border:1px solid var(--border);border-radius:5px;font-size:13px;">${p.description_en || ''}</textarea>
         </label>
       </div>
+      <div class="edit-grid">
+        <label style="grid-column: span 2;">検索キーワード / Search Keywords <span style="font-weight:400;color:var(--text-muted);font-size:10px;">※スペース区切りで複数入力可。お客様の検索でヒットさせたい語句(通称・別名・読み方違いなど)</span>
+          <input type="text" class="e-search-keywords" value="${p.search_keywords || ''}" placeholder="例: パイナップルクッキー ばなな パパパイン">
+        </label>
+      </div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">画像 / Images (最大8枚 / up to 8 photos)</div>
       <div class="image-slots">${[1, 2, 3, 4, 5, 6, 7, 8].map(slot => imageSlotHtml(p, slot)).join('')}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">カテゴリ / Categories</div>
@@ -790,6 +795,7 @@ async function saveProduct(productId) {
     is_available_en: g('.e-availen').checked,
     instagram_url: g('.e-instagram').value.trim() || null,
     youtube_url: g('.e-youtube').value.trim() || null,
+    search_keywords: g('.e-search-keywords').value.trim() || null,
   };
 
   if (!payload.name_ja) { showSaveMsg('商品名(日)を入力してください / Please enter a Japanese name', true); return; }
@@ -877,7 +883,7 @@ function addNewProduct() {
     stock_qty: 0, sort_order: null, is_local_special: false, is_free: false, is_published: true, is_available_en: true,
     image_url: null, image_url_2: null, image_url_3: null,
     image_url_4: null, image_url_5: null, image_url_6: null, image_url_7: null, image_url_8: null,
-    instagram_url: null, youtube_url: null,
+    instagram_url: null, youtube_url: null, search_keywords: null,
     _isNew: true,
   };
   allProducts.unshift(blank);
