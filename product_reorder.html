@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Reorder | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+  .btn.save { background: var(--green); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; display: none; }
+
+  .top-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .top-bar label { font-size: 11px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .top-bar select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; min-width: 220px; }
+
+  .reorder-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .reorder-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .reorder-panel-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .reorder-panel-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+  .reorder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .reorder-card { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px; text-align: center; cursor: grab; user-select: none; position: relative; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+  .reorder-card:active { cursor: grabbing; }
+  .reorder-card.sortable-ghost { opacity: 0.35; }
+  .reorder-card.sortable-chosen { box-shadow: 0 6px 16px rgba(0,0,0,0.18); transform: scale(1.03); }
+  .reorder-card img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 5px; background: var(--bg); display: block; margin-bottom: 5px; }
+  .reorder-card .no-img { width: 100%; aspect-ratio: 1/1; border-radius: 5px; background: var(--bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; margin-bottom: 5px; }
+  .reorder-card .name { font-size: 11px; line-height: 1.3; }
+  .reorder-card .num { position: absolute; top: 4px; left: 4px; background: var(--navy); color: #fff; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .reorder-card-edit-link { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%; border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; text-decoration: none; }
+  .reorder-card-edit-link:hover { background: var(--navy); }
+  .reorder-empty, .reorder-placeholder { font-size: 12.5px; color: var(--text-muted); padding: 30px 0; text-align: center; }
+  .reorder-save-msg { font-size: 12px; margin-left: 10px; }
+  .reorder-save-msg.success { color: var(--green); }
+  .reorder-save-msg.error { color: var(--red-accent); }
+
+  @media (max-width: 760px) {
+    main { padding: 16px; }
+    .top-bar select { min-width: 0; width: 100%; }
+    .reorder-panel-header { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Product Reorder <span class="th">จัดเรียงสินค้า</span></h1>
+  <div class="nav-links" id="nav-links" style="display:none;">
+    <a href="product_control.html">← Product Control</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="top-bar">
+    <label>หมวดหมู่ / Category
+      <select id="category-select" onchange="onCategoryChange()">
+        <option value="">-- カテゴリを選択 / Choose a category --</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="reorder-panel">
+    <div class="reorder-panel-header">
+      <div>
+        <div class="reorder-panel-title" id="reorder-panel-title">並べ替え / Reorder</div>
+        <div class="reorder-panel-hint">カードをドラッグして順番を入れ替え、「保存」を押してください / Drag cards to reorder, then click Save.</div>
+      </div>
+      <div>
+        <button class="btn save small" id="reorder-save-btn" onclick="saveReorder()" disabled>並び順を保存 / Save order</button>
+        <span class="reorder-save-msg" id="reorder-save-msg"></span>
+      </div>
+    </div>
+    <div class="reorder-grid" id="reorder-grid">
+      <div class="reorder-placeholder">上でカテゴリを選択してください / Choose a category above to begin</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+let allCategories = [];
+let allProducts = [];
+let categoryPcRows = {}; // category_id -> [{product_id, sort_order}, ...]
+let reorderSortable = null;
+let reorderDirty = false;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  loadData();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// Supabase/PostgRESTは1回のリクエストで返す件数にデフォルト上限(通常1000件)があるため、
+// product_categoriesのように件数が多くなり得るテーブルは、範囲指定で全件を確実に取得する。
+async function fetchAllRows(table, selectCols) {
+  const pageSize = 1000;
+  let from = 0;
+  let allRows = [];
+  while (true) {
+    const { data, error } = await supabaseClient.from(table).select(selectCols).range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: allRows, error: null };
+}
+
+async function loadData() {
+  const [{ data: categories, error: catErr }, { data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
+    supabaseClient.from('categories').select('id, name_ja, name_en').order('sort_order'),
+    supabaseClient.from('products').select('id, name_ja, image_url, is_published'),
+    fetchAllRows('product_categories', 'product_id, category_id, sort_order'),
+  ]);
+
+  if (catErr || prodErr || pcErr) {
+    document.getElementById('reorder-grid').innerHTML =
+      '<div class="reorder-empty">読み込みに失敗しました / Failed to load: ' + (catErr?.message || prodErr?.message || pcErr?.message) + '</div>';
+    return;
+  }
+
+  allCategories = categories || [];
+  allProducts = products || [];
+
+  categoryPcRows = {};
+  (pcRows || []).forEach(row => {
+    if (!categoryPcRows[row.category_id]) categoryPcRows[row.category_id] = [];
+    categoryPcRows[row.category_id].push({ product_id: row.product_id, sort_order: row.sort_order });
+  });
+
+  const sel = document.getElementById('category-select');
+  allCategories.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name_ja + (c.name_en ? ' / ' + c.name_en : '');
+    sel.appendChild(opt);
+  });
+}
+
+function onCategoryChange() {
+  const catId = document.getElementById('category-select').value;
+  renderReorderPanel(catId);
+}
+
+function renderReorderPanel(catId) {
+  const grid = document.getElementById('reorder-grid');
+  const titleEl = document.getElementById('reorder-panel-title');
+  const saveBtn = document.getElementById('reorder-save-btn');
+  const msgEl = document.getElementById('reorder-save-msg');
+
+  if (reorderSortable) { reorderSortable.destroy(); reorderSortable = null; }
+  msgEl.textContent = '';
+  reorderDirty = false;
+  saveBtn.disabled = true;
+
+  if (!catId) {
+    titleEl.textContent = '並べ替え / Reorder';
+    grid.innerHTML = '<div class="reorder-placeholder">上でカテゴリを選択してください / Choose a category above to begin</div>';
+    return;
+  }
+
+  const cat = allCategories.find(c => c.id === catId);
+  titleEl.textContent = '並べ替え / Reorder — ' + (cat ? cat.name_ja : '');
+
+  const rows = (categoryPcRows[catId] || []).slice()
+    .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
+
+  const cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(p => p && p.is_published !== false);
+
+  if (cards.length === 0) {
+    grid.innerHTML = '<div class="reorder-empty">このカテゴリに商品がありません / No products in this category</div>';
+    return;
+  }
+
+  grid.innerHTML = cards.map((p, i) => {
+    const img = p.image_url
+      ? `<img src="${p.image_url}" alt="">`
+      : `<div class="no-img">No Image</div>`;
+    return `
+      <div class="reorder-card" data-product-id="${p.id}">
+        <span class="num">${i + 1}</span>
+        <a class="reorder-card-edit-link" title="編集 / Edit in Product Control" href="product_control.html?edit=${p.id}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">✎</a>
+        ${img}
+        <div class="name">${p.name_ja || '(no name)'}</div>
+      </div>
+    `;
+  }).join('');
+
+  function renumber() {
+    grid.querySelectorAll('.reorder-card').forEach((el, i) => {
+      el.querySelector('.num').textContent = i + 1;
+    });
+  }
+
+  reorderSortable = Sortable.create(grid, {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    filter: '.reorder-card-edit-link',
+    preventOnFilter: true,
+    onEnd: () => {
+      renumber();
+      reorderDirty = true;
+      saveBtn.disabled = false;
+      msgEl.textContent = '';
+    },
+  });
+}
+
+async function saveReorder() {
+  const catId = document.getElementById('category-select').value;
+  if (!catId || !reorderDirty) return;
+
+  const grid = document.getElementById('reorder-grid');
+  const saveBtn = document.getElementById('reorder-save-btn');
+  const msgEl = document.getElementById('reorder-save-msg');
+  const ids = [...grid.querySelectorAll('.reorder-card')].map(el => el.dataset.productId);
+
+  saveBtn.disabled = true;
+  msgEl.className = 'reorder-save-msg';
+  msgEl.textContent = '保存中... / Saving...';
+
+  try {
+    await Promise.all(ids.map((pid, i) =>
+      supabaseClient.from('product_categories').update({ sort_order: i }).eq('product_id', pid).eq('category_id', catId)
+    ));
+
+    categoryPcRows[catId] = ids.map((pid, i) => ({ product_id: pid, sort_order: i }));
+
+    msgEl.className = 'reorder-save-msg success';
+    msgEl.textContent = '保存しました ✓ / Saved';
+    reorderDirty = false;
+  } catch (err) {
+    msgEl.className = 'reorder-save-msg error';
+    msgEl.textContent = '保存に失敗しました / Save failed: ' + err.message;
+    saveBtn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
