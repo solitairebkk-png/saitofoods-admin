@@ -27,7 +27,7 @@
 
     // ---- index.html hero ----
     'hero.h1': { ja: 'サイトウフーズの願い、それはおいしい生活@タイランド！', en: "Saito Foods' wish: a delicious life in Thailand!" },
-    'hero.p': { ja: '「おいしいね」ってみんなが笑顔になれる幸せは、万国共通。おいしいものを囲んでほっとできるひとときを、少しでもお手伝いできたら。今日も皆様の食卓に、美味しさと笑顔をお届けします。', en: 'That happy feeling when everyone says \'delicious!\' is universal. We hope to help create cozy moments around good food, even just a little. Today too, we deliver taste and smiles to your table.' },
+    'hero.p': { ja: '「おいしいね」ってみんなが笑顔になれる幸せは、万国共通。おいしいものを囲んでホッとできるひとときを、少しでもお手伝いできたら。今日も皆様の食卓に、美味しさと笑顔をお届けします。', en: 'That happy feeling when everyone says \'delicious!\' is universal. We hope to help create cozy moments around good food, even just a little. Today too, we deliver taste and smiles to your table.' },
     'hero.searchPlaceholder': { ja: '🔍 商品を検索 / Search product', en: '🔍 Search products' },
     'hero.searchBtn': { ja: '検索 / Search', en: 'Search' },
     'hero.cta': { ja: '商品一覧を見る / Shop Now →', en: 'View products / Shop Now →' },
