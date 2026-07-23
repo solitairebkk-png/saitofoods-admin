@@ -412,7 +412,7 @@ function clearFilters() {
 }
 
 function isMissingPrice(p) {
-  return p.sale_type !== 'weight' && !p.is_free && (!p.price || p.price === 0);
+  return !p.is_free && (!p.price || p.price === 0);
 }
 
 // 在庫0判定: 在庫無制限の商品は対象外。stock_qtyがちょうど0の商品のみ「品切れ」として扱う。
@@ -589,9 +589,11 @@ function renderProductRow(p) {
 
   const priceLabel = p.is_free
     ? '<span class="tag free">無料 / Free</span>'
-    : (p.sale_type === 'weight'
-      ? `${p.unit_price ?? '-'} / ${p.unit_label || 'kg'}`
-      : (isMissingPrice(p) ? '<span class="tag noprice">未入力</span>' : `${p.price} THB`));
+    : (isMissingPrice(p)
+      ? '<span class="tag noprice">未入力</span>'
+      : (p.sale_type === 'weight'
+        ? `${p.price} THB <span style="color:var(--text-muted);font-size:11px;">(概算・単価${p.unit_price ?? '-'}/${p.unit_label || 'kg'})</span>`
+        : `${p.price} THB`));
 
   const tags = [
     p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
@@ -668,7 +670,7 @@ function toggleEdit(productId) {
           <option value="package" ${p.sale_type === 'package' ? 'selected' : ''}>Package</option>
           <option value="weight" ${p.sale_type === 'weight' ? 'selected' : ''}>Weight</option>
         </select></label>
-        <label>価格 / Price (THB)<input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.sale_type === 'weight' || p.is_free ? 'disabled' : ''}></label>
+        <label>価格 / Price (THB) <span style="font-weight:400;color:var(--text-muted);font-size:10px;">※量り売りも概算価格を入力(送料無料判定に使用)</span><input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.is_free ? 'disabled' : ''}></label>
         <label>単価 / Unit Price<input type="number" class="e-unitprice" min="0" step="0.01" value="${p.unit_price ?? ''}" ${p.sale_type !== 'weight' ? 'disabled' : ''}></label>
         <label>単位 / Unit Label<input type="text" class="e-unitlabel" value="${p.unit_label || ''}" placeholder="kg"></label>
         <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
@@ -866,7 +868,6 @@ async function translateAllFields(btn) {
 function toggleWeightFields(sel) {
   const grid = sel.closest('.edit-grid');
   const isWeight = sel.value === 'weight';
-  grid.querySelector('.e-price').disabled = isWeight;
   grid.querySelector('.e-unitprice').disabled = !isWeight;
 }
 
@@ -893,7 +894,7 @@ async function saveProduct(productId) {
     description_en: g('.e-desc-en').value.trim() || null,
     group_type: g('.e-group').value,
     sale_type: saleType,
-    price: saleType === 'weight' ? null : (parseFloat(g('.e-price').value) || 0),
+    price: parseFloat(g('.e-price').value) || 0,
     unit_price: saleType === 'weight' ? (parseFloat(g('.e-unitprice').value) || 0) : null,
     unit_label: g('.e-unitlabel').value.trim() || null,
     point_rate_percent: parseFloat(g('.e-pointrate').value) || 0,

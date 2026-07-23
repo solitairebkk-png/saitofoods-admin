@@ -722,7 +722,7 @@ function changeQty(productId, delta) {
 function updateCartBar() {
   const items = Object.values(cart);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const total = items.reduce((s, i) => s + i.qty * (i.product.sale_type === 'weight' ? (i.product.unit_price || 0) : i.product.price), 0);
+  const total = items.reduce((s, i) => s + i.qty * (i.product.price || 0), 0);
   document.getElementById('cart-count').textContent = count;
   document.getElementById('cart-total').textContent = total;
   document.getElementById('cart-bar').classList.toggle('show', count > 0);
