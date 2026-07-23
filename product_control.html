@@ -240,12 +240,12 @@
         <th></th>
         <th>画像 / Image</th>
         <th>商品名 / Name</th>
-        <th>カテゴリ / Category</th>
-        <th>Group</th>
-        <th>Type</th>
         <th>価格 / Price</th>
         <th>在庫 / Stock</th>
+        <th>カテゴリ / Category</th>
         <th>公開 / Published</th>
+        <th>Group</th>
+        <th>Type</th>
       </tr>
     </thead>
     <tbody id="products-tbody">
@@ -599,12 +599,12 @@ function renderProductRow(p) {
     <td class="col-edit"><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
     <td class="col-image">${imgCell}</td>
     <td class="col-name">${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
-    <td class="col-cat" data-label="カテゴリ / Category" style="font-size:12px;">${categoryNames(p.id)}</td>
-    <td class="col-group" data-label="Group">${p.group_type || '-'}</td>
-    <td class="col-type" data-label="Type">${p.sale_type || '-'}</td>
     <td class="col-price" data-label="価格 / Price">${priceLabel}</td>
     <td class="col-stock" data-label="在庫 / Stock">${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
+    <td class="col-cat" data-label="カテゴリ / Category" style="font-size:12px;">${categoryNames(p.id)}</td>
     <td class="col-pub" data-label="公開 / Published">${p.is_published === false ? 'No' : 'Yes'}</td>
+    <td class="col-group" data-label="Group">${p.group_type || '-'}</td>
+    <td class="col-type" data-label="Type">${p.sale_type || '-'}</td>
   `;
   return tr;
 }
