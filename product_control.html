@@ -80,15 +80,53 @@
   table.products td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   table.products tr.no-price td { background: #fdf3d0; }
   table.products tr.unpublished td { opacity: 0.5; }
+  table.products td.col-edit { white-space: nowrap; }
 
   .product-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; display: block; }
   .product-thumb-empty { border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; cursor: default; }
 
   /* スマホ画面(760px以下)は現状のサイズのまま。PC画面のみ商品一覧の表示を約110%に拡大 */
   @media (min-width: 761px) {
-    table.products { font-size: 14.5px; }
-    table.products th { font-size: 12px; }
+    #products-table { font-size: 14.5px; }
+    #products-table th { font-size: 12px; }
     .product-thumb { width: 53px; height: 53px; }
+  }
+
+  /* スマホ画面: 横スクロールのテーブルではなく、1商品1カードのレイアウトに組み替える */
+  @media (max-width: 760px) {
+    #products-table thead { display: none; }
+    #products-table, #products-table tbody { display: block; width: 100%; }
+    #products-table { border: none; background: transparent; }
+    #products-table tr {
+      display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 10px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px; margin-bottom: 10px;
+    }
+    #products-table tr.edit-row { display: block; }
+    #products-table td { border-bottom: none; padding: 0; }
+    #products-table td.loading, #products-table td.empty-state { padding: 30px; }
+    #products-table td.col-edit { order: 1; flex: 0 0 auto; }
+    #products-table td.col-image { order: 2; flex: 0 0 auto; }
+    #products-table td.col-name { order: 3; flex: 1 1 140px; min-width: 140px; font-size: 13px; }
+    #products-table td.col-cat,
+    #products-table td.col-group,
+    #products-table td.col-type,
+    #products-table td.col-price,
+    #products-table td.col-stock,
+    #products-table td.col-pub {
+      order: 4; flex: 1 1 45%; font-size: 12px; display: flex; justify-content: space-between; gap: 8px;
+      border-top: 1px dashed var(--border); padding-top: 5px; margin-top: 3px;
+    }
+    #products-table td.col-cat { flex-basis: 100%; }
+    #products-table td.col-cat::before,
+    #products-table td.col-group::before,
+    #products-table td.col-type::before,
+    #products-table td.col-price::before,
+    #products-table td.col-stock::before,
+    #products-table td.col-pub::before {
+      content: attr(data-label); color: var(--text-muted); font-weight: 600; flex-shrink: 0; margin-right: 8px;
+    }
+    .product-thumb { width: 56px; height: 56px; }
   }
 
   .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
@@ -196,9 +234,10 @@
 
   <div class="summary-note" id="summary-note"></div>
 
-  <table class="products">
+  <table class="products" id="products-table">
     <thead>
       <tr>
+        <th></th>
         <th>画像 / Image</th>
         <th>商品名 / Name</th>
         <th>カテゴリ / Category</th>
@@ -207,7 +246,6 @@
         <th>価格 / Price</th>
         <th>在庫 / Stock</th>
         <th>公開 / Published</th>
-        <th></th>
       </tr>
     </thead>
     <tbody id="products-tbody">
@@ -558,15 +596,15 @@ function renderProductRow(p) {
     : `<div class="product-thumb product-thumb-empty">No Image</div>`;
 
   tr.innerHTML = `
-    <td>${imgCell}</td>
-    <td>${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
-    <td style="font-size:12px;">${categoryNames(p.id)}</td>
-    <td>${p.group_type || '-'}</td>
-    <td>${p.sale_type || '-'}</td>
-    <td>${priceLabel}</td>
-    <td>${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
-    <td>${p.is_published === false ? 'No' : 'Yes'}</td>
-    <td><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
+    <td class="col-edit"><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
+    <td class="col-image">${imgCell}</td>
+    <td class="col-name">${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
+    <td class="col-cat" data-label="カテゴリ / Category" style="font-size:12px;">${categoryNames(p.id)}</td>
+    <td class="col-group" data-label="Group">${p.group_type || '-'}</td>
+    <td class="col-type" data-label="Type">${p.sale_type || '-'}</td>
+    <td class="col-price" data-label="価格 / Price">${priceLabel}</td>
+    <td class="col-stock" data-label="在庫 / Stock">${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
+    <td class="col-pub" data-label="公開 / Published">${p.is_published === false ? 'No' : 'Yes'}</td>
   `;
   return tr;
 }
@@ -676,7 +714,7 @@ function imageSlotHtml(p, slot) {
         ${previewInner}
         ${clearBtn}
       </div>
-      <input type="file" accept="image/*" capture="environment" class="image-file-input" onchange="handleImageUpload(event, ${slot})">
+      <input type="file" accept="image/*" class="image-file-input" onchange="handleImageUpload(event, ${slot})">
       <input type="text" class="image-url-input e-image-${slot}" value="${url}" placeholder="または画像URLを直接入力" oninput="onImageUrlInput(this, ${slot})">
       <div class="image-upload-status"></div>
     </div>
