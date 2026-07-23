@@ -26,8 +26,8 @@
     'anniversary.since': { ja: 'since 1997', en: 'since 1997' },
 
     // ---- index.html hero ----
-    'hero.h1': { ja: '私たちサイトウフーズの想い、、、それはおいしい生活@タイランド！', en: 'Our wish at Saito Foods... a delicious life in Thailand!' },
-    'hero.p': { ja: 'おいしいね！ってみんなが笑顔になれる幸せは万国共通。おいしいものを囲んでほっとできるひとときへ、少しのお手伝いが出来たら、、、と願い、今日も皆様の食卓へ美味しさと笑顔をお届けします。美味宅配。', en: 'That happy "This is delicious!" feeling is universal. We hope to help create relaxing moments around good food. Today too, we deliver taste and smiles to your table.' },
+    'hero.h1': { ja: '私たちサイトウフーズの想い、それはおいしい生活@タイランド！', en: 'Our wish at Saito Foods... a delicious life in Thailand!' },
+    'hero.p': { ja: 'おいしいね！ってみんなが笑顔になれる幸せは万国共通。おいしいものを囲んでほっとできるひとときへ、少しのお手伝いが出来たらと願い、今日も皆様の食卓へ美味しさと笑顔をお届けします。美味宅配', en: 'That happy "This is delicious!" feeling is universal. We hope to help create relaxing moments around good food. Today too, we deliver taste and smiles to your table.' },
     'hero.searchPlaceholder': { ja: '🔍 商品を検索 / Search product', en: '🔍 Search products' },
     'hero.searchBtn': { ja: '検索 / Search', en: 'Search' },
     'hero.cta': { ja: '商品一覧を見る / Shop Now →', en: 'View products / Shop Now →' },
