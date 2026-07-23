@@ -133,6 +133,7 @@
   .tag.special { background: #e6dcf5; color: #5a3d8a; }
   .tag.weight { background: #d9e8f5; color: #1c3557; }
   .tag.noprice { background: var(--red-accent); color: white; }
+  .tag.free { background: #d7ecdd; color: var(--green); }
   .tag.unpub { background: #dcdcdc; color: #444; }
 
   .edit-row td { background: #fafafa; padding: 16px; }
@@ -214,6 +215,7 @@
     <label class="checkbox-label"><input type="checkbox" id="filter-outofstock" onchange="applyFilters()"> 在庫0のみ / Out of stock only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-published" onchange="applyFilters()"> 公開のみ / Published only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-showhidden" onchange="applyFilters()"> 👁 非公開の商品も表示 / Show hidden items</label>
     <button class="btn ghost small" onclick="clearFilters()">Clear / ล้าง</button>
     <button class="btn small" onclick="addNewProduct()">+ New Product / เพิ่มสินค้า</button>
   </div>
@@ -404,12 +406,13 @@ function clearFilters() {
   document.getElementById('filter-outofstock').checked = false;
   document.getElementById('filter-published').checked = false;
   document.getElementById('filter-unpublished').checked = false;
+  document.getElementById('filter-showhidden').checked = false;
   toggleSearchClearBtn('filter-search', 'filter-search-clear-btn');
   applyFilters();
 }
 
 function isMissingPrice(p) {
-  return p.sale_type !== 'weight' && (!p.price || p.price === 0);
+  return p.sale_type !== 'weight' && !p.is_free && (!p.price || p.price === 0);
 }
 
 // 在庫0判定: 在庫無制限の商品は対象外。stock_qtyがちょうど0の商品のみ「品切れ」として扱う。
@@ -425,8 +428,11 @@ function applyFilters() {
   const outOfStockOnly = document.getElementById('filter-outofstock').checked;
   const publishedOnly = document.getElementById('filter-published').checked;
   const unpublishedOnly = document.getElementById('filter-unpublished').checked;
+  const showHidden = document.getElementById('filter-showhidden').checked;
 
   let filtered = allProducts.filter(p => {
+    // 非公開の商品は、「Show hidden items」または「非公開のみ」がオンでない限り一覧から隠す
+    if (!showHidden && !unpublishedOnly && p.is_published === false) return false;
     if (q) {
       const hay = [p.name_ja, p.name_en, p.name_th].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
@@ -581,9 +587,11 @@ function renderProductRow(p) {
   if (isMissingPrice(p)) tr.classList.add('no-price');
   if (p.is_published === false) tr.classList.add('unpublished');
 
-  const priceLabel = p.sale_type === 'weight'
-    ? `${p.unit_price ?? '-'} / ${p.unit_label || 'kg'}`
-    : (isMissingPrice(p) ? '<span class="tag noprice">未入力</span>' : `${p.price} THB`);
+  const priceLabel = p.is_free
+    ? '<span class="tag free">無料 / Free</span>'
+    : (p.sale_type === 'weight'
+      ? `${p.unit_price ?? '-'} / ${p.unit_label || 'kg'}`
+      : (isMissingPrice(p) ? '<span class="tag noprice">未入力</span>' : `${p.price} THB`));
 
   const tags = [
     p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
@@ -660,7 +668,7 @@ function toggleEdit(productId) {
           <option value="package" ${p.sale_type === 'package' ? 'selected' : ''}>Package</option>
           <option value="weight" ${p.sale_type === 'weight' ? 'selected' : ''}>Weight</option>
         </select></label>
-        <label>価格 / Price (THB)<input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.sale_type === 'weight' ? 'disabled' : ''}></label>
+        <label>価格 / Price (THB)<input type="number" class="e-price" min="0" step="1" value="${p.price ?? ''}" ${p.sale_type === 'weight' || p.is_free ? 'disabled' : ''}></label>
         <label>単価 / Unit Price<input type="number" class="e-unitprice" min="0" step="0.01" value="${p.unit_price ?? ''}" ${p.sale_type !== 'weight' ? 'disabled' : ''}></label>
         <label>単位 / Unit Label<input type="text" class="e-unitlabel" value="${p.unit_label || ''}" placeholder="kg"></label>
         <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
@@ -668,6 +676,7 @@ function toggleEdit(productId) {
         <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
         <label class="checkbox-field"><input type="checkbox" class="e-unlimited" onchange="toggleStockField(this)" ${p.is_unlimited_stock ? 'checked' : ''}> 在庫無制限 / Unlimited</label>
         <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-free" onchange="toggleFreeField(this)" ${p.is_free ? 'checked' : ''}> 無料配布 / Free item</label>
         <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
         <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
         <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
@@ -865,6 +874,10 @@ function toggleStockField(chk) {
   chk.closest('.edit-grid').querySelector('.e-stock').disabled = chk.checked;
 }
 
+function toggleFreeField(chk) {
+  chk.closest('.edit-grid').querySelector('.e-price').disabled = chk.checked;
+}
+
 async function saveProduct(productId) {
   const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
   const g = sel => editRow.querySelector(sel);
@@ -896,6 +909,7 @@ async function saveProduct(productId) {
     image_url_7: g('.e-image-7').value.trim() || null,
     image_url_8: g('.e-image-8').value.trim() || null,
     is_local_special: g('.e-special').checked,
+    is_free: g('.e-free').checked,
     is_published: g('.e-published').checked,
     is_available_en: g('.e-availen').checked,
     instagram_url: g('.e-instagram').value.trim() || null,
@@ -984,7 +998,7 @@ function addNewProduct() {
   const blank = {
     id: newId, name_ja: '', name_en: '', name_th: '', group_type: 'A', sale_type: 'package',
     price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
-    stock_qty: 0, sort_order: null, is_local_special: false, is_published: true, is_available_en: true,
+    stock_qty: 0, sort_order: null, is_local_special: false, is_free: false, is_published: true, is_available_en: true,
     image_url: null, image_url_2: null, image_url_3: null,
     image_url_4: null, image_url_5: null, image_url_6: null, image_url_7: null, image_url_8: null,
     instagram_url: null, youtube_url: null,
