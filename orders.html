@@ -101,6 +101,8 @@
   .badge-qr { background: #dbeee0; color: #2c6b45; }
   .badge-pending { background: #fdf3d0; color: #8a6d1e; }
   .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
+  .badge-manual-paid { background: #dbeee0; color: #2c6b45; display: block; margin-top: 4px; line-height: 1.5; padding: 4px 8px; }
+  .badge-manual-paid .amt { font-weight: 800; }
 
   .order-items { font-size: 12px; line-height: 1.5; }
   .order-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
@@ -125,6 +127,8 @@
   .btn-complete { background: #4b9d5f; }
   .btn-delete { background: var(--red-accent); }
   .btn-cancel { background: #6b7280; }
+  .btn-manual-pay { background: #2c8f6b; }
+  .btn-manual-pay-undo { background: #6b7280; font-size: 10px !important; }
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
 
@@ -206,6 +210,32 @@
   #weight-modal-confirm-btn { background: var(--navy); color: white; }
   #weight-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #weight-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+
+  /* 支払い確認(管理者のみ)モーダル */
+  #manualpay-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #manualpay-modal.open { display: flex; }
+  #manualpay-modal .manualpay-modal-box {
+    background: var(--panel); border-radius: 8px; padding: 24px; max-width: 380px; width: 100%;
+  }
+  #manualpay-modal h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  #manualpay-modal .manualpay-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  .manualpay-field { margin-bottom: 12px; }
+  .manualpay-field label { font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .manualpay-field input {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px;
+    font-size: 14px; font-family: inherit;
+  }
+  #manualpay-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #manualpay-modal-actions button {
+    flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  #manualpay-modal-confirm-btn { background: var(--navy); color: white; }
+  #manualpay-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #manualpay-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 
   /* 帳票(伝票)表示 + 印刷モーダル */
   #receipt-modal {
@@ -348,6 +378,30 @@
     <div id="weight-modal-actions">
       <button id="weight-modal-cancel-btn" onclick="closeWeightModal()">ยกเลิก / Cancel</button>
       <button id="weight-modal-confirm-btn" onclick="confirmWeight()">ยืนยันน้ำหนัก / Confirm Weight</button>
+    </div>
+  </div>
+</div>
+
+<!-- 支払い確認(管理者専用)モーダル -->
+<div id="manualpay-modal">
+  <div class="manualpay-modal-box">
+    <h3>振込み確認 / Confirm Payment <span style="font-size:11px;color:var(--text-muted);">(ยืนยันการชำระเงิน)</span></h3>
+    <div class="manualpay-modal-sub">
+      スリップのアップロードが無いお客様の振込みに気づいた際、時刻と金額を入力して確定してください。他のスタッフにも一覧上で見えるようになります。<br>
+      For customers who transferred payment but haven't uploaded a slip — enter the time and amount you confirmed. This will be visible to all staff on the order list.<br>
+      สำหรับลูกค้าที่โอนเงินแล้วแต่ยังไม่อัปโหลดสลิป กรุณากรอกเวลาและจำนวนเงินที่ท่านตรวจสอบพบ ข้อมูลนี้จะแสดงให้พนักงานท่านอื่นเห็นด้วย
+    </div>
+    <div class="manualpay-field">
+      <label>振込み時刻 / Payment time / เวลาที่โอน</label>
+      <input type="datetime-local" id="manualpay-time-input">
+    </div>
+    <div class="manualpay-field">
+      <label>金額 (THB) / Amount / จำนวนเงิน</label>
+      <input type="number" id="manualpay-amount-input" min="0" step="1">
+    </div>
+    <div id="manualpay-modal-actions">
+      <button id="manualpay-modal-cancel-btn" onclick="closeManualPayModal()">キャンセル / Cancel</button>
+      <button id="manualpay-modal-confirm-btn" onclick="confirmManualPayment()">確定 / Confirm</button>
     </div>
   </div>
 </div>
@@ -523,6 +577,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
@@ -586,6 +641,7 @@ function getStatusColor(order) {
   if (order.is_cancelled) return 'var(--status-cancelled)';
   if (order.is_completed) return 'var(--status-complete)';
   if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'var(--status-paid-qr)';
+  if (order.manual_payment_confirmed) return 'var(--status-paid-qr)';
   if (order.has_weight_items && !order.is_weight_confirmed) return 'var(--status-weight)';
   if (order.is_slip_printed) return 'var(--status-printed)';
   return 'var(--status-unprinted)';
@@ -688,6 +744,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
+  if (order.manual_payment_confirmed) paymentBadges.push(renderManualPaidBadge(order));
 
   const dateCell = showDate
     ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
@@ -741,9 +798,19 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         ? 'ชั่งน้ำหนัก / Weigh'
         : 'Edit / แก้ไข';
       manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
+      // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
     }
+    // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う
+    if (currentCustomer && currentCustomer.role === 'admin') {
+      if (!order.manual_payment_confirmed) {
+        manageCol.appendChild(makeButton('💰 支払い確認 / Confirm Payment', () => openManualPayModal(order), 'btn-manual-pay'));
+      } else {
+        manageCol.appendChild(makeButton('支払い確認を取消 / Undo', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+      }
+    }
+    // Delete(完全削除)は管理者のみ
     if (currentCustomer && currentCustomer.role === 'admin') {
       manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
@@ -753,6 +820,15 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     lockedNote.style.color = 'var(--text-muted)';
     lockedNote.textContent = 'เสร็จสิ้นแล้ว / Completed';
     manageCol.appendChild(lockedNote);
+
+    // Completedでロックされた後でも、管理者は振込み確認の追加・取消を行えるようにしておく
+    if (currentCustomer && currentCustomer.role === 'admin') {
+      if (!order.manual_payment_confirmed) {
+        manageCol.appendChild(makeButton('💰 支払い確認 / Confirm Payment', () => openManualPayModal(order), 'btn-manual-pay'));
+      } else {
+        manageCol.appendChild(makeButton('支払い確認を取消 / Undo', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+      }
+    }
   }
 
   return tr;
@@ -844,6 +920,88 @@ function makeButton(label, onClick, cls) {
 function toggleDetail(orderId) {
   // 簡易表示: 詳細は今後のフェーズで別画面/モーダルに拡張予定
   alert('รายละเอียดคำสั่งซื้อ / Order detail view — coming soon');
+}
+
+// ================= 振込み確認(管理者専用) =================
+let manualPayOrder = null;
+
+// 一覧に表示するバッジ(日本語・英語・タイ語)。時刻はBangkok時間で表示する。
+function renderManualPaidBadge(order) {
+  const timeStr = order.manual_payment_time
+    ? new Date(order.manual_payment_time).toLocaleString('en-GB', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+      })
+    : '-';
+  const amount = order.manual_payment_amount != null ? order.manual_payment_amount : '-';
+  return `
+    <span class="badge badge-manual-paid">
+      ✅ 振込み確認済み(管理者)/ Manually Confirmed / ยืนยันการโอนแล้ว (ผู้ดูแลระบบ)<br>
+      🕐 ${timeStr} ・ 💵 <span class="amt">${amount} THB</span>
+    </span>`;
+}
+
+function openManualPayModal(order) {
+  manualPayOrder = order;
+  // デフォルトは現在時刻(スタッフが気づいた時点=だいたいの振込み確認時刻として使いやすいように)
+  const now = new Date();
+  const bkkNow = new Date(now.getTime() + 7 * 3600000);
+  document.getElementById('manualpay-time-input').value = bkkNow.toISOString().slice(0, 16);
+  document.getElementById('manualpay-amount-input').value = order.total_amount || '';
+  document.getElementById('manualpay-modal-confirm-btn').disabled = false;
+  document.getElementById('manualpay-modal-confirm-btn').textContent = '確定 / Confirm';
+  document.getElementById('manualpay-modal').classList.add('open');
+}
+
+function closeManualPayModal() {
+  document.getElementById('manualpay-modal').classList.remove('open');
+  manualPayOrder = null;
+}
+
+async function confirmManualPayment() {
+  if (!manualPayOrder) return;
+  const timeVal = document.getElementById('manualpay-time-input').value;
+  const amountVal = document.getElementById('manualpay-amount-input').value;
+
+  if (!timeVal) { alert('振込み時刻を入力してください / Please enter the payment time / กรุณากรอกเวลาที่โอน'); return; }
+  if (amountVal === '' || isNaN(parseFloat(amountVal))) { alert('金額を入力してください / Please enter the amount / กรุณากรอกจำนวนเงิน'); return; }
+
+  const btn = document.getElementById('manualpay-modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '保存中... / Saving...';
+
+  // datetime-local(ローカル入力欄)はタイムゾーン情報を持たないため、
+  // ここではBangkok時間の壁時計表示のまま「その時刻をUTCとみなして7時間引く」ことで、
+  // 正しいUTC時刻(=Bangkok時間の入力値)としてDBに保存する。
+  const [datePart, timePart] = timeVal.split('T');
+  const asUtcIfBkk = new Date(`${datePart}T${timePart}:00Z`);
+  const trueUtc = new Date(asUtcIfBkk.getTime() - 7 * 3600000);
+
+  const { error } = await supabaseClient.from('orders').update({
+    manual_payment_confirmed: true,
+    manual_payment_time: trueUtc.toISOString(),
+    manual_payment_amount: parseFloat(amountVal),
+  }).eq('id', manualPayOrder.id);
+
+  if (error) {
+    alert('保存に失敗しました / Save failed: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = '確定 / Confirm';
+    return;
+  }
+
+  closeManualPayModal();
+  loadOrders();
+}
+
+async function undoManualPayment(orderId) {
+  if (!confirm('振込み確認を取り消しますか？ / Undo this payment confirmation?')) return;
+  const { error } = await supabaseClient.from('orders').update({
+    manual_payment_confirmed: false,
+    manual_payment_time: null,
+    manual_payment_amount: null,
+  }).eq('id', orderId);
+  if (error) { alert('保存に失敗しました / Save failed: ' + error.message); return; }
+  loadOrders();
 }
 
 // ================= 帳票(伝票)表示 + 印刷 =================
