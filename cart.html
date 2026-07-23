@@ -268,7 +268,7 @@
       <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.pointsUsedRow">ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
       <div class="totals-row total"><span id="totals-total-label">合計 / Total</span><span id="totals-total">฿0</span></div>
       <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span data-i18n="cart.grandTotal">総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
-      <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は単価×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
+      <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は概算価格×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
     </div>
 
     <div class="card">
@@ -737,7 +737,9 @@ function renderCart() {
   listEl.innerHTML = cart.map((item, i) => {
     const isWeight = item.sale_type === 'weight';
     const img = item.image_url ? `<img src="${item.image_url}" class="cart-item-img" onerror="this.style.visibility='hidden'">` : `<div class="cart-item-img"></div>`;
-    const priceLabel = isWeight ? `${item.unit_price} THB / ${item.unit_label}` : `฿${item.price}`;
+    const priceLabel = isWeight
+      ? `฿${item.price} <span style="font-weight:400;color:#999;">(概算・単価 ${item.unit_price ?? '-'} / ${item.unit_label || ''})</span>`
+      : `฿${item.price}`;
     const displayName = i18nGetLang() === 'en' && item.name_en ? item.name_en : item.name;
     return `
       <div class="cart-item-row">
@@ -775,9 +777,9 @@ function removeItem(index) {
 }
 
 function updateTotals() {
-  // 量り売り商品は「単価(目安)×数量」を目安金額として小計・送料無料判定に含める。
+  // 量り売り商品も「価格(概算・スタッフ入力)×数量」を目安金額として小計・送料無料判定に含める。
   // 実際の請求額は重量確定後にスタッフが確定するが、送料は注文時点で一度決めたら変更しない。
-  const subtotal = cart.reduce((sum, i) => sum + (i.sale_type === 'weight' ? (i.unit_price || 0) : i.price) * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0);
   // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
   const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
   const shippingCost = subtotal > 0 && shippingJudgeSubtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
@@ -1090,8 +1092,8 @@ async function submitOrder() {
 
   const comment = document.getElementById('order-comment').value.trim();
   const hasWeightItems = cart.some(i => i.sale_type === 'weight');
-  // 量り売り商品は「単価(目安)×数量」を目安金額として小計・送料無料判定に含める(updateTotalsと同じロジック)
-  const subtotal = cart.reduce((sum, i) => sum + (i.sale_type === 'weight' ? (i.unit_price || 0) : i.price) * i.quantity, 0);
+  // 量り売り商品も「価格(概算・スタッフ入力)×数量」を目安金額として小計・送料無料判定に含める(updateTotalsと同じロジック)
+  const subtotal = cart.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0);
   // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
   // (元の注文の送料自体はさかのぼって変更しない。追加分だけの単体判定にはしない)
   const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
@@ -1139,10 +1141,12 @@ async function submitOrder() {
       product_name_snapshot: item.name,
       sale_type: item.sale_type,
       quantity: item.quantity,
+      // unit_priceは量り売り商品の実測後の精算にのみ使う参考値として保持する(合計計算には使わない)
       unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-      // 量り売り商品も「単価(目安)×数量」を初期値として保存(重量確定後にスタッフが実測値で上書き)
-      price: item.sale_type === 'weight' ? (item.unit_price || 0) : item.price,
-      total_price: item.sale_type === 'weight' ? (item.unit_price || 0) * item.quantity : item.price * item.quantity,
+      // 量り売り商品も、スタッフが入力した概算価格(price)をそのまま初期値として保存する
+      // (重量確定後にスタッフが実測値で上書きする)
+      price: item.price,
+      total_price: item.price * item.quantity,
     }));
     const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
     if (itemsErr) throw itemsErr;
@@ -1241,7 +1245,7 @@ async function sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeS
   const customerName = `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim();
 
   const itemsText = cartSnapshot.map(i => {
-    const priceLabel = i.sale_type === 'weight' ? `約${(i.unit_price || 0) * i.quantity} THB (目安・重量確定後に金額決定)` : `${i.price * i.quantity} THB`;
+    const priceLabel = i.sale_type === 'weight' ? `約${(i.price || 0) * i.quantity} THB (目安・重量確定後に金額決定)` : `${i.price * i.quantity} THB`;
     return `・${i.name} × ${i.quantity} — ${priceLabel}`;
   }).join('\n');
 
