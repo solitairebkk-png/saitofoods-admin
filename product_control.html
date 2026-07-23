@@ -81,6 +81,16 @@
   table.products tr.no-price td { background: #fdf3d0; }
   table.products tr.unpublished td { opacity: 0.5; }
 
+  .product-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; display: block; }
+  .product-thumb-empty { border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; cursor: default; }
+
+  /* スマホ画面(760px以下)は現状のサイズのまま。PC画面のみ商品一覧の表示を約110%に拡大 */
+  @media (min-width: 761px) {
+    table.products { font-size: 14.5px; }
+    table.products th { font-size: 12px; }
+    .product-thumb { width: 53px; height: 53px; }
+  }
+
   .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
   .tag.special { background: #e6dcf5; color: #5a3d8a; }
   .tag.weight { background: #d9e8f5; color: #1c3557; }
@@ -544,8 +554,8 @@ function renderProductRow(p) {
   ].join('');
 
   const imgCell = p.image_url
-    ? `<img src="${p.image_url}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${p.image_url}','_blank')">`
-    : `<div style="width:48px;height:48px;border:1px dashed var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:9px;">No Image</div>`;
+    ? `<img src="${p.image_url}" alt="" class="product-thumb" onclick="window.open('${p.image_url}','_blank')">`
+    : `<div class="product-thumb product-thumb-empty">No Image</div>`;
 
   tr.innerHTML = `
     <td>${imgCell}</td>
