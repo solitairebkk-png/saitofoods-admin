@@ -416,7 +416,8 @@
     </div>
     <div class="manualpay-field">
       <label>振込み時刻 / Payment time / เวลาที่โอน</label>
-      <input type="datetime-local" id="manualpay-time-input">
+      <input type="text" id="manualpay-time-input" placeholder="例: 2026-07-24 09:50 / LINEで確認 / 手書きメモなど自由に">
+      <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">自由入力です。日時をそのまま貼り付けたり、手書き感覚でメモしても構いません。 / Free text — paste or type however you like.</div>
     </div>
     <div class="manualpay-field">
       <label>金額 (THB) / Amount / จำนวนเงิน</label>
@@ -600,7 +601,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
-      manual_payment_confirmed, manual_payment_time, manual_payment_amount,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, province, area_id, areas ( name ) ),
@@ -958,18 +959,22 @@ function toggleDetail(orderId) {
 // ================= 振込み確認(管理者専用) =================
 let manualPayOrder = null;
 
-// 一覧に表示するバッジ(日本語・英語・タイ語)。時刻はBangkok時間で表示する。
+// 一覧に表示するバッジ(日本語・英語・タイ語)。振込み時刻(manual_payment_time)は
+// まことさんが自由入力したメモ・テキストなのでそのまま表示し、加えて実際に「確定」ボタンを
+// 押した時刻(manual_payment_confirmed_at)もBangkok時間で別途表示する。
 function renderManualPaidBadge(order) {
-  const timeStr = order.manual_payment_time
-    ? new Date(order.manual_payment_time).toLocaleString('en-GB', {
+  const noteStr = order.manual_payment_time || '-';
+  const amount = order.manual_payment_amount != null ? order.manual_payment_amount : '-';
+  const confirmedAtStr = order.manual_payment_confirmed_at
+    ? new Date(order.manual_payment_confirmed_at).toLocaleString('en-GB', {
         year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
       })
     : '-';
-  const amount = order.manual_payment_amount != null ? order.manual_payment_amount : '-';
   return `
     <span class="badge badge-manual-paid">
       ✅ 振込み確認済み(管理者)/ Manually Confirmed / ยืนยันการโอนแล้ว (ผู้ดูแลระบบ)<br>
-      🕐 ${timeStr} ・ 💵 <span class="amt">${amount} THB</span>
+      📝 ${noteStr} ・ 💵 <span class="amt">${amount} THB</span><br>
+      🕐 確定日時 / Confirmed at: ${confirmedAtStr}
     </span>`;
 }
 
@@ -978,7 +983,8 @@ function openManualPayModal(order) {
   // デフォルトは現在時刻(スタッフが気づいた時点=だいたいの振込み確認時刻として使いやすいように)
   const now = new Date();
   const bkkNow = new Date(now.getTime() + 7 * 3600000);
-  document.getElementById('manualpay-time-input').value = bkkNow.toISOString().slice(0, 16);
+  const defaultTimeStr = bkkNow.toISOString().slice(0, 16).replace('T', ' ');
+  document.getElementById('manualpay-time-input').value = defaultTimeStr;
   document.getElementById('manualpay-amount-input').value = order.total_amount || '';
   document.getElementById('manualpay-modal-confirm-btn').disabled = false;
   document.getElementById('manualpay-modal-confirm-btn').textContent = '確定 / Confirm';
@@ -992,7 +998,7 @@ function closeManualPayModal() {
 
 async function confirmManualPayment() {
   if (!manualPayOrder) return;
-  const timeVal = document.getElementById('manualpay-time-input').value;
+  const timeVal = document.getElementById('manualpay-time-input').value.trim();
   const amountVal = document.getElementById('manualpay-amount-input').value;
 
   if (!timeVal) { alert('振込み時刻を入力してください / Please enter the payment time / กรุณากรอกเวลาที่โอน'); return; }
@@ -1002,17 +1008,14 @@ async function confirmManualPayment() {
   btn.disabled = true;
   btn.textContent = '保存中... / Saving...';
 
-  // datetime-local(ローカル入力欄)はタイムゾーン情報を持たないため、
-  // ここではBangkok時間の壁時計表示のまま「その時刻をUTCとみなして7時間引く」ことで、
-  // 正しいUTC時刻(=Bangkok時間の入力値)としてDBに保存する。
-  const [datePart, timePart] = timeVal.split('T');
-  const asUtcIfBkk = new Date(`${datePart}T${timePart}:00Z`);
-  const trueUtc = new Date(asUtcIfBkk.getTime() - 7 * 3600000);
-
+  // 振込み時刻(manual_payment_time)は自由入力のテキストとして、入力された文字列をそのまま保存する
+  // (手書き・貼り付けで様々な形式が入るため、日付として解釈・変換はしない)。
+  // manual_payment_confirmed_at は「確定」ボタンを押した実際の時刻を別途システムが記録する。
   const { error } = await supabaseClient.from('orders').update({
     manual_payment_confirmed: true,
-    manual_payment_time: trueUtc.toISOString(),
+    manual_payment_time: timeVal,
     manual_payment_amount: parseFloat(amountVal),
+    manual_payment_confirmed_at: new Date().toISOString(),
   }).eq('id', manualPayOrder.id);
 
   if (error) {
@@ -1032,6 +1035,7 @@ async function undoManualPayment(orderId) {
     manual_payment_confirmed: false,
     manual_payment_time: null,
     manual_payment_amount: null,
+    manual_payment_confirmed_at: null,
   }).eq('id', orderId);
   if (error) { alert('保存に失敗しました / Save failed: ' + error.message); return; }
   loadOrders();
