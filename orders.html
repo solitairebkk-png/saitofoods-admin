@@ -22,7 +22,6 @@
     --status-printed: #ffffff;      /* 白 = 伝票印刷済み */
     --status-weight: #e6f0f8;       /* 青 = 量り売り商品の重量未入力 */
     --status-complete: #f9d9d2;     /* 赤 = Complete押下後(以降変更不可) */
-    --status-paid-qr: #e4f3e8;      /* 緑 = QR振込み確認済み */
     --status-cancelled: #eaeaea;    /* グレー = まるごとキャンセル済み */
   }
 
@@ -80,9 +79,13 @@
   .search-clear-btn { display: none; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; border-radius: 50%; border: none; background: #ccc; color: #fff; font-size: 11px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; }
   .search-clear-btn:hover { background: #999; }
 
-  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; align-items: center; }
   .legend .swatch { display: inline-flex; align-items: center; gap: 6px; }
   .legend .box { width: 14px; height: 14px; border-radius: 3px; border: 1px solid var(--border); display: inline-block; }
+  .legend .stamp-sample {
+    display: inline-block; border: 2px double var(--red-accent); color: var(--red-accent);
+    font-weight: 800; font-size: 9px; padding: 1px 5px; border-radius: 4px; transform: rotate(-8deg);
+  }
 
   table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--table-border); font-size: 13px; }
   thead th {
@@ -101,12 +104,32 @@
   .badge-qr { background: #dbeee0; color: #2c6b45; }
   .badge-pending { background: #fdf3d0; color: #8a6d1e; }
   .badge-walkin { background: #e8e2f5; color: #5a3f9e; }
-  .badge-manual-paid { background: #dbeee0; color: #2c6b45; display: block; margin-top: 4px; line-height: 1.5; padding: 4px 8px; }
-  .badge-manual-paid .amt { font-weight: 800; }
+  .badge-manual-paid { background: #f1f1ee; color: var(--text); display: block; margin-top: 4px; line-height: 1.5; padding: 4px 8px; border: 1px dashed var(--border); border-radius: 4px; }
+  .badge-manual-paid .amt { font-weight: 800; color: var(--red-accent); }
 
   .order-items { font-size: 12px; line-height: 1.5; }
   .order-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
   .order-items-grid .item-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .details-cell { position: relative; }
+  /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタンプ。
+     一覧の背景色は「印刷済みかどうか」を一目で判断するために使うため、
+     支払い済みかどうかは背景色ではなくこのスタンプで別途表現する。 */
+  .order-paid-stamp {
+    position: absolute; top: 6px; right: 10px;
+    transform: rotate(-9deg);
+    border: 3px double var(--red-accent);
+    border-radius: 6px;
+    color: var(--red-accent);
+    background: rgba(255,255,255,0.75);
+    padding: 3px 10px;
+    text-align: center;
+    line-height: 1.2;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .order-paid-stamp .th { display: block; font-size: 9.5px; font-weight: 800; white-space: nowrap; }
+  .order-paid-stamp .en { display: block; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+
   .customer-info { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
   .customer-name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .customer-name { font-weight: 600; }
@@ -338,9 +361,9 @@
     <span class="swatch"><span class="box" style="background:var(--status-unprinted)"></span>ยังไม่พิมพ์ / Unprinted</span>
     <span class="swatch"><span class="box" style="background:var(--status-printed)"></span>พิมพ์แล้ว / Printed</span>
     <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>รอชั่งน้ำหนัก / Weight pending</span>
-    <span class="swatch"><span class="box" style="background:var(--status-paid-qr)"></span>โอน QR แล้ว / QR confirmed</span>
     <span class="swatch"><span class="box" style="background:var(--status-complete)"></span>เสร็จสิ้น / Complete</span>
     <span class="swatch"><span class="box" style="background:var(--status-cancelled)"></span>ยกเลิกแล้ว / Cancelled</span>
+    <span class="swatch"><span class="stamp-sample">PAID</span>ชำระเงินแล้ว / Payment confirmed (背景色とは別表示 / shown separately from row color)</span>
   </div>
 
   <table>
@@ -637,14 +660,19 @@ async function loadOrders() {
 }
 
 // ---------------- Status color ----------------
+// 背景色は「印刷済みかどうか」を含む準備段階の状態のみを表す。
+// 支払い済みかどうかは緑色ではなく、renderOrderRow内のスタンプ(order-paid-stamp)で別途表現する
+// (印刷前に支払い済みになると緑色になってしまい、印刷有無が背景色から分からなくなっていたため分離)。
 function getStatusColor(order) {
   if (order.is_cancelled) return 'var(--status-cancelled)';
   if (order.is_completed) return 'var(--status-complete)';
-  if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'var(--status-paid-qr)';
-  if (order.manual_payment_confirmed) return 'var(--status-paid-qr)';
   if (order.has_weight_items && !order.is_weight_confirmed) return 'var(--status-weight)';
   if (order.is_slip_printed) return 'var(--status-printed)';
   return 'var(--status-unprinted)';
+}
+
+function isOrderPaid(order) {
+  return !!(order.manual_payment_confirmed || (order.payment_method === 'qr' && order.payment_status === 'paid'));
 }
 
 // 出発管理ブロック(スタッフ選択プルダウン+出発ボタン、または出発済み表示)を組み立てる。
@@ -754,12 +782,17 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     ? `<img src="${driveImageUrl(order.slip_image_url)}" class="slip-thumb" onclick="openSlipModal('${driveImageUrl(order.slip_image_url, true)}')">`
     : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
+  const paidStampHtml = isOrderPaid(order)
+    ? `<div class="order-paid-stamp"><span class="th">ชำระเงินแล้ว</span><span class="en">PAID</span></div>`
+    : '';
+
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
     <td class="center">${order.delivery_time_slot || ''}</td>
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
-    <td>
+    <td class="details-cell">
+      ${paidStampHtml}
       <div class="customer-info">
         <div class="customer-name-row">
           <div class="customer-name">${customerName}</div>

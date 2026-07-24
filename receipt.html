@@ -54,6 +54,8 @@
   table.items-table th.num, table.items-table td.num { text-align: right; }
   table.items-table td { padding: 4px 4px; border-bottom: 1px solid var(--line); font-size: 12px; vertical-align: top; }
   table.items-table td.item-name .sub { font-size: 10.5px; color: #999; line-height: 1.3; }
+  table.items-table th.chk-col, table.items-table td.chk-col { text-align: center; width: 30px; }
+  .chk-box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid var(--ink); border-radius: 2px; vertical-align: middle; }
 
   .totals-box { margin-left: auto; width: 100%; max-width: 260px; }
   .totals-box .t-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
@@ -169,7 +171,7 @@
 
       <table class="items-table">
         <thead>
-          <tr><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
+          <tr><th class="chk-col">Staff</th><th class="chk-col">Mgr</th><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
         </thead>
         <tbody id="f-items-body"></tbody>
       </table>
@@ -411,6 +413,8 @@ function renderReceipt(order) {
     const nameTh = (nameThRaw && !isDuplicateOfEn) ? `<div class="sub">${nameThRaw}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     return `<tr>
+      <td class="chk-col"><span class="chk-box"></span></td>
+      <td class="chk-col"><span class="chk-box"></span></td>
       <td class="item-name">${item.product_name_snapshot || ''}${nameEn}${nameTh}${weightTag}</td>
       <td class="num">${qtyLabel}</td>
       <td class="num">${unitLabel}</td>
