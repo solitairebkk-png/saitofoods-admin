@@ -194,6 +194,7 @@
     </label>
     <label class="checkbox-label"><input type="checkbox" id="filter-noprice" onchange="applyFilters()"> 価格未入力のみ / No price only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-outofstock" onchange="applyFilters()"> 在庫0のみ / Out of stock only</label>
+    <label class="checkbox-label"><input type="checkbox" id="filter-noimage" onchange="applyFilters()"> 画像なし / No image only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-published" onchange="applyFilters()"> 公開のみ / Published only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-unpublished" onchange="applyFilters()"> 非公開のみ / Unpublished only</label>
     <label class="checkbox-label"><input type="checkbox" id="filter-showhidden" onchange="applyFilters()"> 👁 非公開の商品も表示 / Show hidden items</label>
@@ -310,7 +311,7 @@ async function fetchAllRows(table, selectCols) {
   return { data: allRows, error: null };
 }
 
-async function loadProducts(anchorProductId) {
+async function loadProducts(anchorProductId, fallbackAnchorIds) {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
@@ -339,13 +340,32 @@ async function loadProducts(anchorProductId) {
   handleEditQueryParam();
 
   // 保存/削除の対象商品の行へ戻す(ピクセル位置ではなく行そのものを目印にすることで、
-  // 保存で編集フォームが閉じて高さが変わっても、ズレずに正しい場所へ戻れるようにする)
-  if (anchorProductId) {
+  // 保存で編集フォームが閉じて高さが変わっても、ズレずに正しい場所へ戻れるようにする)。
+  // 検索条件(例:価格未入力のみ)を付けたまま保存すると、保存直後にその商品が条件から
+  // 外れて一覧から消えることがある。その場合は次点の候補(保存前の次/前の行)へ戻る。
+  const candidates = [anchorProductId, ...(fallbackAnchorIds || [])].filter(Boolean);
+  if (candidates.length) {
     setTimeout(() => {
-      const row = document.querySelector(`tr[data-id="${anchorProductId}"]`);
-      if (row) row.scrollIntoView({ behavior: 'auto', block: 'center' });
+      for (const id of candidates) {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) { row.scrollIntoView({ behavior: 'auto', block: 'center' }); return; }
+      }
     }, 30);
   }
+}
+
+// 現在テーブルに表示されている行の中から、指定した商品の次(なければ前)の商品行のidを返す。
+// 保存/削除の直前に呼び、検索条件から外れて消えてしまった場合の予備の目印として使う。
+function getNeighborProductIds(productId) {
+  const baseRow = document.querySelector(`tr[data-id="${productId}"]`);
+  const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  const afterEditRow = editRow ? editRow.nextElementSibling : (baseRow ? baseRow.nextElementSibling : null);
+  const ids = [];
+  if (afterEditRow && afterEditRow.dataset && afterEditRow.dataset.id) ids.push(afterEditRow.dataset.id);
+  if (baseRow && baseRow.previousElementSibling && baseRow.previousElementSibling.dataset.id) {
+    ids.push(baseRow.previousElementSibling.dataset.id);
+  }
+  return ids;
 }
 
 // product_reorder.htmlの編集リンク(?edit=商品ID)から来た場合、その商品の編集欄を自動で開く
@@ -390,6 +410,7 @@ function clearFilters() {
   document.getElementById('filter-saletype').value = '';
   document.getElementById('filter-noprice').checked = false;
   document.getElementById('filter-outofstock').checked = false;
+  document.getElementById('filter-noimage').checked = false;
   document.getElementById('filter-published').checked = false;
   document.getElementById('filter-unpublished').checked = false;
   document.getElementById('filter-showhidden').checked = false;
@@ -412,6 +433,7 @@ function applyFilters() {
   const saleType = document.getElementById('filter-saletype').value;
   const noPriceOnly = document.getElementById('filter-noprice').checked;
   const outOfStockOnly = document.getElementById('filter-outofstock').checked;
+  const noImageOnly = document.getElementById('filter-noimage').checked;
   const publishedOnly = document.getElementById('filter-published').checked;
   const unpublishedOnly = document.getElementById('filter-unpublished').checked;
   const showHidden = document.getElementById('filter-showhidden').checked;
@@ -430,6 +452,7 @@ function applyFilters() {
     if (saleType && p.sale_type !== saleType) return false;
     if (noPriceOnly && !isMissingPrice(p)) return false;
     if (outOfStockOnly && !isOutOfStock(p)) return false;
+    if (noImageOnly && p.image_url) return false;
     if (publishedOnly && p.is_published === false) return false;
     if (unpublishedOnly && p.is_published !== false) return false;
     return true;
@@ -766,6 +789,8 @@ async function saveProduct(productId) {
   const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
   const g = sel => editRow.querySelector(sel);
 
+  const fallbackAnchorIds = getNeighborProductIds(productId);
+
   const saleType = g('.e-saletype').value;
   const payload = {
     name_ja: g('.e-name-ja').value.trim(),
@@ -821,7 +846,7 @@ async function saveProduct(productId) {
   if (catDeleteErr) {
     alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
     showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
-    loadProducts(productRowId);
+    loadProducts(productRowId, fallbackAnchorIds);
     return;
   }
 
@@ -836,13 +861,13 @@ async function saveProduct(productId) {
     if (catInsertErr) {
       alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
       showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catInsertErr.message, true);
-      loadProducts(productRowId);
+      loadProducts(productRowId, fallbackAnchorIds);
       return;
     }
   }
 
   showSaveMsg('บันทึกแล้ว / Saved');
-  loadProducts(productRowId);
+  loadProducts(productRowId, fallbackAnchorIds);
 }
 
 // 商品を削除する。ただし過去の注文(order_items)から参照されている商品は、
@@ -853,15 +878,9 @@ async function deleteProduct(productId) {
 
   // 削除される行は無くなるため、代わりにその次(無ければ前)の行を目印にして、
   // 再読み込み後にだいたい同じ場所へ戻れるようにする
-  const baseRow = document.querySelector(`tr[data-id="${productId}"]`);
-  const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
-  let anchorProductId = null;
-  const afterEditRow = editRow ? editRow.nextElementSibling : (baseRow ? baseRow.nextElementSibling : null);
-  if (afterEditRow && afterEditRow.dataset && afterEditRow.dataset.id) {
-    anchorProductId = afterEditRow.dataset.id;
-  } else if (baseRow && baseRow.previousElementSibling && baseRow.previousElementSibling.dataset.id) {
-    anchorProductId = baseRow.previousElementSibling.dataset.id;
-  }
+  const neighborIds = getNeighborProductIds(productId);
+  const anchorProductId = neighborIds[0] || null;
+  const fallbackIds = neighborIds.slice(1);
 
   const { error } = await supabaseClient.from('products').delete().eq('id', productId);
 
@@ -883,7 +902,7 @@ async function deleteProduct(productId) {
   }
 
   showSaveMsg('ลบแล้ว / Deleted');
-  loadProducts(anchorProductId);
+  loadProducts(anchorProductId, fallbackIds);
 }
 
 function addNewProduct() {
