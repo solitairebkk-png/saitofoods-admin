@@ -134,14 +134,14 @@
   <table class="customers">
     <thead>
       <tr>
+        <th></th>
+        <th>エリア / Area</th>
         <th>氏名 / Name</th>
         <th>電話 / Tel</th>
-        <th>Email</th>
-        <th>エリア / Area</th>
-        <th>最終購入日 / Last Purchase</th>
+        <th>住所 / Address</th>
         <th>ポイント / Points</th>
-        <th>状態 / Status</th>
-        <th></th>
+        <th>Email</th>
+        <th>最終購入日 / Last Purchase</th>
       </tr>
     </thead>
     <tbody id="customers-tbody">
@@ -400,15 +400,18 @@ function renderCustomerRow(c) {
     isAreaMismatch(c) ? `<span class="tag dormant" style="background:var(--red-accent);">⚠️ Area? (${c.province})</span>` : '',
   ].join('');
 
+  const addressParts = [c.province, c.address1, c.address2].filter(Boolean);
+  const addressText = addressParts.join(' ') || '-';
+
   tr.innerHTML = `
+    <td><button class="btn ghost small" onclick="toggleEdit('${c.id}')">編集 / Edit</button></td>
+    <td><span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span></td>
     <td>${c.family_name || ''} ${c.first_name || ''}<br><span style="color:var(--text-muted);font-size:11px;">${c.family_name_kana || ''} ${c.first_name_kana || ''}</span><br>${tags}</td>
     <td>${c.tel1 || '-'}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + c.tel2 + '</span>' : ''}</td>
-    <td style="font-size:12px;">${c.email || '-'}</td>
-    <td><span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span></td>
-    <td>${c.last_purchase_date || '-'}</td>
+    <td style="font-size:12px;">${addressText}</td>
     <td>${c.point_balance ?? 0}</td>
-    <td>${c.is_active === false ? 'Inactive' : 'Active'}</td>
-    <td><button class="btn ghost small" onclick="toggleEdit('${c.id}')">編集 / Edit</button></td>
+    <td style="font-size:12px;">${c.email || '-'}</td>
+    <td>${c.last_purchase_date || '-'}</td>
   `;
   return tr;
 }
