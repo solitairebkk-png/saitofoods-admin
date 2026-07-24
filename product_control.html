@@ -126,8 +126,11 @@
   .cat-checks label { font-size: 12px; display: flex; align-items: center; gap: 4px; background: white; border: 1px solid var(--border); border-radius: 5px; padding: 4px 8px; }
 
   .image-slots { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
-  .image-slot { width: 150px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
-  .image-slot-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+  .image-slot { width: 150px; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: grab; transition: border-color 0.15s, background 0.15s, opacity 0.15s; }
+  .image-slot.dragging { opacity: 0.4; }
+  .image-slot.drag-over { border-color: var(--navy); background: #eef2f7; }
+  .image-slot-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; cursor: grab; }
+  .image-slot-label .drag-grip { color: var(--text-muted); font-size: 12px; }
   .image-preview-wrap { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 4px; overflow: hidden; background: var(--bg); border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
   .image-preview-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .image-preview-wrap .no-image-text { font-size: 10px; color: var(--text-muted); }
@@ -622,13 +625,18 @@ function imageFieldName(slot) {
 function imageSlotHtml(p, slot) {
   const url = p[imageFieldName(slot)] || '';
   const previewInner = url
-    ? `<img src="${url}" alt="">`
+    ? `<img src="${url}" alt="" draggable="false">`
     : `<span class="no-image-text">No Image</span>`;
   const clearBtn = url ? `<button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>` : '';
 
   return `
-    <div class="image-slot" data-slot="${slot}">
-      <div class="image-slot-label">写真 ${slot} / Photo ${slot}</div>
+    <div class="image-slot" data-slot="${slot}" draggable="true"
+      ondragstart="onImageSlotDragStart(event, ${slot})"
+      ondragend="onImageSlotDragEnd(event)"
+      ondragover="onImageSlotDragOver(event)"
+      ondragleave="onImageSlotDragLeave(event)"
+      ondrop="onImageSlotDrop(event, ${slot})">
+      <div class="image-slot-label"><span class="drag-grip">⠿</span> 写真 ${slot} / Photo ${slot}</div>
       <div class="image-preview-wrap">
         ${previewInner}
         ${clearBtn}
@@ -638,6 +646,53 @@ function imageSlotHtml(p, slot) {
       <div class="image-upload-status"></div>
     </div>
   `;
+}
+
+// ---------------- 画像スロットのドラッグ&ドロップ並べ替え ----------------
+// スロット自体(1〜8)は固定のまま、ドラッグ元とドロップ先の中身(URL・プレビュー)を
+// 入れ替えることで並び順を変える(保存時はいつも通りe-image-1〜8の現在値をそのまま使うだけでよい)
+let draggedImageSlot = null;
+
+function onImageSlotDragStart(e, slot) {
+  draggedImageSlot = slot;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+
+function onImageSlotDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.image-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+  draggedImageSlot = null;
+}
+
+function onImageSlotDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onImageSlotDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onImageSlotDrop(e, targetSlot) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (draggedImageSlot === null || draggedImageSlot === targetSlot) return;
+  swapImageSlots(draggedImageSlot, targetSlot);
+  draggedImageSlot = null;
+}
+
+function swapImageSlots(slotA, slotB) {
+  const inputA = document.querySelector(`.e-image-${slotA}`);
+  const inputB = document.querySelector(`.e-image-${slotB}`);
+  if (!inputA || !inputB) return;
+  const tmp = inputA.value;
+  inputA.value = inputB.value;
+  inputB.value = tmp;
+  // プレビュー・削除ボタンも入れ替え後の内容に合わせて再描画する
+  onImageUrlInput(inputA, slotA);
+  onImageUrlInput(inputB, slotB);
 }
 
 async function handleImageUpload(event, slot) {
@@ -667,7 +722,7 @@ async function handleImageUpload(event, slot) {
     const publicUrl = publicData.publicUrl;
 
     urlInput.value = publicUrl;
-    previewWrap.innerHTML = `<img src="${publicUrl}" alt=""><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`;
+    previewWrap.innerHTML = `<img src="${publicUrl}" alt="" draggable="false"><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`;
     statusEl.className = 'image-upload-status success';
     statusEl.textContent = 'アップロード完了 ✓ / Uploaded';
   } catch (err) {
@@ -683,7 +738,7 @@ function onImageUrlInput(input, slot) {
   const previewWrap = slotEl.querySelector('.image-preview-wrap');
   const url = input.value.trim();
   previewWrap.innerHTML = url
-    ? `<img src="${url}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-image-text',textContent:'画像を読み込めません'}))"><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`
+    ? `<img src="${url}" alt="" draggable="false" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'no-image-text',textContent:'画像を読み込めません'}))"><button type="button" class="image-clear-btn" onclick="clearImageSlot(this, ${slot})" title="削除 / Clear">✕</button>`
     : `<span class="no-image-text">No Image</span>`;
 }
 
