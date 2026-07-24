@@ -175,6 +175,7 @@
     <a href="customer_history.html">🕘 History</a>
     <a href="stock_sync.html">🔄 Stock Sync</a>
     <a href="product_control.html">📦 Products</a>
+    <a href="category_control.html">🏷️ Categories</a>
     <a href="sales_summary.html">📊 Sales Summary</a>
     <a href="settings.html">⚙️ Settings</a>
   </nav>
@@ -312,8 +313,8 @@
       <span id="subtotal-display">0 THB</span>
     </div>
     <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-      * สินค้าชั่งน้ำหนักจะยืนยันราคาภายหลังในหน้ารายการคำสั่งซื้อ<br>
-      * Weight-based items will be finalized later in the Order List screen.
+      * ราคาสินค้าชั่งน้ำหนักเป็นราคาโดยประมาณ ใช้สำหรับคำนวณค่าส่งเท่านั้น ยอดจริงจะยืนยันอีกครั้งหลังชั่งน้ำหนักในหน้ารายการคำสั่งซื้อ<br>
+      * Weight-based item prices shown here are estimates (used only for the free-shipping calculation). The final amount will be confirmed later in the Order List screen after weighing.
     </div>
   </div>
 
@@ -701,8 +702,11 @@ function renderProductGrid(products, orderMap) {
     const card = document.createElement('div');
     card.className = 'product-card';
     const isWeight = p.sale_type === 'weight';
-    const noPrice = !isWeight && (!p.price || p.price === 0);
-    const priceLabel = isWeight ? `${p.unit_price} THB/${p.unit_label}` : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
+    // 量り売りも「価格未入力」の警告対象に含める(product_control.htmlの方針と統一)
+    const noPrice = !p.price || p.price === 0;
+    const priceLabel = isWeight
+      ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (概算)`)
+      : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
     const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${p.name_th}</div>` : '';
     const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
     card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
@@ -728,7 +732,7 @@ async function searchProducts() {
   resultEl.innerHTML = '';
   data.forEach(p => {
     const div = document.createElement('div');
-    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
+    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label} (概算 ${p.price} THB)` : `${p.price} THB`;
     const thPart = p.name_th ? ` / ${p.name_th}` : '';
     div.innerHTML = `${p.name_ja}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
     div.onclick = () => addToCart(p);
@@ -757,6 +761,9 @@ function removeFromCart(index) {
   renderCart();
 }
 
+// 量り売り商品も、cart.html/product_list.htmlと同じく products.price(概算・参考価格)× 数量を
+// 小計・送料無料判定に使う。実際の請求額は orders.html の重量確定モーダルで
+// 実測後に unit_price × 実測重量へ差し替えられるまでの「暫定額」という位置づけ。
 function renderCart() {
   const tbody = document.getElementById('cart-tbody');
   tbody.innerHTML = '';
@@ -764,15 +771,15 @@ function renderCart() {
 
   cart.forEach((item, i) => {
     const isWeight = item.sale_type === 'weight';
-    const lineTotal = isWeight ? 0 : item.price * item.quantity;
-    if (!isWeight) subtotal += lineTotal;
+    const lineTotal = item.price * item.quantity;
+    subtotal += lineTotal;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${item.name}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
       <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
-      <td>${isWeight ? item.unit_price + '/' + item.unit_label : item.price + ' THB'}</td>
-      <td>${isWeight ? '未確定 / TBD' : lineTotal + ' THB'}</td>
+      <td>${isWeight ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算・単価' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>' : item.price + ' THB'}</td>
+      <td>${isWeight ? lineTotal + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算)</span>' : lineTotal + ' THB'}</td>
       <td><button class="remove-btn" onclick="removeFromCart(${i})">×</button></td>
     `;
     tbody.appendChild(tr);
@@ -784,7 +791,7 @@ function renderCart() {
     ? ` +配送料 ${shippingFeeAmount} THB (${shippingFreeThreshold}THB未満のため)`
     : '';
 
-  document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote + ' (+ ชั่งน้ำหนัก / weight items TBD)';
+  document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote;
 }
 
 function updateQty(index, value) {
@@ -923,7 +930,7 @@ async function loadOrderForEdit(orderId) {
 
 // ---------------- Slip upload link ----------------
 // 注文保存後、支払い方法がQR振込みの場合にスリップアップロード用リンクを生成・表示する。
-// 量り売り商品を含む注文は金額が未確定のため、リンクは生成せず、
+// 量り売り商品を含む注文は最終金額が未確定のため、リンクは生成せず、
 // 「重量確定後に注文一覧画面から自動送信される」旨の案内のみ表示する。
 function hideSlipLinkCard() {
   const cardEl = document.getElementById('slip-link-card');
@@ -1049,7 +1056,9 @@ async function submitOrder() {
   }
 
   const hasWeightItems = cart.some(i => i.sale_type === 'weight');
-  const subtotal = cart.filter(i => i.sale_type !== 'weight').reduce((sum, i) => sum + i.price * i.quantity, 0);
+  // 量り売り商品も products.price(概算)× 数量を小計・送料無料判定に含める
+  // (cart.html/product_list.htmlと同じ方針。実額は重量確定後にorders.html側で再計算される)
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   // 配送(delivery)注文かつ設定金額未満の場合のみ配送料を加算(ウォークインは対象外)
   const shippingCost = (!isWalkin && subtotal < shippingFreeThreshold) ? shippingFeeAmount : 0;
@@ -1081,9 +1090,9 @@ async function submitOrder() {
     // 内容が変わるため印刷済みフラグは常にリセットする(再印刷が必要という前提)。
     orderPayload.is_slip_printed = false;
 
-    // 量り売り商品の「確定状態」は、編集前後で対象商品・実測重量が
+    // 量り売り商品の「確定状態」は、編集前後で対象商品・数量が
     // 一切変わっていない場合に限り維持する(無変更なのに毎回orders.htmlで
-    // 再入力が必要になる不便を避けるため)。少しでも変わっていれば再確認のためfalseにする。
+    // 再確認が必要になる不便を避けるため)。少しでも変わっていれば再確認のためfalseにする。
     let weightItemsUnchanged = false;
     if (hasWeightItems) {
       const currentWeightItemsKey = JSON.stringify(
@@ -1115,6 +1124,9 @@ async function submitOrder() {
       return;
     }
 
+    // 量り売り商品も含め、常に item.price(確定済みなら実測後の価格、未確定なら概算価格)を
+    // そのまま price/total_price として保存する(以前は未変更でなければ強制的に0へ戻していたが、
+    // それだと保存直後にorders.html側の送料無料判定・表示金額が0円になってしまうため廃止)
     const editItemsPayload = cart.map(item => ({
       order_id: editingOrderId,
       product_id: item.product_id,
@@ -1122,10 +1134,8 @@ async function submitOrder() {
       sale_type: item.sale_type,
       quantity: item.quantity,
       unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-      // 量り売り商品: 内容が変わっていなければ既に確定済みの金額(item.price)をそのまま維持し、
-      // 変わっていれば0(未確定)に戻して、orders.html側での再確認を促す
-      price: item.sale_type === 'weight' ? (weightItemsUnchanged ? (item.price || 0) : 0) : item.price,
-      total_price: item.sale_type === 'weight' ? (weightItemsUnchanged ? (item.price || 0) : 0) : item.price * item.quantity,
+      price: item.price,
+      total_price: item.price * item.quantity,
     }));
 
     const { error: editItemsErr } = await supabaseClient.from('order_items').insert(editItemsPayload);
@@ -1164,6 +1174,9 @@ async function submitOrder() {
     return;
   }
 
+  // 量り売り商品も、products.price(概算)を price/total_price としてそのまま保存する
+  // (以前は0円で保存していたが、これだと送料無料判定・一覧表示の金額が実態と食い違うため廃止。
+  //  実際の請求額はorders.htmlの重量確定モーダルでunit_price×実測重量に上書きされる)
   const itemsPayload = cart.map(item => ({
     order_id: orderRow.id,
     product_id: item.product_id,
@@ -1171,8 +1184,8 @@ async function submitOrder() {
     sale_type: item.sale_type,
     quantity: item.quantity,
     unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-    price: item.sale_type === 'weight' ? 0 : item.price,
-    total_price: item.sale_type === 'weight' ? 0 : item.price * item.quantity,
+    price: item.price,
+    total_price: item.price * item.quantity,
   }));
 
   const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);

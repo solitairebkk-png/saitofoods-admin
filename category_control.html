@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Category Control | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.ghost { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+  .btn.save { background: var(--green); }
+  .btn.warn { background: var(--red-accent); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  main { padding: 24px; max-width: 800px; margin: 0 auto; display: none; }
+
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .top-bar .note { font-size: 12px; color: var(--text-muted); }
+
+  table.categories { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.categories th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.categories td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.categories td.col-edit { white-space: nowrap; }
+  table.categories input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+  table.categories input[type=number] { width: 70px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 13px; font-family: inherit; }
+
+  .count-tag { font-size: 11px; color: var(--text-muted); }
+  .count-tag.zero { color: var(--amber); }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  #save-msg { font-size: 13px; margin-top: 12px; padding: 8px 10px; border-radius: 6px; }
+  #save-msg.success { color: var(--green); background: #e7f3ec; }
+  #save-msg.error { color: var(--red-accent); background: #fdeceA; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Category Control <span class="th">จัดการหมวดหมู่สินค้า</span></h1>
+  <div class="nav-links" id="nav-links" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="customer_control.html">👤 Customers</a>
+    <a href="customer_history.html">🕘 History</a>
+    <a href="product_control.html">📦 Products</a>
+    <a href="product_reorder.html">🔀 並び替え / Reorder</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="settings.html">⚙️ Settings</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="top-bar">
+    <div class="note">カテゴリの新規作成・名前の変更・削除ができます。並び順の変更は「並び替え / Reorder」画面をご利用ください。</div>
+    <button class="btn small" onclick="addNewCategory()">+ New Category / เพิ่มหมวดหมู่</button>
+  </div>
+
+  <table class="categories" id="categories-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>名前(日) / Name (JA)</th>
+        <th>名前(英) / Name (EN)</th>
+        <th style="width:80px;">並び順<br><span style="font-weight:400;">Sort</span></th>
+        <th style="width:90px;">商品数<br><span style="font-weight:400;">Products</span></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="categories-tbody">
+      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div id="save-msg"></div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentCustomer = null;
+let allCategories = [];
+let categoryProductCounts = {}; // category_id -> count
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  loadCategories();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// Supabaseの1リクエストあたりの上限(通常1000件)を超える可能性があるテーブル用の全件取得ヘルパー
+async function fetchAllRows(table, selectCols) {
+  const pageSize = 1000;
+  let from = 0;
+  let allRows = [];
+  while (true) {
+    const { data, error } = await supabaseClient.from(table).select(selectCols).range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    allRows = allRows.concat(data || []);
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: allRows, error: null };
+}
+
+async function loadCategories() {
+  const tbody = document.getElementById('categories-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const [{ data: cats, error: catErr }, { data: pcRows, error: pcErr }] = await Promise.all([
+    supabaseClient.from('categories').select('*').order('sort_order', { ascending: true, nullsFirst: false }),
+    fetchAllRows('product_categories', 'category_id'),
+  ]);
+
+  if (catErr || pcErr) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + (catErr?.message || pcErr?.message) + '</td></tr>';
+    return;
+  }
+
+  categoryProductCounts = {};
+  (pcRows || []).forEach(row => {
+    categoryProductCounts[row.category_id] = (categoryProductCounts[row.category_id] || 0) + 1;
+  });
+
+  allCategories = cats || [];
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('categories-tbody');
+  if (allCategories.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">カテゴリがありません / No categories yet</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  allCategories.forEach(c => tbody.appendChild(renderCategoryRow(c)));
+}
+
+function renderCategoryRow(c) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = c.id;
+  const count = categoryProductCounts[c.id] || 0;
+
+  tr.innerHTML = `
+    <td class="col-edit"></td>
+    <td><input type="text" class="e-name-ja" value="${c.name_ja || ''}"></td>
+    <td><input type="text" class="e-name-en" value="${c.name_en || ''}"></td>
+    <td><input type="number" class="e-sort" value="${c.sort_order ?? ''}"></td>
+    <td><span class="count-tag${count === 0 ? ' zero' : ''}">${count}件 / items</span></td>
+    <td></td>
+  `;
+
+  const editCell = tr.querySelector('.col-edit');
+  editCell.appendChild(makeButton('保存 / Save', () => saveCategory(c.id), 'btn save small'));
+
+  const delCell = tr.lastElementChild;
+  delCell.appendChild(makeButton('削除 / Delete', () => deleteCategory(c.id, count), 'btn warn small'));
+
+  return tr;
+}
+
+function makeButton(label, onClick, cls) {
+  const btn = document.createElement('button');
+  btn.textContent = label;
+  cls.split(' ').forEach(c => btn.classList.add(c));
+  btn.onclick = onClick;
+  return btn;
+}
+
+async function saveCategory(categoryId) {
+  const tr = document.querySelector(`tr[data-id="${categoryId}"]`);
+  const nameJa = tr.querySelector('.e-name-ja').value.trim();
+  const nameEn = tr.querySelector('.e-name-en').value.trim();
+  const sortVal = tr.querySelector('.e-sort').value;
+
+  if (!nameJa) { showSaveMsg('カテゴリ名(日)を入力してください / Please enter a Japanese name', true); return; }
+
+  const payload = {
+    name_ja: nameJa,
+    name_en: nameEn || null,
+    sort_order: sortVal === '' ? null : parseInt(sortVal, 10),
+  };
+
+  let error;
+  if (String(categoryId).startsWith('new-')) {
+    const { error: insertErr } = await supabaseClient.from('categories').insert(payload);
+    error = insertErr;
+  } else {
+    ({ error } = await supabaseClient.from('categories').update(payload).eq('id', categoryId));
+  }
+
+  if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
+
+  showSaveMsg('บันทึกแล้ว / Saved');
+  loadCategories();
+}
+
+// 削除: このカテゴリに紐づく商品がある場合、削除するとその商品からカテゴリ表示が
+// 外れるだけで商品自体は消えないことを説明した上で確認する。
+// product_categoriesの行を先に削除してから、外部キー制約に引っかからないよう
+// categories本体を削除する。
+async function deleteCategory(categoryId, productCount) {
+  let confirmMsg = 'このカテゴリを削除しますか？\nDelete this category?';
+  if (productCount > 0) {
+    confirmMsg = `このカテゴリには${productCount}件の商品が紐づいています。削除すると、これらの商品からこのカテゴリの表示が外れます(商品自体は削除されません)。よろしいですか？\n\n` +
+      `${productCount} product(s) are currently assigned to this category. Deleting it will remove the category tag from those products (the products themselves will NOT be deleted). Continue?`;
+  }
+  if (!confirm(confirmMsg)) return;
+
+  const { error: pcDeleteErr } = await supabaseClient.from('product_categories').delete().eq('category_id', categoryId);
+  if (pcDeleteErr) {
+    showSaveMsg('商品との紐付け解除に失敗しました / Failed to unlink products: ' + pcDeleteErr.message, true);
+    return;
+  }
+
+  const { error } = await supabaseClient.from('categories').delete().eq('id', categoryId);
+  if (error) {
+    showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + error.message, true);
+    return;
+  }
+
+  showSaveMsg('ลบแล้ว / Deleted');
+  loadCategories();
+}
+
+function addNewCategory() {
+  const newId = 'new-' + Date.now();
+  const maxOrder = allCategories.reduce((max, c) => Math.max(max, c.sort_order ?? -1), -1);
+  const blank = { id: newId, name_ja: '', name_en: '', sort_order: maxOrder + 1 };
+  allCategories.push(blank);
+  categoryProductCounts[newId] = 0;
+  renderTable();
+  const tr = document.querySelector(`tr[data-id="${newId}"]`);
+  if (tr) tr.querySelector('.e-name-ja').focus();
+}
+
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, isError ? 8000 : 3000);
+}
+</script>
+
+</body>
+</html>
