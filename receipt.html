@@ -55,15 +55,16 @@
   table.items-table td { padding: 4px 4px; border-bottom: 1px solid var(--line); font-size: 12px; vertical-align: top; }
   table.items-table td.item-name .sub { font-size: 10.5px; color: #999; line-height: 1.3; }
 
-  .totals-wrap { position: relative; display: flex; align-items: center; min-height: 90px; }
   .totals-box { margin-left: auto; width: 100%; max-width: 260px; }
   .totals-box .t-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
   .totals-box .t-row.discount { color: var(--red); }
   .totals-box .t-row.grand { border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 5px; font-size: 14.5px; font-weight: 800; }
 
-  /* 振込み確認済み(管理者)の場合に表示する、判子風の「支払い済み」スタンプ。
-     subtotal/shipping/totalの左側の空きスペースに、少し斜めに押したような見た目にする。
+  /* 振込み確認済み(手動確認・またはスリップ自動照合)の場合に表示する、判子風の「支払い済み」スタンプ。
+     支払い情報(QR/銀行口座)の左側の空きスペースに、少し斜めに押したような見た目にする。
      モノクロ印刷でも視認できるよう、太い二重罫線+塗りつぶし無しの太字にしている。 */
+  .pay-content-wrap { position: relative; display: flex; align-items: center; gap: 14px; min-height: 110px; }
+  .pay-content-wrap .pay-grid { margin-left: auto; max-width: 400px; flex: 0 1 400px; }
   .paid-stamp {
     position: absolute;
     left: 6px;
@@ -119,7 +120,8 @@
   @media (max-width: 560px) {
     .info-grid { grid-template-columns: 1fr; }
     .pay-grid { grid-template-columns: 1fr; }
-    .totals-wrap { flex-direction: column; align-items: stretch; min-height: 0; }
+    .pay-content-wrap { flex-direction: column; align-items: stretch; min-height: 0; }
+    .pay-content-wrap .pay-grid { max-width: none; }
     .paid-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
   }
 </style>
@@ -172,18 +174,12 @@
         <tbody id="f-items-body"></tbody>
       </table>
 
-      <div class="totals-wrap">
-        <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
-          <span class="th">ชำระเงินแล้ว</span>
-          <span class="en">PAID</span>
-        </div>
-        <div class="totals-box">
-          <div class="t-row"><span>Subtotal</span><span id="f-subtotal"></span></div>
-          <div class="t-row"><span>Shipping</span><span id="f-shipping"></span></div>
-          <div class="t-row discount" id="f-discount-row" style="display:none;"><span id="f-discount-label"></span><span id="f-discount-amount"></span></div>
-          <div class="t-row discount" id="f-points-used-row" style="display:none;"><span>Points used</span><span id="f-points-used-amount"></span></div>
-          <div class="t-row grand"><span>Total</span><span id="f-total"></span></div>
-        </div>
+      <div class="totals-box">
+        <div class="t-row"><span>Subtotal</span><span id="f-subtotal"></span></div>
+        <div class="t-row"><span>Shipping</span><span id="f-shipping"></span></div>
+        <div class="t-row discount" id="f-discount-row" style="display:none;"><span id="f-discount-label"></span><span id="f-discount-amount"></span></div>
+        <div class="t-row discount" id="f-points-used-row" style="display:none;"><span>Points used</span><span id="f-points-used-amount"></span></div>
+        <div class="t-row grand"><span>Total</span><span id="f-total"></span></div>
       </div>
 
       <div class="weight-note" id="f-weight-note" style="display:none;"></div>
@@ -196,16 +192,22 @@
 
       <div class="pay-section">
         <h3>Payment options</h3>
-        <div class="pay-grid">
-          <div class="pay-qr-box">
-            <div id="f-qr-code"></div>
-            <div class="qr-amount">PromptPay — <span id="f-qr-amount"></span> THB</div>
+        <div class="pay-content-wrap">
+          <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
+            <span class="th">ชำระเงินแล้ว</span>
+            <span class="en">PAID</span>
           </div>
-          <div class="bank-box">
-            <div class="bank-name">SCB (Siam Commercial Bank)</div>
-            <div>Account No.: <b>071-296992-2</b></div>
-            <div>Account name: <b>SAITO FOODS CO.,LTD.</b></div>
-            <div style="font-size:10.5px;color:#999;">Please send the transfer slip after payment.</div>
+          <div class="pay-grid">
+            <div class="pay-qr-box">
+              <div id="f-qr-code"></div>
+              <div class="qr-amount">PromptPay — <span id="f-qr-amount"></span> THB</div>
+            </div>
+            <div class="bank-box">
+              <div class="bank-name">SCB (Siam Commercial Bank)</div>
+              <div>Account No.: <b>071-296992-2</b></div>
+              <div>Account name: <b>SAITO FOODS CO.,LTD.</b></div>
+              <div style="font-size:10.5px;color:#999;">Please send the transfer slip after payment.</div>
+            </div>
           </div>
         </div>
         <div class="change-box" id="f-change-box">
@@ -341,12 +343,15 @@ function showError() {
   document.getElementById('state-error').style.display = 'block';
 }
 
-// 振込み確認済み(管理者)の場合、subtotal/shipping/totalの左横に判子風の
-// 「ชำระเงินแล้ว / PAID」スタンプを表示する。押した感を出すため、毎回ランダムに
-// 少し傾き・位置をずらす。
+// 支払い済み(管理者による手動確認 manual_payment_confirmed、または
+// slip.saitofoods.shop側のGAS(Claude Vision照合)によりQR振込みが自動で
+// payment_status='paid'になった場合)は、subtotal/shipping/totalの左横に
+// 判子風の「ชำระเงินแล้ว / PAID」スタンプを表示する。押した感を出すため、
+// 毎回ランダムに少し傾き・位置をずらす。
 function renderPaidStamp(order) {
   const stampEl = document.getElementById('f-paid-stamp');
-  if (!order.manual_payment_confirmed) { stampEl.style.display = 'none'; return; }
+  const isPaid = order.manual_payment_confirmed || order.payment_status === 'paid';
+  if (!isPaid) { stampEl.style.display = 'none'; return; }
 
   stampEl.style.display = 'block';
   const randomRotate = (Math.random() * 14 - 18).toFixed(1); // -18° 〜 -4° の間でランダム
