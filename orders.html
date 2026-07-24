@@ -113,22 +113,21 @@
   .details-cell { position: relative; }
   /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタンプ。
      一覧の背景色は「印刷済みかどうか」を一目で判断するために使うため、
-     支払い済みかどうかは背景色ではなくこのスタンプで別途表現する。 */
+     支払い済みかどうかは背景色ではなくこのスタンプで別途表現する。
+     以前は絶対配置で右上に重ねていたが、電話番号と重なって見えなくなるため、
+     バッジが並ぶ行の中に通常配置で置くように変更した。 */
   .order-paid-stamp {
-    position: absolute; top: 6px; right: 10px;
-    transform: rotate(-9deg);
+    display: inline-flex; align-items: center; gap: 4px;
+    transform: rotate(-6deg);
     border: 3px double var(--red-accent);
     border-radius: 6px;
     color: var(--red-accent);
-    background: rgba(255,255,255,0.75);
-    padding: 3px 10px;
-    text-align: center;
-    line-height: 1.2;
-    pointer-events: none;
-    z-index: 2;
+    padding: 2px 8px;
+    margin: 0 6px 4px 0;
+    vertical-align: middle;
   }
-  .order-paid-stamp .th { display: block; font-size: 9.5px; font-weight: 800; white-space: nowrap; }
-  .order-paid-stamp .en { display: block; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; }
+  .order-paid-stamp .th { font-size: 9.5px; font-weight: 800; white-space: nowrap; }
+  .order-paid-stamp .en { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
 
   .customer-info { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
   .customer-name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -784,7 +783,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
   const paidStampHtml = isOrderPaid(order)
-    ? `<div class="order-paid-stamp"><span class="th">ชำระเงินแล้ว</span><span class="en">PAID</span></div>`
+    ? `<span class="order-paid-stamp"><span class="th">ชำระเงินแล้ว</span><span class="en">PAID</span></span>`
     : '';
 
   tr.innerHTML = `
@@ -793,7 +792,6 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
-      ${paidStampHtml}
       <div class="customer-info">
         <div class="customer-name-row">
           <div class="customer-name">${customerName}</div>
@@ -802,7 +800,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
-      <div style="margin-top:6px;">${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
+      <div style="margin-top:6px;">${paidStampHtml}${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
     <td class="center">
       <div class="slip-cell-inner">
