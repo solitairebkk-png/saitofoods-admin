@@ -55,10 +55,32 @@
   table.items-table td { padding: 4px 4px; border-bottom: 1px solid var(--line); font-size: 12px; vertical-align: top; }
   table.items-table td.item-name .sub { font-size: 10.5px; color: #999; line-height: 1.3; }
 
+  .totals-wrap { position: relative; display: flex; align-items: center; min-height: 90px; }
   .totals-box { margin-left: auto; width: 100%; max-width: 260px; }
   .totals-box .t-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
   .totals-box .t-row.discount { color: var(--red); }
   .totals-box .t-row.grand { border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 5px; font-size: 14.5px; font-weight: 800; }
+
+  /* 振込み確認済み(管理者)の場合に表示する、判子風の「支払い済み」スタンプ。
+     subtotal/shipping/totalの左側の空きスペースに、少し斜めに押したような見た目にする。
+     モノクロ印刷でも視認できるよう、太い二重罫線+塗りつぶし無しの太字にしている。 */
+  .paid-stamp {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-11deg);
+    border: 4px double var(--red);
+    border-radius: 8px;
+    color: var(--red);
+    padding: 8px 16px;
+    text-align: center;
+    line-height: 1.25;
+    pointer-events: none;
+    opacity: 0.9;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .paid-stamp .th { display: block; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
+  .paid-stamp .en { display: block; font-size: 22px; font-weight: 800; letter-spacing: 0.12em; }
 
   .weight-note { margin-top: 8px; padding: 6px 10px; background: #fff8ec; border: 1px solid var(--accent); border-radius: 8px; font-size: 11px; line-height: 1.45; }
   .comment-note { margin-top: 8px; padding: 6px 10px; background: var(--line-soft); border-radius: 8px; font-size: 11px; line-height: 1.45; }
@@ -92,11 +114,13 @@
     .toolbar, .hint-text { display: none !important; }
     .page-shell { max-width: none; padding: 0; }
     .receipt-paper { box-shadow: none; border-radius: 0; padding: 6mm 7mm; }
-    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
   @media (max-width: 560px) {
     .info-grid { grid-template-columns: 1fr; }
     .pay-grid { grid-template-columns: 1fr; }
+    .totals-wrap { flex-direction: column; align-items: stretch; min-height: 0; }
+    .paid-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
   }
 </style>
 </head>
@@ -148,12 +172,18 @@
         <tbody id="f-items-body"></tbody>
       </table>
 
-      <div class="totals-box">
-        <div class="t-row"><span>Subtotal</span><span id="f-subtotal"></span></div>
-        <div class="t-row"><span>Shipping</span><span id="f-shipping"></span></div>
-        <div class="t-row discount" id="f-discount-row" style="display:none;"><span id="f-discount-label"></span><span id="f-discount-amount"></span></div>
-        <div class="t-row discount" id="f-points-used-row" style="display:none;"><span>Points used</span><span id="f-points-used-amount"></span></div>
-        <div class="t-row grand"><span>Total</span><span id="f-total"></span></div>
+      <div class="totals-wrap">
+        <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
+          <span class="th">ชำระเงินแล้ว</span>
+          <span class="en">PAID</span>
+        </div>
+        <div class="totals-box">
+          <div class="t-row"><span>Subtotal</span><span id="f-subtotal"></span></div>
+          <div class="t-row"><span>Shipping</span><span id="f-shipping"></span></div>
+          <div class="t-row discount" id="f-discount-row" style="display:none;"><span id="f-discount-label"></span><span id="f-discount-amount"></span></div>
+          <div class="t-row discount" id="f-points-used-row" style="display:none;"><span>Points used</span><span id="f-points-used-amount"></span></div>
+          <div class="t-row grand"><span>Total</span><span id="f-total"></span></div>
+        </div>
       </div>
 
       <div class="weight-note" id="f-weight-note" style="display:none;"></div>
@@ -276,6 +306,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
@@ -285,7 +316,7 @@ async function loadReceipt() {
 
   if (error || !order) { showError(); return; }
   renderReceipt(order);
-  loadPointsExpiry(order.customer_id);
+  loadPointsExpiry(order.customer_id, order.created_at);
   loadOrderPoints(order);
 }
 
@@ -308,6 +339,21 @@ function handlePrint() {
 function showError() {
   document.getElementById('state-loading').style.display = 'none';
   document.getElementById('state-error').style.display = 'block';
+}
+
+// 振込み確認済み(管理者)の場合、subtotal/shipping/totalの左横に判子風の
+// 「ชำระเงินแล้ว / PAID」スタンプを表示する。押した感を出すため、毎回ランダムに
+// 少し傾き・位置をずらす。
+function renderPaidStamp(order) {
+  const stampEl = document.getElementById('f-paid-stamp');
+  if (!order.manual_payment_confirmed) { stampEl.style.display = 'none'; return; }
+
+  stampEl.style.display = 'block';
+  const randomRotate = (Math.random() * 14 - 18).toFixed(1); // -18° 〜 -4° の間でランダム
+  const randomLeftJitter = Math.floor(Math.random() * 14); // 0〜13pxの左右ずれ
+  const randomTopJitter = Math.floor(Math.random() * 10) - 5; // -5〜4pxの上下ずれ
+  stampEl.style.transform = `translateY(calc(-50% + ${randomTopJitter}px)) rotate(${randomRotate}deg)`;
+  stampEl.style.left = (6 + randomLeftJitter) + 'px';
 }
 
 function renderReceipt(order) {
@@ -336,7 +382,7 @@ function renderReceipt(order) {
   if (order.payment_method === 'cash') {
     statusEl.textContent = 'Pay on delivery';
     statusEl.className = 'status-pill status-cod';
-  } else if (order.payment_status === 'paid') {
+  } else if (order.payment_status === 'paid' || order.manual_payment_confirmed) {
     statusEl.textContent = 'Paid';
     statusEl.className = 'status-pill status-paid';
   } else {
@@ -383,6 +429,8 @@ function renderReceipt(order) {
     document.getElementById('f-points-used-amount').textContent = `-${baht(order.points_used)} (${order.points_used} pt)`;
   }
 
+  renderPaidStamp(order);
+
   if (order.has_weight_items && !order.is_weight_confirmed) {
     document.getElementById('f-weight-note').style.display = 'block';
     document.getElementById('f-weight-note').textContent = '⚖️ This order includes items sold by weight. The final amount will be confirmed after weighing.';
@@ -420,11 +468,11 @@ function renderReceipt(order) {
   document.getElementById('receipt-content').style.display = 'block';
 }
 
-async function loadPointsExpiry(customerId) {
+async function loadPointsExpiry(customerId, baseDateStr) {
   if (!customerId) return;
   const expiryEl = document.getElementById('f-points-expiry');
 
-  // まず全体設定(settings.point_expiry_days)を取得し、ベースの案内文を出す。
+  // まず全体設定(settings.point_expiry_days)を取得し、この注文日を起点にした具体的な失効日を表示する。
   // 個別のポイント失効日(points_ledger)が取得できればそちらの具体的な日付で上書きする。
   let expiryDays = null;
   try {
@@ -433,8 +481,13 @@ async function loadPointsExpiry(customerId) {
     if (data) expiryDays = parseInt(data.value, 10);
   } catch (e) { }
 
-  if (expiryDays) {
-    expiryEl.textContent = `(expires after ${expiryDays} days without a new order)`;
+  if (expiryDays && baseDateStr) {
+    const baseDate = new Date(baseDateStr);
+    if (!isNaN(baseDate.getTime())) {
+      const expiryDate = new Date(baseDate.getTime() + expiryDays * 24 * 3600000);
+      const expiryDateStr = expiryDate.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+      expiryEl.textContent = `(expires on ${expiryDateStr} unless a new order is placed)`;
+    }
   }
 
   const today = new Date().toISOString().slice(0, 10);
