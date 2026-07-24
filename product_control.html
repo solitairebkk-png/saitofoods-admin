@@ -310,7 +310,7 @@ async function fetchAllRows(table, selectCols) {
   return { data: allRows, error: null };
 }
 
-async function loadProducts(restoreScrollY) {
+async function loadProducts(anchorProductId) {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = '<tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
@@ -338,10 +338,13 @@ async function loadProducts(restoreScrollY) {
 
   handleEditQueryParam();
 
-  // 保存/削除の直前のスクロール位置が渡されていれば、再描画後にそこへ戻す
-  // (再描画で高さが変わるため、少し待ってから設定する)
-  if (typeof restoreScrollY === 'number') {
-    setTimeout(() => window.scrollTo({ top: restoreScrollY, behavior: 'auto' }), 30);
+  // 保存/削除の対象商品の行へ戻す(ピクセル位置ではなく行そのものを目印にすることで、
+  // 保存で編集フォームが閉じて高さが変わっても、ズレずに正しい場所へ戻れるようにする)
+  if (anchorProductId) {
+    setTimeout(() => {
+      const row = document.querySelector(`tr[data-id="${anchorProductId}"]`);
+      if (row) row.scrollIntoView({ behavior: 'auto', block: 'center' });
+    }, 30);
   }
 }
 
@@ -763,8 +766,6 @@ async function saveProduct(productId) {
   const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
   const g = sel => editRow.querySelector(sel);
 
-  const scrollY = window.scrollY;
-
   const saleType = g('.e-saletype').value;
   const payload = {
     name_ja: g('.e-name-ja').value.trim(),
@@ -820,7 +821,7 @@ async function saveProduct(productId) {
   if (catDeleteErr) {
     alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
     showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
-    loadProducts(scrollY);
+    loadProducts(productRowId);
     return;
   }
 
@@ -835,13 +836,13 @@ async function saveProduct(productId) {
     if (catInsertErr) {
       alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
       showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catInsertErr.message, true);
-      loadProducts(scrollY);
+      loadProducts(productRowId);
       return;
     }
   }
 
   showSaveMsg('บันทึกแล้ว / Saved');
-  loadProducts(scrollY);
+  loadProducts(productRowId);
 }
 
 // 商品を削除する。ただし過去の注文(order_items)から参照されている商品は、
@@ -850,7 +851,17 @@ async function saveProduct(productId) {
 async function deleteProduct(productId) {
   if (!confirm('この商品を削除しますか？(過去の注文データには影響しません) / Delete this product?')) return;
 
-  const scrollY = window.scrollY;
+  // 削除される行は無くなるため、代わりにその次(無ければ前)の行を目印にして、
+  // 再読み込み後にだいたい同じ場所へ戻れるようにする
+  const baseRow = document.querySelector(`tr[data-id="${productId}"]`);
+  const editRow = document.querySelector(`tr.edit-row[data-editing="${productId}"]`);
+  let anchorProductId = null;
+  const afterEditRow = editRow ? editRow.nextElementSibling : (baseRow ? baseRow.nextElementSibling : null);
+  if (afterEditRow && afterEditRow.dataset && afterEditRow.dataset.id) {
+    anchorProductId = afterEditRow.dataset.id;
+  } else if (baseRow && baseRow.previousElementSibling && baseRow.previousElementSibling.dataset.id) {
+    anchorProductId = baseRow.previousElementSibling.dataset.id;
+  }
 
   const { error } = await supabaseClient.from('products').delete().eq('id', productId);
 
@@ -872,7 +883,7 @@ async function deleteProduct(productId) {
   }
 
   showSaveMsg('ลบแล้ว / Deleted');
-  loadProducts(scrollY);
+  loadProducts(anchorProductId);
 }
 
 function addNewProduct() {
