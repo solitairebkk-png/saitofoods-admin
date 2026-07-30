@@ -164,6 +164,18 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
+// 特殊文字を無害化する。テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let currentCustomer = null;
 let allCustomers = [];
 let allAreas = [];
@@ -397,21 +409,21 @@ function renderCustomerRow(c) {
   const tags = [
     dormant ? '<span class="tag dormant">休眠 / Dormant</span>' : '',
     c.is_active === false ? '<span class="tag inactive">無効</span>' : '',
-    isAreaMismatch(c) ? `<span class="tag dormant" style="background:var(--red-accent);">⚠️ Area? (${c.province})</span>` : '',
+    isAreaMismatch(c) ? `<span class="tag dormant" style="background:var(--red-accent);">⚠️ Area? (${escapeHtml(c.province)})</span>` : '',
   ].join('');
 
   const addressParts = [c.province, c.address1, c.address2].filter(Boolean);
-  const addressText = addressParts.join(' ') || '-';
+  const addressText = escapeHtml(addressParts.join(' ')) || '-';
 
   tr.innerHTML = `
     <td><button class="btn ghost small" onclick="toggleEdit('${c.id}')">編集 / Edit</button></td>
-    <td><span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span></td>
-    <td>${c.family_name || ''} ${c.first_name || ''}<br><span style="color:var(--text-muted);font-size:11px;">${c.family_name_kana || ''} ${c.first_name_kana || ''}</span><br>${tags}</td>
-    <td>${c.tel1 || '-'}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + c.tel2 + '</span>' : ''}</td>
+    <td><span class="tag ${areaBadgeClass(c.area_id)}">${escapeHtml(areaName(c.area_id))}</span></td>
+    <td>${escapeHtml(c.family_name || '')} ${escapeHtml(c.first_name || '')}<br><span style="color:var(--text-muted);font-size:11px;">${escapeHtml(c.family_name_kana || '')} ${escapeHtml(c.first_name_kana || '')}</span><br>${tags}</td>
+    <td>${escapeHtml(c.tel1 || '-')}${c.tel2 ? '<br><span style="color:var(--text-muted);font-size:11px;">' + escapeHtml(c.tel2) + '</span>' : ''}</td>
     <td style="font-size:12px;">${addressText}</td>
     <td>${c.point_balance ?? 0}</td>
-    <td style="font-size:12px;">${c.email || '-'}</td>
-    <td>${c.last_purchase_date || '-'}</td>
+    <td style="font-size:12px;">${escapeHtml(c.email || '-')}</td>
+    <td>${escapeHtml(c.last_purchase_date || '-')}</td>
   `;
   return tr;
 }
@@ -429,27 +441,27 @@ function toggleEdit(customerId) {
   editRow.className = 'edit-row';
   editRow.dataset.editing = customerId;
 
-  const areaOptions = allAreas.map(a => `<option value="${a.id}" ${c.area_id === a.id ? 'selected' : ''}>${a.name}</option>`).join('');
+  const areaOptions = allAreas.map(a => `<option value="${a.id}" ${c.area_id === a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('');
 
   editRow.innerHTML = `
     <td colspan="8">
       <div class="edit-grid">
-        <label>姓 / Family Name<input type="text" class="e-fname" value="${c.family_name || ''}"></label>
-        <label>名 / First Name<input type="text" class="e-gname" value="${c.first_name || ''}"></label>
-        <label>姓カナ / Family Kana<input type="text" class="e-fkana" value="${c.family_name_kana || ''}"></label>
-        <label>名カナ / First Kana<input type="text" class="e-gkana" value="${c.first_name_kana || ''}"></label>
-        <label>Email(表示のみ / read-only)<input type="text" class="e-email" value="${c.email || ''}" readonly></label>
-        <label>電話1 / Tel 1<input type="text" class="e-tel1" value="${c.tel1 || ''}"></label>
-        <label>電話2 / Tel 2<input type="text" class="e-tel2" value="${c.tel2 || ''}"></label>
+        <label>姓 / Family Name<input type="text" class="e-fname" value="${escapeHtml(c.family_name || '')}"></label>
+        <label>名 / First Name<input type="text" class="e-gname" value="${escapeHtml(c.first_name || '')}"></label>
+        <label>姓カナ / Family Kana<input type="text" class="e-fkana" value="${escapeHtml(c.family_name_kana || '')}"></label>
+        <label>名カナ / First Kana<input type="text" class="e-gkana" value="${escapeHtml(c.first_name_kana || '')}"></label>
+        <label>Email(表示のみ / read-only)<input type="text" class="e-email" value="${escapeHtml(c.email || '')}" readonly></label>
+        <label>電話1 / Tel 1<input type="text" class="e-tel1" value="${escapeHtml(c.tel1 || '')}"></label>
+        <label>電話2 / Tel 2<input type="text" class="e-tel2" value="${escapeHtml(c.tel2 || '')}"></label>
         <label>エリア / Area<select class="e-area">${areaOptions}</select></label>
         <label>ポイント残高 / Points<input type="number" class="e-points" step="1" value="${c.point_balance ?? 0}"></label>
-        <label>県 / Province<input type="text" class="e-province" value="${c.province || ''}"></label>
-        <label>住所1 / Address 1<input type="text" class="e-addr1" value="${c.address1 || ''}"></label>
-        <label>住所2 / Address 2<input type="text" class="e-addr2" value="${c.address2 || ''}"></label>
+        <label>県 / Province<input type="text" class="e-province" value="${escapeHtml(c.province || '')}"></label>
+        <label>住所1 / Address 1<input type="text" class="e-addr1" value="${escapeHtml(c.address1 || '')}"></label>
+        <label>住所2 / Address 2<input type="text" class="e-addr2" value="${escapeHtml(c.address2 || '')}"></label>
         <label class="checkbox-field"><input type="checkbox" class="e-active" ${c.is_active !== false ? 'checked' : ''}> 有効 / Active</label>
       </div>
       <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:12px;">備考 / Notes
-        <textarea class="e-notes" style="width:100%;">${c.notes || ''}</textarea>
+        <textarea class="e-notes" style="width:100%;">${escapeHtml(c.notes || '')}</textarea>
       </label>
       <button class="btn save small" onclick="saveCustomer('${customerId}')">保存 / Save</button>
       <button class="btn ghost small" onclick="toggleEdit('${customerId}')">閉じる / Close</button>

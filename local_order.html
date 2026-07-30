@@ -361,6 +361,18 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
+// 特殊文字を無害化する。テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // スリップアップロードアプリのベースURL(既存資産 slip.saitofoods.shop を流用)
 const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
 
@@ -476,8 +488,8 @@ async function searchCustomer() {
     data.forEach(c => {
       const div = document.createElement('div');
       div.className = 'customer-result-item';
-      div.innerHTML = `<b>${c.family_name || ''} ${c.first_name || ''}</b> — Tel: ${c.tel1 || '-'}<br>
-        <span style="color:var(--text-muted);font-size:12px;">${c.address1 || ''} ${c.address2 || ''}</span><br>
+      div.innerHTML = `<b>${escapeHtml(c.family_name || '')} ${escapeHtml(c.first_name || '')}</b> — Tel: ${escapeHtml(c.tel1 || '-')}<br>
+        <span style="color:var(--text-muted);font-size:12px;">${escapeHtml(c.address1 || '')} ${escapeHtml(c.address2 || '')}</span><br>
         <span style="color:var(--text-muted);font-size:12px;">Points: ${c.point_balance}</span>`;
       div.onclick = () => selectCustomerFromList(c, div);
       listEl.appendChild(div);
@@ -500,7 +512,7 @@ function selectCustomerFromList(customer, el) {
   el.classList.add('selected');
   const resultEl = document.getElementById('customer-result');
   resultEl.style.display = 'block';
-  resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${customer.family_name || ''} ${customer.first_name || ''}</b> (Tel: ${customer.tel1 || '-'})`;
+  resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${escapeHtml(customer.family_name || '')} ${escapeHtml(customer.first_name || '')}</b> (Tel: ${escapeHtml(customer.tel1 || '-')})`;
   document.getElementById('customer-not-found').style.display = 'none';
 }
 
@@ -707,9 +719,9 @@ function renderProductGrid(products, orderMap) {
     const priceLabel = isWeight
       ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (概算)`)
       : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
-    const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${p.name_th}</div>` : '';
+    const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${escapeHtml(p.name_th)}</div>` : '';
     const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
-    card.innerHTML = `<div class="p-name">${p.name_ja}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
+    card.innerHTML = `<div class="p-name">${escapeHtml(p.name_ja)}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
     card.onclick = () => addToCart(p);
     gridEl.appendChild(card);
   });
@@ -733,8 +745,8 @@ async function searchProducts() {
   data.forEach(p => {
     const div = document.createElement('div');
     const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label} (概算 ${p.price} THB)` : `${p.price} THB`;
-    const thPart = p.name_th ? ` / ${p.name_th}` : '';
-    div.innerHTML = `${p.name_ja}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
+    const thPart = p.name_th ? ` / ${escapeHtml(p.name_th)}` : '';
+    div.innerHTML = `${escapeHtml(p.name_ja)}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
     div.onclick = () => addToCart(p);
     resultEl.appendChild(div);
   });
@@ -776,7 +788,7 @@ function renderCart() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${item.name}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
+      <td>${escapeHtml(item.name)}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
       <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
       <td>${isWeight ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算・単価' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>' : item.price + ' THB'}</td>
       <td>${isWeight ? lineTotal + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算)</span>' : lineTotal + ' THB'}</td>
@@ -901,7 +913,7 @@ async function loadOrderForEdit(orderId) {
     selectedCustomer = order.customers;
     const resultEl = document.getElementById('customer-result');
     resultEl.style.display = 'block';
-    resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${order.customers.family_name || ''} ${order.customers.first_name || ''}</b> (Tel: ${order.customers.tel1 || '-'})`;
+    resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${escapeHtml(order.customers.family_name || '')} ${escapeHtml(order.customers.first_name || '')}</b> (Tel: ${escapeHtml(order.customers.tel1 || '-')})`;
 
     document.getElementById('delivery-date').value = order.delivery_date || '';
     onDeliveryDateChange();

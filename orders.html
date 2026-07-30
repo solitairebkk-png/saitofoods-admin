@@ -446,6 +446,19 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
+// 特殊文字を無害化する。< > & " ' を実体参照に変換し、スクリプトが実行されるのを防ぐ。
+// テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // スリップアップロードアプリ(既存資産)+その裏のGAS(メール送信・スリップ受信を担当)
 const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
@@ -754,16 +767,16 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   tr.style.background = getStatusColor(order);
 
   const customerName = order.customers
-    ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
+    ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
     : 'หน้าร้าน / Walk-in';
-  const tel = order.customers?.tel1 || '';
+  const tel = escapeHtml(order.customers?.tel1 || '');
   const addressParts = [order.customers?.address1, order.customers?.address2, order.customers?.province].filter(Boolean);
-  const address = addressParts.join(', ');
+  const address = escapeHtml(addressParts.join(', '));
 
   const itemsHtml = '<div class="order-items-grid">' + (order.order_items || []).map(item => {
-    const enName = item.products?.name_en ? ` / ${item.products.name_en}` : '';
+    const enName = item.products?.name_en ? ` / ${escapeHtml(item.products.name_en)}` : '';
     const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
-    return `<div class="item-cell">${item.product_name_snapshot}${enName} ${qtyLabel}</div>`;
+    return `<div class="item-cell">${escapeHtml(item.product_name_snapshot)}${enName} ${qtyLabel}</div>`;
   }).join('') + '</div>';
 
   const paymentBadges = [];
@@ -1059,20 +1072,20 @@ function openReceiptModal(order) {
   receiptModalOrderId = order.id;
 
   const customerName = order.customers
-    ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
+    ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
     : 'Walk-in / ลูกค้าหน้าร้าน';
-  const tel = order.customers?.tel1 || '-';
+  const tel = escapeHtml(order.customers?.tel1 || '-');
   const addressParts = [order.customers?.address1, order.customers?.address2, order.customers?.province].filter(Boolean);
-  const address = addressParts.join(', ');
+  const address = escapeHtml(addressParts.join(', '));
 
   const itemsRows = (order.order_items || []).map(item => {
-    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    const thName = item.products?.name_th ? ` / ${escapeHtml(item.products.name_th)}` : '';
     const qtyLabel = item.sale_type === 'weight'
-      ? `${item.quantity} ${item.products?.unit_label || ''}`
+      ? `${item.quantity} ${escapeHtml(item.products?.unit_label || '')}`
       : `${item.quantity}`;
     return `
       <tr>
-        <td>${item.product_name_snapshot}${thName}</td>
+        <td>${escapeHtml(item.product_name_snapshot)}${thName}</td>
         <td style="text-align:center;">${qtyLabel}</td>
         <td style="text-align:right;">${item.total_price} THB</td>
       </tr>`;
@@ -1108,7 +1121,7 @@ function openReceiptModal(order) {
     <div class="receipt-total"><span>Total / รวม</span><span>${order.total_amount || 0} THB</span></div>
     ${order.shipping_cost ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">(รวมค่าจัดส่ง / incl. delivery fee ${order.shipping_cost} THB)</div>` : ''}
     <div class="receipt-payment">💳 ${paymentLabel}</div>
-    ${order.comment ? `<div class="receipt-comment">📝 ${order.comment}</div>` : ''}
+    ${order.comment ? `<div class="receipt-comment">📝 ${escapeHtml(order.comment)}</div>` : ''}
   `;
 
   document.getElementById('receipt-modal').classList.add('open');
@@ -1181,12 +1194,12 @@ function openWeightModal(order) {
     row.className = 'weight-item-row';
     const unitLabel = item.products?.unit_label || '';
     const gramsPerUnit = parseGramsPerUnit(unitLabel);
-    const thName = item.products?.name_th ? ` / ${item.products.name_th}` : '';
+    const thName = item.products?.name_th ? ` / ${escapeHtml(item.products.name_th)}` : '';
     // 既存の quantity は「unit_label(例:100g)を1とした倍数」で保存されているため、
     // 編集時にグラム表示へ変換して見せる(例: quantity=1.3, unit_label=100g → 130g)
     const prefillGrams = (item.quantity && item.quantity > 0) ? Math.round(item.quantity * gramsPerUnit) : '';
     row.innerHTML = `
-      <div class="weight-item-name">${item.product_name_snapshot}${thName}</div>
+      <div class="weight-item-name">${escapeHtml(item.product_name_snapshot)}${thName}</div>
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">単価: ${item.unit_price || 0} THB / ${unitLabel || '?'} ※実測グラムをそのまま入力してください</div>
       <div class="weight-item-input-row">
         <input type="number" step="1" min="0" class="weight-input"

@@ -124,6 +124,18 @@ const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
+// 特殊文字を無害化する。テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let currentStaff = null;
 let allAreas = [];
 let searchDebounce = null;
@@ -220,8 +232,8 @@ async function runCustomerSearch(q) {
     row.className = 'result-row';
     row.onclick = () => selectCustomer(c.id);
     row.innerHTML = `
-      <span>${c.family_name || ''} ${c.first_name || ''} <span class="muted">${c.tel1 || ''}</span></span>
-      <span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span>
+      <span>${escapeHtml(c.family_name || '')} ${escapeHtml(c.first_name || '')} <span class="muted">${escapeHtml(c.tel1 || '')}</span></span>
+      <span class="tag ${areaBadgeClass(c.area_id)}">${escapeHtml(areaName(c.area_id))}</span>
     `;
     resultsEl.appendChild(row);
   });
@@ -269,12 +281,12 @@ function renderProfileCard(c, orders) {
   const orderCount = validOrders.length;
 
   document.getElementById('profile-card').innerHTML = `
-    <div class="name">${c.family_name || ''} ${c.first_name || ''}</div>
+    <div class="name">${escapeHtml(c.family_name || '')} ${escapeHtml(c.first_name || '')}</div>
     <div class="meta">
-      <span>📞 ${c.tel1 || '-'}${c.tel2 ? ' / ' + c.tel2 : ''}</span>
-      <span>✉️ ${c.email || '-'}</span>
-      <span class="tag ${areaBadgeClass(c.area_id)}">${areaName(c.area_id)}</span>
-      <span>${c.province || ''} ${c.address1 || ''} ${c.address2 || ''}</span>
+      <span>📞 ${escapeHtml(c.tel1 || '-')}${c.tel2 ? ' / ' + escapeHtml(c.tel2) : ''}</span>
+      <span>✉️ ${escapeHtml(c.email || '-')}</span>
+      <span class="tag ${areaBadgeClass(c.area_id)}">${escapeHtml(areaName(c.area_id))}</span>
+      <span>${escapeHtml(c.province || '')} ${escapeHtml(c.address1 || '')} ${escapeHtml(c.address2 || '')}</span>
     </div>
     <div class="stat">
       <div><span class="val">${orderCount}</span>注文回数 / Orders</div>
@@ -302,7 +314,7 @@ function renderOrderCard(order) {
 
   const itemsHtml = (order.order_items || []).map(item => {
     const qty = item.sale_type === 'weight' ? `${item.quantity}` : `${item.quantity}点`;
-    return `${item.product_name_snapshot} × ${qty} — ${item.total_price} THB`;
+    return `${escapeHtml(item.product_name_snapshot)} × ${qty} — ${item.total_price} THB`;
   }).join('<br>');
 
   const paymentBadge = order.payment_method === 'qr'
