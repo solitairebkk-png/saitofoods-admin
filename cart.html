@@ -1092,85 +1092,52 @@ async function submitOrder() {
 
   const comment = document.getElementById('order-comment').value.trim();
   const hasWeightItems = cart.some(i => i.sale_type === 'weight');
-  // 量り売り商品も「価格(概算・スタッフ入力)×数量」を目安金額として小計・送料無料判定に含める(updateTotalsと同じロジック)
-  const subtotal = cart.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0);
-  // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
-  // (元の注文の送料自体はさかのぼって変更しない。追加分だけの単体判定にはしない)
-  const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
-  const shippingCost = shippingJudgeSubtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
-  const preDiscountTotal = subtotal + shippingCost;
-  const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
-  const afterDiscount = preDiscountTotal - discount;
-  const appliedPoints = Math.min(pointsToUse, afterDiscount, currentCustomer.point_balance || 0);
-  const total = afterDiscount - appliedPoints;
 
-  const orderPayload = {
-    order_type: 'delivery',
-    order_source: 'online',
-    customer_id: currentCustomer.id,
-    delivery_date: deliveryDate,
-    delivery_time_slot: deliveryTimeSlot,
-    condo_name: condoName,
-    area_name: customerAreaName,
-    related_order_id: addToOrderId || null,
-    has_weight_items: hasWeightItems,
-    payment_method: paymentMethod,
-    payment_status: 'unpaid',
-    subtotal: subtotal,
-    shipping_cost: shippingCost,
-    coupon_code: appliedCoupon ? appliedCoupon.code : null,
-    discount_amount: discount,
-    points_used: appliedPoints,
-    total_amount: total,
-    comment: addToOrderId ? `[追加注文] 元注文 #${addToOrderId.slice(0, 8).toUpperCase()}${comment ? ' / ' + comment : ''}` : (comment || null),
-    created_by: null,
-  };
+  // ===== 注文確定はサーバー側の place_order 関数(RPC)に一本化する =====
+  // 金額・送料・クーポン割引・ポイントの計算、および orders / order_items /
+  // customers.point_balance / points_ledger / coupons への書き込みは、
+  // すべてサーバー側(place_order)がDBの正しい価格をもとに再計算して行う。
+  // クライアントはカートの内容(商品IDと数量)と配送情報を渡すだけ。
+  // これにより、金額やポイントをブラウザ側で改ざんしても無効になる。
+  const rpcItems = cart.map(item => ({
+    product_id: item.product_id,
+    quantity: item.quantity,
+  }));
 
   const btn = document.querySelector('#cart-content .btn-primary');
   btn.disabled = true;
   btn.textContent = '送信中... / Submitting...';
 
   try {
-    const { data: orderRows, error: orderErr } = await supabaseClient.from('orders').insert(orderPayload).select('id').single();
-    if (orderErr) throw orderErr;
-    const orderId = orderRows.id;
+    const { data: result, error: rpcErr } = await supabaseClient.rpc('place_order', {
+      p_items: rpcItems,
+      p_order_type: 'delivery',
+      p_area_name: customerAreaName,
+      p_delivery_date: deliveryDate,
+      p_delivery_time_slot: deliveryTimeSlot,
+      p_condo_name: condoName,
+      p_payment_method: paymentMethod,
+      p_coupon_code: appliedCoupon ? appliedCoupon.code : null,
+      p_points_to_use: pointsToUse || 0,
+      p_related_order_id: addToOrderId || null,
+      p_comment: comment || null,
+    });
 
-    const itemsPayload = cart.map(item => ({
-      order_id: orderId,
-      product_id: item.product_id,
-      product_name_snapshot: item.name,
-      sale_type: item.sale_type,
-      quantity: item.quantity,
-      // unit_priceは量り売り商品の実測後の精算にのみ使う参考値として保持する(合計計算には使わない)
-      unit_price: item.sale_type === 'weight' ? item.unit_price : null,
-      // 量り売り商品も、スタッフが入力した概算価格(price)をそのまま初期値として保存する
-      // (重量確定後にスタッフが実測値で上書きする)
-      price: item.price,
-      total_price: item.price * item.quantity,
-    }));
-    const { error: itemsErr } = await supabaseClient.from('order_items').insert(itemsPayload);
-    if (itemsErr) throw itemsErr;
+    if (rpcErr) throw rpcErr;
 
-    if (appliedCoupon) {
-      await supabaseClient.from('coupons').update({ used_count: appliedCoupon.used_count + 1 }).eq('id', appliedCoupon.id);
-    }
+    // place_order は確定金額一式を返す(表示にはサーバーが計算した値を使う)
+    const orderId = result.order_id;
+    const total = result.total_amount;
+    const appliedPoints = result.points_used || 0;
 
+    // ローカルに保持している残高表示だけ同期(実際の減算はサーバーが実施済み)
     if (appliedPoints > 0) {
-      const newBalance = (currentCustomer.point_balance || 0) - appliedPoints;
-      await supabaseClient.from('customers').update({ point_balance: newBalance }).eq('id', currentCustomer.id);
-      await supabaseClient.from('points_ledger').insert({
-        customer_id: currentCustomer.id,
-        order_id: orderId,
-        change_type: 'redeem',
-        points: appliedPoints,
-        expires_at: null,
-      });
-      currentCustomer.point_balance = newBalance;
+      currentCustomer.point_balance = Math.max(0, (currentCustomer.point_balance || 0) - appliedPoints);
     }
 
     sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeSlot, condoName, total, cartSnapshot: cart.slice() }).catch(() => {});
 
-    showSuccess({ orderId, amount: total, hasWeightItems, paymentMethod, pointsUsed: appliedPoints, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
+    showSuccess({ orderId, amount: total, hasWeightItems: result.has_weight_items, paymentMethod, pointsUsed: appliedPoints, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
 
     cart = [];
     appliedCoupon = null;
@@ -1180,7 +1147,20 @@ async function submitOrder() {
     document.getElementById('delivery-card').style.display = 'none';
     document.querySelectorAll('#cart-content > .card').forEach(el => { if (el.id !== 'success-panel') el.style.display = 'none'; });
   } catch (e) {
-    msgEl.textContent = '注文の送信に失敗しました / Failed to submit order: ' + e.message;
+    // サーバー側が投げるエラーコードを、お客様向けの分かりやすい文言に変換する
+    const raw = (e && e.message) ? e.message : '';
+    let friendly = '注文の送信に失敗しました / Failed to submit order';
+    if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
+    else if (raw.includes('PRODUCT_UNPUBLISHED') || raw.includes('PRODUCT_NOT_FOUND')) friendly = '現在ご購入いただけない商品がカートに含まれています / Your cart contains an item that is no longer available.';
+    else if (raw.includes('COUPON_EXPIRED')) friendly = 'クーポンの有効期限が切れています / This coupon has expired.';
+    else if (raw.includes('COUPON_MAX_USES')) friendly = 'このクーポンは使用上限に達しています / This coupon has reached its usage limit.';
+    else if (raw.includes('COUPON_ALREADY_USED')) friendly = 'このクーポンは既にご利用済みです / You have already used this coupon.';
+    else if (raw.includes('COUPON_INVALID')) friendly = 'クーポンコードが無効です / This coupon code is invalid.';
+    else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
+    else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
+    else if (raw) friendly += ': ' + raw;
+
+    msgEl.textContent = friendly;
     msgEl.className = 'error';
     btn.disabled = false;
     btn.textContent = '注文を確定する / Place order';
