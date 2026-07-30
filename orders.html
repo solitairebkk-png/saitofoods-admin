@@ -462,8 +462,6 @@ function escapeHtml(v) {
 // スリップアップロードアプリ(既存資産)+その裏のGAS(メール送信・スリップ受信を担当)
 const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
-// メール送信GASの合言葉(トークン)。GAS側のスクリプトプロパティ MAIL_TOKEN と一致させること。
-const MAIL_TOKEN = 'sf_mail_9tK3vRx7Qw2mZp4Ln8Bd6Hy';
 
 let currentCustomer = null;
 let currentAreaFilter = 'Bangkok';
@@ -1347,7 +1345,7 @@ async function sendWeightConfirmedEmail(order, amount) {
   const body = `${customerName} 様\n\nお待たせいたしました。ご注文の量り売り商品の重量が確定し、合計金額は ${amount} THB となりました。\n\n${paymentBlock}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
 
   try {
-    const url = `${GAS_URL}?action=sendMail&token=${encodeURIComponent(MAIL_TOKEN)}&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(order.customers.email)}&body=${encodeURIComponent(body)}`;
+    const url = `${GAS_URL}?action=sendMail&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(order.customers.email)}&body=${encodeURIComponent(body)}`;
     const res = await fetch(url);
     const json = await res.json();
     if (json.status !== 'ok') {
