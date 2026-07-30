@@ -402,6 +402,8 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // スリップアップロード用の既存アプリ(local_order.htmlと同一のものを流用)
 const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
+// メール送信GASの合言葉(トークン)。GAS側のスクリプトプロパティ MAIL_TOKEN と一致させること。
+const MAIL_TOKEN = 'sf_mail_9tK3vRx7Qw2mZp4Ln8Bd6Hy';
 
 // PromptPay QR生成用(local_order.html・rakugo.storeと同一ロジック・同一口座)
 const PROMPTPAY_BILLER_ID = '010554007919109';
@@ -1247,7 +1249,7 @@ async function sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeS
   const body = `${customerName} 様\n\nご注文ありがとうございます。以下の内容で承りました。\n\nご注文番号: #${orderId.slice(0, 8)}\n${scheduleLine}\n\n${itemsText}\n\n合計金額: ${total} THB${gpsBlock}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
 
   try {
-    const url = `${GAS_URL}?action=sendMail&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(currentCustomer.email)}&body=${encodeURIComponent(body)}`;
+    const url = `${GAS_URL}?action=sendMail&token=${encodeURIComponent(MAIL_TOKEN)}&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(currentCustomer.email)}&body=${encodeURIComponent(body)}`;
     await fetch(url);
   } catch (e) { /* メール送信に失敗しても注文自体は成立しているので無視する */ }
 }
