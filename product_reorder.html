@@ -254,7 +254,7 @@ function renderReorderPanel(catId) {
 
   grid.innerHTML = cards.map((p, i) => {
     const img = p.image_url
-      ? `<img src="${p.image_url}" alt="">`
+      ? `<img src="${p.image_url}" alt="" loading="lazy">`
       : `<div class="no-img">No Image</div>`;
     return `
       <div class="reorder-card" data-product-id="${p.id}">
