@@ -253,8 +253,12 @@ function renderReorderPanel(catId) {
   }
 
   grid.innerHTML = cards.map((p, i) => {
+    // 内部の並び替え画面では、表示専用の軽いサムネイル(product_control.htmlのアップロード時に
+    // 自動生成される /product-images/thumb/... )を使う。万一サムネイルが無い場合は
+    // 元画像にフォールバックする(onerrorで一度だけ差し替え)。
+    const thumbUrl = p.image_url ? p.image_url.replace('/product-images/', '/product-images/thumb/') : '';
     const img = p.image_url
-      ? `<img src="${p.image_url}" alt="" loading="lazy">`
+      ? `<img src="${thumbUrl}" data-fallback="${p.image_url}" alt="" loading="lazy" onerror="this.onerror=null;this.src=this.dataset.fallback;">`
       : `<div class="no-img">No Image</div>`;
     return `
       <div class="reorder-card" data-product-id="${p.id}">

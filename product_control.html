@@ -724,6 +724,15 @@ function compressImageFile(fileOrBlob, maxDim = 1600, quality = 0.82) {
   });
 }
 
+// 元画像パス(例: staff-uploads/xxx.jpg)から、サムネイル保存先パス(例: thumb/staff-uploads/xxx.jpg)を導く。
+// 公開URLについても同じ規則で導出できる(/product-images/ の直後に thumb/ を挟むだけ)。
+function toThumbStoragePath(originalPath) {
+  return `thumb/${originalPath}`;
+}
+function toThumbPublicUrl(originalPublicUrl) {
+  return originalPublicUrl.replace('/product-images/', '/product-images/thumb/');
+}
+
 async function handleImageUpload(event, slot) {
   const file = event.target.files[0];
   if (!file) return;
@@ -738,14 +747,24 @@ async function handleImageUpload(event, slot) {
 
   try {
     const compressedBlob = await compressImageFile(file);
+    // 並び替え画面など、内部でサムネイルとして小さく表示するだけで良い場面向けに、
+    // ごく小さい版(240px・低品質)も一緒に作っておく。
+    const thumbBlob = await compressImageFile(compressedBlob, 240, 0.65);
     const safeStamp = Date.now();
     const path = `staff-uploads/${safeStamp}_slot${slot}.jpg`;
+    const thumbPath = toThumbStoragePath(path);
 
-    const { error: uploadErr } = await supabaseClient.storage
-      .from('product-images')
-      .upload(path, compressedBlob, { cacheControl: '3600', upsert: true, contentType: 'image/jpeg' });
+    const [{ error: uploadErr }, { error: thumbErr }] = await Promise.all([
+      supabaseClient.storage.from('product-images')
+        .upload(path, compressedBlob, { cacheControl: '3600', upsert: true, contentType: 'image/jpeg' }),
+      supabaseClient.storage.from('product-images')
+        .upload(thumbPath, thumbBlob, { cacheControl: '3600', upsert: true, contentType: 'image/jpeg' }),
+    ]);
 
     if (uploadErr) throw uploadErr;
+    // サムネイル生成に失敗しても致命的ではない(表示側が元画像にフォールバックする)ため、
+    // 警告だけ出して処理は続行する。
+    if (thumbErr) console.warn('サムネイル生成に失敗しましたが、元画像は保存されています:', thumbErr);
 
     const { data: publicData } = supabaseClient.storage.from('product-images').getPublicUrl(path);
     const publicUrl = publicData.publicUrl;
@@ -762,14 +781,15 @@ async function handleImageUpload(event, slot) {
   }
 }
 
-// 既にアップロード済みの画像を一括で圧縮し直す。
+// 既にアップロード済みの画像を一括で圧縮し直し、あわせて並び替え画面などで使う
+// 小さいサムネイル(まだ無いもの)も生成する。
 // 各画像URLからstorage内のパスを取り出し、同じパスに圧縮版を上書きアップロードする
-// (DBのimage_url自体は変更不要)。既に十分小さい画像はスキップする。
+// (DBのimage_url自体は変更不要)。既に十分小さい画像・既にサムネイルがある画像はスキップする。
 async function optimizeAllImages() {
   const SIZE_THRESHOLD = 400 * 1024; // 400KB未満は既に十分小さいのでスキップ
   const CONCURRENCY = 4;
 
-  if (!confirm('既にアップロード済みの商品画像を、サイズが大きいものだけ圧縮し直します。時間がかかる場合があります。実行しますか？\n\nThis will recompress already-uploaded product images that are still large. This may take a while. Continue?')) return;
+  if (!confirm('既にアップロード済みの商品画像を圧縮し直し、あわせて並び替え画面用の小さいサムネイルも作成します。時間がかかる場合があります。実行しますか？\n\nThis will recompress large product images and generate missing thumbnails for the reorder screen. This may take a while. Continue?')) return;
 
   const btn = document.getElementById('optimize-images-btn');
   const statusEl = document.getElementById('optimize-images-status');
@@ -794,34 +814,54 @@ async function optimizeAllImages() {
   });
 
   const total = urls.length;
-  let done = 0, processed = 0, skipped = 0, failed = 0;
+  let done = 0, processed = 0, thumbsMade = 0, skipped = 0, failed = 0;
 
   function updateStatus() {
-    statusEl.textContent = `処理中... ${done}/${total}件（圧縮:${processed} スキップ:${skipped} 失敗:${failed}）`;
+    statusEl.textContent = `処理中... ${done}/${total}件（圧縮:${processed} サムネ作成:${thumbsMade} スキップ:${skipped} 失敗:${failed}）`;
   }
   updateStatus();
 
   async function processOne(url) {
     try {
-      const headRes = await fetch(url, { method: 'HEAD' });
+      const m = url.match(/\/product-images\/(.+)$/);
+      if (!m) { failed++; return; }
+      const path = decodeURIComponent(m[1]);
+      const thumbUrl = toThumbPublicUrl(url);
+      const thumbPath = toThumbStoragePath(path);
+
+      const [headRes, thumbHeadRes] = await Promise.all([
+        fetch(url, { method: 'HEAD' }),
+        fetch(thumbUrl, { method: 'HEAD' }),
+      ]);
       const size = parseInt(headRes.headers.get('content-length') || '0', 10);
-      if (size > 0 && size < SIZE_THRESHOLD) { skipped++; return; }
+      const mainNeedsCompress = !(size > 0 && size < SIZE_THRESHOLD);
+      const thumbMissing = !thumbHeadRes.ok;
+
+      if (!mainNeedsCompress && !thumbMissing) { skipped++; return; }
 
       const imgRes = await fetch(url);
       if (!imgRes.ok) { failed++; return; }
       const blob = await imgRes.blob();
-      const compressed = await compressImageFile(blob);
 
-      const m = url.match(/\/product-images\/(.+)$/);
-      if (!m) { failed++; return; }
-      const path = decodeURIComponent(m[1]);
+      let mainOk = !mainNeedsCompress;
+      if (mainNeedsCompress) {
+        const compressed = await compressImageFile(blob);
+        const { error: upErr } = await supabaseClient.storage
+          .from('product-images')
+          .upload(path, compressed, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+        mainOk = !upErr;
+        if (mainOk) processed++;
+      }
 
-      const { error: upErr } = await supabaseClient.storage
-        .from('product-images')
-        .upload(path, compressed, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+      if (thumbMissing) {
+        const thumbBlob = await compressImageFile(blob, 240, 0.65);
+        const { error: thumbUpErr } = await supabaseClient.storage
+          .from('product-images')
+          .upload(thumbPath, thumbBlob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+        if (!thumbUpErr) thumbsMade++;
+      }
 
-      if (upErr) { failed++; return; }
-      processed++;
+      if (mainNeedsCompress && !mainOk) failed++;
     } catch (e) {
       failed++;
     } finally {
@@ -840,7 +880,7 @@ async function optimizeAllImages() {
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-  statusEl.textContent = `完了 ✓ 圧縮:${processed}件 スキップ:${skipped}件 失敗:${failed}件（全${total}件）`;
+  statusEl.textContent = `完了 ✓ 圧縮:${processed}件 サムネ作成:${thumbsMade}件 スキップ:${skipped}件 失敗:${failed}件（全${total}件）`;
   btn.disabled = false;
 }
 
