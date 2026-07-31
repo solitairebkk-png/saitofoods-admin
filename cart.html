@@ -396,7 +396,7 @@
 
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkamdtZ3lnaG5scHF5ZHJubGxqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDc0NjksImV4cCI6MjA5OTQ4MzQ2OX0.XQtLUPh71vGjij5YpBsSPyvSieSBtbvKD9Uc6tn6_d0';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // スリップアップロード用の既存アプリ(local_order.htmlと同一のものを流用)
@@ -1135,7 +1135,7 @@ async function submitOrder() {
       currentCustomer.point_balance = Math.max(0, (currentCustomer.point_balance || 0) - appliedPoints);
     }
 
-    sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeSlot, condoName, total, cartSnapshot: cart.slice() }).catch(() => {});
+    sendOrderConfirmationEmail({ orderId }).catch(() => {});
 
     showSuccess({ orderId, amount: total, hasWeightItems: result.has_weight_items, paymentMethod, pointsUsed: appliedPoints, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
 
@@ -1218,36 +1218,13 @@ async function showGpsInfoBox() {
   document.getElementById('gps-info-box').style.display = 'block';
 }
 
-// ---------------- 注文確認メール(GAS経由。orders.htmlの重量確定メールと同じ仕組みを流用) ----------------
-async function sendOrderConfirmationEmail({ orderId, deliveryDate, deliveryTimeSlot, condoName, total, cartSnapshot }) {
+// ---------------- 注文確認メール(GAS経由) ----------------
+// order_id方式: クライアントは注文IDだけを渡し、宛先・本文はGAS側がSupabaseから
+// 取得して組み立てる(GAS URLが漏れても任意の宛先・本文では送れないようにするため)。
+async function sendOrderConfirmationEmail({ orderId }) {
   if (!currentCustomer?.email) return; // メールアドレス未登録のお客様には送らない
-
-  const customerName = `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim();
-
-  const itemsText = cartSnapshot.map(i => {
-    const priceLabel = i.sale_type === 'weight' ? `約${(i.price || 0) * i.quantity} THB (目安・重量確定後に金額決定)` : `${i.price * i.quantity} THB`;
-    return `・${i.name} × ${i.quantity} — ${priceLabel}`;
-  }).join('\n');
-
-  let scheduleLine = `配送日: ${deliveryDate}`;
-  if (condoName) {
-    scheduleLine += `\nコンドミニアム: ${condoName}`;
-  } else if (deliveryTimeSlot) {
-    scheduleLine += `\n時間帯: ${deliveryTimeSlot}`;
-  }
-
-  let gpsBlock = '';
-  if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
-    const gps = await fetchGpsInfo();
-    if (gps) {
-      gpsBlock = `\n\n【配送車両の位置情報】\n配送日の朝、下記リンクから配送車両の現在地をご確認いただけます。\nURL: ${gps.gps_tracking_url}\nユーザー名: ${gps.gps_tracking_username}\nパスワード: ${gps.gps_tracking_password}\n※ スマホアプリ「sinotrack pro」でも同じ情報でログインできます`;
-    }
-  }
-
-  const body = `${customerName} 様\n\nご注文ありがとうございます。以下の内容で承りました。\n\nご注文番号: #${orderId.slice(0, 8)}\n${scheduleLine}\n\n${itemsText}\n\n合計金額: ${total} THB${gpsBlock}\n\nどうぞよろしくお願いいたします。\n\nサイトウフーズ`;
-
   try {
-    const url = `${GAS_URL}?action=sendMail&toName=${encodeURIComponent(customerName)}&toEmail=${encodeURIComponent(currentCustomer.email)}&body=${encodeURIComponent(body)}`;
+    const url = `${GAS_URL}?action=sendMail&order_id=${encodeURIComponent(orderId)}&mail_type=confirmation`;
     await fetch(url);
   } catch (e) { /* メール送信に失敗しても注文自体は成立しているので無視する */ }
 }
