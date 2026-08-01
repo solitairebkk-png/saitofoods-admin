@@ -546,15 +546,16 @@ function updateHeaderCartCount() {
 // settings.html側でカテゴリのsort_orderを変更すれば、ここの並び順も自動で追従する
 async function loadCategoryNav() {
   const listEl = document.getElementById('sidebar-category-list');
+  // 「すべて / All」はどのカテゴリにも属さない固定リンク(商品一覧ページの「すべて/All」と同じ、
+  // カテゴリ絞り込みなしの全商品ビューへのリンク)。カテゴリの追加・削除に関わらず常に表示する。
+  const allLink = `<a class="sidebar-category-item" href="product_list.html">すべて / All</a>`;
   try {
     const categories = await supabase('GET', 'categories?select=id,name_ja,name_en,sort_order&order=sort_order.asc');
-    if (!categories.length) { listEl.innerHTML = ''; return; }
-
-    listEl.innerHTML = categories.map(c =>
+    listEl.innerHTML = allLink + (categories.length ? categories.map(c =>
       `<a class="sidebar-category-item" href="product_list.html?category_id=${c.id}">${i18nGetLang() === 'en' && c.name_en ? c.name_en : c.name_ja}</a>`
-    ).join('');
+    ).join('') : '');
   } catch (e) {
-    listEl.innerHTML = '';
+    listEl.innerHTML = allLink;
   }
 }
 
