@@ -129,6 +129,7 @@ let allProducts = [];
 let categoryPcRows = {}; // category_id -> [{product_id, sort_order}, ...]
 let reorderSortable = null;
 let reorderDirty = false;
+const ALL_VIEW_ID = '__ALL__'; // 「すべて / All」用の特別な選択肢(実カテゴリのUUIDとは衝突しない固定文字列)
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -190,7 +191,7 @@ async function fetchAllRows(table, selectCols) {
 async function loadData() {
   const [{ data: categories, error: catErr }, { data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
     supabaseClient.from('categories').select('id, name_ja, name_en').order('sort_order'),
-    supabaseClient.from('products').select('id, name_ja, image_url, is_published'),
+    supabaseClient.from('products').select('id, name_ja, image_url, is_published, sort_order'),
     fetchAllRows('product_categories', 'product_id, category_id, sort_order'),
   ]);
 
@@ -210,6 +211,14 @@ async function loadData() {
   });
 
   const sel = document.getElementById('category-select');
+
+  // 「すべて / All」— 商品一覧ページの一番上に出る、カテゴリ絞り込みなしの並び順(products.sort_order)。
+  // カテゴリ別の並び順(product_categories.sort_order)とは別物なので、特別扱いで選べるようにする。
+  const allOpt = document.createElement('option');
+  allOpt.value = ALL_VIEW_ID;
+  allOpt.textContent = 'すべて / All';
+  sel.appendChild(allOpt);
+
   allCategories.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.id;
@@ -240,13 +249,22 @@ function renderReorderPanel(catId) {
     return;
   }
 
-  const cat = allCategories.find(c => c.id === catId);
-  titleEl.textContent = '並べ替え / Reorder — ' + (cat ? cat.name_ja : '');
+  let cards;
+  if (catId === ALL_VIEW_ID) {
+    titleEl.textContent = '並べ替え / Reorder — すべて / All';
+    cards = allProducts
+      .filter(p => p.is_published !== false)
+      .slice()
+      .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
+  } else {
+    const cat = allCategories.find(c => c.id === catId);
+    titleEl.textContent = '並べ替え / Reorder — ' + (cat ? cat.name_ja : '');
 
-  const rows = (categoryPcRows[catId] || []).slice()
-    .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
+    const rows = (categoryPcRows[catId] || []).slice()
+      .sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
 
-  const cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(p => p && p.is_published !== false);
+    cards = rows.map(r => allProducts.find(p => p.id === r.product_id)).filter(p => p && p.is_published !== false);
+  }
 
   if (cards.length === 0) {
     grid.innerHTML = '<div class="reorder-empty">このカテゴリに商品がありません / No products in this category</div>';
@@ -308,11 +326,21 @@ async function saveReorder() {
   msgEl.textContent = '保存中... / Saving...';
 
   try {
-    await Promise.all(ids.map((pid, i) =>
-      supabaseClient.from('product_categories').update({ sort_order: i }).eq('product_id', pid).eq('category_id', catId)
-    ));
-
-    categoryPcRows[catId] = ids.map((pid, i) => ({ product_id: pid, sort_order: i }));
+    if (catId === ALL_VIEW_ID) {
+      await Promise.all(ids.map((pid, i) =>
+        supabaseClient.from('products').update({ sort_order: i }).eq('id', pid)
+      ));
+      // ローカルのキャッシュ(allProducts)にも反映しておく
+      ids.forEach((pid, i) => {
+        const p = allProducts.find(x => x.id === pid);
+        if (p) p.sort_order = i;
+      });
+    } else {
+      await Promise.all(ids.map((pid, i) =>
+        supabaseClient.from('product_categories').update({ sort_order: i }).eq('product_id', pid).eq('category_id', catId)
+      ));
+      categoryPcRows[catId] = ids.map((pid, i) => ({ product_id: pid, sort_order: i }));
+    }
 
     msgEl.className = 'reorder-save-msg success';
     msgEl.textContent = '保存しました ✓ / Saved';
