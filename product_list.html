@@ -68,6 +68,7 @@
   .sidebar-quicklink-icon.square { border-radius: 9px; }
   .sidebar-quicklink-title { font-weight: 800; font-size: 13px; display: block; }
   .sidebar-quicklink-sub { font-size: 9px; color: var(--brand-dark); letter-spacing: 0.06em; font-weight: 700; }
+  .sidebar-quicklink.active { background: #fff; box-shadow: inset 3px 0 0 var(--brand); }
   .sidebar-category-list { display: flex; flex-direction: column; }
   .sidebar-category-item { padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--ink); text-decoration: none; border: none; background: none; text-align: left; cursor: pointer; border-bottom: 1px solid var(--line); border-left: 3px solid transparent; transition: background 0.15s ease, color 0.15s ease; }
   .sidebar-category-item:hover { background: #fff; color: var(--brand-dark); }
@@ -125,7 +126,6 @@
   .skeleton-line.w40 { width: 40%; }
   .skeleton-line.w30 { width: 30%; margin-top: 4px; }
   .skeleton-line.pill { width: 100%; height: 34px; border-radius: 999px; margin-top: 4px; }
-  .skeleton-line.pill-sm { width: 100%; height: 30px; border-radius: 999px; margin-top: 6px; }
   .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
   .product-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
   .product-name-ja { font-size: 13.5px; font-weight: 700; line-height: 1.3; min-height: 2.6em; }
@@ -142,7 +142,6 @@
   .add-cart-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; border: none; background: var(--brand); color: #fff; font-size: 13px; font-weight: 800; padding: 10px 0; border-radius: 999px; cursor: pointer; font-family: inherit; box-shadow: 0 3px 8px rgba(245,169,60,0.35); transition: background 0.15s, transform 0.1s, box-shadow 0.15s; }
   .add-cart-btn:hover { background: var(--brand-dark); box-shadow: 0 4px 10px rgba(201,122,31,0.4); }
   .add-cart-btn:active { transform: scale(0.97); }
-  .add-cart-btn .incart-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #fff; color: var(--brand-dark); font-size: 12px; font-weight: 800; }
 
   .cart-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 1100px; background: var(--brand-dark); color: #fff; padding: 14px 18px; display: none; align-items: center; justify-content: space-between; z-index: 50; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); }
   .cart-bar.show { display: flex; }
@@ -279,6 +278,10 @@
       <a href="product_list.html" class="sidebar-quicklink">
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
+      </a>
+      <a href="product_list.html?favorites=1" class="sidebar-quicklink" id="sidebar-fav-quicklink" onclick="event.preventDefault(); setFavoritesFilter();">
+        <span class="sidebar-quicklink-icon" style="font-size:20px;">❤️</span>
+        <span><span class="sidebar-quicklink-title" data-i18n="sidebar.favoritesTitle">お気に入り</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.favoritesSub">FAVORITES</span></span>
       </a>
     </div>
     <div class="sidebar-categories-title" data-i18n="sidebar.categoriesTitle">商品カテゴリ / Categories</div>
@@ -423,6 +426,7 @@ let allProductCategories = [];
 let cart = {};
 let currentSearchQuery = '';
 let currentCategoryFilter = null;
+let showFavoritesOnly = false;
 let pmodalProductId = null;
 let pmodalNavStack = [];
 let pmodalQty = 1;
@@ -505,7 +509,6 @@ function showSkeletonGrid() {
         <div class="skeleton-box skeleton-line w60"></div>
         <div class="skeleton-box skeleton-line w40"></div>
         <div class="skeleton-box skeleton-line w30"></div>
-        <div class="skeleton-box skeleton-line pill-sm"></div>
         <div class="skeleton-box skeleton-line pill"></div>
       </div>
     </div>
@@ -570,6 +573,11 @@ function handleQuickViewFromQuery() {
   const viewId = params.get('view');
   const searchQuery = params.get('search');
   const categoryId = params.get('category_id');
+  const favoritesParam = params.get('favorites');
+
+  if (favoritesParam === '1') {
+    setFavoritesFilter();
+  }
 
   if (categoryId) {
     const btn = document.querySelector(`.sidebar-category-item[data-cat-id="${categoryId}"]`);
@@ -591,6 +599,19 @@ function handleQuickViewFromQuery() {
   if (viewId || searchQuery || categoryId) history.replaceState(null, '', location.pathname);
 }
 
+function setFavoritesFilter() {
+  showFavoritesOnly = true;
+  currentCategoryFilter = null;
+  currentSearchQuery = '';
+  document.getElementById('product-search').value = '';
+  toggleSearchClearBtn('product-search', 'product-search-clear-btn');
+  document.querySelectorAll('.sidebar-category-item').forEach(t => t.classList.remove('active'));
+  const favBtn = document.getElementById('sidebar-fav-quicklink');
+  if (favBtn) favBtn.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  renderProducts();
+}
+
 function renderSidebarCategories() {
   const wrap = document.getElementById('sidebar-category-list');
   wrap.innerHTML = `<button class="sidebar-category-item active" data-cat-id="" onclick="setCategoryFilter(null, this)">すべて / All</button>` +
@@ -599,7 +620,10 @@ function renderSidebarCategories() {
 
 function setCategoryFilter(catId, btn) {
   currentCategoryFilter = catId;
+  showFavoritesOnly = false;
   document.querySelectorAll('.sidebar-category-item').forEach(t => t.classList.remove('active'));
+  const favBtn = document.getElementById('sidebar-fav-quicklink');
+  if (favBtn) favBtn.classList.remove('active');
   btn.classList.add('active');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   renderProducts();
@@ -608,6 +632,10 @@ function setCategoryFilter(catId, btn) {
 function getFilteredProducts() {
   let matches = allProducts;
   let categoryOrderMap = null;
+
+  if (showFavoritesOnly) {
+    matches = matches.filter(p => favoriteProductIds.has(p.id));
+  }
 
   if (currentCategoryFilter !== null) {
     const pcRowsForCat = allProductCategories.filter(pc => pc.category_id == currentCategoryFilter);
@@ -643,10 +671,19 @@ function renderProducts() {
   const wrap = document.getElementById('product-sections');
   if (!allProducts.length) { wrap.innerHTML = `<div class="loading">商品がまだありません / No products yet</div>`; return; }
   const matches = getFilteredProducts();
-  if (!matches.length) { wrap.innerHTML = `<div class="loading">該当する商品がありません / No products found</div>`; return; }
-  const title = currentSearchQuery
-    ? `検索結果 (${matches.length})`
-    : (currentCategoryFilter === null ? `商品一覧 / All products (${matches.length})` : `${matches.length}件`);
+  if (!matches.length) {
+    wrap.innerHTML = showFavoritesOnly
+      ? (!currentCustomerId
+          ? `<div class="loading">お気に入りの閲覧にはログインが必要です / Please log in to view favorites<br><span style="font-size:11px;"><a href="mypage.html">マイページからログイン / Log in via My Page</a></span></div>`
+          : `<div class="loading">まだお気に入り登録した商品がありません / No favorites yet<br><span style="font-size:11px;">商品カードの♡マークをタップして登録できます / Tap the ♡ on a product card to add it</span></div>`)
+      : `<div class="loading">該当する商品がありません / No products found</div>`;
+    return;
+  }
+  const title = showFavoritesOnly
+    ? `❤️ お気に入り / My Favorites (${matches.length})`
+    : (currentSearchQuery
+        ? `検索結果 (${matches.length})`
+        : (currentCategoryFilter === null ? `商品一覧 / All products (${matches.length})` : `${matches.length}件`));
   wrap.innerHTML = `<div class="section-title">${title}</div><div class="product-grid">${matches.map(productCardHtml).join('')}</div>`;
 }
 
@@ -658,15 +695,15 @@ function productCardHtml(p) {
   const isWeight = p.sale_type === 'weight';
   const lang = i18nGetLang();
   const priceLabel = isWeight ? `฿ ${p.unit_price} <span>/ ${p.unit_label}</span>` : `฿ ${p.price}<span></span>`;
-  const selQty = selectQty[p.id] || 1;
-  const stepper = available
+  const stepper = !available
+    ? `<span class="out-of-stock">${i18nText('plist.outOfStockShort')}</span>`
+    : inCart > 0
     ? `<div class="qty-select-row">
-         <button class="qty-sel-btn" onclick="event.stopPropagation(); adjustSelectQty('${p.id}', -1, ${maxQtyFor(p)})">−</button>
-         <span class="qty-sel-num" id="selqty-${p.id}">${selQty}</span>
-         <button class="qty-sel-btn" onclick="event.stopPropagation(); adjustSelectQty('${p.id}', 1, ${maxQtyFor(p)})">+</button>
-       </div>
-       <button class="add-cart-btn" onclick="event.stopPropagation(); addSelectedToCart('${p.id}', ${maxQtyFor(p)})">${i18nText('plist.addBtn')}${inCart > 0 ? `<span class="incart-count">${inCart}</span>` : ''}</button>`
-    : `<span class="out-of-stock">${i18nText('plist.outOfStockShort')}</span>`;
+         <button class="qty-sel-btn" onclick="event.stopPropagation(); changeQty('${p.id}', -1)">−</button>
+         <span class="qty-sel-num">${inCart}</span>
+         <button class="qty-sel-btn" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">+</button>
+       </div>`
+    : `<button class="add-cart-btn" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">${i18nText('plist.addBtn')}</button>`;
   const primaryName = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
   return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${primaryName}</div>${p.is_local_special ? `<div class="product-local-tag">${i18nText('plist.localSpecial')}</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">${i18nText('plist.weightSale')}</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
 }
@@ -689,24 +726,12 @@ function clearSearchInput(inputId, btnId, callback) {
 
 function handleSearch(q) {
   currentSearchQuery = q.trim();
+  if (currentSearchQuery) {
+    showFavoritesOnly = false;
+    const favBtn = document.getElementById('sidebar-fav-quicklink');
+    if (favBtn) favBtn.classList.remove('active');
+  }
   renderProducts();
-}
-
-// カードの数量セレクタ(カート投入前の一時的な選択数)。カートの中身とは別管理。
-const selectQty = {};
-
-function adjustSelectQty(productId, delta, max) {
-  const current = selectQty[productId] || 1;
-  const next = Math.max(1, Math.min(max || 999, current + delta));
-  selectQty[productId] = next;
-  const el = document.getElementById(`selqty-${productId}`);
-  if (el) el.textContent = next;
-}
-
-function addSelectedToCart(productId, max) {
-  const qty = selectQty[productId] || 1;
-  changeQty(productId, qty);
-  selectQty[productId] = 1;
 }
 
 function changeQty(productId, delta) {

@@ -20,6 +20,8 @@
     'sidebar.productsTitle': { ja: '商品一覧', en: 'Products' },
     'sidebar.productsSub': { ja: 'PRODUCTS', en: 'PRODUCTS' },
     'sidebar.categoriesTitle': { ja: '商品カテゴリ / Categories', en: 'Categories' },
+    'sidebar.favoritesTitle': { ja: 'お気に入り', en: 'Favorites' },
+    'sidebar.favoritesSub': { ja: 'FAVORITES', en: 'FAVORITES' },
     'sidebar.all': { ja: 'すべて / All', en: 'All' },
 
     // ---- anniversary badge ----
@@ -140,6 +142,7 @@
     'my.otherProvinceWarning': { ja: '登録のエリアがOther Provincesのお客様は、他の配送業者の配送料金実費をご請求させて頂きます。予めご了承ください。', en: 'Customers registered under "Other Provinces" will be charged the actual delivery fee from our courier partner. Thank you for your understanding.' },
     'my.saveProfileBtn': { ja: '住所・電話番号を保存する', en: 'Save address & phone number' },
     'my.favoritesTitle': { ja: 'お気に入り商品 / Favorite Products', en: 'Favorite Products' },
+    'my.favShopBtn': { ja: '🛒 お気に入りをカートで見る / Shop your favorites', en: '🛒 Shop your favorites' },
     'my.favSearchPlaceholder': { ja: '商品名で検索して追加', en: 'Search by product name to add' },
     'my.orderAgainBtn': { ja: '🔁 もう一度注文する / Order again', en: '🔁 Order again' },
     'my.viewReceiptBtn': { ja: '🧾 伝票を見る / View receipt', en: '🧾 View receipt' },
