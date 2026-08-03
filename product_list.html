@@ -279,7 +279,7 @@
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
       </a>
-      <a href="product_list.html?favorites=1" class="sidebar-quicklink" id="sidebar-fav-quicklink" onclick="event.preventDefault(); setFavoritesFilter();">
+      <a href="product_list.html?favorites=1" class="sidebar-quicklink" id="sidebar-fav-quicklink" style="display:none;" onclick="event.preventDefault(); setFavoritesFilter();">
         <span class="sidebar-quicklink-icon" style="font-size:20px;">❤️</span>
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.favoritesTitle">お気に入り</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.favoritesSub">FAVORITES</span></span>
       </a>
@@ -530,6 +530,9 @@ async function loadFavoritesState() {
     const { data: favRows } = await supabaseClient
       .from('customer_favorites').select('product_id').eq('customer_id', currentCustomerId);
     favoriteProductIds = new Set((favRows || []).map(r => r.product_id));
+
+    const favLink = document.getElementById('sidebar-fav-quicklink');
+    if (favLink) favLink.style.display = 'flex';
   } catch (e) { }
 }
 

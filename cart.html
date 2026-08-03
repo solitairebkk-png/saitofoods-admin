@@ -205,6 +205,10 @@
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
       </a>
+      <a href="product_list.html?favorites=1" class="sidebar-quicklink" id="sidebar-fav-quicklink" style="display:none;">
+        <span class="sidebar-quicklink-icon" style="font-size:20px;">❤️</span>
+        <span><span class="sidebar-quicklink-title" data-i18n="sidebar.favoritesTitle">お気に入り</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.favoritesSub">FAVORITES</span></span>
+      </a>
     </div>
     <div class="sidebar-categories-title" data-i18n="sidebar.categoriesTitle">商品カテゴリ / Categories</div>
     <div class="sidebar-category-list" id="sidebar-category-list">
@@ -738,6 +742,8 @@ document.addEventListener('saitofoods-langchange', function () {
   loadSidebarCategories();
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
+    const favLink = document.getElementById('sidebar-fav-quicklink');
+    if (favLink) favLink.style.display = 'flex';
     await loadCustomerAndInit(session.user.id);
     return;
   }
