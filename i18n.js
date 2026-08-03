@@ -74,6 +74,7 @@
     'plist.outOfStock': { ja: '在庫切れ / Out of stock', en: 'Out of stock' },
     'plist.outOfStockShort': { ja: '在庫切れ', en: 'Out of stock' },
     'plist.addShort': { ja: '+ 追加', en: '+ Add' },
+    'plist.addBtn': { ja: 'カートに追加', en: 'Add to cart' },
     'plist.localSpecial': { ja: '🏠 ローカル限定', en: '🏠 Local special' },
     'plist.localTagModal': { ja: '🏠 ローカル限定商品 / Local special item', en: '🏠 Local special item' },
     'plist.weightSale': { ja: '⚖️ 量り売り', en: '⚖️ Sold by weight' },

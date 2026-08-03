@@ -313,8 +313,12 @@
           </div>
         </div>
         <div class="card">
-          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> <span data-i18n="my.orderHistoryTitle">ご注文履歴 / Order History</span></div>
-          <div id="order-list">
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 5 1.3 7-6.3-3.3L5.7 21.4 7 14.4l-5-5 7-.9z"></path></svg> <span data-i18n="my.favoritesTitle">お気に入り商品 / Favorite Products</span></div>
+          <div class="form-group">
+            <input type="text" class="form-input" id="fav-search-input" data-i18n-placeholder="my.favSearchPlaceholder" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
+            <div class="fav-search-result" id="fav-search-result"></div>
+          </div>
+          <div id="fav-list">
             <div class="loading" data-i18n="my.loading">読み込み中...</div>
           </div>
         </div>
@@ -375,12 +379,8 @@
           <div class="profile-msg" id="profile-msg"></div>
         </div>
         <div class="card">
-          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 5 1.3 7-6.3-3.3L5.7 21.4 7 14.4l-5-5 7-.9z"></path></svg> <span data-i18n="my.favoritesTitle">お気に入り商品 / Favorite Products</span></div>
-          <div class="form-group">
-            <input type="text" class="form-input" id="fav-search-input" data-i18n-placeholder="my.favSearchPlaceholder" placeholder="商品名で検索して追加" oninput="searchProductsForFavorite()">
-            <div class="fav-search-result" id="fav-search-result"></div>
-          </div>
-          <div id="fav-list">
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> <span data-i18n="my.orderHistoryTitle">ご注文履歴 / Order History</span></div>
+          <div id="order-list">
             <div class="loading" data-i18n="my.loading">読み込み中...</div>
           </div>
         </div>
