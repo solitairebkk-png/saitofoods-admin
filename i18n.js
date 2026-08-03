@@ -211,6 +211,8 @@
     'cart.codNote': { ja: '配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。', en: 'Please pay the driver directly at delivery. We will always bring correct change.' },
     'cart.commentLabel': { ja: '備考 / Comment', en: 'Comment' },
     'cart.commentPlaceholder': { ja: '例: 玄関前に置いてください', en: 'e.g. Please leave it by the front door' },
+    'cart.translateBtn': { ja: '🇹🇭 タイ語に翻訳', en: '🇹🇭 Translate to Thai' },
+    'cart.translateUndoBtn': { ja: '元の日本語に戻す', en: 'Revert to Japanese' },
     'cart.placeOrderBtn': { ja: '注文を確定する / Place order', en: 'Place order' },
     'cart.successTitle': { ja: 'ご注文ありがとうございます！ / Order placed!', en: 'Order placed!' },
     'cart.qrCaption': { ja: 'PromptPay QR —', en: 'PromptPay QR —' },

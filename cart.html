@@ -366,7 +366,14 @@
     <div class="card">
       <div class="field">
         <label data-i18n="cart.commentLabel">備考 / Comment</label>
-        <input type="text" id="order-comment" data-i18n-placeholder="cart.commentPlaceholder" placeholder="例: 玄関前に置いてください">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="order-comment" data-i18n-placeholder="cart.commentPlaceholder" placeholder="例: 玄関前に置いてください" style="flex:1;">
+          <button type="button" class="btn-secondary" id="translate-comment-btn" onclick="translateCommentToThai()" data-i18n="cart.translateBtn">🇹🇭 タイ語に翻訳</button>
+        </div>
+        <div style="font-size:11px;margin-top:4px;display:flex;align-items:center;gap:8px;">
+          <span id="translate-comment-status" style="color:#999;"></span>
+          <a href="#" id="translate-comment-undo" style="display:none;color:var(--brand-dark);font-weight:700;text-decoration:underline;" onclick="event.preventDefault(); undoTranslateComment();" data-i18n="cart.translateUndoBtn">元の日本語に戻す</a>
+        </div>
       </div>
       <button class="btn-primary" style="width:100%;" onclick="submitOrder()" data-i18n="cart.placeOrderBtn">注文を確定する / Place order</button>
       <div id="submit-msg"></div>
@@ -1017,6 +1024,52 @@ async function applyCoupon() {
     statusEl.textContent = e.message || 'エラーが発生しました / Something went wrong';
     updateTotals();
   }
+}
+
+// ---------------- 備考欄のタイ語翻訳(遊び機能) ----------------
+// 無料で使える非公式のGoogle翻訳エンドポイントを利用。APIキー不要・課金不要だが、
+// 正式なAPIではないため将来的に仕様変更や一時的な利用不可が起きる可能性がある。
+let commentBeforeTranslate = null; // 直前の翻訳前テキスト(「元に戻す」用、1段階のみ保持)
+
+async function translateCommentToThai() {
+  const input = document.getElementById('order-comment');
+  const statusEl = document.getElementById('translate-comment-status');
+  const undoLink = document.getElementById('translate-comment-undo');
+  const btn = document.getElementById('translate-comment-btn');
+  const text = input.value.trim();
+  if (!text) return;
+
+  btn.disabled = true;
+  undoLink.style.display = 'none';
+  statusEl.style.color = '#999';
+  statusEl.textContent = '翻訳中... / Translating...';
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=th&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('翻訳サービスに接続できませんでした');
+    const data = await res.json();
+    const translated = (data[0] || []).map(seg => seg[0]).join('');
+    if (!translated) throw new Error('翻訳結果を取得できませんでした');
+    commentBeforeTranslate = input.value; // 戻せるように翻訳前のテキストを保存
+    input.value = translated;
+    statusEl.style.color = 'var(--brand-dark)';
+    statusEl.textContent = '✓ タイ語に翻訳しました / Translated to Thai';
+    undoLink.style.display = 'inline';
+  } catch (e) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '翻訳に失敗しました。時間をおいて再度お試しください / Translation failed. Please try again later.';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function undoTranslateComment() {
+  if (commentBeforeTranslate === null) return;
+  document.getElementById('order-comment').value = commentBeforeTranslate;
+  document.getElementById('translate-comment-status').textContent = '';
+  document.getElementById('translate-comment-undo').style.display = 'none';
+  commentBeforeTranslate = null;
 }
 
 // ---------------- 配送日時 ----------------
