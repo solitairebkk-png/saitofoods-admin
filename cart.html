@@ -190,6 +190,42 @@
       </div>
     </div>
 
+    <div class="card">
+      <h2 data-i18n="cart.shippingTitle">💰 配送料について / Shipping fee</h2>
+      <div class="shipping-banner" id="shipping-banner"></div>
+      <div class="field">
+        <label data-i18n="cart.couponLabel">クーポンコード / Coupon code</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="coupon-input" placeholder="例: SUMMER50" style="flex:1;text-transform:uppercase;" oninput="onCouponInputChange()">
+          <button type="button" class="btn-secondary" onclick="applyCoupon()" data-i18n="cart.applyBtn">適用 / Apply</button>
+        </div>
+        <div id="coupon-status" style="font-size:12px;margin-top:6px;"></div>
+      </div>
+      <div class="field" id="points-field" style="display:none;">
+        <label><span data-i18n="cart.usePointsLabel">ポイントを使う / Use points</span> (<span id="points-available">0</span> pt)</label>
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--ink);margin-bottom:8px;cursor:pointer;">
+          <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()" style="width:auto;flex:0 0 auto;">
+          <span data-i18n="cart.usePointsCheckbox">今回の注文でポイントを使う / Use points on this order</span>
+        </label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12.5px;color:#666;white-space:nowrap;" data-i18n="cart.pointsAmountLabel">使用ポイント数 / Amount to use</span>
+          <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="max-width:100px;flex:none;" disabled oninput="onPointsAmountChange()">
+          <span style="font-size:12.5px;color:#666;">pt</span>
+        </div>
+        <div style="font-size:11px;color:#999;margin-top:6px;line-height:1.6;">
+          <span data-i18n="cart.pointsHint">チェックを入れると残高が自動で入力されます。数量を減らせば一部だけ使うことも可能です。</span>
+        </div>
+      </div>
+      <div class="totals-row" id="totals-original-row" style="display:none;color:#7A5C1E;"><span data-i18n="cart.originalSubtotal">元のご注文小計 / Original order subtotal</span><span id="totals-original">฿0</span></div>
+      <div class="totals-row"><span id="totals-subtotal-label">小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
+      <div class="totals-row" id="totals-shipping-row"><span data-i18n="cart.shippingRow">配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
+      <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.discountRow">割引 / Discount</span><span id="totals-discount">-฿0</span></div>
+      <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.pointsUsedRow">ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
+      <div class="totals-row total"><span id="totals-total-label">合計 / Total</span><span id="totals-total">฿0</span></div>
+      <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span data-i18n="cart.grandTotal">総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
+      <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は概算価格×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
+    </div>
+
     <div class="card" id="delivery-card">
       <h2 data-i18n="cart.deliveryTitle">🚚 配送日時 / Delivery date &amp; schedule</h2>
 
@@ -233,42 +269,6 @@
         </div>
         <div style="font-size:11px;color:#999;" data-i18n="cart.pattayaNote">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
-    </div>
-
-    <div class="card">
-      <h2 data-i18n="cart.shippingTitle">💰 配送料について / Shipping fee</h2>
-      <div class="shipping-banner" id="shipping-banner"></div>
-      <div class="field">
-        <label data-i18n="cart.couponLabel">クーポンコード / Coupon code</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="coupon-input" placeholder="例: SUMMER50" style="flex:1;text-transform:uppercase;" oninput="onCouponInputChange()">
-          <button type="button" class="btn-secondary" onclick="applyCoupon()" data-i18n="cart.applyBtn">適用 / Apply</button>
-        </div>
-        <div id="coupon-status" style="font-size:12px;margin-top:6px;"></div>
-      </div>
-      <div class="field" id="points-field" style="display:none;">
-        <label><span data-i18n="cart.usePointsLabel">ポイントを使う / Use points</span> (<span id="points-available">0</span> pt)</label>
-        <label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;color:var(--ink);margin-bottom:8px;cursor:pointer;">
-          <input type="checkbox" id="use-points-checkbox" onchange="onUsePointsToggle()" style="width:auto;flex:0 0 auto;">
-          <span data-i18n="cart.usePointsCheckbox">今回の注文でポイントを使う / Use points on this order</span>
-        </label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12.5px;color:#666;white-space:nowrap;" data-i18n="cart.pointsAmountLabel">使用ポイント数 / Amount to use</span>
-          <input type="number" id="points-amount-input" min="0" step="1" placeholder="0" style="max-width:100px;flex:none;" disabled oninput="onPointsAmountChange()">
-          <span style="font-size:12.5px;color:#666;">pt</span>
-        </div>
-        <div style="font-size:11px;color:#999;margin-top:6px;line-height:1.6;">
-          <span data-i18n="cart.pointsHint">チェックを入れると残高が自動で入力されます。数量を減らせば一部だけ使うことも可能です。</span>
-        </div>
-      </div>
-      <div class="totals-row" id="totals-original-row" style="display:none;color:#7A5C1E;"><span data-i18n="cart.originalSubtotal">元のご注文小計 / Original order subtotal</span><span id="totals-original">฿0</span></div>
-      <div class="totals-row"><span id="totals-subtotal-label">小計 / Subtotal</span><span id="totals-subtotal">฿0</span></div>
-      <div class="totals-row" id="totals-shipping-row"><span data-i18n="cart.shippingRow">配送料 / Shipping</span><span id="totals-shipping">฿0</span></div>
-      <div class="totals-row" id="totals-discount-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.discountRow">割引 / Discount</span><span id="totals-discount">-฿0</span></div>
-      <div class="totals-row" id="totals-points-row" style="display:none;color:var(--brand-dark);"><span data-i18n="cart.pointsUsedRow">ポイント利用 / Points used</span><span id="totals-points">-฿0</span></div>
-      <div class="totals-row total"><span id="totals-total-label">合計 / Total</span><span id="totals-total">฿0</span></div>
-      <div class="totals-row" id="totals-grand-row" style="display:none;font-weight:800;color:var(--brand-dark);border-top:1.5px dashed var(--line-soft);margin-top:6px;padding-top:8px;"><span data-i18n="cart.grandTotal">総合計(元のご注文+今回追加分) / Grand total (original + additional)</span><span id="totals-grand">฿0</span></div>
-      <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は概算価格×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
     </div>
 
     <div class="card">
@@ -937,17 +937,57 @@ function formatDateLocal(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// バンコク時間の「現在」を返す(海外からのアクセスでもタイ時間基準で判定する)
+function bangkokNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+}
+
+// その日付で(現在時刻を考慮して)まだ選べる時間帯があるかを判定
+function slotsRemainingForDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dayOfWeek = new Date(y, m - 1, d).getDay();
+  if (dayOfWeek === 0 || holidaySet.has(dateStr)) return false;
+  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+  return filterPastSlots(slots, dateStr).length > 0;
+}
+
+// 選択日が「今日(バンコク時間)」の場合、すでに過ぎた時間帯を除外する
+function filterPastSlots(slots, dateStr) {
+  const now = bangkokNow();
+  const todayStr = formatDateLocal(now);
+  if (dateStr !== todayStr) return slots;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return slots.filter(s => {
+    const m = s.value.match(/^(\d{1,2}):(\d{2})/);
+    if (m) {
+      // 午後の枠: 開始時刻を過ぎていたら非表示
+      return nowMinutes < parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    }
+    // 午前の枠: 正午を過ぎていたら非表示
+    return nowMinutes < 12 * 60;
+  });
+}
+
 async function initDeliveryDatePicker() {
   const dateInput = document.getElementById('delivery-date');
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  dateInput.min = todayStr;
-  dateInput.value = todayStr;
 
   try {
     const { data } = await supabaseClient.from('holidays').select('holiday_date');
     holidaySet = new Set((data || []).map(r => r.holiday_date));
   } catch (e) { /* 取得失敗時は日曜・土曜のみの通常ルールで続行 */ }
+
+  // 初期値: 今日(バンコク時間)から順に、選べる時間帯が残っている最初の日
+  const now = bangkokNow();
+  let candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  for (let i = 0; i < 21; i++) {
+    if (slotsRemainingForDate(formatDateLocal(candidate))) break;
+    candidate.setDate(candidate.getDate() + 1);
+  }
+  const todayStr = formatDateLocal(now);
+  const defaultStr = formatDateLocal(candidate);
+  // 今日にまだ枠が残っていれば今日から、残っていなければ翌日以降のみ選択可
+  dateInput.min = slotsRemainingForDate(todayStr) ? todayStr : formatDateLocal(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  dateInput.value = defaultStr;
 
   await onDeliveryDateChange();
 }
@@ -985,6 +1025,13 @@ async function onDeliveryDateChange() {
       if (slots.length === 0) noteEl.textContent = 'この日はご注文が集中しているため、選択可能な時間帯がありません / All time slots are full for this date.';
     }
   } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }
+
+  // 今日を選択している場合、すでに過ぎた時間帯は表示しない
+  const beforeCount = slots.length;
+  slots = filterPastSlots(slots, val);
+  if (slots.length === 0 && beforeCount > 0 && !noteEl.textContent) {
+    noteEl.textContent = '本日の受付は終了しました。翌日以降の日付をお選びください / Same-day ordering has closed. Please choose a later date.';
+  }
 
   populateTimeSlots(slots);
 }
