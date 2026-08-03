@@ -287,7 +287,6 @@
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="i18n.js"></script>
 </head>
 <body>
@@ -322,10 +321,6 @@
       <a href="product_list.html" class="sidebar-quicklink">
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
-      </a>
-      <a href="product_list.html?favorites=1" class="sidebar-quicklink" id="sidebar-fav-quicklink" style="display:none;">
-        <span class="sidebar-quicklink-icon" style="font-size:20px;">❤️</span>
-        <span><span class="sidebar-quicklink-title" data-i18n="sidebar.favoritesTitle">お気に入り</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.favoritesSub">FAVORITES</span></span>
       </a>
     </div>
     <div class="sidebar-categories-title" data-i18n="sidebar.categoriesTitle">商品カテゴリ / Categories</div>
@@ -501,18 +496,7 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ログイン中のみ、サイドバーに「お気に入り」リンクを表示する
-(async function checkLoginForFavoritesLink() {
-  try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-      const link = document.getElementById('sidebar-fav-quicklink');
-      if (link) link.style.display = 'flex';
-    }
-  } catch (e) { /* 取得失敗時は非表示のまま(通常の未ログイン扱い) */ }
-})();
 
 async function supabase(method, path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
