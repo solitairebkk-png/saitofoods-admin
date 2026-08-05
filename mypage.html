@@ -135,6 +135,9 @@
   .order-actions .reorder-btn { margin-top: 0; flex: 1; }
   .receipt-btn { flex: 1; padding: 9px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--text); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
   .receipt-btn:hover { background: var(--yellow-light); }
+  .cancel-btn { width: 100%; margin-top: 8px; padding: 9px; border-radius: 8px; border: 1.5px solid var(--red); background: #fff; color: var(--red); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .cancel-btn:hover { background: var(--red-dim); }
+  .cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .skeleton-box { background: linear-gradient(90deg, var(--yellow-light) 25%, #fdf0c0 37%, var(--yellow-light) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 5px; }
   .status-badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
@@ -729,6 +732,10 @@ function formatDepartedTime(departedAt) {
 function renderOrderCard(order, index) {
   const div = document.createElement('div');
   div.className = 'order-card';
+  // 追加注文・キャンセルともに「まだ準備開始前(伝票未印刷・未出発・未完了・未キャンセル)」の
+  // 注文だけを対象とする。配送日が過去でもこの条件を満たせば対象(=まだ手つかずの注文)。
+  const canModify = !order.is_completed && !order.is_cancelled && !order.is_slip_printed && !order.departed_at
+    && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10));
   let statusHtml = '';
   if (order.is_cancelled) {
     statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
@@ -768,13 +775,31 @@ function renderOrderCard(order, index) {
       <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
-    ${(!order.is_completed && !order.is_cancelled && !order.is_slip_printed && !order.departed_at && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10)))
-      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">${i18nText('my.addMoreBtn')}</button>`
+    ${canModify
+      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">${i18nText('my.addMoreBtn')}</button>
+         <button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
       : (!order.is_completed && !order.is_cancelled
           ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
           : '')}
   `;
   return div;
+}
+async function cancelOrder(orderId, btnEl) {
+  if (!confirm(i18nText('my.cancelConfirmMsg'))) return;
+  if (btnEl) btnEl.disabled = true;
+  try {
+    const { error } = await supabaseClient.rpc('cancel_own_order', { p_order_id: orderId });
+    if (error) {
+      showProfileMsg(i18nText('my.cancelFailed') + ': ' + error.message, true);
+      if (btnEl) btnEl.disabled = false;
+      return;
+    }
+    showProfileMsg(i18nText('my.cancelSuccess'), false);
+    await loadOrderHistory(currentCustomer.id);
+  } catch (e) {
+    showProfileMsg(i18nText('my.cancelFailed'), true);
+    if (btnEl) btnEl.disabled = false;
+  }
 }
 function reorderOrder(index) {
   const order = allOrders[index];
