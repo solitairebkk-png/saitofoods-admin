@@ -85,6 +85,26 @@
   .paid-stamp .th { display: block; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
   .paid-stamp .en { display: block; font-size: 22px; font-weight: 800; letter-spacing: 0.12em; }
 
+  /* キャンセル済み注文の判子。支払い済みスタンプと同じ位置・仕組みだが、色をグレーにして
+     一目でPAIDと区別できるようにする(同時に両方表示されることはない)。 */
+  .cancelled-stamp {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-11deg);
+    border: 4px double #6b6b6b;
+    border-radius: 8px;
+    color: #6b6b6b;
+    padding: 8px 16px;
+    text-align: center;
+    line-height: 1.25;
+    pointer-events: none;
+    opacity: 0.9;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .cancelled-stamp .th { display: block; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
+  .cancelled-stamp .en { display: block; font-size: 22px; font-weight: 800; letter-spacing: 0.12em; }
+
   .weight-note { margin-top: 8px; padding: 6px 10px; background: #fff8ec; border: 1px solid var(--accent); border-radius: 8px; font-size: 11px; line-height: 1.45; }
   .comment-note { margin-top: 8px; padding: 6px 10px; background: var(--line-soft); border-radius: 8px; font-size: 11px; line-height: 1.45; }
   .comment-note .k { color: var(--brand-dark); font-weight: 700; }
@@ -117,7 +137,7 @@
     .toolbar, .hint-text { display: none !important; }
     .page-shell { max-width: none; padding: 0; }
     .receipt-paper { box-shadow: none; border-radius: 0; padding: 6mm 7mm; }
-    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp, .cancelled-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
   @media (max-width: 560px) {
     .info-grid { grid-template-columns: 1fr; }
@@ -125,6 +145,7 @@
     .pay-content-wrap { flex-direction: column; align-items: stretch; min-height: 0; }
     .pay-content-wrap .pay-grid { max-width: none; }
     .paid-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
+    .cancelled-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
   }
 </style>
 </head>
@@ -198,6 +219,10 @@
           <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
             <span class="th">ชำระเงินแล้ว</span>
             <span class="en">PAID</span>
+          </div>
+          <div class="cancelled-stamp" id="f-cancelled-stamp" style="display:none;">
+            <span class="th">ยกเลิกแล้ว</span>
+            <span class="en">CANCELLED</span>
           </div>
           <div class="pay-grid">
             <div class="pay-qr-box">
@@ -312,6 +337,7 @@ async function loadReceipt() {
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
+      is_cancelled,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
@@ -348,19 +374,35 @@ function showError() {
 // 支払い済み(管理者による手動確認 manual_payment_confirmed、または
 // slip.saitofoods.shop側のGAS(Claude Vision照合)によりQR振込みが自動で
 // payment_status='paid'になった場合)は、subtotal/shipping/totalの左横に
-// 判子風の「ชำระเงินแล้ว / PAID」スタンプを表示する。押した感を出すため、
-// 毎回ランダムに少し傾き・位置をずらす。
-function renderPaidStamp(order) {
-  const stampEl = document.getElementById('f-paid-stamp');
-  const isPaid = order.manual_payment_confirmed || order.payment_status === 'paid';
-  if (!isPaid) { stampEl.style.display = 'none'; return; }
-
-  stampEl.style.display = 'block';
+// 判子風の「ชำระเงินแล้ว / PAID」スタンプを表示する。
+// キャンセル済みの場合は、それより優先して「ยกเลิกแล้ว / CANCELLED」の
+// グレーの判子を同じ位置に表示する(PAIDと同時表示はしない — スタッフが
+// 一目で「この注文は配送しない」と判断できるようにするため)。
+// 押した感を出すため、毎回ランダムに少し傾き・位置をずらす。
+function renderStatusStamps(order) {
+  const paidEl = document.getElementById('f-paid-stamp');
+  const cancelledEl = document.getElementById('f-cancelled-stamp');
   const randomRotate = (Math.random() * 14 - 18).toFixed(1); // -18° 〜 -4° の間でランダム
   const randomLeftJitter = Math.floor(Math.random() * 14); // 0〜13pxの左右ずれ
   const randomTopJitter = Math.floor(Math.random() * 10) - 5; // -5〜4pxの上下ずれ
-  stampEl.style.transform = `translateY(calc(-50% + ${randomTopJitter}px)) rotate(${randomRotate}deg)`;
-  stampEl.style.left = (6 + randomLeftJitter) + 'px';
+  const transform = `translateY(calc(-50% + ${randomTopJitter}px)) rotate(${randomRotate}deg)`;
+  const left = (6 + randomLeftJitter) + 'px';
+
+  if (order.is_cancelled) {
+    paidEl.style.display = 'none';
+    cancelledEl.style.display = 'block';
+    cancelledEl.style.transform = transform;
+    cancelledEl.style.left = left;
+    return;
+  }
+  cancelledEl.style.display = 'none';
+
+  const isPaid = order.manual_payment_confirmed || order.payment_status === 'paid';
+  if (!isPaid) { paidEl.style.display = 'none'; return; }
+
+  paidEl.style.display = 'block';
+  paidEl.style.transform = transform;
+  paidEl.style.left = left;
 }
 
 function renderReceipt(order) {
@@ -438,7 +480,7 @@ function renderReceipt(order) {
     document.getElementById('f-points-used-amount').textContent = `-${baht(order.points_used)} (${order.points_used} pt)`;
   }
 
-  renderPaidStamp(order);
+  renderStatusStamps(order);
 
   if (order.has_weight_items && !order.is_weight_confirmed) {
     document.getElementById('f-weight-note').style.display = 'block';

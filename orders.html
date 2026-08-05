@@ -153,6 +153,7 @@
   .btn-manual-pay-undo { background: #6b7280; font-size: 10px !important; }
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
+  .customer-cancelled-flag { color: #c0392b; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
 
   .detail-panel { display: none; background: #fafafa; }
   .detail-panel.open { display: table-row; }
@@ -612,7 +613,7 @@ async function loadOrders() {
     .select(`
       id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
-      is_cancelled, cancelled_at,
+      is_cancelled, cancelled_at, cancelled_by,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -800,12 +801,17 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     ? `<span class="order-paid-stamp"><span class="th">ชำระเงินแล้ว</span><span class="en">PAID</span></span>`
     : '';
 
+  const customerCancelledHtml = (order.is_cancelled && !order.cancelled_by)
+    ? `<div class="customer-cancelled-flag">⚠️ Customer Cancelled / ลูกค้ายกเลิกเอง</div>`
+    : '';
+
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
     <td class="center">${order.delivery_time_slot || ''}</td>
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
+      ${customerCancelledHtml}
       <div class="customer-info">
         <div class="customer-name-row">
           <div class="customer-name">${customerName}</div>
