@@ -103,7 +103,7 @@
 
     // ---- mypage.html ----
     'my.tabLogin': { ja: 'ログイン', en: 'Log in' },
-    'my.tabSignup': { ja: '初めての方', en: 'First time' },
+    'my.tabSignup': { ja: '新規登録', en: 'Sign up' },
     'my.emailLabel': { ja: 'メールアドレス', en: 'Email address' },
     'my.passwordLabel': { ja: 'パスワード', en: 'Password' },
     'my.loginBtn': { ja: 'ログイン', en: 'Log in' },
