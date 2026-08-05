@@ -229,7 +229,11 @@
     'cart.viewReceiptBtn': { ja: '🧾 伝票を表示・印刷する / View & print receipt', en: '🧾 View & print receipt' },
     'cart.backToProductsBtn': { ja: '商品一覧に戻る / Back to products', en: 'Back to products' },
     'cart.addtoTitle': { ja: '➕ 追加注文 / Additional order', en: '➕ Additional order' },
+    'cart.addtoBrowseBtn': { ja: '🛒 追加する商品を選ぶ / Browse products to add', en: '🛒 Browse products to add' },
+    'cart.addtoExitLink': { ja: '追加注文モードをやめて通常のご注文に戻る / Exit add-on mode', en: 'Exit add-on mode' },
     'cart.addtoOriginalTitle': { ja: '📦 元のご注文内容(確定済み・変更不可) / Original order (already confirmed)', en: '📦 Original order (already confirmed)' },
+    'plist.addtoModeText': { ja: '追加注文モード中です。選んだ商品はカートで元のご注文に追加されます。', en: 'You are in add-on mode. Items you select will be added to your original order in the cart.' },
+    'plist.addtoModeCartLink': { ja: 'カートを見る → / View cart →', en: 'View cart →' },
   };
 
   function getLang() {

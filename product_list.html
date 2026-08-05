@@ -267,6 +267,11 @@
   </div>
 </header>
 
+<div id="addto-mode-banner" style="display:none;background:#fff8ec;border-bottom:1.5px solid var(--accent);padding:8px 16px;font-size:12px;color:var(--ink);text-align:center;">
+  🎉 <span data-i18n="plist.addtoModeText">追加注文モード中です。選んだ商品はカートで元のご注文に追加されます。</span>
+  <a href="cart.html" style="font-weight:800;text-decoration:underline;margin-left:6px;" data-i18n="plist.addtoModeCartLink">カートを見る →</a>
+</div>
+
 <div class="layout-wrap">
 
   <aside class="sidebar-categories">
@@ -481,6 +486,11 @@ async function supabaseRest(method, path, body) {
 
 async function init() {
   showSkeletonGrid();
+  // cart.htmlの「追加注文モード」から来た場合(sessionStorageに記憶されている場合)、
+  // 商品一覧を見ている間もそれと分かるようバナーを出す
+  if (sessionStorage.getItem('saitofoods_addto_order')) {
+    document.getElementById('addto-mode-banner').style.display = 'block';
+  }
   try {
     const [cats, prods, prodCats] = await Promise.all([
       supabaseRest('GET', 'categories?order=sort_order'),

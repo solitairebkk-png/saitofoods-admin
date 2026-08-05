@@ -246,6 +246,10 @@
     <div class="card" id="addto-banner" style="display:none;background:#fff8ec;border:1.5px solid var(--accent);">
       <div style="font-weight:800;font-size:13.5px;margin-bottom:4px;" data-i18n="cart.addtoTitle">➕ 追加注文 / Additional order</div>
       <div id="addto-banner-text" style="font-size:12.5px;color:var(--ink);line-height:1.7;"></div>
+      <div id="addto-actions" style="display:none;margin-top:10px;">
+        <a href="product_list.html" class="btn-secondary" style="display:block;text-align:center;width:100%;padding:10px;font-weight:800;" data-i18n="cart.addtoBrowseBtn">🛒 追加する商品を選ぶ / Browse products to add</a>
+        <a href="#" onclick="exitAddToOrderMode(); return false;" style="display:block;text-align:center;margin-top:8px;font-size:11.5px;color:#999;text-decoration:underline;" data-i18n="cart.addtoExitLink">追加注文モードをやめて通常のご注文に戻る / Exit add-on mode</a>
+      </div>
       <div id="addto-original-wrap" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--accent);">
         <div style="font-size:11.5px;font-weight:700;color:#7A5C1E;margin-bottom:6px;" data-i18n="cart.addtoOriginalTitle">📦 元のご注文内容(確定済み・変更不可) / Original order (already confirmed)</div>
         <div id="addto-original-list" style="font-size:12px;color:var(--ink);line-height:1.8;"></div>
@@ -254,6 +258,7 @@
         </div>
       </div>
     </div>
+
 
     <div class="card">
       <h2 data-i18n="cart.shippingTitle">💰 配送料について / Shipping fee</h2>
@@ -504,6 +509,7 @@ let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = �
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
 let customerAreaName = 'Bangkok'; // areas.nameそのもの。注文時にorders.area_nameとして保存し、後でお客様がエリアを変更しても伝票の表示が変わらないようにする
 let addToOrderId = null; // マイページの「追加注文する」から来た場合、元の注文ID
+const ADDTO_STORAGE_KEY = 'saitofoods_addto_order'; // 商品一覧などへ移動しても追加注文モードを覚えておくためのキー
 let addToOrderInfo = null; // 元の注文の配送日時・コンドミニアム情報(自動で引き継ぐ)
 let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
 let gpsTrackingInfo = null;  // { url, username, password }
@@ -548,7 +554,9 @@ async function loadCustomerAndInit(userId) {
 // 掴めるようにする(元注文小計 + 今回の追加分 = 総合計)。
 async function checkAddToOrderMode() {
   const params = new URLSearchParams(location.search);
-  const orderId = params.get('addto');
+  // URLパラメータを優先。無ければ、商品カテゴリなどを経由して(=通常のページ遷移で)
+  // 戻ってきた場合に備えて、sessionStorageに保存済みの追加注文モードを引き継ぐ。
+  const orderId = params.get('addto') || sessionStorage.getItem(ADDTO_STORAGE_KEY);
   if (!orderId) return;
 
   const { data: order, error } = await supabaseClient
@@ -563,12 +571,15 @@ async function checkAddToOrderMode() {
 
   const bannerEl = document.getElementById('addto-banner');
   const bannerTextEl = document.getElementById('addto-banner-text');
+  const actionsEl = document.getElementById('addto-actions');
 
   if (error || !order || order.customer_id !== currentCustomer.id) {
+    sessionStorage.removeItem(ADDTO_STORAGE_KEY); // 無効なIDなら記憶をクリア
     return; // 見つからない/本人の注文でない場合は通常注文として続行
   }
   const deliveryDatePassed = order.delivery_date && order.delivery_date < new Date().toISOString().slice(0, 10);
   if (order.is_completed || order.is_cancelled || order.is_slip_printed || order.departed_at || deliveryDatePassed) {
+    sessionStorage.removeItem(ADDTO_STORAGE_KEY); // もう追加できない状態なので記憶をクリア
     bannerEl.style.display = 'block';
     bannerEl.style.background = '#fbe9e6';
     bannerEl.style.borderColor = 'var(--red)';
@@ -578,14 +589,24 @@ async function checkAddToOrderMode() {
 
   addToOrderId = order.id;
   addToOrderInfo = order;
+  sessionStorage.setItem(ADDTO_STORAGE_KEY, order.id); // 商品一覧などへ移動しても追加注文モードを覚えておく
 
   document.getElementById('delivery-card').style.display = 'none';
   bannerEl.style.display = 'block';
+  actionsEl.style.display = 'block';
   bannerTextEl.innerHTML = `🎉 ご注文 #${orderId.slice(0, 8).toUpperCase()} はまだ準備開始前なので、追加で商品を選べます!配送日時はその注文と同じになります。<br>` +
     `📅 ${order.delivery_date || '-'}　${order.condo_name ? '🏢 ' + order.condo_name : (order.delivery_time_slot || '')}`;
 
   renderAddToOriginalItems(order);
   updateTotals(); // 元注文小計・総合計の表示を反映する
+}
+
+// 追加注文モードを終了し、通常の新規注文としてカートを使い直す
+function exitAddToOrderMode() {
+  sessionStorage.removeItem(ADDTO_STORAGE_KEY);
+  addToOrderId = null;
+  addToOrderInfo = null;
+  location.href = 'cart.html';
 }
 
 // 元の注文の商品明細・小計を「追加注文」バナー内に表示する
@@ -1332,6 +1353,7 @@ async function submitOrder() {
     appliedCoupon = null;
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
+    sessionStorage.removeItem(ADDTO_STORAGE_KEY);
     document.getElementById('cart-items-list').innerHTML = '';
     document.getElementById('delivery-card').style.display = 'none';
     document.querySelectorAll('#cart-content > .card').forEach(el => { if (el.id !== 'success-panel') el.style.display = 'none'; });
