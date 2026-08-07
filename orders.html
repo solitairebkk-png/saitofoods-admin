@@ -802,10 +802,12 @@ async function loadPlaaTapianSales() {
   groups.forEach(g => {
     const subtotal = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
     g.items.forEach((r, i) => {
-      // 同じレシート内の行(2行目以降)は、レシートの区切りを示す太い罫線(既定のtbodyスタイル)を
-      // 上書きして細い罫線にする。レシートの最初の行だけは上書きせず、既定の太い罫線(前のレシートとの境目)を残す。
+      // 同じレシート内の行(2行目以降)は、レシートの区切りを示す太い罫線を細い罫線に上書きする。
+      // 太い罫線は行(tr)自体にもかかっており、セル(td)だけを上書きしても
+      // 罫線が重なる箇所は「太い方が優先される」ため、tr自体にも明示的に指定する必要がある。
       const thinTop = i > 0 ? 'border-top:1px solid var(--table-border);' : '';
       const tr = document.createElement('tr');
+      if (i > 0) tr.style.borderTop = '1px solid var(--table-border)';
       tr.innerHTML = `
         <td class="center" style="${thinTop}">${i === 0 ? (r.sale_date || '-') : ''}</td>
         <td class="center" style="${thinTop}">${i === 0 ? escapeHtml(r.receipt_number || '-') : ''}</td>
@@ -816,8 +818,9 @@ async function loadPlaaTapianSales() {
       `;
       tbody.appendChild(tr);
     });
-    // 小計行も同じレシートの続きなので、上の商品行との境目は細い罫線にする
+    // 小計行も同じレシートの続きなので、上の商品行との境目は細い罫線にする(tr自体にも指定)
     const subTr = document.createElement('tr');
+    subTr.style.borderTop = '1px solid var(--table-border)';
     subTr.innerHTML = `
       <td colspan="5" style="text-align:right;font-size:12px;color:var(--text-muted);background:var(--bg);border-top:1px solid var(--table-border);">
         レシート ${escapeHtml(g.receipt_number || '-')} 小計 / Receipt subtotal (${g.items.length}品目)
