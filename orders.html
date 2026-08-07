@@ -51,7 +51,7 @@
   main { padding: 20px 24px 60px; display: none; }
 
   /* エリアタブ(旧UI準拠) */
-  .area-tabs { display: flex; gap: 2px; margin-bottom: 0; }
+  .area-tabs { display: flex; gap: 2px; margin-bottom: 0; flex-wrap: wrap; }
   .area-tabs button {
     background: #ece9e3; border: 1px solid var(--border); border-bottom: none;
     padding: 8px 18px; font-size: 13px; cursor: pointer; border-radius: 4px 4px 0 0; font-family: inherit;
@@ -329,6 +329,7 @@
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
     <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in / หน้าร้าน</button>
     <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">配送エリア外 / Out-of-area<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
+    <button data-area="__PLAATAPIAN__" onclick="setAreaTab(this,'__PLAATAPIAN__')">Plaa-Ta-Pian</button>
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
   </div>
 
@@ -368,7 +369,7 @@
   </div>
 
   <table>
-    <thead>
+    <thead id="orders-thead">
       <tr>
         <th style="width:110px;">วันที่จัดส่ง<span class="en">Delivery-Date</span></th>
         <th style="width:90px;">เวลา<span class="en">Time</span></th>
@@ -466,6 +467,19 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2
 
 let currentCustomer = null;
 let currentAreaFilter = 'Bangkok';
+
+// Plaa-Ta-Pianタブとの切り替え用に、通常の注文一覧のヘッダーを起動時に保存しておく
+// (Plaa-Ta-Pianタブ表示中はヘッダーを差し替えるため、戻すときに使う)
+const NORMAL_ORDERS_THEAD_HTML = document.getElementById('orders-thead').innerHTML;
+const PLAATAPIAN_THEAD_HTML = `
+  <tr>
+    <th style="width:110px;">วันที่<span class="en">Date</span></th>
+    <th style="width:130px;">เลขที่ใบเสร็จ<span class="en">Receipt No.</span></th>
+    <th>สินค้า<span class="en">Product</span></th>
+    <th style="width:80px;">จำนวน<span class="en">Qty</span></th>
+    <th style="width:110px;">ราคา/หน่วย<span class="en">Unit Price</span></th>
+    <th style="width:130px;">ยอดรวม<span class="en">Total</span></th>
+  </tr>`;
 
 // 配送料設定(settingsテーブルから取得。600baht未満の配送注文に配送料を加算する)
 let shippingFreeThreshold = 600;
@@ -599,6 +613,10 @@ function setAreaTab(btn, area) {
 
 // ---------------- Load orders ----------------
 async function loadOrders() {
+  // Plaa-Ta-Pianタブ選択中は、通常のordersではなくplaa_tapian_salesテーブルを表示する
+  if (currentAreaFilter === '__PLAATAPIAN__') { return loadPlaaTapianSales(); }
+  document.getElementById('orders-thead').innerHTML = NORMAL_ORDERS_THEAD_HTML;
+
   const tbody = document.getElementById('orders-tbody');
   tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
@@ -672,6 +690,61 @@ async function loadOrders() {
     lastDate = order.delivery_date;
     tbody.appendChild(tr);
   });
+}
+
+// ---------------- Plaa-Ta-Pian sales (read-only) ----------------
+// plaa_tapian_salesテーブルは、プラータピアン在庫管理(GAS)がLoyverseの売上のうち
+// Aグループ(正規仕入れ)商品だけを自動送信してきたものを表示専用で読む。
+// 編集・削除・Complete等の操作は無く、一覧と期間合計のみを表示する。
+async function loadPlaaTapianSales() {
+  document.getElementById('orders-thead').innerHTML = PLAATAPIAN_THEAD_HTML;
+  const tbody = document.getElementById('orders-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
+
+  const start = document.getElementById('filter-start').value;
+  const end = document.getElementById('filter-end').value;
+
+  let query = supabaseClient
+    .from('plaa_tapian_sales')
+    .select('id, sale_date, receipt_number, product_name, quantity, unit_price, total_price')
+    .order('sale_date', { ascending: false })
+    .order('receipt_number', { ascending: false });
+
+  if (start) query = query.gte('sale_date', start);
+  if (end) query = query.lte('sale_date', end);
+
+  const { data, error } = await query;
+
+  if (error) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
+
+  const rows = data || [];
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบข้อมูลยอดขาย Plaa-Ta-Pian / No Plaa-Ta-Pian sales found</td></tr>';
+    return;
+  }
+
+  const grandTotal = rows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
+
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="center">${r.sale_date || '-'}</td>
+      <td class="center">${escapeHtml(r.receipt_number || '-')}</td>
+      <td>${escapeHtml(r.product_name || '-')}</td>
+      <td class="center">${r.quantity}</td>
+      <td class="center">${Number(r.unit_price || 0).toLocaleString()}</td>
+      <td class="center" style="font-weight:700;">${Number(r.total_price || 0).toLocaleString()} THB</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const totalTr = document.createElement('tr');
+  totalTr.innerHTML = `
+    <td colspan="5" style="text-align:right;font-weight:700;background:#f1f1ee;">合計 / Total (${rows.length}件)</td>
+    <td class="center" style="font-weight:700;background:#f1f1ee;">${grandTotal.toLocaleString()} THB</td>
+  `;
+  tbody.appendChild(totalTr);
 }
 
 // ---------------- Status color ----------------
