@@ -681,15 +681,75 @@ async function loadOrders() {
     });
   }
 
-  if (rows.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
+  if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
   tbody.innerHTML = '';
   let lastDate = null;
+  let renderedAny = false;
   rows.forEach((order, idx) => {
     const tr = renderOrderRow(order, idx, order.delivery_date !== lastDate, rows.filter(r => r.delivery_date === order.delivery_date).length);
     lastDate = order.delivery_date;
     tbody.appendChild(tr);
+    renderedAny = true;
   });
+
+  // Totalタブでは、通常の注文一覧に加えてPlaa-Ta-Pianの売上明細(レシート単位でまとめたもの)も
+  // 同じ一覧に混ぜて表示する。顧客情報や配送の概念が無いため、電話番号/名前フィルターは適用しない
+  // (期間フィルターのみ連動)。
+  if (currentAreaFilter === '') {
+    let ptQuery = supabaseClient
+      .from('plaa_tapian_sales')
+      .select('id, sale_date, receipt_number, product_name, quantity, unit_price, total_price')
+      .order('sale_date', { ascending: true })
+      .order('receipt_number', { ascending: true });
+    if (start) ptQuery = ptQuery.gte('sale_date', start);
+    if (end) ptQuery = ptQuery.lte('sale_date', end);
+    const { data: ptData, error: ptErr } = await ptQuery;
+
+    if (!ptErr && ptData && ptData.length > 0) {
+      const ptGroups = [];
+      const ptIndexByKey = new Map();
+      ptData.forEach(r => {
+        const key = (r.sale_date || '') + '|' + (r.receipt_number || '');
+        if (!ptIndexByKey.has(key)) {
+          ptIndexByKey.set(key, ptGroups.length);
+          ptGroups.push({ sale_date: r.sale_date, receipt_number: r.receipt_number, items: [] });
+        }
+        ptGroups[ptIndexByKey.get(key)].items.push(r);
+      });
+      ptGroups.forEach(g => {
+        tbody.appendChild(renderPlaaTapianRowForTotal(g));
+        renderedAny = true;
+      });
+    }
+  }
+
+  if (!renderedAny) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; }
+}
+
+// Totalタブ専用: Plaa-Ta-Pianの1レシート分を、通常の注文一覧と同じ6列構成の行として描画する。
+// 操作ボタンは無く閲覧専用。薄紫の背景とバッジで、通常の注文とひと目で区別できるようにしている。
+function renderPlaaTapianRowForTotal(g) {
+  const tr = document.createElement('tr');
+  tr.style.background = '#faf5fb';
+
+  const total = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
+  const itemsHtml = '<div class="order-items-grid">' + g.items.map(item => {
+    return `<div class="item-cell">${escapeHtml(item.product_name)} (${item.quantity}) — ${Number(item.total_price || 0).toLocaleString()} THB</div>`;
+  }).join('') + '</div>';
+
+  tr.innerHTML = `
+    <td class="center">${g.sale_date || '-'}</td>
+    <td class="center">-</td>
+    <td class="center">${escapeHtml(g.receipt_number || '-')}</td>
+    <td><div class="manage-col"><span class="badge" style="background:#F3E6F3;color:#6B1A6B;">Plaa-Ta-Pian</span></div></td>
+    <td class="details-cell">
+      <div class="order-items">${itemsHtml}</div>
+      <div style="margin-top:6px;"><span style="float:right;font-weight:700;">${total.toLocaleString()} THB</span></div>
+    </td>
+    <td class="center"><span style="color:var(--text-muted);font-size:11px;">-</span></td>
+  `;
+  return tr;
 }
 
 // ---------------- Plaa-Ta-Pian sales (read-only) ----------------
