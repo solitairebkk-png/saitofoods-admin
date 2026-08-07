@@ -44,11 +44,15 @@
   .card.total .label { color: #cdd8e6; }
   .card.total .amount { color: white; }
   .card.total .count { color: #cdd8e6; }
+  .card.plaatapian { border: 1px solid #8B2E8B; }
+  .card.plaatapian .label { color: #8B2E8B; font-weight: 600; }
+  .card.plaatapian .amount { color: #8B2E8B; }
 
   .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
   .info-box { background: #eaf1f8; border: 1px solid #b9d0e6; color: var(--navy); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
 
   .section-title { font-size: 14px; font-weight: 700; color: var(--navy); margin: 24px 0 10px; }
+  .section-note { font-size: 11px; color: var(--text-muted); margin: -6px 0 10px; }
 
   table.prod { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   table.prod th { text-align: left; padding: 8px 10px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); }
@@ -104,6 +108,7 @@
   </div>
 
   <div class="section-title">商品別 販売個数 / Items Sold</div>
+  <div class="section-note">サイトウフーズの商品のみ(Plaa-Ta-Pianの商品明細は上記カード・orders.htmlのPlaa-Ta-Pianタブでご確認ください) / Saito Foods products only</div>
   <table class="prod">
     <thead>
       <tr>
@@ -227,22 +232,32 @@ async function loadSummary() {
     .gte('created_at', dayStart)
     .lte('created_at', dayEnd);
 
-  const [{ data: deliveryData, error: err1 }, { data: walkinData, error: err2 }] = await Promise.all([deliveryPromise, walkinPromise]);
+  // Plaa-Ta-Pian分(Aグループのみ、プラータピアン在庫管理から自動送信されたもの): sale_date で判定
+  const plaaTapianPromise = supabaseClient
+    .from('plaa_tapian_sales').select('total_price')
+    .eq('sale_date', date);
 
-  if (err1 || err2) {
-    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message) + '</div>';
+  const [
+    { data: deliveryData, error: err1 },
+    { data: walkinData, error: err2 },
+    { data: plaaTapianData, error: err3 },
+  ] = await Promise.all([deliveryPromise, walkinPromise, plaaTapianPromise]);
+
+  if (err1 || err2 || err3) {
+    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message || err3?.message) + '</div>';
     document.getElementById('prod-tbody').innerHTML = '';
     document.getElementById('staff-tbody').innerHTML = '';
     return;
   }
 
   const allOrders = [...(deliveryData || []), ...(walkinData || [])].filter(o => !o.is_cancelled);
+  const plaaTapianRows = plaaTapianData || [];
 
-  renderSummary(allOrders);
+  renderSummary(allOrders, plaaTapianRows);
   renderStaffDeliveries(allOrders);
 }
 
-function renderSummary(orders) {
+function renderSummary(orders, plaaTapianRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   const buckets = {
     walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
@@ -285,7 +300,12 @@ function renderSummary(orders) {
     });
   });
 
-  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0);
+  // Plaa-Ta-Pian(Aグループ)の当日売上合計。ordersテーブルとは別テーブルのため、
+  // Bangkok等のbucketには含めず、独立したカードとして表示した上でTotalにのみ合算する。
+  const plaaTapianAmount = plaaTapianRows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
+  const plaaTapianCount = plaaTapianRows.length;
+
+  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount;
   const grandOrders = Object.values(buckets).reduce((s, b) => s + b.orders, 0);
 
   const cardsEl = document.getElementById('summary-cards');
@@ -302,11 +322,20 @@ function renderSummary(orders) {
         <div class="count">${b.orders} orders / คำสั่งซื้อ</div>
       </div>`;
   });
+
+  // Plaa-Ta-Pian専用カード(常に表示。件数0でも「まだデータが無い」ことが分かるように)
+  cardsEl.innerHTML += `
+    <div class="card plaatapian">
+      <div class="label">Plaa-Ta-Pian (A group)</div>
+      <div class="amount">${plaaTapianAmount.toLocaleString()} THB</div>
+      <div class="count">${plaaTapianCount} items / รายการ</div>
+    </div>`;
+
   cardsEl.innerHTML += `
     <div class="card total">
       <div class="label">Total / รวมทั้งหมด</div>
       <div class="amount">${grandTotal.toLocaleString()} THB</div>
-      <div class="count">${grandOrders} orders / คำสั่งซื้อ</div>
+      <div class="count">${grandOrders} orders / คำสั่งซื้อ + ${plaaTapianCount} Plaa-Ta-Pian items</div>
     </div>`;
 
   const warnEl = document.getElementById('unconfirmed-warn');
