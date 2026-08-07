@@ -742,23 +742,27 @@ async function loadPlaaTapianSales() {
   groups.forEach(g => {
     const subtotal = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
     g.items.forEach((r, i) => {
+      // 同じレシート内の行(2行目以降)は、レシートの区切りを示す太い罫線(既定のtbodyスタイル)を
+      // 上書きして細い罫線にする。レシートの最初の行だけは上書きせず、既定の太い罫線(前のレシートとの境目)を残す。
+      const thinTop = i > 0 ? 'border-top:1px solid var(--table-border);' : '';
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="center">${i === 0 ? (r.sale_date || '-') : ''}</td>
-        <td class="center">${i === 0 ? escapeHtml(r.receipt_number || '-') : ''}</td>
-        <td>${escapeHtml(r.product_name || '-')}</td>
-        <td class="center">${r.quantity}</td>
-        <td class="center">${Number(r.unit_price || 0).toLocaleString()}</td>
-        <td class="center" style="font-weight:700;">${Number(r.total_price || 0).toLocaleString()} THB</td>
+        <td class="center" style="${thinTop}">${i === 0 ? (r.sale_date || '-') : ''}</td>
+        <td class="center" style="${thinTop}">${i === 0 ? escapeHtml(r.receipt_number || '-') : ''}</td>
+        <td style="${thinTop}">${escapeHtml(r.product_name || '-')}</td>
+        <td class="center" style="${thinTop}">${r.quantity}</td>
+        <td class="center" style="${thinTop}">${Number(r.unit_price || 0).toLocaleString()}</td>
+        <td class="center" style="font-weight:700;${thinTop}">${Number(r.total_price || 0).toLocaleString()} THB</td>
       `;
       tbody.appendChild(tr);
     });
+    // 小計行も同じレシートの続きなので、上の商品行との境目は細い罫線にする
     const subTr = document.createElement('tr');
     subTr.innerHTML = `
-      <td colspan="5" style="text-align:right;font-size:12px;color:var(--text-muted);background:var(--bg);">
+      <td colspan="5" style="text-align:right;font-size:12px;color:var(--text-muted);background:var(--bg);border-top:1px solid var(--table-border);">
         レシート ${escapeHtml(g.receipt_number || '-')} 小計 / Receipt subtotal (${g.items.length}品目)
       </td>
-      <td class="center" style="font-size:12px;color:var(--text-muted);background:var(--bg);">${subtotal.toLocaleString()} THB</td>
+      <td class="center" style="font-size:12px;color:var(--text-muted);background:var(--bg);border-top:1px solid var(--table-border);">${subtotal.toLocaleString()} THB</td>
     `;
     tbody.appendChild(subTr);
   });
