@@ -723,20 +723,44 @@ async function loadPlaaTapianSales() {
     return;
   }
 
+  // レシート番号ごとにグループ化(同じ日付・番号の行が既にsale_date/receipt_number降順で
+  // 隣り合って並んでいる前提。1レシート内の行の並び順は崩さない)
+  const groups = [];
+  const groupIndexByKey = new Map();
+  rows.forEach(r => {
+    const key = (r.sale_date || '') + '|' + (r.receipt_number || '');
+    if (!groupIndexByKey.has(key)) {
+      groupIndexByKey.set(key, groups.length);
+      groups.push({ sale_date: r.sale_date, receipt_number: r.receipt_number, items: [] });
+    }
+    groups[groupIndexByKey.get(key)].items.push(r);
+  });
+
   const grandTotal = rows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
 
   tbody.innerHTML = '';
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="center">${r.sale_date || '-'}</td>
-      <td class="center">${escapeHtml(r.receipt_number || '-')}</td>
-      <td>${escapeHtml(r.product_name || '-')}</td>
-      <td class="center">${r.quantity}</td>
-      <td class="center">${Number(r.unit_price || 0).toLocaleString()}</td>
-      <td class="center" style="font-weight:700;">${Number(r.total_price || 0).toLocaleString()} THB</td>
+  groups.forEach(g => {
+    const subtotal = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
+    g.items.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="center">${i === 0 ? (r.sale_date || '-') : ''}</td>
+        <td class="center">${i === 0 ? escapeHtml(r.receipt_number || '-') : ''}</td>
+        <td>${escapeHtml(r.product_name || '-')}</td>
+        <td class="center">${r.quantity}</td>
+        <td class="center">${Number(r.unit_price || 0).toLocaleString()}</td>
+        <td class="center" style="font-weight:700;">${Number(r.total_price || 0).toLocaleString()} THB</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    const subTr = document.createElement('tr');
+    subTr.innerHTML = `
+      <td colspan="5" style="text-align:right;font-size:12px;color:var(--text-muted);background:var(--bg);">
+        レシート ${escapeHtml(g.receipt_number || '-')} 小計 / Receipt subtotal (${g.items.length}品目)
+      </td>
+      <td class="center" style="font-size:12px;color:var(--text-muted);background:var(--bg);">${subtotal.toLocaleString()} THB</td>
     `;
-    tbody.appendChild(tr);
+    tbody.appendChild(subTr);
   });
 
   const totalTr = document.createElement('tr');
