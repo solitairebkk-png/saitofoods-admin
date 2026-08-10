@@ -873,8 +873,8 @@ function isOrderPaid(order) {
 function formatTimeSlotCell(text) {
   if (!text) return '';
   const escaped = escapeHtml(text);
-  if (text.includes('シラチャ')) return `<span style="color:#e08a2e;">${escaped}</span>`;
-  if (text.includes('パタヤ')) return `<span style="color:#3b9dd6;">${escaped}</span>`;
+  if (text.includes('シラチャ')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>`;
+  if (text.includes('パタヤ')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>`;
   return escaped;
 }
 
