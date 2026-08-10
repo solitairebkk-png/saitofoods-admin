@@ -31,7 +31,8 @@
   header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
   header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
   header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
-  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; flex-direction: column; gap: 6px; }
+  header .nav-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
   header a { color: #cdd8e6; text-decoration: none; }
   header a:hover { color: white; }
@@ -298,23 +299,27 @@
 <header>
   <h1>Order Management <span class="th">การจัดการคำสั่งซื้อ</span></h1>
   <div class="nav-links" id="nav-links" style="display:none;">
-    <a href="https://script.google.com/macros/s/AKfycbxxg2MI540pcwRp3s9F3XmWwOqXn4NArPe0-GlhEBm6c4_euEy7QFKfE0OeGxhILTlmrg/exec" target="_blank">📝 Staff Input App</a>
-    <a href="https://script.google.com/macros/s/AKfycbxKC49EBSuIhD4tUsQ4jQ0v0eNOv1v16YV7XLKwC2oGlaGAIqbtdPcpCl78autWwZ5-uA/exec" target="_blank">📈 Daily Report Viewer</a>
-    <a href="https://slip.saitofoods.shop/admin_slip.html" target="_blank">🧾 Slip Admin</a>
-    <a href="https://script.google.com/macros/s/AKfycbz7Hpbm6db0R3agZd-Vb3CeiSyeCcVSnq2gMV1LIqRdVz0T-3HYVcw6aBvSj8DHEHUb/exec" target="_blank">🌅 Morning Briefing</a>
-    <a href="https://script.google.com/macros/s/AKfycbys2Ivyh49UJOygbB9falO4tRfXlFxve7uDoSP2QKHmVqQVgHrDaCagO9r-PsRJOp6_/exec" target="_blank">📋 Daily Data Entry</a>
-    <a href="https://slip.saitofoods.shop/" target="_blank">📤 Slip Upload</a>
-    <a href="https://rakugo.store/index.html" target="_blank">🛒 楽GO! Store</a>
-    <a href="https://rakugo.store/rg-mgr-7k3x9.html" target="_blank">⚙️ 楽GO! Admin</a>
-    <span style="width:1px; height:16px; background:#3a5480; display:inline-block;"></span>
-    <a href="local_order.html">+ New Order / คำสั่งซื้อใหม่</a>
-    <a href="customer_control.html">👤 Customers</a>
-    <a href="customer_history.html">🕘 History</a>
-    <a href="stock_sync.html">🔄 Stock Sync</a>
-    <a href="product_control.html">📦 Products</a>
-    <a href="category_control.html">🏷️ Categories</a>
-    <a href="sales_summary.html">📊 Sales Summary</a>
-    <a href="settings.html">⚙️ Settings</a>
+    <div class="nav-row">
+      <a href="local_order.html">+ New Order / คำสั่งซื้อใหม่</a>
+      <a href="customer_control.html">👤 Customers</a>
+      <a href="customer_history.html">🕘 History</a>
+      <a href="stock_sync.html">🔄 Stock Sync</a>
+      <a href="product_control.html">📦 Products</a>
+      <a href="category_control.html">🏷️ Categories</a>
+      <a href="sales_summary.html">📊 Sales Summary</a>
+      <a href="settings.html">⚙️ Settings</a>
+      <a href="index.html" target="_blank">🏬 EC Site / ECサイト</a>
+    </div>
+    <div class="nav-row">
+      <a href="https://script.google.com/macros/s/AKfycbxxg2MI540pcwRp3s9F3XmWwOqXn4NArPe0-GlhEBm6c4_euEy7QFKfE0OeGxhILTlmrg/exec" target="_blank">📝 Staff Input App</a>
+      <a href="https://script.google.com/macros/s/AKfycbxKC49EBSuIhD4tUsQ4jQ0v0eNOv1v16YV7XLKwC2oGlaGAIqbtdPcpCl78autWwZ5-uA/exec" target="_blank">📈 Daily Report Viewer</a>
+      <a href="https://slip.saitofoods.shop/admin_slip.html" target="_blank">🧾 Slip Admin</a>
+      <a href="https://script.google.com/macros/s/AKfycbz7Hpbm6db0R3agZd-Vb3CeiSyeCcVSnq2gMV1LIqRdVz0T-3HYVcw6aBvSj8DHEHUb/exec" target="_blank">🌅 Morning Briefing</a>
+      <a href="https://script.google.com/macros/s/AKfycbys2Ivyh49UJOygbB9falO4tRfXlFxve7uDoSP2QKHmVqQVgHrDaCagO9r-PsRJOp6_/exec" target="_blank">📋 Daily Data Entry</a>
+      <a href="https://slip.saitofoods.shop/" target="_blank">📤 Slip Upload</a>
+      <a href="https://rakugo.store/index.html" target="_blank">🛒 楽GO! Store</a>
+      <a href="https://rakugo.store/rg-mgr-7k3x9.html" target="_blank">⚙️ 楽GO! Admin</a>
+    </div>
   </div>
   <div class="user-right" id="user-info" style="display:none;">
     <span id="user-email"></span>
@@ -863,6 +868,16 @@ function isOrderPaid(order) {
   return !!(order.manual_payment_confirmed || (order.payment_method === 'qr' && order.payment_status === 'paid'));
 }
 
+// Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
+// (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
+function formatTimeSlotCell(text) {
+  if (!text) return '';
+  const escaped = escapeHtml(text);
+  if (text.includes('シラチャ')) return `<span style="color:#e08a2e;">${escaped}</span>`;
+  if (text.includes('パタヤ')) return `<span style="color:#3b9dd6;">${escaped}</span>`;
+  return escaped;
+}
+
 // 出発管理ブロック(スタッフ選択プルダウン+出発ボタン、または出発済み表示)を組み立てる。
 // 配送(delivery)注文で、かつキャンセルされていないものだけ対象。walk_inには表示しない。
 // また、①量り売り商品の重量が未確定、②伝票が未印刷、のいずれかに該当する間は
@@ -980,7 +995,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
-    <td class="center">${order.delivery_time_slot || ''}</td>
+    <td class="center">${formatTimeSlotCell(order.delivery_time_slot)}</td>
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
