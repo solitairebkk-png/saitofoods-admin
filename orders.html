@@ -308,7 +308,7 @@
       <a href="category_control.html">🏷️ Categories</a>
       <a href="sales_summary.html">📊 Sales Summary</a>
       <a href="settings.html">⚙️ Settings</a>
-      <a href="index.html" target="_blank">🏬 EC Site / ECサイト</a>
+      <a href="index.html" target="_blank">🏬 EC Site / เว็บไซต์ร้านค้า</a>
     </div>
     <div class="nav-row">
       <a href="https://script.google.com/macros/s/AKfycbxxg2MI540pcwRp3s9F3XmWwOqXn4NArPe0-GlhEBm6c4_euEy7QFKfE0OeGxhILTlmrg/exec" target="_blank">📝 Staff Input App</a>
@@ -342,7 +342,7 @@
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
     <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in / หน้าร้าน</button>
-    <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">配送エリア外 / Out-of-area<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
+    <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">Out-of-area / นอกพื้นที่จัดส่ง<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
     <button data-area="__PLAATAPIAN__" onclick="setAreaTab(this,'__PLAATAPIAN__')">Plaa-Ta-Pian</button>
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
   </div>
@@ -379,7 +379,7 @@
     <span class="swatch"><span class="box" style="background:var(--status-weight)"></span>รอชั่งน้ำหนัก / Weight pending</span>
     <span class="swatch"><span class="box" style="background:var(--status-complete)"></span>เสร็จสิ้น / Complete</span>
     <span class="swatch"><span class="box" style="background:var(--status-cancelled)"></span>ยกเลิกแล้ว / Cancelled</span>
-    <span class="swatch"><span class="stamp-sample">PAID</span>ชำระเงินแล้ว / Payment confirmed (背景色とは別表示 / shown separately from row color)</span>
+    <span class="swatch"><span class="stamp-sample">PAID</span>ชำระเงินแล้ว / Payment confirmed (shown separately from row color / แสดงแยกจากสีพื้นแถว)</span>
   </div>
 
   <table>
@@ -390,7 +390,7 @@
         <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
         <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
-        <th style="width:250px;">出発 / สลิป<span class="en">Dispatch / Slip</span></th>
+        <th style="width:250px;">ออกเดินทาง / สลิป<span class="en">Dispatch / Slip</span></th>
       </tr>
     </thead>
     <tbody id="orders-tbody">
@@ -424,24 +424,23 @@
 <!-- 支払い確認(管理者専用)モーダル -->
 <div id="manualpay-modal">
   <div class="manualpay-modal-box">
-    <h3>振込み確認 / Confirm Payment <span style="font-size:11px;color:var(--text-muted);">(ยืนยันการชำระเงิน)</span></h3>
+    <h3>Confirm Payment <span style="font-size:11px;color:var(--text-muted);">(ยืนยันการชำระเงิน)</span></h3>
     <div class="manualpay-modal-sub">
-      スリップのアップロードが無いお客様の振込みに気づいた際、時刻と金額を入力して確定してください。他のスタッフにも一覧上で見えるようになります。<br>
       For customers who transferred payment but haven't uploaded a slip — enter the time and amount you confirmed. This will be visible to all staff on the order list.<br>
       สำหรับลูกค้าที่โอนเงินแล้วแต่ยังไม่อัปโหลดสลิป กรุณากรอกเวลาและจำนวนเงินที่ท่านตรวจสอบพบ ข้อมูลนี้จะแสดงให้พนักงานท่านอื่นเห็นด้วย
     </div>
     <div class="manualpay-field">
-      <label>振込み時刻 / Payment time / เวลาที่โอน</label>
-      <input type="text" id="manualpay-time-input" placeholder="例: 2026-07-24 09:50 / LINEで確認 / 手書きメモなど自由に">
-      <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">自由入力です。日時をそのまま貼り付けたり、手書き感覚でメモしても構いません。 / Free text — paste or type however you like.</div>
+      <label>Payment time / เวลาที่โอน</label>
+      <input type="text" id="manualpay-time-input" placeholder="e.g. 2026-07-24 09:50 (free text) / เช่น 2026-07-24 09:50 (พิมพ์อะไรก็ได้)">
+      <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">Free text — paste or type however you like. / กรอกข้อความอิสระได้ตามสะดวก</div>
     </div>
     <div class="manualpay-field">
-      <label>金額 (THB) / Amount / จำนวนเงิน</label>
+      <label>Amount (THB) / จำนวนเงิน</label>
       <input type="number" id="manualpay-amount-input" min="0" step="1">
     </div>
     <div id="manualpay-modal-actions">
-      <button id="manualpay-modal-cancel-btn" onclick="closeManualPayModal()">キャンセル / Cancel</button>
-      <button id="manualpay-modal-confirm-btn" onclick="confirmManualPayment()">確定 / Confirm</button>
+      <button id="manualpay-modal-cancel-btn" onclick="closeManualPayModal()">Cancel / ยกเลิก</button>
+      <button id="manualpay-modal-confirm-btn" onclick="confirmManualPayment()">Confirm / ยืนยัน</button>
     </div>
   </div>
 </div>
@@ -837,7 +836,7 @@ async function loadPlaaTapianSales() {
     subTr.style.borderTop = '1px solid var(--table-border)';
     subTr.innerHTML = `
       <td colspan="5" style="text-align:right;font-size:12px;color:var(--text-muted);background:var(--bg);border-top:1px solid var(--table-border);">
-        レシート ${escapeHtml(g.receipt_number || '-')} 小計 / Receipt subtotal (${g.items.length}品目)
+        Receipt ${escapeHtml(g.receipt_number || '-')} subtotal (${g.items.length} items) / ใบเสร็จ ${escapeHtml(g.receipt_number || '-')} ยอดรวมย่อย (${g.items.length} รายการ)
       </td>
       <td class="center" style="font-size:12px;color:var(--text-muted);background:var(--bg);border-top:1px solid var(--table-border);">${subtotal.toLocaleString()} THB</td>
     `;
@@ -846,7 +845,7 @@ async function loadPlaaTapianSales() {
 
   const totalTr = document.createElement('tr');
   totalTr.innerHTML = `
-    <td colspan="5" style="text-align:right;font-weight:700;background:#f1f1ee;">合計 / Total (${rows.length}件)</td>
+    <td colspan="5" style="text-align:right;font-weight:700;background:#f1f1ee;">Total / ยอดรวม (${rows.length} รายการ)</td>
     <td class="center" style="font-weight:700;background:#f1f1ee;">${grandTotal.toLocaleString()} THB</td>
   `;
   tbody.appendChild(totalTr);
@@ -873,8 +872,8 @@ function isOrderPaid(order) {
 function formatTimeSlotCell(text) {
   if (!text) return '';
   const escaped = escapeHtml(text);
-  if (text.includes('シラチャ')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>`;
-  if (text.includes('パタヤ')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>`;
+  if (text.includes('シラチャ') || text.includes('Sriracha')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>`;
+  if (text.includes('パタヤ') || text.includes('Pattaya')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>`;
   return escaped;
 }
 
@@ -892,10 +891,10 @@ function renderDispatchBlock(order) {
     });
     return `
       <div class="dispatch-done">
-        <div class="label">出発済み / Departed</div>
+        <div class="label">Departed / ออกเดินทางแล้ว</div>
         <div class="name">${staffName}</div>
         <div class="time">${timeStr}</div>
-        <button class="btn-undo-dispatch" onclick="resetDeparture('${order.id}')">取消 / Undo</button>
+        <button class="btn-undo-dispatch" onclick="resetDeparture('${order.id}')">Undo / ยกเลิก</button>
       </div>`;
   }
 
@@ -904,11 +903,11 @@ function renderDispatchBlock(order) {
 
   if (weightNotConfirmed || slipNotPrinted) {
     const reasons = [];
-    if (weightNotConfirmed) reasons.push('⚖️ 重量未確定 / Weight not confirmed');
-    if (slipNotPrinted) reasons.push('🧾 伝票未印刷 / Slip not printed');
+    if (weightNotConfirmed) reasons.push('⚖️ Weight not confirmed / น้ำหนักยังไม่ยืนยัน');
+    if (slipNotPrinted) reasons.push('🧾 Slip not printed / สลิปยังไม่พิมพ์');
     return `
       <div class="dispatch-blocked">
-        <div style="font-weight:700;margin-bottom:2px;">🚫 出発不可 / Cannot depart</div>
+        <div style="font-weight:700;margin-bottom:2px;">🚫 Cannot depart / ออกเดินทางไม่ได้</div>
         ${reasons.map(r => `<div>${r}</div>`).join('')}
       </div>`;
   }
@@ -917,10 +916,10 @@ function renderDispatchBlock(order) {
   return `
     <div class="dispatch-controls">
       <select id="staff-select-${order.id}">
-        <option value="">-- スタッフ / Staff --</option>
+        <option value="">-- Staff / พนักงาน --</option>
         ${options}
       </select>
-      <button class="btn-dispatch" onclick="departOrder('${order.id}')">🚴 出発 / Depart</button>
+      <button class="btn-dispatch" onclick="departOrder('${order.id}')">🚴 Depart / ออกเดินทาง</button>
     </div>`;
 }
 
@@ -944,7 +943,7 @@ async function departOrder(orderId) {
 
 // 出発記録の取消(選択ミスなどの訂正用)。selection_countは戻さない(実際の押下履歴として残す)。
 async function resetDeparture(orderId) {
-  if (!confirm('出発記録を取り消しますか？ / Undo this departure record?')) return;
+  if (!confirm('Undo this departure record? / ยกเลิกบันทึกการออกเดินทางนี้หรือไม่?')) return;
   const { error } = await supabaseClient
     .from('orders').update({ assigned_staff_id: null, departed_at: null }).eq('id', orderId);
   if (error) { alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message); return; }
@@ -971,7 +970,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const paymentBadges = [];
   if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
-  if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ 追加注文 #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
+  if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ Additional Order / คำสั่งซื้อเพิ่มเติม #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
@@ -1045,9 +1044,9 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う
     if (currentCustomer && currentCustomer.role === 'admin') {
       if (!order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('💰 支払い確認 / Confirm Payment', () => openManualPayModal(order), 'btn-manual-pay'));
+        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       } else {
-        manageCol.appendChild(makeButton('支払い確認を取消 / Undo', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+        manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       }
     }
     // Delete(完全削除)は管理者のみ
@@ -1064,9 +1063,9 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     // Completedでロックされた後でも、管理者は振込み確認の追加・取消を行えるようにしておく
     if (currentCustomer && currentCustomer.role === 'admin') {
       if (!order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('💰 支払い確認 / Confirm Payment', () => openManualPayModal(order), 'btn-manual-pay'));
+        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       } else {
-        manageCol.appendChild(makeButton('支払い確認を取消 / Undo', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+        manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       }
     }
   }
@@ -1178,9 +1177,9 @@ function renderManualPaidBadge(order) {
     : '-';
   return `
     <span class="badge badge-manual-paid">
-      ✅ 振込み確認済み(管理者)/ Manually Confirmed / ยืนยันการโอนแล้ว (ผู้ดูแลระบบ)<br>
+      ✅ Manually Confirmed (Admin) / ยืนยันการโอนแล้ว (ผู้ดูแลระบบ)<br>
       📝 ${noteStr} ・ 💵 <span class="amt">${amount} THB</span><br>
-      🕐 確定日時 / Confirmed at: ${confirmedAtStr}
+      🕐 Confirmed at / ยืนยันเมื่อ: ${confirmedAtStr}
     </span>`;
 }
 
@@ -1193,7 +1192,7 @@ function openManualPayModal(order) {
   document.getElementById('manualpay-time-input').value = defaultTimeStr;
   document.getElementById('manualpay-amount-input').value = order.total_amount || '';
   document.getElementById('manualpay-modal-confirm-btn').disabled = false;
-  document.getElementById('manualpay-modal-confirm-btn').textContent = '確定 / Confirm';
+  document.getElementById('manualpay-modal-confirm-btn').textContent = 'Confirm / ยืนยัน';
   document.getElementById('manualpay-modal').classList.add('open');
 }
 
@@ -1207,12 +1206,12 @@ async function confirmManualPayment() {
   const timeVal = document.getElementById('manualpay-time-input').value.trim();
   const amountVal = document.getElementById('manualpay-amount-input').value;
 
-  if (!timeVal) { alert('振込み時刻を入力してください / Please enter the payment time / กรุณากรอกเวลาที่โอน'); return; }
-  if (amountVal === '' || isNaN(parseFloat(amountVal))) { alert('金額を入力してください / Please enter the amount / กรุณากรอกจำนวนเงิน'); return; }
+  if (!timeVal) { alert('Please enter the payment time / กรุณากรอกเวลาที่โอน'); return; }
+  if (amountVal === '' || isNaN(parseFloat(amountVal))) { alert('Please enter the amount / กรุณากรอกจำนวนเงิน'); return; }
 
   const btn = document.getElementById('manualpay-modal-confirm-btn');
   btn.disabled = true;
-  btn.textContent = '保存中... / Saving...';
+  btn.textContent = 'Saving... / กำลังบันทึก...';
 
   // 振込み時刻(manual_payment_time)は自由入力のテキストとして、入力された文字列をそのまま保存する
   // (手書き・貼り付けで様々な形式が入るため、日付として解釈・変換はしない)。
@@ -1225,9 +1224,9 @@ async function confirmManualPayment() {
   }).eq('id', manualPayOrder.id);
 
   if (error) {
-    alert('保存に失敗しました / Save failed: ' + error.message);
+    alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message);
     btn.disabled = false;
-    btn.textContent = '確定 / Confirm';
+    btn.textContent = 'Confirm / ยืนยัน';
     return;
   }
 
@@ -1236,14 +1235,14 @@ async function confirmManualPayment() {
 }
 
 async function undoManualPayment(orderId) {
-  if (!confirm('振込み確認を取り消しますか？ / Undo this payment confirmation?')) return;
+  if (!confirm('Undo this payment confirmation? / ยกเลิกการยืนยันการโอนเงินนี้หรือไม่?')) return;
   const { error } = await supabaseClient.from('orders').update({
     manual_payment_confirmed: false,
     manual_payment_time: null,
     manual_payment_amount: null,
     manual_payment_confirmed_at: null,
   }).eq('id', orderId);
-  if (error) { alert('保存に失敗しました / Save failed: ' + error.message); return; }
+  if (error) { alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message); return; }
   loadOrders();
 }
 
@@ -1394,12 +1393,12 @@ function openWeightModal(order) {
     const prefillGrams = (item.quantity && item.quantity > 0) ? Math.round(item.quantity * gramsPerUnit) : '';
     row.innerHTML = `
       <div class="weight-item-name">${escapeHtml(item.product_name_snapshot)}${thName}</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">単価: ${item.unit_price || 0} THB / ${unitLabel || '?'} ※実測グラムをそのまま入力してください</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Unit price: ${item.unit_price || 0} THB / ${unitLabel || '?'} — enter the actual measured grams / ราคาต่อหน่วย: ${item.unit_price || 0} THB / ${unitLabel || '?'} — กรอกน้ำหนักที่ชั่งได้จริงเป็นกรัม</div>
       <div class="weight-item-input-row">
         <input type="number" step="1" min="0" class="weight-input"
           data-item-id="${item.id}" data-unit-price="${item.unit_price || 0}" data-grams-per-unit="${gramsPerUnit}"
           value="${prefillGrams}"
-          placeholder="例: 130" oninput="recalcWeightTotal()">
+          placeholder="e.g. 130 / เช่น 130" oninput="recalcWeightTotal()">
         <span class="weight-unit">g</span>
         <span class="weight-item-price" id="weight-item-price-${item.id}">0 THB</span>
       </div>
@@ -1526,10 +1525,10 @@ async function sendWeightConfirmedEmail(order) {
     const res = await fetch(url);
     const json = await res.json();
     if (json.status !== 'ok') {
-      alert('น้ำหนักは確定しましたが、メール送信でエラーが発生しました / Weight confirmed, but the email failed: ' + (json.message || ''));
+      alert('Weight confirmed, but the email failed to send: ' + (json.message || '') + ' / ยืนยันน้ำหนักแล้ว แต่ส่งอีเมลไม่สำเร็จ: ' + (json.message || ''));
     }
   } catch (e) {
-    alert('น้ำหนักは確定しましたが、メール送信に失敗しました(通信エラー) / Weight confirmed, but the email failed to send (network error).');
+    alert('Weight confirmed, but the email failed to send (network error). / ยืนยันน้ำหนักแล้ว แต่ส่งอีเมลไม่สำเร็จ (ข้อผิดพลาดเครือข่าย)');
   }
 }
 

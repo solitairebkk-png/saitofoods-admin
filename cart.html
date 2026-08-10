@@ -1280,9 +1280,9 @@ async function submitOrder() {
     const condoSelect = document.getElementById('sriracha-condo-select');
     condoName = condoSelect.value;
     if (condoName && condoName.toLowerCase().includes('other')) {
-      condoName = document.getElementById('sriracha-condo-other').value.trim() || 'その他';
+      condoName = document.getElementById('sriracha-condo-other').value.trim() || 'Other';
     }
-    deliveryTimeSlot = 'シラチャ配送(時間指定なし)';
+    deliveryTimeSlot = 'Sriracha Delivery (no time specified)';
     if (!deliveryDate) { msgEl.textContent = '配送日を選択してください / Please choose a delivery date.'; msgEl.className = 'error'; return; }
     if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
   } else if (customerAreaType === 'pattaya') {
@@ -1290,9 +1290,9 @@ async function submitOrder() {
     const condoSelect = document.getElementById('pattaya-condo-select');
     condoName = condoSelect.value;
     if (condoName && condoName.toLowerCase().includes('other')) {
-      condoName = document.getElementById('pattaya-condo-other').value.trim() || 'その他';
+      condoName = document.getElementById('pattaya-condo-other').value.trim() || 'Other';
     }
-    deliveryTimeSlot = 'パタヤ配送(時間指定なし)';
+    deliveryTimeSlot = 'Pattaya Delivery (no time specified)';
     if (!deliveryDate) { msgEl.textContent = '配送日を選択してください(設定が無い場合はお問い合わせください) / Please choose a delivery date.'; msgEl.className = 'error'; return; }
     if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
   }
