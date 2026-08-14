@@ -112,7 +112,7 @@
   .order-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
   .order-items-grid .item-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .details-cell { position: relative; }
-  /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタンプ。
+  /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタイル。
      一覧の背景色は「印刷済みかどうか」を一目で判断するために使うため、
      支払い済みかどうかは背景色ではなくこのスタンプで別途表現する。
      以前は絶対配置で右上に重ねていたが、電話番号と重なって見えなくなるため、
@@ -285,6 +285,54 @@
   #receipt-print-btn { background: var(--navy); color: white; }
   #receipt-close-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 
+  /* ヘッダーの通知ベル(未読メッセージ・自動投稿履歴) */
+  .header-icon-btn {
+    position: relative; background: none; border: none; cursor: pointer;
+    color: #cdd8e6; font-size: 17px; padding: 4px 6px; line-height: 1;
+  }
+  .header-icon-btn:hover { color: white; }
+  .header-icon-badge {
+    position: absolute; top: -4px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px;
+    border-radius: 999px; background: var(--red-accent); color: #fff; font-size: 9px; font-weight: 700;
+    display: none; align-items: center; justify-content: center; line-height: 1;
+  }
+
+  /* SNS受信通知 / 自動投稿履歴 共通モーダル */
+  #sns-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 996;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #sns-modal.open { display: flex; }
+  .sns-modal-box { background: var(--panel); border-radius: 8px; max-width: 560px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; }
+  .sns-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sns-modal-header h3 { margin: 0; font-size: 15px; color: var(--navy); }
+  .sns-modal-header button { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-muted); }
+  .sns-modal-actions { padding: 10px 20px; border-bottom: 1px solid var(--border); }
+  .sns-modal-actions button {
+    font-size: 11.5px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--border);
+    background: white; cursor: pointer; font-family: inherit;
+  }
+  .sns-modal-list { overflow-y: auto; padding: 8px 12px; }
+  .sns-item { padding: 10px 8px; border-bottom: 1px solid #f0efec; font-size: 12.5px; }
+  .sns-item.unread { background: #fff8e6; }
+  .sns-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .sns-item-sender { font-weight: 700; }
+  .sns-item-time { color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
+  .sns-item-platform { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-right: 4px; font-weight: 700; }
+  .sns-item-platform.facebook { background: #dbe8f8; color: #1c4c8f; }
+  .sns-item-text { line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .sns-item-actions { margin-top: 6px; display: flex; gap: 8px; }
+  .sns-item-actions button, .sns-item-actions a {
+    font-size: 10.5px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
+    background: white; cursor: pointer; font-family: inherit; color: var(--text); text-decoration: none;
+  }
+  .autopost-item { padding: 10px 8px; border-bottom: 1px solid #f0efec; font-size: 12.5px; }
+  .autopost-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+  .autopost-item-product { font-weight: 700; }
+  .autopost-item-time { color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
+  .autopost-item-type { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-left: 6px; background: #e8e2f5; color: #5a3f9e; }
+  .autopost-item-status-failed { color: var(--red-accent); font-weight: 700; font-size: 10.5px; }
+
   @media print {
     body * { visibility: hidden; }
     #receipt-content, #receipt-content * { visibility: visible; }
@@ -322,6 +370,12 @@
     </div>
   </div>
   <div class="user-right" id="user-info" style="display:none;">
+    <button class="header-icon-btn" id="inbox-bell-btn" onclick="openSnsModal('inbox')" title="Messages &amp; Comments / ข้อความและคอมเมนต์">
+      💬<span class="header-icon-badge" id="inbox-badge">0</span>
+    </button>
+    <button class="header-icon-btn" id="autopost-bell-btn" onclick="openSnsModal('autopost')" title="FB Auto-post history / ประวัติโพสต์อัตโนมัติ">
+      📢
+    </button>
     <span id="user-email"></span>
     <span id="user-role" class="badge badge-cash"></span>
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
@@ -456,6 +510,20 @@
   </div>
 </div>
 
+<!-- SNS受信通知(未読メッセージ・コメント) / FB自動投稿履歴 共通モーダル -->
+<div id="sns-modal">
+  <div class="sns-modal-box">
+    <div class="sns-modal-header">
+      <h3 id="sns-modal-title">Messages &amp; Comments</h3>
+      <button onclick="closeSnsModal()">✕</button>
+    </div>
+    <div class="sns-modal-actions" id="sns-modal-actions"></div>
+    <div class="sns-modal-list" id="sns-modal-list">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -559,6 +627,7 @@ function showMain() {
   document.getElementById('filter-end').value = '';
   loadShippingSettings();
   loadStaffList().then(() => loadOrders());
+  loadInboxBadge();
 
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
@@ -570,7 +639,11 @@ function showMain() {
     if (now - lastAutoRefresh < 2000) return; // 2秒以内の連続フォーカスは無視
     lastAutoRefresh = now;
     loadOrders();
+    loadInboxBadge();
   });
+
+  // 未読バッジは5分おきに自動更新(GAS側は30分おきチェックだが、他スタッフの既読操作も反映したいため)
+  setInterval(loadInboxBadge, 5 * 60 * 1000);
 }
 
 function todayStr() {
@@ -1544,6 +1617,115 @@ async function deleteOrder(orderId) {
   const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
   if (error) { alert('ลบไม่สำเร็จ / Delete failed: ' + error.message); return; }
   loadOrders();
+}
+
+// ================= SNS受信通知(未読メッセージ・コメント) =================
+// sns_inbox テーブル(GASのsns_inbox_watch.gsが30分おきに書き込む)を読んで、
+// ヘッダーの💬ベルに未読件数バッジを表示し、クリックで一覧モーダルを開く。
+async function loadInboxBadge() {
+  const { count, error } = await supabaseClient
+    .from('sns_inbox').select('id', { count: 'exact', head: true }).eq('is_read', false);
+  const badge = document.getElementById('inbox-badge');
+  if (error || !count) { badge.style.display = 'none'; return; }
+  badge.textContent = count > 99 ? '99+' : String(count);
+  badge.style.display = 'flex';
+}
+
+let snsModalMode = 'inbox'; // 'inbox' or 'autopost'
+
+function openSnsModal(mode) {
+  snsModalMode = mode;
+  document.getElementById('sns-modal-title').textContent =
+    mode === 'inbox' ? 'Messages & Comments / ข้อความและคอมเมนต์' : 'FB Auto-post History / ประวัติโพสต์อัตโนมัติ';
+  const actionsEl = document.getElementById('sns-modal-actions');
+  actionsEl.innerHTML = mode === 'inbox'
+    ? '<button onclick="markAllInboxRead()">Mark all as read / ทำเครื่องหมายว่าอ่านทั้งหมด</button>'
+    : '';
+  document.getElementById('sns-modal').classList.add('open');
+  if (mode === 'inbox') { loadInboxList(); } else { loadAutoPostList(); }
+}
+
+function closeSnsModal() {
+  document.getElementById('sns-modal').classList.remove('open');
+}
+
+async function loadInboxList() {
+  const listEl = document.getElementById('sns-modal-list');
+  listEl.innerHTML = '<div class="loading">Loading...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('sns_inbox').select('*').order('received_at', { ascending: false }).limit(50);
+
+  if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
+  if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No messages / ไม่มีข้อความ</div>'; return; }
+
+  listEl.innerHTML = data.map(item => {
+    const timeStr = new Date(item.received_at).toLocaleString('en-GB', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+    });
+    const typeLabel = item.item_type === 'dm' ? 'DM' : 'Comment';
+    const permalinkBtn = item.permalink
+      ? `<a href="${escapeHtml(item.permalink)}" target="_blank">Open post / เปิดโพสต์</a>` : '';
+    const readBtn = item.is_read
+      ? ''
+      : `<button onclick="markInboxRead('${item.id}')">Mark as read / อ่านแล้ว</button>`;
+    return `
+      <div class="sns-item ${item.is_read ? '' : 'unread'}">
+        <div class="sns-item-top">
+          <span>
+            <span class="sns-item-platform facebook">FB</span>
+            <span class="sns-item-sender">${escapeHtml(item.sender_name || '(unknown)')}</span>
+            <span style="color:var(--text-muted);font-size:10.5px;"> ・ ${typeLabel}</span>
+          </span>
+          <span class="sns-item-time">${timeStr}</span>
+        </div>
+        <div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>
+        <div class="sns-item-actions">${readBtn}${permalinkBtn}</div>
+      </div>`;
+  }).join('');
+}
+
+async function markInboxRead(id) {
+  await supabaseClient.from('sns_inbox').update({ is_read: true }).eq('id', id);
+  loadInboxList();
+  loadInboxBadge();
+}
+
+async function markAllInboxRead() {
+  await supabaseClient.from('sns_inbox').update({ is_read: true }).eq('is_read', false);
+  loadInboxList();
+  loadInboxBadge();
+}
+
+async function loadAutoPostList() {
+  const listEl = document.getElementById('sns-modal-list');
+  listEl.innerHTML = '<div class="loading">Loading...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('fb_auto_posts').select('*').order('posted_at', { ascending: false }).limit(30);
+
+  if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
+  if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No posts yet / ยังไม่มีโพสต์</div>'; return; }
+
+  listEl.innerHTML = data.map(item => {
+    const timeStr = new Date(item.posted_at).toLocaleString('en-GB', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+    });
+    const statusHtml = item.status === 'failed'
+      ? `<div class="autopost-item-status-failed">⚠️ Failed: ${escapeHtml(item.error_message || '')}</div>`
+      : '';
+    const permalinkBtn = item.fb_permalink
+      ? `<div style="margin-top:4px;"><a href="${escapeHtml(item.fb_permalink)}" target="_blank" style="font-size:10.5px;">Open post / เปิดโพสต์</a></div>` : '';
+    return `
+      <div class="autopost-item">
+        <div class="autopost-item-top">
+          <span class="autopost-item-product">${escapeHtml(item.product_name || '-')}<span class="autopost-item-type">${escapeHtml(item.caption_type || '')}</span></span>
+          <span class="autopost-item-time">${timeStr}</span>
+        </div>
+        ${statusHtml}
+        ${permalinkBtn}
+      </div>`;
+  }).join('');
 }
 </script>
 
