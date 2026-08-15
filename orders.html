@@ -1138,7 +1138,7 @@ function renderExpressOrderRow(order, pointsUsed) {
     const code = extractExpressCode(item.products?.name_en);
     const codeHtml = code
       ? `<span class="express-code">[${escapeHtml(code)}]</span>`
-      : `<span class="express-code-missing">[コード不明 / No code]</span>`;
+      : `<span class="express-code-missing">[No code]</span>`;
     // スタッフはタイ人のため、日本語のみのproduct_name_snapshotではなく
     // 英語/タイ語表記のname_enを表示する(2026-08-15、日本語が読めないとの指摘で修正)。
     // name_enが無い(商品削除等)場合のみ、フォールバックとして日本語名+注記を表示。
@@ -1170,7 +1170,7 @@ function renderExpressPtRow(g) {
 
   const total = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
   const itemsHtml = g.items.map(item =>
-    `<div><span class="express-code-missing">[コード不明 / No code]</span> ${escapeHtml(item.product_name)} x${item.quantity}</div>`
+    `<div><span class="express-code-missing">[No code]</span> ${escapeHtml(item.product_name)} x${item.quantity}</div>`
   ).join('');
 
   tr.innerHTML = `
