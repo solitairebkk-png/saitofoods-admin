@@ -1224,24 +1224,33 @@ function printSelectedExpress() {
   window.print();
 }
 
-// 選択した注文/プラータピアン売上に「Express入力済み」フラグを立てる(紙の✖印のデジタル版)
+// 選択した注文/プラータピアン売上に「Express入力済み」フラグを立てる(紙の✖印のデジタル版)。
+// orders/plaa_tapian_salesとも、staffには直接UPDATEするRLS権限が無い(Completeロック・読み取り専用)ため、
+// mark_express_entered RPC(SECURITY DEFINER、is_staff_or_admin()チェックのみ)経由で更新する。
 async function markSelectedExpressEntered() {
   const rows = getSelectedExpressRows();
   if (rows.length === 0) { alert('กรุณาเลือกอย่างน้อย 1 รายการ / Please select at least one row.'); return; }
   if (!confirm(`ทำเครื่องหมายว่าคีย์เข้า Express แล้ว ${rows.length} รายการ?\nMark ${rows.length} item(s) as entered into Express?`)) return;
 
-  const nowIso = new Date().toISOString();
-  for (const tr of rows) {
-    if (tr.dataset.exprType === 'order') {
-      await supabaseClient.from('orders')
-        .update({ is_express_entered: true, express_entered_at: nowIso })
-        .eq('id', tr.dataset.exprId);
-    } else {
-      await supabaseClient.from('plaa_tapian_sales')
-        .update({ is_express_entered: true, express_entered_at: nowIso })
-        .eq('sale_date', tr.dataset.exprDate).eq('receipt_number', tr.dataset.exprReceipt);
-    }
+  const orderIds = rows.filter(tr => tr.dataset.exprType === 'order').map(tr => tr.dataset.exprId);
+  const ptDates = [];
+  const ptReceipts = [];
+  rows.filter(tr => tr.dataset.exprType === 'pt').forEach(tr => {
+    ptDates.push(tr.dataset.exprDate);
+    ptReceipts.push(tr.dataset.exprReceipt);
+  });
+
+  const { error } = await supabaseClient.rpc('mark_express_entered', {
+    p_order_ids: orderIds.length > 0 ? orderIds : null,
+    p_pt_dates: ptDates.length > 0 ? ptDates : null,
+    p_pt_receipts: ptReceipts.length > 0 ? ptReceipts : null,
+  });
+
+  if (error) {
+    alert('บันทึกไม่สำเร็จ / Failed to save: ' + error.message);
+    return;
   }
+
   loadExpressInput();
 }
 
