@@ -285,7 +285,7 @@
   #receipt-print-btn { background: var(--navy); color: white; }
   #receipt-close-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 
-  /* ヘッダーの通知ベル(未読メッセージ・自動投稿履歴) */
+  /* ヘッダーの通知ベル(未読メッセージ・自動投稿履歴・日次レポート) */
   .header-icon-btn {
     position: relative; background: none; border: none; cursor: pointer;
     color: #cdd8e6; font-size: 17px; padding: 4px 6px; line-height: 1;
@@ -333,6 +333,26 @@
   .autopost-item-type { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-left: 6px; background: #e8e2f5; color: #5a3f9e; }
   .autopost-item-status-failed { color: var(--red-accent); font-weight: 700; font-size: 10.5px; }
 
+  /* 日次レポート(Cashier/Ootoya、LINE通知文言をそのまま表示)モーダル */
+  #reports-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 996;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #reports-modal.open { display: flex; }
+  .reports-tabs { display: flex; gap: 8px; padding: 10px 20px 0; border-bottom: 1px solid var(--border); }
+  .reports-tabs button {
+    font-size: 12px; padding: 6px 14px; border: 1px solid var(--border); border-bottom: none;
+    background: #ece9e3; border-radius: 4px 4px 0 0; cursor: pointer; font-family: inherit;
+  }
+  .reports-tabs button.active { background: var(--panel); font-weight: 700; }
+  .report-card { padding: 12px; border-bottom: 1px solid #f0efec; }
+  .report-card-date { font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 700; }
+  .report-card-text {
+    white-space: pre-wrap; word-break: break-word; font-size: 12.5px; line-height: 1.6;
+    background: #f8f7f4; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+    font-family: "Inter", "Noto Sans Thai", sans-serif;
+  }
+
   @media print {
     body * { visibility: hidden; }
     #receipt-content, #receipt-content * { visibility: visible; }
@@ -375,6 +395,9 @@
     </button>
     <button class="header-icon-btn" id="autopost-bell-btn" onclick="openSnsModal('autopost')" title="FB Auto-post history / ประวัติโพสต์อัตโนมัติ">
       📢
+    </button>
+    <button class="header-icon-btn" id="reports-bell-btn" onclick="openReportsModal()" title="Daily Reports / รายงานประจำวัน">
+      📋<span class="header-icon-badge" id="reports-badge">!</span>
     </button>
     <span id="user-email"></span>
     <span id="user-role" class="badge badge-cash"></span>
@@ -524,6 +547,23 @@
   </div>
 </div>
 
+<!-- 日次レポート(Cashier Daily Report / Ootoya Rice Order、LINE通知文言をそのまま表示)モーダル -->
+<div id="reports-modal">
+  <div class="sns-modal-box">
+    <div class="sns-modal-header">
+      <h3>Daily Reports / รายงานประจำวัน</h3>
+      <button onclick="closeReportsModal()">✕</button>
+    </div>
+    <div class="reports-tabs">
+      <button id="reports-tab-cashier" class="active" onclick="switchReportsTab('cashier')">Cashier / แคชเชียร์</button>
+      <button id="reports-tab-ootoya" onclick="switchReportsTab('ootoya')">Ootoya</button>
+    </div>
+    <div class="sns-modal-list" id="reports-modal-list">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
@@ -628,6 +668,7 @@ function showMain() {
   loadShippingSettings();
   loadStaffList().then(() => loadOrders());
   loadInboxBadge();
+  checkReportsBadge();
 
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
@@ -640,10 +681,11 @@ function showMain() {
     lastAutoRefresh = now;
     loadOrders();
     loadInboxBadge();
+    checkReportsBadge();
   });
 
-  // 未読バッジは5分おきに自動更新(GAS側は30分おきチェックだが、他スタッフの既読操作も反映したいため)
-  setInterval(loadInboxBadge, 5 * 60 * 1000);
+  // 未読バッジ・レポート新着バッジは5分おきに自動更新(GAS側は30分おきチェックだが、他スタッフの操作も反映したいため)
+  setInterval(() => { loadInboxBadge(); checkReportsBadge(); }, 5 * 60 * 1000);
 }
 
 function todayStr() {
@@ -1726,6 +1768,68 @@ async function loadAutoPostList() {
         ${permalinkBtn}
       </div>`;
   }).join('');
+}
+
+// ================= 日次レポート(Cashier Daily Report / Ootoya Rice Order) =================
+// daily_reportsテーブル(GASのconfirmCashierReport/confirmOotoyaOrderが確定時に、
+// LINEへ送っているのと同じ本文をそのまま書き込む)を読んで、📋アイコンから閲覧できるようにする。
+// 「新着があるか」は全スタッフ共通のDBフラグではなく、この端末(ブラウザ)で
+// 最後にモーダルを開いた時刻(localStorage)と最新レポートの更新日時を比較して判定する。
+const REPORTS_LAST_SEEN_KEY = 'saitofoods_reports_last_seen';
+let reportsModalType = 'cashier';
+
+async function checkReportsBadge() {
+  const badge = document.getElementById('reports-badge');
+  const { data, error } = await supabaseClient
+    .from('daily_reports').select('updated_at').order('updated_at', { ascending: false }).limit(1);
+  if (error || !data || data.length === 0) { badge.style.display = 'none'; return; }
+
+  const latest = new Date(data[0].updated_at).getTime();
+  const lastSeen = localStorage.getItem(REPORTS_LAST_SEEN_KEY);
+  const lastSeenTime = lastSeen ? new Date(lastSeen).getTime() : 0;
+
+  badge.style.display = latest > lastSeenTime ? 'flex' : 'none';
+}
+
+function openReportsModal() {
+  document.getElementById('reports-modal').classList.add('open');
+  loadReportsList(reportsModalType);
+  // 開いた時点で既読扱いにし、バッジを即座に消す
+  localStorage.setItem(REPORTS_LAST_SEEN_KEY, new Date().toISOString());
+  document.getElementById('reports-badge').style.display = 'none';
+}
+
+function closeReportsModal() {
+  document.getElementById('reports-modal').classList.remove('open');
+}
+
+function switchReportsTab(type) {
+  reportsModalType = type;
+  document.getElementById('reports-tab-cashier').classList.toggle('active', type === 'cashier');
+  document.getElementById('reports-tab-ootoya').classList.toggle('active', type === 'ootoya');
+  loadReportsList(type);
+}
+
+async function loadReportsList(type) {
+  const listEl = document.getElementById('reports-modal-list');
+  listEl.innerHTML = '<div class="loading">Loading...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('daily_reports')
+    .select('report_date, message, updated_at')
+    .eq('report_type', type)
+    .order('report_date', { ascending: false })
+    .limit(10);
+
+  if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
+  if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No reports yet / ยังไม่มีรายงาน</div>'; return; }
+
+  listEl.innerHTML = data.map(item => `
+    <div class="report-card">
+      <div class="report-card-date">${escapeHtml(item.report_date)}</div>
+      <div class="report-card-text">${escapeHtml(item.message)}</div>
+    </div>
+  `).join('');
 }
 </script>
 
