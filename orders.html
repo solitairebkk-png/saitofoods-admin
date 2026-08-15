@@ -602,7 +602,12 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // ECサイト側(お客様向けページ)とログインセッションを分離するための独自ストレージキー。
+  // 同じキーを共有していると、片方でログアウトするともう片方も道連れでログアウトしてしまうため
+  // (2026-08-15、スタッフがECサイト側でログアウトしたらorders.htmlの注文一覧が消えた不具合の修正)。
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
 
 // XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
 // 特殊文字を無害化する。< > & " ' を実体参照に変換し、スクリプトが実行されるのを防ぐ。
@@ -809,7 +814,7 @@ async function loadOrders() {
     .select(`
       id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
-      is_cancelled, cancelled_at, cancelled_by,
+      is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -831,9 +836,12 @@ async function loadOrders() {
 
   // 「配送エリア外」件数は、今どのタブを見ているかに関わらず常に更新する
   // (バンコク・シラチャ・パタヤのいずれでもなく、ウォークインでもない配送注文)
+  // 判定は注文自身のarea_name(注文時点のスナップショット)を使う。顧客の現在のエリアを
+  // 都度参照していた旧実装は、後から顧客がエリアを変更すると過去の注文の表示まで
+  // 遡って変わってしまう不具合があったため廃止(2026-08-15)。
   const KNOWN_AREAS = ['Bangkok', 'Sriracha', 'Pattaya'];
   const outOfAreaCount = (data || []).filter(o =>
-    o.order_type !== 'walk_in' && !o.is_cancelled && !KNOWN_AREAS.includes(o.customers?.areas?.name)
+    o.order_type !== 'walk_in' && !o.is_cancelled && !KNOWN_AREAS.includes(o.area_name)
   ).length;
   const badgeEl = document.getElementById('outofarea-badge');
   if (outOfAreaCount > 0) {
@@ -847,10 +855,10 @@ async function loadOrders() {
   if (currentAreaFilter === '__WALKIN__') {
     rows = rows.filter(o => o.order_type === 'walk_in');
   } else if (currentAreaFilter === '__OUTOFAREA__') {
-    rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.customers?.areas?.name));
+    rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.area_name));
   } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
-    rows = rows.filter(o => filterList.includes(o.customers?.areas?.name));
+    rows = rows.filter(o => filterList.includes(o.area_name));
   }
   if (name) {
     rows = rows.filter(o => {

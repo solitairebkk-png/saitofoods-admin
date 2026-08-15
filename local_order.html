@@ -359,7 +359,12 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // ECサイト側(お客様向けページ)とログインセッションを分離するための独自ストレージキー。
+  // 同じキーを共有していると、片方でログアウトするともう片方も道連れでログアウトしてしまうため
+  // (2026-08-15、スタッフがECサイト側でログアウトしたらorders.htmlの注文一覧が消えた不具合の修正)。
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
 
 // XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
 // 特殊文字を無害化する。テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
@@ -478,7 +483,7 @@ async function searchCustomer() {
 
   const { data, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, email, tel1, address1, address2, area_id, point_balance')
+    .select('id, family_name, first_name, email, tel1, address1, address2, area_id, point_balance, areas ( name )')
     .or(`tel1.ilike.%${q}%,family_name.ilike.%${q}%,first_name.ilike.%${q}%,address1.ilike.%${q}%,address2.ilike.%${q}%`)
     .limit(20);
 
@@ -1089,6 +1094,8 @@ async function submitOrder() {
     total_amount: subtotal + shippingCost,
     comment: comment || null,
     created_by: currentCustomer.id,
+    // area_nameはここでは設定しない(編集時に当時のエリアを上書きしてしまわないため)。
+    // 新規作成時のみ、この後で顧客の現在のエリアをスナップショットとして追加する。
   };
 
   if (isWalkin) {
@@ -1175,6 +1182,12 @@ async function submitOrder() {
       setTimeout(() => { location.href = 'orders.html'; }, 900);
     }
     return; // 編集モードはここで終了(新規作成のinsert処理には進まない)
+  }
+
+  // 新規作成時のみ、注文したその時点の顧客エリアをスナップショットとして保存する。
+  // (これにより、後で顧客がmypage等でエリアを変更しても、この注文のタブ振り分けは変わらない)
+  if (!isWalkin) {
+    orderPayload.area_name = selectedCustomer?.areas?.name || null;
   }
 
   const { data: orderRow, error: orderErr } = await supabaseClient

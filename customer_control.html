@@ -162,7 +162,12 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // ECサイト側(お客様向けページ)とログインセッションを分離するための独自ストレージキー。
+  // 同じキーを共有していると、片方でログアウトするともう片方も道連れでログアウトしてしまうため
+  // (2026-08-15、スタッフがECサイト側でログアウトしたらorders.htmlの注文一覧が消えた不具合の修正)。
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
 
 // XSS対策: 顧客が入力した文字列(氏名・住所・コメント等)をHTMLに埋め込む前に
 // 特殊文字を無害化する。テンプレートリテラルで innerHTML に入れる顧客由来の値は必ずこの関数を通すこと。
