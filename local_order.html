@@ -333,7 +333,7 @@
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" id="delivery-opts-card">
     <div class="field">
       <label><span class="th">ความต้องการด้านการจัดส่ง</span>Delivery preferences</label>
       <div class="delivery-opts-list">
@@ -495,6 +495,7 @@ function toggleWalkin() {
   document.getElementById('delivery-customer-block').style.display = isWalkin ? 'none' : 'block';
   document.getElementById('walkin-block').style.display = isWalkin ? 'block' : 'none';
   document.getElementById('delivery-date-card').style.display = isWalkin ? 'none' : 'block';
+  document.getElementById('delivery-opts-card').style.display = isWalkin ? 'none' : 'block';
   selectedCustomer = null;
   renderCart();
 }
@@ -1130,11 +1131,12 @@ async function submitOrder() {
     shipping_cost: shippingCost,
     total_amount: subtotal + shippingCost,
     comment: comment || null,
-    delivery_leave_at_table: document.getElementById('opt-leave-at-table').checked,
-    delivery_no_contact: document.getElementById('opt-no-contact').checked,
-    delivery_leave_at_front: document.getElementById('opt-leave-at-front').checked,
-    delivery_payment_at_front: document.getElementById('opt-payment-at-front').checked,
-    delivery_no_change: document.getElementById('opt-no-change').checked,
+    // Walk-in(店頭受け渡し)には配送は発生しないため、フォームが隠れていても値を送らない
+    delivery_leave_at_table: !isWalkin && document.getElementById('opt-leave-at-table').checked,
+    delivery_no_contact: !isWalkin && document.getElementById('opt-no-contact').checked,
+    delivery_leave_at_front: !isWalkin && document.getElementById('opt-leave-at-front').checked,
+    delivery_payment_at_front: !isWalkin && document.getElementById('opt-payment-at-front').checked,
+    delivery_no_change: !isWalkin && document.getElementById('opt-no-change').checked,
     created_by: currentCustomer.id,
     // area_nameはここでは設定しない(編集時に当時のエリアを上書きしてしまわないため)。
     // 新規作成時のみ、この後で顧客の現在のエリアをスナップショットとして追加する。
