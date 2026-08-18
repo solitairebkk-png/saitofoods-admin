@@ -353,6 +353,7 @@
     background: #f8f7f4; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
     font-family: "Inter", "Noto Sans Thai", sans-serif;
   }
+  .report-card-text a { color: var(--navy); text-decoration: underline; }
 
   /* Express入力用タブ */
   .express-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
@@ -621,6 +622,15 @@ function escapeHtml(v) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// escapeHtml済みの文字列の中のURLだけをクリック可能な<a>リンクに変換する。
+// (エスケープ後の文字列に対して実行するので、メッセージ本文由来のHTMLタグが
+//  そのまま実行されてしまう心配はない)
+function linkifyEscaped(escapedText) {
+  return escapedText.replace(/(https?:\/\/[^\s<]+)/g, url =>
+    `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+  );
 }
 
 // スリップアップロードアプリ(既存資産)+その裏のGAS(メール送信・スリップ受信を担当)
@@ -2144,7 +2154,7 @@ async function loadReportsList(type) {
   listEl.innerHTML = data.map(item => `
     <div class="report-card">
       <div class="report-card-date">${escapeHtml(item.report_date)}</div>
-      <div class="report-card-text">${escapeHtml(item.message)}</div>
+      <div class="report-card-text">${linkifyEscaped(escapeHtml(item.message))}</div>
     </div>
   `).join('');
 }
