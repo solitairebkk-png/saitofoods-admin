@@ -127,6 +127,12 @@
 
   .bank-info-box, .cod-info-box { margin-top: 10px; padding: 12px; border-radius: 8px; background: var(--line-soft); font-size: 12.5px; line-height: 1.8; }
 
+  /* delivery preference checkboxes */
+  .delivery-opts-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .delivery-opt-item { display: flex; align-items: flex-start; gap: 9px; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .delivery-opt-item input { width: 17px; height: 17px; margin-top: 1px; flex-shrink: 0; accent-color: var(--brand); }
+  .delivery-opt-item span { font-size: 13px; line-height: 1.4; }
+
   .btn-primary { background: var(--brand); color: #fff; border: none; padding: 13px; border-radius: 12px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -369,6 +375,31 @@
     </div>
 
     <div class="card">
+      <div class="field">
+        <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
+        <div class="delivery-opts-list">
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-leave-at-table">
+            <span data-i18n="cart.optLeaveAtTable">置き配希望(デリバリー用テーブルに置いてください) / Leave at delivery table</span>
+          </label>
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-no-contact">
+            <span data-i18n="cart.optNoContact">到着時のご連絡は不要です / No need to call on arrival</span>
+          </label>
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-leave-at-front">
+            <span data-i18n="cart.optLeaveAtFront">フロント(管理人室)に預けてください / Leave with front desk</span>
+          </label>
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-payment-at-front">
+            <span data-i18n="cart.optPaymentAtFront">代金はフロントに預けてあります / Payment left with front desk</span>
+          </label>
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-no-change">
+            <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
+          </label>
+        </div>
+      </div>
       <div class="field">
         <label data-i18n="cart.commentLabel">備考 / Comment</label>
         <div style="display:flex;gap:8px;">
@@ -1331,6 +1362,11 @@ async function submitOrder() {
       p_points_to_use: pointsToUse || 0,
       p_related_order_id: addToOrderId || null,
       p_comment: comment || null,
+      p_leave_at_table: document.getElementById('opt-leave-at-table').checked,
+      p_no_contact: document.getElementById('opt-no-contact').checked,
+      p_leave_at_front: document.getElementById('opt-leave-at-front').checked,
+      p_payment_at_front: document.getElementById('opt-payment-at-front').checked,
+      p_no_change: document.getElementById('opt-no-change').checked,
     });
 
     if (rpcErr) throw rpcErr;
@@ -1354,6 +1390,10 @@ async function submitOrder() {
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     sessionStorage.removeItem(ADDTO_STORAGE_KEY);
+    ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = false;
+    });
     document.getElementById('cart-items-list').innerHTML = '';
     document.getElementById('delivery-card').style.display = 'none';
     document.querySelectorAll('#cart-content > .card').forEach(el => { if (el.id !== 'success-panel') el.style.display = 'none'; });

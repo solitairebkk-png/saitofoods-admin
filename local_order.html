@@ -78,6 +78,12 @@
   .row { display: flex; gap: 12px; flex-wrap: wrap; }
   .row .field { flex: 1; min-width: 160px; }
 
+  /* delivery preference checkboxes */
+  .delivery-opts-list { display: flex; flex-direction: column; gap: 7px; }
+  .delivery-opt-item { display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+  .delivery-opt-item input { width: 16px; height: 16px; margin-top: 1px; flex-shrink: 0; }
+  .delivery-opt-item span { font-size: 12.5px; line-height: 1.4; }
+
   .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
   .toggle-row input[type=checkbox] { width: 18px; height: 18px; }
   .toggle-row label { font-size: 13px; font-weight: 600; }
@@ -328,6 +334,31 @@
   </div>
 
   <div class="card">
+    <div class="field">
+      <label><span class="th">ความต้องการด้านการจัดส่ง</span>Delivery preferences</label>
+      <div class="delivery-opts-list">
+        <label class="delivery-opt-item">
+          <input type="checkbox" id="opt-leave-at-table">
+          <span>วางบนโต๊ะเดลิเวอรี่ / Leave at delivery table</span>
+        </label>
+        <label class="delivery-opt-item">
+          <input type="checkbox" id="opt-no-contact">
+          <span>ไม่ต้องโทรแจ้งเมื่อถึง / No contact on arrival</span>
+        </label>
+        <label class="delivery-opt-item">
+          <input type="checkbox" id="opt-leave-at-front">
+          <span>ฝากไว้ที่ Front / นิติบุคคล / Leave with front desk</span>
+        </label>
+        <label class="delivery-opt-item">
+          <input type="checkbox" id="opt-payment-at-front">
+          <span>ฝากเงินค่าสินค้าไว้ที่ Front / Payment left at front desk</span>
+        </label>
+        <label class="delivery-opt-item">
+          <input type="checkbox" id="opt-no-change">
+          <span>ไม่ต้องทอนเงิน / No change needed</span>
+        </label>
+      </div>
+    </div>
     <div class="field">
       <label><span class="th">หมายเหตุ</span>Comment</label>
       <input type="text" id="order-comment">
@@ -879,6 +910,7 @@ async function loadOrderForEdit(orderId) {
     .from('orders')
     .select(`
       id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
+      delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
       order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
@@ -932,6 +964,11 @@ async function loadOrderForEdit(orderId) {
     r.checked = (r.value === order.payment_method);
   });
   document.getElementById('order-comment').value = order.comment || '';
+  document.getElementById('opt-leave-at-table').checked = !!order.delivery_leave_at_table;
+  document.getElementById('opt-no-contact').checked = !!order.delivery_no_contact;
+  document.getElementById('opt-leave-at-front').checked = !!order.delivery_leave_at_front;
+  document.getElementById('opt-payment-at-front').checked = !!order.delivery_payment_at_front;
+  document.getElementById('opt-no-change').checked = !!order.delivery_no_change;
 
   cart = (order.order_items || []).map(item => ({
     product_id: item.product_id,
@@ -1093,6 +1130,11 @@ async function submitOrder() {
     shipping_cost: shippingCost,
     total_amount: subtotal + shippingCost,
     comment: comment || null,
+    delivery_leave_at_table: document.getElementById('opt-leave-at-table').checked,
+    delivery_no_contact: document.getElementById('opt-no-contact').checked,
+    delivery_leave_at_front: document.getElementById('opt-leave-at-front').checked,
+    delivery_payment_at_front: document.getElementById('opt-payment-at-front').checked,
+    delivery_no_change: document.getElementById('opt-no-change').checked,
     created_by: currentCustomer.id,
     // area_nameはここでは設定しない(編集時に当時のエリアを上書きしてしまわないため)。
     // 新規作成時のみ、この後で顧客の現在のエリアをスナップショットとして追加する。
@@ -1237,6 +1279,10 @@ async function submitOrder() {
   cart = [];
   renderCart();
   document.getElementById('order-comment').value = '';
+  ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.checked = false;
+  });
   document.getElementById('customer-result').style.display = 'none';
   document.getElementById('customer-not-found').style.display = 'none';
   document.getElementById('search-query').value = '';

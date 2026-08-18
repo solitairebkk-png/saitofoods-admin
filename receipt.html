@@ -106,6 +106,7 @@
   .cancelled-stamp .en { display: block; font-size: 22px; font-weight: 800; letter-spacing: 0.12em; }
 
   .weight-note { margin-top: 8px; padding: 6px 10px; background: #fff8ec; border: 1px solid var(--accent); border-radius: 8px; font-size: 11px; line-height: 1.45; }
+  .delivery-flags-note { margin-top: 8px; padding: 6px 10px; background: #eef7f0; border: 1px solid var(--brand); border-radius: 8px; font-size: 12px; line-height: 1.7; font-weight: 700; color: #33322E; }
   .comment-note { margin-top: 8px; padding: 6px 10px; background: var(--line-soft); border-radius: 8px; font-size: 11px; line-height: 1.45; }
   .comment-note .k { color: var(--brand-dark); font-weight: 700; }
 
@@ -206,6 +207,7 @@
       </div>
 
       <div class="weight-note" id="f-weight-note" style="display:none;"></div>
+      <div class="delivery-flags-note" id="f-delivery-flags-note" style="display:none;"></div>
       <div class="comment-note" id="f-comment-note" style="display:none;"><span class="k">Comment: </span><span id="f-comment-text"></span></div>
 
       <div class="points-box" id="f-points-box" style="display:none;">
@@ -337,6 +339,7 @@ async function loadReceipt() {
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
+      delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled,
       customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
@@ -485,6 +488,19 @@ function renderReceipt(order) {
   if (order.has_weight_items && !order.is_weight_confirmed) {
     document.getElementById('f-weight-note').style.display = 'block';
     document.getElementById('f-weight-note').textContent = '⚖️ This order includes items sold by weight. The final amount will be confirmed after weighing.';
+  }
+
+  const deliveryFlagDefs = [
+    { key: 'delivery_leave_at_table', th: 'วางบนโต๊ะเดลิเวอรี่' },
+    { key: 'delivery_no_contact', th: 'ไม่ต้องโทรแจ้งเมื่อถึง' },
+    { key: 'delivery_leave_at_front', th: 'ฝากไว้ที่ Front / นิติบุคคล' },
+    { key: 'delivery_payment_at_front', th: 'ฝากเงินค่าสินค้าไว้ที่ Front' },
+    { key: 'delivery_no_change', th: 'ไม่ต้องทอนเงิน' },
+  ];
+  const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
+  if (activeDeliveryFlags.length > 0) {
+    document.getElementById('f-delivery-flags-note').style.display = 'block';
+    document.getElementById('f-delivery-flags-note').innerHTML = '📦 ' + activeDeliveryFlags.map(f => f.th).join(' ・ ');
   }
 
   if (order.comment) {

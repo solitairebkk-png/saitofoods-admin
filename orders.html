@@ -155,6 +155,7 @@
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
   .customer-cancelled-flag { color: #c0392b; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .delivery-flags-note { background: #eaf5ee; color: #1f5c37; border: 1px solid #bfe3cc; border-radius: 6px; padding: 4px 8px; font-size: 11.5px; font-weight: 700; line-height: 1.6; margin-bottom: 6px; }
 
   .detail-panel { display: none; background: #fafafa; }
   .detail-panel.open { display: table-row; }
@@ -816,6 +817,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
+      delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
@@ -1409,6 +1411,18 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     ? `<div class="customer-cancelled-flag">⚠️ Customer Cancelled / ลูกค้ายกเลิกเอง</div>`
     : '';
 
+  const deliveryFlagDefs = [
+    { key: 'delivery_leave_at_table', en: 'Leave at delivery table', th: 'วางบนโต๊ะเดลิเวอรี่' },
+    { key: 'delivery_no_contact', en: 'No contact on arrival', th: 'ไม่ต้องโทรแจ้งเมื่อถึง' },
+    { key: 'delivery_leave_at_front', en: 'Leave with front desk', th: 'ฝากไว้ที่ Front / นิติบุคคล' },
+    { key: 'delivery_payment_at_front', en: 'Payment left at front desk', th: 'ฝากเงินค่าสินค้าไว้ที่ Front' },
+    { key: 'delivery_no_change', en: 'No change needed', th: 'ไม่ต้องทอนเงิน' },
+  ];
+  const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
+  const deliveryFlagsHtml = activeDeliveryFlags.length
+    ? `<div class="delivery-flags-note">📦 ${activeDeliveryFlags.map(f => `${f.en} / ${f.th}`).join(' ・ ')}</div>`
+    : '';
+
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
     <td class="center">${formatTimeSlotCell(order.delivery_time_slot)}</td>
@@ -1416,6 +1430,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
       ${customerCancelledHtml}
+      ${deliveryFlagsHtml}
       <div class="customer-info">
         <div class="customer-name-row">
           <div class="customer-name">${customerName}</div>
