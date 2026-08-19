@@ -594,7 +594,7 @@ async function checkAddToOrderMode() {
     .from('orders')
     .select(`
       id, customer_id, delivery_date, delivery_time_slot, condo_name, area_name,
-      subtotal, total_amount, is_completed, is_cancelled, is_slip_printed, departed_at,
+      subtotal, shipping_cost, total_amount, is_completed, is_cancelled, is_slip_printed, departed_at,
       order_items ( product_name_snapshot, quantity, sale_type, total_price )
     `)
     .eq('id', orderId)
@@ -928,9 +928,19 @@ function updateTotals() {
   // 量り売り商品も「価格(概算・スタッフ入力)×数量」を目安金額として小計・送料無料判定に含める。
   // 実際の請求額は重量確定後にスタッフが確定するが、送料は注文時点で一度決めたら変更しない。
   const subtotal = cart.reduce((sum, i) => sum + (i.price || 0) * i.quantity, 0);
-  // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する
+  // 追加注文の場合、送料は「元の注文の小計 + 今回の追加分」の合計で600bahtを判定する。
+  // place_order関数(サーバー側)と全く同じルール:
+  // 合算で無料ラインを超えていて、かつ元注文が既に送料を払っている場合は、
+  // その送料分を今回の追加注文の請求額からマイナスして相殺する(現金の払い戻しはしない)。
   const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
-  const shippingCost = subtotal > 0 && shippingJudgeSubtotal < shippingFreeThreshold ? shippingFeeAmount : 0;
+  let shippingCost = 0;
+  if (subtotal > 0) {
+    if (shippingJudgeSubtotal < shippingFreeThreshold) {
+      shippingCost = shippingFeeAmount;
+    } else if (addToOrderId && (addToOrderInfo.shipping_cost || 0) > 0) {
+      shippingCost = -Math.min(addToOrderInfo.shipping_cost, subtotal);
+    }
+  }
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
   const afterDiscount = preDiscountTotal - discount;
@@ -943,6 +953,9 @@ function updateTotals() {
   if (shippingCost > 0) {
     shippingEl.textContent = `฿${shippingCost}`;
     shippingRow.classList.remove('free');
+  } else if (shippingCost < 0) {
+    shippingEl.textContent = `🎉 無料(元注文の送料฿${-shippingCost}分を相殺) / Free (offsets ฿${-shippingCost} already paid)`;
+    shippingRow.classList.add('free');
   } else {
     shippingEl.textContent = subtotal > 0 ? '🎉 無料 / Free' : '฿0';
     shippingRow.classList.add('free');
