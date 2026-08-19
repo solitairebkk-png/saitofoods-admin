@@ -155,6 +155,7 @@
     'my.statusCancelled': { ja: 'キャンセル済み', en: 'Cancelled' },
     'my.statusDeparted': { ja: '🚴 出発済み', en: '🚴 Out for delivery' },
     'my.statusPending': { ja: '準備中', en: 'Preparing' },
+    'my.statusPastDate': { ja: 'ご対応中です', en: 'Processing' },
     'my.paymentQr': { ja: 'QR振込み', en: 'QR transfer' },
     'my.paymentCash': { ja: '現金', en: 'Cash' },
     'my.loadMoreBtn': { ja: 'もっと見る / Load more', en: 'Load more' },

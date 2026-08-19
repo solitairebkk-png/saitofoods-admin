@@ -158,6 +158,7 @@
   .status-cancelled { background: #c0392b; color: #fff; font-weight: 800; }
   .status-pending { background: var(--yellow-light); color: var(--orange); border: 1px solid var(--border); }
   .status-departed { background: var(--yellow-dark); color: #fff; }
+  .status-pastdate { background: #f0efec; color: var(--muted); border: 1px solid var(--border); }
   .departure-info { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--yellow-dark); background: var(--yellow-light); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
   .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
   .loading { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
@@ -786,12 +787,20 @@ function renderOrderCard(order, index, childOrderIdSet) {
   const canChangeSchedule = canModify && order.order_type !== 'walk_in'
     && !order.related_order_id && !(childOrderIdSet && childOrderIdSet.has(order.id));
   let statusHtml = '';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isPastDeliveryDateUnhandled = order.delivery_date && order.delivery_date < todayStr
+    && !order.is_completed && !order.is_cancelled && !order.departed_at;
   if (order.is_cancelled) {
     statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
   } else if (order.is_completed) {
     statusHtml = '<span class="status-badge status-completed">' + i18nText('my.statusCompleted') + '</span>';
   } else if (order.departed_at) {
     statusHtml = '<span class="status-badge status-departed">' + i18nText('my.statusDeparted') + '</span>';
+  } else if (isPastDeliveryDateUnhandled) {
+    // 配送日を過ぎても未完了・未出発のまま(通常運用では起きない想定だが、念のため)。
+    // 「準備中」のままだと「まだ何もされていない」ように見えて不安にさせてしまうため、
+    // 落ち着いたトーンの表示に切り替える。
+    statusHtml = '<span class="status-badge status-pastdate">' + i18nText('my.statusPastDate') + '</span>';
   } else {
     statusHtml = '<span class="status-badge status-pending">' + i18nText('my.statusPending') + '</span>';
   }
