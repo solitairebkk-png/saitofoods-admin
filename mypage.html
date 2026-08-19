@@ -138,6 +138,19 @@
   .cancel-btn { width: 100%; margin-top: 8px; padding: 9px; border-radius: 8px; border: 1.5px solid var(--red); background: #fff; color: var(--red); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
   .cancel-btn:hover { background: var(--red-dim); }
   .cancel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .change-time-btn { width: 100%; margin-top: 8px; padding: 9px; border-radius: 8px; border: 1.5px solid var(--border); background: #fff; color: var(--brown); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .change-time-btn:hover { background: var(--yellow-light); }
+  .time-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; align-items: center; justify-content: center; padding: 16px; }
+  .time-modal-overlay.open { display: flex; }
+  .time-modal-box { background: #fff; border-radius: 14px; padding: 20px; max-width: 380px; width: 100%; }
+  .time-modal-box h3 { margin: 0 0 12px; font-size: 15px; color: var(--brown); }
+  .time-modal-box select { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: inherit; margin-bottom: 6px; }
+  .time-modal-note { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+  .time-modal-actions { display: flex; gap: 8px; }
+  .time-modal-actions button { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .time-modal-cancel { border: 1.5px solid var(--border); background: #fff; color: var(--text); }
+  .time-modal-confirm { border: none; background: var(--yellow-dark); color: #fff; }
+  .time-modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
   .skeleton-box { background: linear-gradient(90deg, var(--yellow-light) 25%, #fdf0c0 37%, var(--yellow-light) 63%); background-size: 400px 100%; animation: skeleton-shimmer 1.4s ease infinite; border-radius: 5px; }
   .status-badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 999px; font-weight: 700; }
@@ -404,6 +417,21 @@
         </div>
       </div>
     </div>
+
+    <!-- 配送日時変更モーダル -->
+    <div id="schedule-modal-overlay" class="time-modal-overlay">
+      <div class="time-modal-box">
+        <h3 data-i18n="my.scheduleModalTitle">配送日時の変更 / Change delivery date &amp; time</h3>
+        <input type="date" id="schedule-date-input">
+        <select id="schedule-time-select"></select>
+        <div class="time-modal-note" id="schedule-modal-note"></div>
+        <div class="time-modal-actions">
+          <button class="time-modal-cancel" onclick="closeScheduleModal()" data-i18n="my.scheduleModalCancel">キャンセル / Cancel</button>
+          <button class="time-modal-confirm" id="schedule-modal-confirm-btn" onclick="confirmScheduleChange()" data-i18n="my.scheduleModalConfirm">この日時に変更する / Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <div class="footer-social">
         <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
@@ -653,7 +681,7 @@ const ORDER_PAGE_SIZE = 50;
 let orderHistoryOffset = 0;
 let orderHistoryCustomerId = null;
 const ORDER_SELECT_FIELDS = `
-      id, delivery_date, delivery_time_slot, payment_method, payment_status,
+      id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, is_slip_printed, total_amount,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
@@ -746,6 +774,8 @@ function renderOrderCard(order, index) {
   // 注文だけを対象とする。配送日が過去でもこの条件を満たせば対象(=まだ手つかずの注文)。
   const canModify = !order.is_completed && !order.is_cancelled && !order.is_slip_printed && !order.departed_at
     && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10));
+  // 配送日時の変更はDelivery注文のみ対象(Walk-inには配送日時の概念が無いため)
+  const canChangeSchedule = canModify && order.order_type !== 'walk_in';
   let statusHtml = '';
   if (order.is_cancelled) {
     statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
@@ -787,6 +817,7 @@ function renderOrderCard(order, index) {
     </div>
     ${canModify
       ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">${i18nText('my.addMoreBtn')}</button>
+         ${canChangeSchedule ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>` : ''}
          <button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
       : (!order.is_completed && !order.is_cancelled
           ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
@@ -794,6 +825,153 @@ function renderOrderCard(order, index) {
   `;
   return div;
 }
+
+// ---------------- 配送日時の変更 ----------------
+// cart.htmlの日付・時間帯生成ロジックと同一のルールを使う(日曜定休/休業日/時間帯ブロック/締切時刻)。
+const MORNING_SLOTS = [{ value: 'เช้า / Morning (AM)', label: '午前 / Morning' }];
+const AFTERNOON_SLOTS = [
+  { value: '13:00-15:00', label: '13:00-15:00' },
+  { value: '13:30-15:30', label: '13:30-15:30' },
+  { value: '14:00-16:00', label: '14:00-16:00' },
+  { value: '14:30-16:30', label: '14:30-16:30' },
+  { value: '15:00-17:00', label: '15:00-17:00' },
+  { value: '15:30-17:30', label: '15:30-17:30' },
+  { value: '16:00-18:00', label: '16:00-18:00' },
+  { value: '17:00-18:00', label: '17:00-18:00' },
+];
+let scheduleHolidaySet = null; // 初回モーダルオープン時に読み込み、以降は使い回す
+let scheduleOrderId = null;
+let scheduleOriginalTimeSlot = null;
+
+function formatDateLocal(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function bangkokNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+}
+function filterPastSlots(slots, dateStr) {
+  const now = bangkokNow();
+  const todayStr = formatDateLocal(now);
+  if (dateStr !== todayStr) return slots;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  return slots.filter(s => {
+    const m = s.value.match(/^(\d{1,2}):(\d{2})/);
+    if (m) return nowMinutes < parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    return nowMinutes < 12 * 60;
+  });
+}
+async function openScheduleModal(orderId, currentDate, currentTimeSlot) {
+  scheduleOrderId = orderId;
+  scheduleOriginalTimeSlot = currentTimeSlot;
+  document.getElementById('schedule-modal-note').textContent = '';
+  document.getElementById('schedule-modal-confirm-btn').disabled = false;
+
+  if (scheduleHolidaySet === null) {
+    try {
+      const { data } = await supabaseClient.from('holidays').select('holiday_date');
+      scheduleHolidaySet = new Set((data || []).map(r => r.holiday_date));
+    } catch (e) { scheduleHolidaySet = new Set(); }
+  }
+
+  const now = bangkokNow();
+  const dateInput = document.getElementById('schedule-date-input');
+  dateInput.min = formatDateLocal(now);
+  const maxD = new Date(now); maxD.setDate(maxD.getDate() + 21);
+  dateInput.max = formatDateLocal(maxD);
+  dateInput.value = currentDate && currentDate >= formatDateLocal(now) ? currentDate : formatDateLocal(now);
+  dateInput.onchange = onScheduleDateChange;
+
+  document.getElementById('schedule-modal-overlay').classList.add('open');
+  await onScheduleDateChange(currentTimeSlot);
+}
+function closeScheduleModal() {
+  document.getElementById('schedule-modal-overlay').classList.remove('open');
+  scheduleOrderId = null;
+}
+async function onScheduleDateChange(preselectTimeSlot) {
+  const val = document.getElementById('schedule-date-input').value;
+  const noteEl = document.getElementById('schedule-modal-note');
+  const confirmBtn = document.getElementById('schedule-modal-confirm-btn');
+  if (!val) return;
+
+  const [y, m, d] = val.split('-').map(Number);
+  const dayOfWeek = new Date(y, m - 1, d).getDay();
+
+  if (dayOfWeek === 0) {
+    noteEl.textContent = '日曜定休のため、別の日をお選びください / Closed on Sundays. Please choose another date.';
+    populateScheduleTimeSlots([]);
+    confirmBtn.disabled = true;
+    return;
+  }
+  if (scheduleHolidaySet.has(val)) {
+    noteEl.textContent = 'この日は配達不可日のため、別の日をお選びください / This date is unavailable for delivery. Please choose another date.';
+    populateScheduleTimeSlots([]);
+    confirmBtn.disabled = true;
+    return;
+  }
+
+  noteEl.textContent = '';
+  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+
+  try {
+    const { data: blockedRows } = await supabaseClient
+      .from('blocked_time_slots').select('time_slot').eq('blocked_date', val);
+    const blockedValues = new Set((blockedRows || []).map(r => r.time_slot));
+    if (blockedValues.size > 0) slots = slots.filter(s => !blockedValues.has(s.value));
+  } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }
+
+  const beforeCount = slots.length;
+  slots = filterPastSlots(slots, val);
+  if (slots.length === 0) {
+    noteEl.textContent = beforeCount > 0
+      ? '本日の受付は終了しました。翌日以降の日付をお選びください / Same-day ordering has closed. Please choose a later date.'
+      : 'この日はご予約が集中しているため、選択可能な時間帯がありません / All time slots are full for this date.';
+    confirmBtn.disabled = true;
+  } else {
+    confirmBtn.disabled = false;
+  }
+  populateScheduleTimeSlots(slots, preselectTimeSlot);
+}
+function populateScheduleTimeSlots(slots, preselect) {
+  const select = document.getElementById('schedule-time-select');
+  if (slots.length === 0) {
+    select.innerHTML = '<option value="">-- 選択可能な時間帯がありません / No slots available --</option>';
+    return;
+  }
+  select.innerHTML = slots.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+  if (preselect && slots.some(s => s.value === preselect)) select.value = preselect;
+}
+async function confirmScheduleChange() {
+  const dateVal = document.getElementById('schedule-date-input').value;
+  const timeVal = document.getElementById('schedule-time-select').value;
+  const noteEl = document.getElementById('schedule-modal-note');
+  if (!dateVal || !timeVal) { noteEl.textContent = '日付と時間帯を選択してください / Please select a date and time.'; return; }
+
+  const confirmBtn = document.getElementById('schedule-modal-confirm-btn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '変更中... / Updating...';
+  try {
+    const { error } = await supabaseClient.rpc('update_own_order_schedule', {
+      p_order_id: scheduleOrderId,
+      p_delivery_date: dateVal,
+      p_time_slot: timeVal,
+    });
+    if (error) {
+      noteEl.textContent = '変更できませんでした / Could not update: ' + error.message;
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = i18nText('my.scheduleModalConfirm');
+      return;
+    }
+    closeScheduleModal();
+    showProfileMsg('配送日時を変更しました / Delivery date & time updated.', false);
+    await loadOrderHistory(currentCustomer.id);
+  } catch (e) {
+    noteEl.textContent = '変更できませんでした / Could not update.';
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = i18nText('my.scheduleModalConfirm');
+  }
+}
+
 async function cancelOrder(orderId, btnEl) {
   if (!confirm(i18nText('my.cancelConfirmMsg'))) return;
   if (btnEl) btnEl.disabled = true;
