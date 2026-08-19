@@ -870,7 +870,7 @@ async function loadOrders() {
     rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.area_name));
   } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
-    rows = rows.filter(o => filterList.includes(o.area_name));
+    rows = rows.filter(o => o.order_type !== 'walk_in' && filterList.includes(o.area_name));
   }
   if (name) {
     rows = rows.filter(o => {
