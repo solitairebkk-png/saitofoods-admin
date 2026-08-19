@@ -682,7 +682,7 @@ let orderHistoryOffset = 0;
 let orderHistoryCustomerId = null;
 const ORDER_SELECT_FIELDS = `
       id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
-      is_completed, is_cancelled, is_slip_printed, total_amount,
+      is_completed, is_cancelled, is_slip_printed, total_amount, related_order_id,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
@@ -704,7 +704,12 @@ async function loadOrderHistory(customerId) {
   allOrders = data;
   orderHistoryOffset = data.length;
   listEl.innerHTML = '';
-  data.forEach((order, index) => listEl.appendChild(renderOrderCard(order, index)));
+  // 「追加注文」で作られた子注文がある元注文は、配送日時を独立して変更させない
+  // (追加注文は元注文と同じ配送日時である前提で送料計算されているため)。
+  // ここでは現在読み込み済みのページ内だけで判定するベストエフォート。抜け漏れがあっても
+  // 最終的にはRPC側(update_own_order_schedule)がサーバー側で必ず拒否するので安全。
+  const childOrderIdSet = new Set(data.map(o => o.related_order_id).filter(Boolean));
+  data.forEach((order, index) => listEl.appendChild(renderOrderCard(order, index, childOrderIdSet)));
   renderLoadMoreButton(data.length === ORDER_PAGE_SIZE);
 }
 async function loadMoreOrders() {
@@ -723,8 +728,9 @@ async function loadMoreOrders() {
   const listEl = document.getElementById('order-list');
   const wrap = document.getElementById('load-more-orders-wrap');
   const startIndex = allOrders.length;
+  const childOrderIdSet = new Set(data.map(o => o.related_order_id).filter(Boolean));
   data.forEach((order, i) => {
-    const card = renderOrderCard(order, startIndex + i);
+    const card = renderOrderCard(order, startIndex + i, childOrderIdSet);
     listEl.insertBefore(card, wrap || null);
   });
   allOrders = allOrders.concat(data);
@@ -767,15 +773,18 @@ function formatDepartedTime(departedAt) {
     return '';
   }
 }
-function renderOrderCard(order, index) {
+function renderOrderCard(order, index, childOrderIdSet) {
   const div = document.createElement('div');
   div.className = 'order-card';
   // 追加注文・キャンセルともに「まだ準備開始前(伝票未印刷・未出発・未完了・未キャンセル)」の
   // 注文だけを対象とする。配送日が過去でもこの条件を満たせば対象(=まだ手つかずの注文)。
   const canModify = !order.is_completed && !order.is_cancelled && !order.is_slip_printed && !order.departed_at
     && (!order.delivery_date || order.delivery_date >= new Date().toISOString().slice(0, 10));
-  // 配送日時の変更はDelivery注文のみ対象(Walk-inには配送日時の概念が無いため)
-  const canChangeSchedule = canModify && order.order_type !== 'walk_in';
+  // 配送日時の変更はDelivery注文のみ対象(Walk-inには配送日時の概念が無いため)。
+  // 追加注文(related_order_id有り=自分が子注文/childOrderIdSetに載っている=自分が親注文)は、
+  // 元注文と配送日時を共有している前提のため対象外とする。
+  const canChangeSchedule = canModify && order.order_type !== 'walk_in'
+    && !order.related_order_id && !(childOrderIdSet && childOrderIdSet.has(order.id));
   let statusHtml = '';
   if (order.is_cancelled) {
     statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
