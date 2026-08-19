@@ -824,10 +824,11 @@ function renderOrderCard(order, index, childOrderIdSet) {
       <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
+    ${canChangeSchedule
+      ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>`
+      : ''}
     ${canModify
-      ? `<button class="addmore-btn" onclick="location.href='cart.html?addto=${order.id}'" style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:none;background:var(--yellow-dark);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;">${i18nText('my.addMoreBtn')}</button>
-         ${canChangeSchedule ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>` : ''}
-         <button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
+      ? `<button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
       : (!order.is_completed && !order.is_cancelled
           ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
           : '')}
