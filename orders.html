@@ -826,7 +826,7 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
-      payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url,
+      payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url, paid_amount,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -1292,8 +1292,20 @@ function getStatusColor(order) {
   return 'var(--status-unprinted)';
 }
 
+// 入金状況を「完済(paid)」「一部入金(partial)」「未入金(unpaid)」の3状態で判定する。
+// paid_amount(これまでの入金確認累計)を軸に判定し、古いデータ(paid_amount未設定)への
+// 後方互換として、manual_payment_confirmedやpayment_status='paid'単体のフラグも見る。
+function getPaymentState(order) {
+  const total = Number(order.total_amount) || 0;
+  const paid = Number(order.paid_amount) || 0;
+  if (total > 0 && paid >= total) return 'paid';
+  if (paid > 0) return 'partial';
+  if (order.manual_payment_confirmed) return 'paid'; // 後方互換
+  if (order.payment_method === 'qr' && order.payment_status === 'paid') return 'paid'; // 後方互換
+  return 'unpaid';
+}
 function isOrderPaid(order) {
-  return !!(order.manual_payment_confirmed || (order.payment_method === 'qr' && order.payment_status === 'paid'));
+  return getPaymentState(order) === 'paid';
 }
 
 // Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
@@ -1404,6 +1416,10 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
   if (order.manual_payment_confirmed) paymentBadges.push(renderManualPaidBadge(order));
+  if (getPaymentState(order) === 'partial') {
+    const due = (Number(order.total_amount) || 0) - (Number(order.paid_amount) || 0);
+    paymentBadges.push(`<span class="badge" style="background:#fff3cd;color:#8a6300;">🟡 ยอดค้างชำระ ฿${due} / ฿${due} due</span>`);
+  }
 
   const dateCell = showDate
     ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
@@ -1655,6 +1671,11 @@ async function confirmManualPayment() {
   btn.disabled = true;
   btn.textContent = 'Saving... / กำลังบันทึก...';
 
+  // manual_payment_amountは今回の確認で追加された金額。paid_amount(累計)にはこの金額を
+  // 加算する(既に一部入金済みの注文に対して、追加の入金を手動確認するケースがあるため)。
+  const { data: currentRow } = await supabaseClient.from('orders').select('paid_amount').eq('id', manualPayOrder.id).single();
+  const newPaidAmount = (currentRow?.paid_amount || 0) + parseFloat(amountVal);
+
   // 振込み時刻(manual_payment_time)は自由入力のテキストとして、入力された文字列をそのまま保存する
   // (手書き・貼り付けで様々な形式が入るため、日付として解釈・変換はしない)。
   // manual_payment_confirmed_at は「確定」ボタンを押した実際の時刻を別途システムが記録する。
@@ -1663,6 +1684,7 @@ async function confirmManualPayment() {
     manual_payment_time: timeVal,
     manual_payment_amount: parseFloat(amountVal),
     manual_payment_confirmed_at: new Date().toISOString(),
+    paid_amount: newPaidAmount,
   }).eq('id', manualPayOrder.id);
 
   if (error) {
@@ -1678,11 +1700,15 @@ async function confirmManualPayment() {
 
 async function undoManualPayment(orderId) {
   if (!confirm('Undo this payment confirmation? / ยกเลิกการยืนยันการโอนเงินนี้หรือไม่?')) return;
+  // paid_amount(累計)からも、この確認で加算した分だけ差し引く(0未満にはしない)
+  const { data: currentRow } = await supabaseClient.from('orders').select('paid_amount, manual_payment_amount').eq('id', orderId).single();
+  const newPaidAmount = Math.max(0, (currentRow?.paid_amount || 0) - (currentRow?.manual_payment_amount || 0));
   const { error } = await supabaseClient.from('orders').update({
     manual_payment_confirmed: false,
     manual_payment_time: null,
     manual_payment_amount: null,
     manual_payment_confirmed_at: null,
+    paid_amount: newPaidAmount,
   }).eq('id', orderId);
   if (error) { alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message); return; }
   loadOrders();

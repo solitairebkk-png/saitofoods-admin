@@ -337,7 +337,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
-      manual_payment_confirmed, manual_payment_time, manual_payment_amount,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled,
@@ -400,7 +400,12 @@ function renderStatusStamps(order) {
   }
   cancelledEl.style.display = 'none';
 
-  const isPaid = order.manual_payment_confirmed || order.payment_status === 'paid';
+  // paid_amount(入金確認累計)が合計金額に達していればPAID判子。
+  // 古いデータ(paid_amount未設定)への後方互換として、manual_payment_confirmed/
+  // payment_status='paid'単体のフラグも見る。
+  const total = Number(order.total_amount) || 0;
+  const paid = Number(order.paid_amount) || 0;
+  const isPaid = (total > 0 && paid >= total) || order.manual_payment_confirmed || order.payment_status === 'paid';
   if (!isPaid) { paidEl.style.display = 'none'; return; }
 
   paidEl.style.display = 'block';
@@ -431,12 +436,19 @@ function renderReceipt(order) {
 
   document.getElementById('f-payment-method').textContent = PAYMENT_LABELS[order.payment_method] || order.payment_method || '-';
   const statusEl = document.getElementById('f-payment-status');
+  const totalForStatus = Number(order.total_amount) || 0;
+  const paidForStatus = Number(order.paid_amount) || 0;
+  const isFullyPaid = (totalForStatus > 0 && paidForStatus >= totalForStatus) || order.payment_status === 'paid' || order.manual_payment_confirmed;
+  const isPartiallyPaid = !isFullyPaid && paidForStatus > 0;
   if (order.payment_method === 'cash') {
     statusEl.textContent = 'Pay on delivery';
     statusEl.className = 'status-pill status-cod';
-  } else if (order.payment_status === 'paid' || order.manual_payment_confirmed) {
+  } else if (isFullyPaid) {
     statusEl.textContent = 'Paid';
     statusEl.className = 'status-pill status-paid';
+  } else if (isPartiallyPaid) {
+    statusEl.textContent = `Partially paid — ฿${(totalForStatus - paidForStatus)} due`;
+    statusEl.className = 'status-pill status-unpaid';
   } else {
     statusEl.textContent = 'Awaiting payment';
     statusEl.className = 'status-pill status-unpaid';

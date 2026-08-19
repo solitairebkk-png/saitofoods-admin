@@ -363,6 +363,7 @@
       <label><span class="th">หมายเหตุ</span>Comment</label>
       <input type="text" id="order-comment">
     </div>
+    <div id="existing-payment-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:#fff3cd;color:#8a6300;font-size:13px;font-weight:600;"></div>
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
     <button class="btn secondary" id="back-to-orders-btn" style="width:100%;" onclick="location.href='orders.html'">← กลับไปหน้ารายการคำสั่งซื้อ / Back to Order List</button>
@@ -911,6 +912,7 @@ async function loadOrderForEdit(orderId) {
     .from('orders')
     .select(`
       id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
+      total_amount, paid_amount, payment_status,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
@@ -970,6 +972,22 @@ async function loadOrderForEdit(orderId) {
   document.getElementById('opt-leave-at-front').checked = !!order.delivery_leave_at_front;
   document.getElementById('opt-payment-at-front').checked = !!order.delivery_payment_at_front;
   document.getElementById('opt-no-change').checked = !!order.delivery_no_change;
+
+  // 既に入金がある注文を編集(商品追加等)する場合、スタッフが気づけるよう入金状況を表示する。
+  // ここで表示するだけで、保存時にpayment_status/paid_amount自体は書き換えない。
+  const paidNoteEl = document.getElementById('existing-payment-note');
+  const paidAmount = Number(order.paid_amount) || 0;
+  if (paidAmount > 0) {
+    const totalAmount = Number(order.total_amount) || 0;
+    if (totalAmount > 0 && paidAmount >= totalAmount) {
+      paidNoteEl.textContent = `💰 この注文は既に฿${paidAmount}が入金確認済みです(完済)。商品を追加すると合計金額が変わり、差額が未収になります。`;
+    } else {
+      paidNoteEl.textContent = `💰 この注文は既に฿${paidAmount}が入金確認済みです(残り฿${totalAmount - paidAmount}が未収)。`;
+    }
+    paidNoteEl.style.display = 'block';
+  } else {
+    paidNoteEl.style.display = 'none';
+  }
 
   cart = (order.order_items || []).map(item => ({
     product_id: item.product_id,
@@ -1126,7 +1144,6 @@ async function submitOrder() {
     delivery_time_slot: isWalkin ? null : document.getElementById('delivery-time-slot').value,
     has_weight_items: hasWeightItems,
     payment_method: paymentMethod,
-    payment_status: 'unpaid',
     subtotal: subtotal,
     shipping_cost: shippingCost,
     total_amount: subtotal + shippingCost,
@@ -1141,6 +1158,14 @@ async function submitOrder() {
     // area_nameはここでは設定しない(編集時に当時のエリアを上書きしてしまわないため)。
     // 新規作成時のみ、この後で顧客の現在のエリアをスナップショットとして追加する。
   };
+
+  // payment_status/paid_amountは新規作成時のみ初期化する。編集時(商品追加等)は
+  // 既存の入金状況(振込済み分・一部入金分)をそのまま維持するため、あえて触らない
+  // (以前は編集のたびにunpaidへ巻き戻ってしまう不具合があったため、意図的に分離した)。
+  if (!editingOrderId) {
+    orderPayload.payment_status = 'unpaid';
+    orderPayload.paid_amount = 0;
+  }
 
   if (isWalkin) {
     orderPayload.walkin_nationality = document.getElementById('walkin-nationality').value;
@@ -1281,6 +1306,7 @@ async function submitOrder() {
   cart = [];
   renderCart();
   document.getElementById('order-comment').value = '';
+  document.getElementById('existing-payment-note').style.display = 'none';
   ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.checked = false;
