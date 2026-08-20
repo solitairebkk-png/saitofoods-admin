@@ -826,7 +826,8 @@ async function loadOrders() {
       id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
       has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
-      payment_method, payment_status, total_amount, shipping_cost, comment, slip_image_url, paid_amount,
+      payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
+      total_amount, shipping_cost, comment, slip_image_url, paid_amount,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -1903,8 +1904,18 @@ function recalcWeightTotal() {
     if (priceEl) priceEl.textContent = price + ' THB';
   });
 
+  // 実際の保存処理(confirmWeight)と同じ計算式でプレビューする(送料・割引・ポイント使用分を反映)。
+  // ここが実際の保存計算とズレていると、確定前にスタッフが見る金額と保存後の金額が食い違ってしまう。
+  const order = weightModalOrder;
+  const newSubtotal = fixedTotal + weightTotal;
+  let shippingPreview = order.shipping_cost || 0;
+  if (shippingPreview > 0 && newSubtotal >= shippingFreeThreshold) shippingPreview = 0;
+  const preDiscountPreview = newSubtotal + shippingPreview;
+  const cappedDiscountPreview = Math.min(order.discount_amount || 0, preDiscountPreview);
+  const grandTotalPreview = Math.max(0, preDiscountPreview - cappedDiscountPreview - (order.points_used || 0));
+
   document.getElementById('weight-modal-fixed-total').textContent = fixedTotal + ' THB';
-  document.getElementById('weight-modal-grand-total').textContent = (fixedTotal + weightTotal) + ' THB';
+  document.getElementById('weight-modal-grand-total').textContent = grandTotalPreview + ' THB';
 }
 
 function closeWeightModal() {
@@ -1961,7 +1972,17 @@ async function confirmWeight() {
     if (newShippingCost > 0 && newSubtotal >= shippingFreeThreshold) {
       newShippingCost = 0;
     }
-    const newTotal = newSubtotal + newShippingCost;
+
+    // クーポン割引(discount_amount)とポイント使用分(points_used)は、注文時点で既に
+    // 確定・消費済みのものなので、重量確定による金額の再計算でも必ず反映する。
+    // これらを忘れて「新しい小計+送料」だけで合計を作り直すと、割引やポイント分が
+    // 消えてお客様に払込済みの割引が反映されない請求になってしまう(2026-08-20発覚)。
+    // 割引は、新しい小計+送料に対して再度上限キャップする(place_order関数の
+    // least(coupon.discount_amount, pre_discount)と同じ考え方。実測後に金額が
+    // 大きく下がった場合に合計がマイナスにならないようにするため)。
+    const preDiscount = newSubtotal + newShippingCost;
+    const cappedDiscount = Math.min(order.discount_amount || 0, preDiscount);
+    const newTotal = Math.max(0, preDiscount - cappedDiscount - (order.points_used || 0));
 
     const { error: orderErr } = await supabaseClient
       .from('orders')

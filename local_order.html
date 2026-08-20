@@ -440,6 +440,11 @@ let editingOrderId = null;
 // 保存時に実際に変更が無ければ is_weight_confirmed を不必要にリセットしないようにする
 let editingOrderOriginalIsWeightConfirmed = false;
 let editingOrderOriginalWeightItemsKey = null;
+// 編集対象の注文が元々持っていた割引・ポイント使用分(商品追加・削除で合計を再計算する際、
+// これらを消さずに反映するために保持しておく)。新規作成時はローカル注文にクーポン欄が
+// 無いため常に0のまま。
+let editingOrderDiscountAmount = 0;
+let editingOrderPointsUsed = 0;
 
 // ---------------- Auth ----------------
 async function login() {
@@ -912,7 +917,7 @@ async function loadOrderForEdit(orderId) {
     .from('orders')
     .select(`
       id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
-      total_amount, paid_amount, payment_status,
+      total_amount, paid_amount, payment_status, coupon_code, discount_amount, points_used,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
@@ -927,6 +932,8 @@ async function loadOrderForEdit(orderId) {
   }
 
   editingOrderId = order.id;
+  editingOrderDiscountAmount = Number(order.discount_amount) || 0;
+  editingOrderPointsUsed = Number(order.points_used) || 0;
   editingOrderOriginalIsWeightConfirmed = !!order.is_weight_confirmed;
   editingOrderOriginalWeightItemsKey = JSON.stringify(
     (order.order_items || [])
@@ -1136,6 +1143,17 @@ async function submitOrder() {
   // 配送(delivery)注文かつ設定金額未満の場合のみ配送料を加算(ウォークインは対象外)
   const shippingCost = (!isWalkin && subtotal < shippingFreeThreshold) ? shippingFeeAmount : 0;
 
+  // 合計金額は「小計+送料」だけでなく、この注文が元々持っていた割引・ポイント使用分も
+  // 必ず差し引く。新規作成時はeditingOrderDiscountAmount/editingOrderPointsUsedは0のまま
+  // なので影響なく、編集時(商品追加・削除)だけ意味を持つ。割引は新しい小計+送料に対して
+  // 再度上限キャップする(place_order関数のlease(coupon.discount_amount, pre_discount)と
+  // 同じ考え方。商品を減らして金額が下がった場合に合計がマイナスにならないようにするため)。
+  // (2026-08-20発覚: 以前はこの計算式が単純に「小計+送料」だけだったため、
+  //  クーポン・ポイントを使ったオンライン注文をスタッフが編集すると割引が消えていた)
+  const preDiscount = subtotal + shippingCost;
+  const cappedDiscount = Math.min(editingOrderDiscountAmount, preDiscount);
+  const finalTotal = Math.max(0, preDiscount - cappedDiscount - editingOrderPointsUsed);
+
   const orderPayload = {
     order_type: isWalkin ? 'walk_in' : 'delivery',
     order_source: 'local',
@@ -1146,7 +1164,7 @@ async function submitOrder() {
     payment_method: paymentMethod,
     subtotal: subtotal,
     shipping_cost: shippingCost,
-    total_amount: subtotal + shippingCost,
+    total_amount: finalTotal,
     comment: comment || null,
     // Walk-in(店頭受け渡し)には配送は発生しないため、フォームが隠れていても値を送らない
     delivery_leave_at_table: !isWalkin && document.getElementById('opt-leave-at-table').checked,
@@ -1247,7 +1265,7 @@ async function submitOrder() {
     if (paymentMethod === 'qr') {
       showSlipLink({
         orderId: editingOrderId,
-        amount: subtotal + shippingCost,
+        amount: finalTotal,
         hasWeightItems: hasWeightItems,
         customerName: isWalkin ? '' : customerName,
       });
