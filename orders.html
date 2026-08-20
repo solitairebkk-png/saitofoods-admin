@@ -1507,12 +1507,14 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
     }
-    // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う
+    // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う。
+    // 既に完済(自動照合含む)の注文には出さない: 出したままだと押した時にpaid_amountへ
+    // さらに加算されてしまい、二重計上になるため(2026-08-20発覚)。
     if (currentCustomer && currentCustomer.role === 'admin') {
-      if (!order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
-      } else {
+      if (order.manual_payment_confirmed) {
         manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+      } else if (getPaymentState(order) !== 'paid') {
+        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
     // Delete(完全削除)は管理者のみ
@@ -1528,10 +1530,10 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 
     // Completedでロックされた後でも、管理者は振込み確認の追加・取消を行えるようにしておく
     if (currentCustomer && currentCustomer.role === 'admin') {
-      if (!order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
-      } else {
+      if (order.manual_payment_confirmed) {
         manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+      } else if (getPaymentState(order) !== 'paid') {
+        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
   }
@@ -1681,8 +1683,19 @@ async function confirmManualPayment() {
 
   // manual_payment_amountは今回の確認で追加された金額。paid_amount(累計)にはこの金額を
   // 加算する(既に一部入金済みの注文に対して、追加の入金を手動確認するケースがあるため)。
-  const { data: currentRow } = await supabaseClient.from('orders').select('paid_amount').eq('id', manualPayOrder.id).single();
-  const newPaidAmount = (currentRow?.paid_amount || 0) + parseFloat(amountVal);
+  const { data: currentRow } = await supabaseClient.from('orders').select('paid_amount, total_amount').eq('id', manualPayOrder.id).single();
+  // 保険: ボタン自体を既に完済の注文には出さないようにしたが、念のためここでも
+  // 二重計上になりそうな場合は確認を挟む(タブを開きっぱなしで古い状態のまま押した場合等)。
+  const existingPaid = currentRow?.paid_amount || 0;
+  const orderTotal = currentRow?.total_amount || 0;
+  if (orderTotal > 0 && existingPaid >= orderTotal) {
+    if (!confirm(`この注文は既に฿${existingPaid}が入金確認済み(合計฿${orderTotal})です。本当にさらに฿${amountVal}を追加しますか？\nThis order is already fully paid (฿${existingPaid} of ฿${orderTotal}). Add another ฿${amountVal} anyway?`)) {
+      btn.disabled = false;
+      btn.textContent = 'Confirm / ยืนยัน';
+      return;
+    }
+  }
+  const newPaidAmount = existingPaid + parseFloat(amountVal);
 
   // 振込み時刻(manual_payment_time)は自由入力のテキストとして、入力された文字列をそのまま保存する
   // (手書き・貼り付けで様々な形式が入るため、日付として解釈・変換はしない)。
