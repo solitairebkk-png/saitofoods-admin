@@ -156,6 +156,8 @@
     'my.statusDeparted': { ja: '🚴 出発済み', en: '🚴 Out for delivery' },
     'my.statusPending': { ja: '準備中', en: 'Preparing' },
     'my.statusPastDate': { ja: 'ご対応中です', en: 'Processing' },
+    'my.statusPaid': { ja: '💰 支払い済み', en: '💰 Paid' },
+    'my.paidCancelNote': { ja: 'お支払いが確認できたため、この画面からのキャンセルはできません。キャンセルをご希望の場合はお電話でご連絡ください。 / Payment has been confirmed, so this order can no longer be cancelled here. Please call us if you need to cancel.', en: 'Payment has been confirmed, so this order can no longer be cancelled here. Please call us if you need to cancel.' },
     'my.paymentQr': { ja: 'QR振込み', en: 'QR transfer' },
     'my.paymentCash': { ja: '現金', en: 'Cash' },
     'my.loadMoreBtn': { ja: 'もっと見る / Load more', en: 'Load more' },

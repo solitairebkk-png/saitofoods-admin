@@ -159,6 +159,7 @@
   .status-pending { background: var(--yellow-light); color: var(--orange); border: 1px solid var(--border); }
   .status-departed { background: var(--yellow-dark); color: #fff; }
   .status-pastdate { background: #f0efec; color: var(--muted); border: 1px solid var(--border); }
+  .status-paid { background: #e6fff5; color: var(--ok); border: 1px solid #b6ecd6; }
   .departure-info { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--yellow-dark); background: var(--yellow-light); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; }
   .empty-state { text-align: center; padding: 30px 10px; color: var(--muted); font-size: 13px; }
   .loading { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
@@ -684,6 +685,7 @@ let orderHistoryCustomerId = null;
 const ORDER_SELECT_FIELDS = `
       id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, is_slip_printed, total_amount, related_order_id,
+      paid_amount, manual_payment_confirmed,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
@@ -774,6 +776,17 @@ function formatDepartedTime(departedAt) {
     return '';
   }
 }
+// orders.htmlのgetPaymentState()と同じ考え方: paid_amount(入金確認累計)がtotal_amountに
+// 達していれば支払い済みとみなす。古いデータ(paid_amount未設定)への後方互換として
+// manual_payment_confirmed/payment_status='paid'単体のフラグも見る。
+function isOrderPaid(order) {
+  const total = Number(order.total_amount) || 0;
+  const paid = Number(order.paid_amount) || 0;
+  if (total > 0 && paid >= total) return true;
+  if (order.manual_payment_confirmed) return true;
+  if (order.payment_method === 'qr' && order.payment_status === 'paid') return true;
+  return false;
+}
 function renderOrderCard(order, index, childOrderIdSet) {
   const div = document.createElement('div');
   div.className = 'order-card';
@@ -786,6 +799,10 @@ function renderOrderCard(order, index, childOrderIdSet) {
   // 元注文と配送日時を共有している前提のため対象外とする。
   const canChangeSchedule = canModify && order.order_type !== 'walk_in'
     && !order.related_order_id && !(childOrderIdSet && childOrderIdSet.has(order.id));
+  // 支払い済みの注文は、伝票印刷前でも「キャンセル」だけはできないようにする
+  // (配送日時の変更は支払い済みでも引き続き可能、という要望のため canModify とは別条件にする)。
+  const isPaid = isOrderPaid(order);
+  const canCancel = canModify && !isPaid;
   let statusHtml = '';
   const todayStr = new Date().toISOString().slice(0, 10);
   const isPastDeliveryDateUnhandled = order.delivery_date && order.delivery_date < todayStr
@@ -804,6 +821,9 @@ function renderOrderCard(order, index, childOrderIdSet) {
   } else {
     statusHtml = '<span class="status-badge status-pending">' + i18nText('my.statusPending') + '</span>';
   }
+  const paidBadgeHtml = (isPaid && !order.is_cancelled)
+    ? '<span class="status-badge status-paid">' + i18nText('my.statusPaid') + '</span>'
+    : '';
   let departureHtml = '';
   if (order.departed_at && !order.is_cancelled) {
     const staffName = order.staff?.name || i18nText('my.staffFallback');
@@ -821,7 +841,7 @@ function renderOrderCard(order, index, childOrderIdSet) {
         <div class="order-date">${order.delivery_date || '-'}</div>
         <div class="order-time">${order.delivery_time_slot || ''}</div>
       </div>
-      ${statusHtml}
+      ${statusHtml}${paidBadgeHtml}
     </div>
     ${departureHtml}
     <div class="order-items-list">${itemsHtml || i18nText('my.noProductInfo')}</div>
@@ -836,11 +856,13 @@ function renderOrderCard(order, index, childOrderIdSet) {
     ${canChangeSchedule
       ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>`
       : ''}
-    ${canModify
+    ${canCancel
       ? `<button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
-      : (!order.is_completed && !order.is_cancelled
-          ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
-          : '')}
+      : (canModify && isPaid
+          ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${i18nText('my.paidCancelNote')}</div>`
+          : (!order.is_completed && !order.is_cancelled
+              ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">${order.departed_at ? i18nText('my.departedNote') : i18nText('my.preparingNote')}</div>`
+              : ''))}
   `;
   return div;
 }

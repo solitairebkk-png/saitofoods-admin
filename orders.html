@@ -152,6 +152,7 @@
   .btn-cancel { background: #6b7280; }
   .btn-manual-pay { background: #2c8f6b; }
   .btn-manual-pay-undo { background: #6b7280; font-size: 10px !important; }
+  .btn-send-email { background: #3b6fd6; }
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
   .customer-cancelled-flag { color: #c0392b; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
@@ -824,7 +825,7 @@ async function loadOrders() {
     .from('orders')
     .select(`
       id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
-      has_weight_items, is_weight_confirmed, is_slip_printed, is_completed,
+      has_weight_items, is_weight_confirmed, weight_email_sent, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
       total_amount, shipping_cost, comment, slip_image_url, paid_amount,
@@ -1288,7 +1289,7 @@ async function markSelectedExpressEntered() {
 function getStatusColor(order) {
   if (order.is_cancelled) return 'var(--status-cancelled)';
   if (order.is_completed) return 'var(--status-complete)';
-  if (order.has_weight_items && !order.is_weight_confirmed) return 'var(--status-weight)';
+  if (order.has_weight_items && !order.weight_email_sent) return 'var(--status-weight)';
   if (order.is_slip_printed) return 'var(--status-printed)';
   return 'var(--status-unprinted)';
 }
@@ -1340,12 +1341,12 @@ function renderDispatchBlock(order) {
       </div>`;
   }
 
-  const weightNotConfirmed = order.has_weight_items && !order.is_weight_confirmed;
+  const weightNotConfirmed = order.has_weight_items && !order.weight_email_sent;
   const slipNotPrinted = !order.is_slip_printed;
 
   if (weightNotConfirmed || slipNotPrinted) {
     const reasons = [];
-    if (weightNotConfirmed) reasons.push('⚖️ Weight not confirmed / น้ำหนักยังไม่ยืนยัน');
+    if (weightNotConfirmed) reasons.push('📧 Weight email not sent / ยังไม่ส่งอีเมลแจ้งน้ำหนัก');
     if (slipNotPrinted) reasons.push('🧾 Slip not printed / สลิปยังไม่พิมพ์');
     return `
       <div class="dispatch-blocked">
@@ -1492,10 +1493,16 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   if (!isLocked) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     if (!order.is_completed) {
-      const editLabel = (order.has_weight_items && !order.is_weight_confirmed)
+      const editLabel = (order.has_weight_items && !order.weight_email_sent)
         ? 'ชั่งน้ำหนัก / Weigh'
         : 'Edit / แก้ไข';
       manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
+      // 重量確定済みだが、まだ金額連絡メールを送っていない場合のみ「Send Email」ボタンを出す。
+      // メールアドレスが無い顧客は自動的にweight_email_sent=trueになる(confirmWeight側)ため、
+      // ここには出てこない。
+      if (order.has_weight_items && order.is_weight_confirmed && !order.weight_email_sent) {
+        manageCol.appendChild(makeButton('📧 Send Email / ส่งอีเมล', () => sendWeightEmailManually(order), 'btn-send-email'));
+      }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
@@ -1536,7 +1543,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 // それ以外は本格的な編集画面(local_order.html)に遷移し、
 // 顧客・商品・配送日時・支払い方法などを丸ごと編集できるようにする。
 function editOrder(order) {
-  if (order.has_weight_items && !order.is_weight_confirmed) {
+  if (order.has_weight_items && !order.weight_email_sent) {
     openWeightModal(order);
   } else {
     location.href = `local_order.html?edit=${order.id}`;
@@ -1877,8 +1884,8 @@ function openWeightModal(order) {
 
   const mailNote = document.getElementById('weight-modal-mail-note');
   mailNote.innerHTML = order.customers?.email
-    ? `✉️ ยืนยันแล้วจะส่งอีเมลแจ้งน้ำหนัก/ยอดเงินที่ยืนยันแล้วไปที่ ${order.customers.email} โดยอัตโนมัติ (ทุกวิธีชำระเงิน)<br>An email confirming the weight and final amount will be sent automatically to ${order.customers.email} (regardless of payment method).`
-    : `⚠️ ลูกค้ารายนี้ไม่มีอีเมลในระบบ จะไม่ส่งอีเมลอัตโนมัติ กรุณาแจ้งยอดด้วยวิธีอื่น<br>No email on file for this customer — the confirmation email cannot be sent automatically. Please notify them another way.`;
+    ? `✉️ ยืนยันน้ำหนักแล้ว จะยังไม่ส่งอีเมลอัตโนมัติ กรุณากดปุ่ม "📧 Send Email" แยกต่างหากที่หน้ารายการเมื่อพร้อมส่งให้ลูกค้า (${order.customers.email})<br>Confirming weight will NOT send the email automatically. Please press the separate "📧 Send Email" button on the order list when you're ready to notify the customer (${order.customers.email}). Until then, you can re-enter the weight as many times as needed.`
+    : `⚠️ ลูกค้ารายนี้ไม่มีอีเมลในระบบ กรุณาแจ้งยอดด้วยวิธีอื่น<br>No email on file for this customer — please notify them another way.`;
 
   document.getElementById('weight-modal-confirm-btn').disabled = false;
   document.getElementById('weight-modal-confirm-btn').textContent = 'ยืนยันน้ำหนัก / Confirm Weight';
@@ -1984,17 +1991,22 @@ async function confirmWeight() {
     const cappedDiscount = Math.min(order.discount_amount || 0, preDiscount);
     const newTotal = Math.max(0, preDiscount - cappedDiscount - (order.points_used || 0));
 
+    // メールアドレスが無い顧客は、そもそも送るメールが無いので、この時点で
+    // weight_email_sentを自動的にtrueにして出発ブロックが永久に解除されない事態を防ぐ。
+    // メールアドレスがある顧客は、今回の変更でメール送信を手動化したため、ここではfalseのまま
+    // (何度でも重量を入れ直せる状態を維持し、スタッフが「Send Email」ボタンを押すまで待つ)。
+    const orderUpdate = {
+      subtotal: newSubtotal, total_amount: newTotal, shipping_cost: newShippingCost, is_weight_confirmed: true,
+    };
+    if (!order.customers?.email) {
+      orderUpdate.weight_email_sent = true;
+    }
+
     const { error: orderErr } = await supabaseClient
       .from('orders')
-      .update({ subtotal: newSubtotal, total_amount: newTotal, shipping_cost: newShippingCost, is_weight_confirmed: true })
+      .update(orderUpdate)
       .eq('id', order.id);
     if (orderErr) throw orderErr;
-
-    // 3. 支払い方法に関わらず、メールアドレスがある場合は重量確定メールを自動送信する
-    // (現金・銀行振込のお客様にも、確定した重量・金額は情報として必ずお知らせする)
-    if (order.customers?.email) {
-      await sendWeightConfirmedEmail(order);
-    }
 
     closeWeightModal();
     loadOrders();
@@ -2003,6 +2015,24 @@ async function confirmWeight() {
     btn.disabled = false;
     btn.textContent = 'ยืนยันน้ำหนัก / Confirm Weight';
   }
+}
+
+// 「Send Email」ボタン: 重量確定後、スタッフの任意のタイミングで最終金額・支払い案内メールを送る。
+// 送信に成功したらweight_email_sent=trueにし、出発(Depart)がブロック解除される。
+// (この時点までは何度でもWeighボタンから重量を入れ直せる)
+async function sendWeightEmailManually(order) {
+  if (!order.customers?.email) {
+    alert('This customer has no email on file. / ลูกค้ารายนี้ไม่มีอีเมลในระบบ');
+    return;
+  }
+  if (!confirm('ส่งอีเมลแจ้งยอดเงิน/วิธีชำระเงินให้ลูกค้าตอนนี้เลยหรือไม่?\nSend the final amount & payment instructions email to the customer now?')) return;
+
+  await sendWeightConfirmedEmail(order);
+
+  const { error } = await supabaseClient
+    .from('orders').update({ weight_email_sent: true }).eq('id', order.id);
+  if (error) { alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message); return; }
+  loadOrders();
 }
 
 // 量り売り確定後の定型メール送信(GAS経由)
