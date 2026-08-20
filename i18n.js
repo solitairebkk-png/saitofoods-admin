@@ -233,6 +233,7 @@
     'cart.optNoChange': { ja: 'お釣りは不要です / No change needed', en: 'No change needed' },
     'cart.commentLabel': { ja: '備考 / Comment', en: 'Comment' },
     'cart.commentPlaceholder': { ja: '例: 玄関前に置いてください', en: 'e.g. Please leave it by the front door' },
+    'cart.translateHint': { ja: '日本語のままでも大丈夫です。配送スタッフに直接伝わりやすくしたい場合は、お好みで「タイ語に翻訳」をお試しください(翻訳は必須ではありません)。', en: 'Japanese is fine as-is. If you\'d like it to come across more clearly to our delivery staff, feel free to try "Translate to Thai" — it\'s completely optional.' },
     'cart.translateBtn': { ja: '🇹🇭 タイ語に翻訳', en: '🇹🇭 Translate to Thai' },
     'cart.translateUndoBtn': { ja: '元の日本語に戻す', en: 'Revert to Japanese' },
     'cart.placeOrderBtn': { ja: '注文を確定する / Place order', en: 'Place order' },

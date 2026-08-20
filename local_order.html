@@ -315,12 +315,18 @@
     </table>
 
     <div class="total-row">
-      <span>ยอดรวม / Subtotal</span>
+      <span>Subtotal / ยอดรวม</span>
       <span id="subtotal-display">0 THB</span>
     </div>
-    <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
-      * ราคาสินค้าชั่งน้ำหนักเป็นราคาโดยประมาณ ใช้สำหรับคำนวณค่าส่งเท่านั้น ยอดจริงจะยืนยันอีกครั้งหลังชั่งน้ำหนักในหน้ารายการคำสั่งซื้อ<br>
-      * Weight-based item prices shown here are estimates (used only for the free-shipping calculation). The final amount will be confirmed later in the Order List screen after weighing.
+    <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.7;">
+      * Weight-based item prices shown here are estimates (used only for the free-shipping calculation). The final amount will be confirmed later in the Order List screen after weighing.<br>
+      * ราคาสินค้าชั่งน้ำหนักเป็นราคาโดยประมาณ ใช้สำหรับคำนวณค่าส่งเท่านั้น ยอดจริงจะยืนยันอีกครั้งหลังชั่งน้ำหนักในหน้ารายการคำสั่งซื้อ
+      <div id="existing-discount-note" style="display:none;margin-top:6px;color:#1c5279;font-weight:700;"></div>
+      <div id="existing-payment-note" style="display:none;margin-top:6px;color:#8a6300;font-weight:700;"></div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>Comment / หมายเหตุ</label>
+      <input type="text" id="order-comment">
     </div>
   </div>
 
@@ -359,12 +365,6 @@
         </label>
       </div>
     </div>
-    <div class="field">
-      <label><span class="th">หมายเหตุ</span>Comment</label>
-      <input type="text" id="order-comment">
-    </div>
-    <div id="existing-discount-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:#e6f0f8;color:#1c5279;font-size:13px;font-weight:600;"></div>
-    <div id="existing-payment-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:#fff3cd;color:#8a6300;font-size:13px;font-weight:600;"></div>
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
     <button class="btn secondary" id="back-to-orders-btn" style="width:100%;" onclick="location.href='orders.html'">← กลับไปหน้ารายการคำสั่งซื้อ / Back to Order List</button>
@@ -658,7 +658,7 @@ async function loadCategories() {
 
   data.forEach(cat => {
     const btn = document.createElement('button');
-    btn.textContent = cat.name_ja + (cat.name_en ? ' / ' + cat.name_en : '');
+    btn.textContent = cat.name_en || cat.name_ja;
     btn.onclick = () => selectCategory(cat.id, btn);
     tabsEl.appendChild(btn);
   });
@@ -695,7 +695,7 @@ async function loadProductGrid() {
     const ids = popData.map(p => p.product_id);
     const { data: prodData, error: prodError } = await supabaseClient
       .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
       .in('id', ids);
 
     if (prodError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + prodError.message + '</div>'; return; }
@@ -713,7 +713,7 @@ async function loadProductGrid() {
   if (currentCategoryId === 'weight') {
     const { data: weightData, error: weightError } = await supabaseClient
       .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
       .eq('sale_type', 'weight')
       .order('name_ja')
       .limit(200);
@@ -728,12 +728,12 @@ async function loadProductGrid() {
   if (currentCategoryId) {
     query = supabaseClient
       .from('product_categories')
-      .select('products ( id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published )')
+      .select('products ( id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published )')
       .eq('category_id', currentCategoryId);
   } else {
     query = supabaseClient
       .from('products')
-      .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
       .order('name_ja')
       .limit(500);
   }
@@ -761,11 +761,11 @@ function renderProductGrid(products, orderMap) {
     // 量り売りも「価格未入力」の警告対象に含める(product_control.htmlの方針と統一)
     const noPrice = !p.price || p.price === 0;
     const priceLabel = isWeight
-      ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (概算)`)
+      ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (approx.)`)
       : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
     const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${escapeHtml(p.name_th)}</div>` : '';
     const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
-    card.innerHTML = `<div class="p-name">${escapeHtml(p.name_ja)}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
+    card.innerHTML = `<div class="p-name">${escapeHtml(p.name_en || p.name_ja)}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
     card.onclick = () => addToCart(p);
     gridEl.appendChild(card);
   });
@@ -779,7 +779,7 @@ async function searchProducts() {
 
   const { data, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_th, price, unit_price, unit_label, sale_type')
+    .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type')
     .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
     .limit(15);
 
@@ -788,9 +788,9 @@ async function searchProducts() {
   resultEl.innerHTML = '';
   data.forEach(p => {
     const div = document.createElement('div');
-    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label} (概算 ${p.price} THB)` : `${p.price} THB`;
+    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label} (approx. ${p.price} THB)` : `${p.price} THB`;
     const thPart = p.name_th ? ` / ${escapeHtml(p.name_th)}` : '';
-    div.innerHTML = `${escapeHtml(p.name_ja)}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
+    div.innerHTML = `${escapeHtml(p.name_en || p.name_ja)}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
     div.onclick = () => addToCart(p);
     resultEl.appendChild(div);
   });
@@ -800,7 +800,9 @@ async function searchProducts() {
 function addToCart(p) {
   cart.push({
     product_id: p.id,
-    name: p.name_ja,
+    name: p.name_ja, // 保存用スナップショット(システム全体でproduct_name_snapshotは日本語で統一されているため据え置き)
+    name_display: p.name_en || p.name_ja, // 画面表示用(タイ人スタッフ向けに英語優先)
+    name_th: p.name_th || '',
     sale_type: p.sale_type,
     price: p.price,
     unit_price: p.unit_price,
@@ -832,10 +834,10 @@ function renderCart() {
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${escapeHtml(item.name)}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
+      <td>${escapeHtml(item.name_display || item.name)}${item.name_th ? '<br><span style="color:var(--text-muted);font-size:10px;">' + escapeHtml(item.name_th) + '</span>' : ''}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
       <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
-      <td>${isWeight ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算・単価' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>' : item.price + ' THB'}</td>
-      <td>${isWeight ? lineTotal + ' THB <span style="color:var(--text-muted);font-size:10px;">(概算)</span>' : lineTotal + ' THB'}</td>
+      <td>${isWeight ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(approx. / unit ' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>' : item.price + ' THB'}</td>
+      <td>${isWeight ? lineTotal + ' THB <span style="color:var(--text-muted);font-size:10px;">(approx.)</span>' : lineTotal + ' THB'}</td>
       <td><button class="remove-btn" onclick="removeFromCart(${i})">×</button></td>
     `;
     tbody.appendChild(tr);
@@ -844,7 +846,7 @@ function renderCart() {
   const isWalkin = document.getElementById('is-walkin').checked;
   const needsShipping = !isWalkin && subtotal < shippingFreeThreshold;
   const shippingNote = needsShipping
-    ? ` +配送料 ${shippingFeeAmount} THB (${shippingFreeThreshold}THB未満のため)`
+    ? ` + shipping ${shippingFeeAmount} THB / ค่าส่ง ${shippingFeeAmount} THB (< ${shippingFreeThreshold}THB)`
     : '';
 
   document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote;
@@ -922,7 +924,7 @@ async function loadOrderForEdit(orderId) {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
-      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( unit_label ) )
+      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( unit_label, name_en, name_th ) )
     `)
     .eq('id', orderId)
     .single();
@@ -941,13 +943,13 @@ async function loadOrderForEdit(orderId) {
   const discountNoteEl = document.getElementById('existing-discount-note');
   const discountParts = [];
   if (order.coupon_code && editingOrderDiscountAmount > 0) {
-    discountParts.push(`🎟️ クーポン「${order.coupon_code}」で฿${editingOrderDiscountAmount}割引適用済み`);
+    discountParts.push(`🎟️ Coupon "${order.coupon_code}": -฿${editingOrderDiscountAmount} / คูปอง "${order.coupon_code}": -฿${editingOrderDiscountAmount}`);
   }
   if (editingOrderPointsUsed > 0) {
-    discountParts.push(`⭐ ${editingOrderPointsUsed}ポイント使用済み`);
+    discountParts.push(`⭐ ${editingOrderPointsUsed} pts used / ใช้แต้ม ${editingOrderPointsUsed} แต้ม`);
   }
   if (discountParts.length > 0) {
-    discountNoteEl.textContent = discountParts.join(' ・ ') + '(この注文の合計金額に既に反映されています)';
+    discountNoteEl.textContent = discountParts.join(' ・ ') + ' (already included in the total above / รวมอยู่ในยอดรวมด้านบนแล้ว)';
     discountNoteEl.style.display = 'block';
   } else {
     discountNoteEl.style.display = 'none';
@@ -1006,9 +1008,9 @@ async function loadOrderForEdit(orderId) {
   if (paidAmount > 0) {
     const totalAmount = Number(order.total_amount) || 0;
     if (totalAmount > 0 && paidAmount >= totalAmount) {
-      paidNoteEl.textContent = `💰 この注文は既に฿${paidAmount}が入金確認済みです(完済)。商品を追加すると合計金額が変わり、差額が未収になります。`;
+      paidNoteEl.textContent = `💰 Already paid in full: ฿${paidAmount} confirmed. Adding items will change the total — the difference becomes unpaid. / ยืนยันรับเงินแล้วครบ ฿${paidAmount} หากเพิ่มสินค้า ยอดรวมจะเปลี่ยนและส่วนต่างจะกลายเป็นค้างชำระ`;
     } else {
-      paidNoteEl.textContent = `💰 この注文は既に฿${paidAmount}が入金確認済みです(残り฿${totalAmount - paidAmount}が未収)。`;
+      paidNoteEl.textContent = `💰 ฿${paidAmount} confirmed so far (฿${totalAmount - paidAmount} still due). / ยืนยันรับเงินแล้ว ฿${paidAmount} (ค้างชำระอีก ฿${totalAmount - paidAmount})`;
     }
     paidNoteEl.style.display = 'block';
   } else {
@@ -1024,6 +1026,8 @@ async function loadOrderForEdit(orderId) {
   cart = (order.order_items || []).map(item => ({
     product_id: item.product_id,
     name: item.product_name_snapshot,
+    name_display: item.products?.name_en || item.product_name_snapshot,
+    name_th: item.products?.name_th || '',
     sale_type: item.sale_type,
     price: item.quantity > 0 ? (item.total_price || 0) / item.quantity : (item.price || 0),
     unit_price: item.unit_price,
