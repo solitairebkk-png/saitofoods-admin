@@ -921,7 +921,7 @@ async function loadOrderForEdit(orderId) {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
-      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, products ( unit_label ) )
+      order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( unit_label ) )
     `)
     .eq('id', orderId)
     .single();
@@ -996,11 +996,17 @@ async function loadOrderForEdit(orderId) {
     paidNoteEl.style.display = 'none';
   }
 
+  // price(この画面が「単価」として扱う値)は、total_price ÷ quantity から逆算する。
+  // 理由: order_items.priceは「重量確定前は単価(概算)」「重量確定後は既に計算済みの
+  // その行の合計金額」という2つの異なる意味を持つため、そのまま使うと重量確定後の商品を
+  // ここでprice×quantityとして再計算した時に二重に掛け算されてしまう(2026-08-20発覚)。
+  // total_price/quantityであれば、確定前・確定後どちらの状態でも常に正しい「今のquantityに
+  // 対する単価相当額」になる。
   cart = (order.order_items || []).map(item => ({
     product_id: item.product_id,
     name: item.product_name_snapshot,
     sale_type: item.sale_type,
-    price: item.price,
+    price: item.quantity > 0 ? (item.total_price || 0) / item.quantity : (item.price || 0),
     unit_price: item.unit_price,
     unit_label: item.products?.unit_label || '',
     quantity: item.quantity,
