@@ -291,7 +291,7 @@
   #email-modal-send-btn { background: var(--navy); color: white; }
   #email-modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #email-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
-  .btn-email-customer { background: #3b6fd6; }
+  .btn-email-customer { background: #7c5cbf; }
 
   /* 帳票(伝票)表示 + 印刷モーダル */
   #receipt-modal {
@@ -1564,10 +1564,6 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 
   if (!isLocked) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
-    // 配送時に電話が繋がらないお客様向けの、自由文面メール送信。Walk-in等メール未登録の顧客には出さない。
-    if (order.customers?.email) {
-      manageCol.appendChild(makeButton('✉️ Email / อีเมล', () => openEmailModal(order), 'btn-email-customer'));
-    }
     if (!order.is_completed) {
       const editLabel = (order.has_weight_items && !order.weight_email_sent)
         ? 'ชั่งน้ำหนัก / Weigh'
@@ -1582,6 +1578,12 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
+    }
+    // 配送時に電話が繋がらないお客様向けの、自由文面メール送信。Walk-in等メール未登録の顧客には出さない。
+    // 上の「📧 Send Email」(重量確定後の自動金額連絡)とは目的も見た目の色も分けて、
+    // 一覧の中で見間違えないようにしている(2026-08-20、紛らわしいとの指摘で位置・色を変更)。
+    if (order.customers?.email) {
+      manageCol.appendChild(makeButton('✉️ Email Customer / อีเมลลูกค้า', () => openEmailModal(order), 'btn-email-customer'));
     }
     // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う。
     // 既に完済(自動照合含む)の注文には出さない: 出したままだと押した時にpaid_amountへ
