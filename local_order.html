@@ -363,6 +363,7 @@
       <label><span class="th">หมายเหตุ</span>Comment</label>
       <input type="text" id="order-comment">
     </div>
+    <div id="existing-discount-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:#e6f0f8;color:#1c5279;font-size:13px;font-weight:600;"></div>
     <div id="existing-payment-note" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;background:#fff3cd;color:#8a6300;font-size:13px;font-weight:600;"></div>
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
@@ -934,6 +935,24 @@ async function loadOrderForEdit(orderId) {
   editingOrderId = order.id;
   editingOrderDiscountAmount = Number(order.discount_amount) || 0;
   editingOrderPointsUsed = Number(order.points_used) || 0;
+
+  // この注文が元々クーポン・ポイントを使っていた場合、編集画面を開いたスタッフが気づけるよう表示する。
+  // 表示するだけで、この情報自体は編集で変更できない(割引・ポイントの取り消しは今の画面では非対応)。
+  const discountNoteEl = document.getElementById('existing-discount-note');
+  const discountParts = [];
+  if (order.coupon_code && editingOrderDiscountAmount > 0) {
+    discountParts.push(`🎟️ クーポン「${order.coupon_code}」で฿${editingOrderDiscountAmount}割引適用済み`);
+  }
+  if (editingOrderPointsUsed > 0) {
+    discountParts.push(`⭐ ${editingOrderPointsUsed}ポイント使用済み`);
+  }
+  if (discountParts.length > 0) {
+    discountNoteEl.textContent = discountParts.join(' ・ ') + '(この注文の合計金額に既に反映されています)';
+    discountNoteEl.style.display = 'block';
+  } else {
+    discountNoteEl.style.display = 'none';
+  }
+
   editingOrderOriginalIsWeightConfirmed = !!order.is_weight_confirmed;
   editingOrderOriginalWeightItemsKey = JSON.stringify(
     (order.order_items || [])
@@ -1338,6 +1357,7 @@ async function submitOrder() {
   renderCart();
   document.getElementById('order-comment').value = '';
   document.getElementById('existing-payment-note').style.display = 'none';
+  document.getElementById('existing-discount-note').style.display = 'none';
   ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.checked = false;
