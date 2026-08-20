@@ -601,8 +601,22 @@
       <input type="text" id="email-modal-subject">
     </div>
     <div class="email-field">
-      <label>Body / เนื้อหา</label>
-      <textarea id="email-modal-body"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <label style="margin-bottom:0;">Message / ข้อความ (เขียนภาษาไทยได้ แล้วกดปุ่มแปล / You can write in Thai and translate)</label>
+      </div>
+      <textarea id="email-modal-message" placeholder="เขียนข้อความที่นี่ (ไทยหรือญี่ปุ่นก็ได้) / Write your message here (Thai or Japanese)" style="min-height:110px;"></textarea>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+        <button type="button" onclick="translateEmailMessageToJapanese()" id="email-translate-btn" style="flex:none;padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;">🇯🇵 Translate to Japanese / แปลเป็นภาษาญี่ปุ่น</button>
+        <span id="email-translate-status" style="font-size:11.5px;color:var(--text-muted);"></span>
+        <a href="#" id="email-translate-undo" style="display:none;font-size:11.5px;text-decoration:underline;" onclick="event.preventDefault(); undoTranslateEmailMessage();">Undo / เลิกทำ</a>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+        If you write in Japanese already, there's no need to translate — it will be sent as-is. / หากเขียนเป็นภาษาญี่ปุ่นอยู่แล้ว ไม่ต้องแปล ระบบจะส่งตามที่เขียนไว้เลย
+      </div>
+    </div>
+    <div class="email-field">
+      <label style="font-weight:400;color:var(--text-muted);">Preview (fixed greeting + signature are added automatically) / ตัวอย่าง (คำทักทาย/ลายเซ็นจะถูกเพิ่มอัตโนมัติ)</label>
+      <div id="email-modal-preview" style="white-space:pre-wrap;font-size:12px;background:#f8f7f4;border:1px solid var(--border);border-radius:6px;padding:10px 12px;color:var(--text-muted);line-height:1.7;max-height:160px;overflow-y:auto;"></div>
     </div>
     <div id="email-modal-actions">
       <button id="email-modal-cancel-btn" onclick="closeEmailModal()">Cancel / ยกเลิก</button>
@@ -610,6 +624,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- 帳票(伝票)表示 + 印刷モーダル -->
 <div id="receipt-modal">
@@ -2110,23 +2125,41 @@ async function sendWeightEmailManually(order) {
 }
 
 // ================= 個別メール送信(配送時に電話が繋がらないお客様向け) =================
+// タイ人スタッフが日本語の壁でお客様にメールを送れなかった問題への対応。
+// メッセージ欄はタイ語(または日本語)で自由に書けるようにし、「日本語に翻訳」ボタンで
+// Google翻訳(タイ語→日本語)にかけられる。既に日本語で書いていれば翻訳せずそのまま送信できる。
+// 宛名(●●様)・挨拶文・署名は固定テンプレートとして自動的に前後へ付加する(スタッフは編集不可)。
 let emailModalOrderId = null;
+let emailModalCustomerName = '';
+let emailMessageBeforeTranslate = null;
 
-// 定型の署名ブロック。宛名(●●様)は開いた注文の顧客名で自動的に埋める。
-const STAFF_EMAIL_TEMPLATE_FOOTER =
-`\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+function buildEmailPreview(customerName, message) {
+  const msg = message || '(メッセージをここに入力 / message goes here)';
+  return `${customerName}様\n\n${msg}\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+}
+
+function refreshEmailPreview() {
+  const message = document.getElementById('email-modal-message').value.trim();
+  document.getElementById('email-modal-preview').textContent = buildEmailPreview(emailModalCustomerName, message);
+}
 
 function openEmailModal(order) {
   if (!order.customers?.email) { alert('This customer has no email on file. / ลูกค้ารายนี้ไม่มีอีเมลในระบบ'); return; }
   emailModalOrderId = order.id;
-  const customerName = `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim();
+  emailModalCustomerName = `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim();
+  emailMessageBeforeTranslate = null;
 
   document.getElementById('email-modal-to').value = order.customers.email;
   document.getElementById('email-modal-subject').value = '';
-  document.getElementById('email-modal-body').value = `${customerName}様${STAFF_EMAIL_TEMPLATE_FOOTER}`;
+  document.getElementById('email-modal-message').value = '';
+  document.getElementById('email-translate-status').textContent = '';
+  document.getElementById('email-translate-undo').style.display = 'none';
   document.getElementById('email-modal-send-btn').disabled = false;
   document.getElementById('email-modal-send-btn').textContent = 'Send / ส่ง';
+  refreshEmailPreview();
   document.getElementById('email-modal').classList.add('open');
+
+  document.getElementById('email-modal-message').oninput = refreshEmailPreview;
 }
 
 function closeEmailModal() {
@@ -2134,13 +2167,59 @@ function closeEmailModal() {
   emailModalOrderId = null;
 }
 
+// cart.htmlの備考欄翻訳(日本語→タイ語)と同じGoogle翻訳の無料エンドポイントを、
+// 向きだけタイ語→日本語(sl=th&tl=ja)にして流用する。
+async function translateEmailMessageToJapanese() {
+  const textarea = document.getElementById('email-modal-message');
+  const statusEl = document.getElementById('email-translate-status');
+  const undoLink = document.getElementById('email-translate-undo');
+  const btn = document.getElementById('email-translate-btn');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  btn.disabled = true;
+  undoLink.style.display = 'none';
+  statusEl.style.color = 'var(--text-muted)';
+  statusEl.textContent = 'Translating... / กำลังแปล...';
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=ja&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('translation service unreachable');
+    const data = await res.json();
+    const translated = (data[0] || []).map(seg => seg[0]).join('');
+    if (!translated) throw new Error('no translation result');
+    emailMessageBeforeTranslate = textarea.value;
+    textarea.value = translated;
+    refreshEmailPreview();
+    statusEl.style.color = '#1c5279';
+    statusEl.textContent = '✓ Translated to Japanese / แปลเป็นภาษาญี่ปุ่นแล้ว';
+    undoLink.style.display = 'inline';
+  } catch (e) {
+    statusEl.style.color = 'var(--red-accent)';
+    statusEl.textContent = 'Translation failed. Please try again. / แปลไม่สำเร็จ กรุณาลองใหม่';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function undoTranslateEmailMessage() {
+  if (emailMessageBeforeTranslate === null) return;
+  document.getElementById('email-modal-message').value = emailMessageBeforeTranslate;
+  document.getElementById('email-translate-status').textContent = '';
+  document.getElementById('email-translate-undo').style.display = 'none';
+  emailMessageBeforeTranslate = null;
+  refreshEmailPreview();
+}
+
 // 宛先は画面には表示するが、実際に送信する際はGAS側がorder_idから毎回取得し直す
 // (このtoフィールドの値自体は送信リクエストに含めない。改ざん防止のため)。
 async function sendCustomEmail() {
   if (!emailModalOrderId) return;
   const subject = document.getElementById('email-modal-subject').value.trim();
-  const body = document.getElementById('email-modal-body').value.trim();
-  if (!subject || !body) { alert('Please fill in both subject and body. / กรุณากรอกทั้งหัวข้อและเนื้อหา'); return; }
+  const message = document.getElementById('email-modal-message').value.trim();
+  if (!subject || !message) { alert('Please fill in both subject and message. / กรุณากรอกทั้งหัวข้อและข้อความ'); return; }
+  const body = buildEmailPreview(emailModalCustomerName, message);
 
   const btn = document.getElementById('email-modal-send-btn');
   btn.disabled = true;
