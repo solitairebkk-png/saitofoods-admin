@@ -377,6 +377,17 @@ function handlePrint() {
   window.print();
 }
 
+// スタッフがorders.htmlの「Check」から開いた場合(staff=1)、印刷ダイアログが閉じたタイミングで
+// このタブを自動的に閉じ、既に開いているorders.htmlのタブへ自動的に戻れるようにする。
+// (orders.html側は元々「フォーカスが戻ったら一覧を再読み込みする」仕組みが入っているので、
+//  タブを閉じるだけで一覧の印刷済み表示も自動更新される)
+// お客様が自分の伝票を見ている場合(staff無し)はタブを閉じない。
+if (isStaffViewParam) {
+  window.addEventListener('afterprint', () => {
+    window.close();
+  });
+}
+
 function showError() {
   document.getElementById('state-loading').style.display = 'none';
   document.getElementById('state-error').style.display = 'block';

@@ -263,6 +263,36 @@
   #manualpay-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #manualpay-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 
+  /* 個別メール送信(顧客への自由文面メール)モーダル */
+  #email-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #email-modal.open { display: flex; }
+  #email-modal .email-modal-box {
+    background: var(--panel); border-radius: 8px; padding: 24px; max-width: 520px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+  }
+  #email-modal h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  #email-modal .email-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .email-field { margin-bottom: 12px; }
+  .email-field label { font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .email-field input, .email-field textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px;
+    font-size: 13px; font-family: inherit;
+  }
+  .email-field textarea { min-height: 220px; resize: vertical; line-height: 1.6; }
+  .email-field input[readonly] { background: #f1f1ee; color: var(--text-muted); }
+  #email-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #email-modal-actions button {
+    flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  #email-modal-send-btn { background: var(--navy); color: white; }
+  #email-modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #email-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+  .btn-email-customer { background: #3b6fd6; }
+
   /* 帳票(伝票)表示 + 印刷モーダル */
   #receipt-modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 997;
@@ -550,6 +580,33 @@
     <div id="manualpay-modal-actions">
       <button id="manualpay-modal-cancel-btn" onclick="closeManualPayModal()">Cancel / ยกเลิก</button>
       <button id="manualpay-modal-confirm-btn" onclick="confirmManualPayment()">Confirm / ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個別メール送信(顧客への自由文面メール)モーダル -->
+<div id="email-modal">
+  <div class="email-modal-box">
+    <h3>Email Customer <span style="font-size:11px;color:var(--text-muted);">(ส่งอีเมลถึงลูกค้า)</span></h3>
+    <div class="email-modal-sub">
+      For customers who don't answer the phone during delivery. The recipient is always looked up from the order record — you can't change it here.<br>
+      สำหรับลูกค้าที่ติดต่อทางโทรศัพท์ไม่ได้ในช่วงจัดส่ง ผู้รับจะดึงจากข้อมูลคำสั่งซื้อเสมอ ไม่สามารถแก้ไขได้ที่นี่
+    </div>
+    <div class="email-field">
+      <label>To / ถึง</label>
+      <input type="text" id="email-modal-to" readonly>
+    </div>
+    <div class="email-field">
+      <label>Subject / หัวข้อ</label>
+      <input type="text" id="email-modal-subject">
+    </div>
+    <div class="email-field">
+      <label>Body / เนื้อหา</label>
+      <textarea id="email-modal-body"></textarea>
+    </div>
+    <div id="email-modal-actions">
+      <button id="email-modal-cancel-btn" onclick="closeEmailModal()">Cancel / ยกเลิก</button>
+      <button id="email-modal-send-btn" onclick="sendCustomEmail()">Send / ส่ง</button>
     </div>
   </div>
 </div>
@@ -1492,6 +1549,10 @@ function renderOrderRow(order, idx, showDate, countForDate) {
 
   if (!isLocked) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
+    // 配送時に電話が繋がらないお客様向けの、自由文面メール送信。Walk-in等メール未登録の顧客には出さない。
+    if (order.customers?.email) {
+      manageCol.appendChild(makeButton('✉️ Email / อีเมล', () => openEmailModal(order), 'btn-email-customer'));
+    }
     if (!order.is_completed) {
       const editLabel = (order.has_weight_items && !order.weight_email_sent)
         ? 'ชั่งน้ำหนัก / Weigh'
@@ -2046,6 +2107,63 @@ async function sendWeightEmailManually(order) {
     .from('orders').update({ weight_email_sent: true }).eq('id', order.id);
   if (error) { alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message); return; }
   loadOrders();
+}
+
+// ================= 個別メール送信(配送時に電話が繋がらないお客様向け) =================
+let emailModalOrderId = null;
+
+// 定型の署名ブロック。宛名(●●様)は開いた注文の顧客名で自動的に埋める。
+const STAFF_EMAIL_TEMPLATE_FOOTER =
+`\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+
+function openEmailModal(order) {
+  if (!order.customers?.email) { alert('This customer has no email on file. / ลูกค้ารายนี้ไม่มีอีเมลในระบบ'); return; }
+  emailModalOrderId = order.id;
+  const customerName = `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim();
+
+  document.getElementById('email-modal-to').value = order.customers.email;
+  document.getElementById('email-modal-subject').value = '';
+  document.getElementById('email-modal-body').value = `${customerName}様${STAFF_EMAIL_TEMPLATE_FOOTER}`;
+  document.getElementById('email-modal-send-btn').disabled = false;
+  document.getElementById('email-modal-send-btn').textContent = 'Send / ส่ง';
+  document.getElementById('email-modal').classList.add('open');
+}
+
+function closeEmailModal() {
+  document.getElementById('email-modal').classList.remove('open');
+  emailModalOrderId = null;
+}
+
+// 宛先は画面には表示するが、実際に送信する際はGAS側がorder_idから毎回取得し直す
+// (このtoフィールドの値自体は送信リクエストに含めない。改ざん防止のため)。
+async function sendCustomEmail() {
+  if (!emailModalOrderId) return;
+  const subject = document.getElementById('email-modal-subject').value.trim();
+  const body = document.getElementById('email-modal-body').value.trim();
+  if (!subject || !body) { alert('Please fill in both subject and body. / กรุณากรอกทั้งหัวข้อและเนื้อหา'); return; }
+
+  const btn = document.getElementById('email-modal-send-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending... / กำลังส่ง...';
+
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'sendStaffEmail', order_id: emailModalOrderId, subject, body }),
+    });
+    const json = await res.json();
+    if (json.status !== 'ok') {
+      alert('Send failed / ส่งไม่สำเร็จ: ' + (json.message || ''));
+      btn.disabled = false;
+      btn.textContent = 'Send / ส่ง';
+      return;
+    }
+    closeEmailModal();
+  } catch (e) {
+    alert('Send failed (network error). / ส่งไม่สำเร็จ (ข้อผิดพลาดเครือข่าย)');
+    btn.disabled = false;
+    btn.textContent = 'Send / ส่ง';
+  }
 }
 
 // 量り売り確定後の定型メール送信(GAS経由)
