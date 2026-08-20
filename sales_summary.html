@@ -205,10 +205,9 @@ function resetToToday() {
 // ---------------- 集計 ----------------
 // assigned_staff_id / departed_at / staff(name) はスタッフ別配送件数の集計に使用
 const ORDER_SELECT = `
-  id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost,
+  id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost, area_name,
   is_cancelled, has_weight_items, is_weight_confirmed,
   assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
-  customers!customer_id ( areas ( name ) ),
   order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
 
@@ -281,7 +280,7 @@ function renderSummary(orders, plaaTapianRows) {
     if (order.order_type === 'walk_in') {
       bucketKey = 'walk_in';
     } else {
-      const areaName = order.customers?.areas?.name;
+      const areaName = order.area_name;
       if (KNOWN_AREAS.includes(areaName)) {
         bucketKey = areaName;
       } else {
