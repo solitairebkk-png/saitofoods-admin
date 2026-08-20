@@ -260,7 +260,15 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// orders.htmlの「Check」ボタンからstaff=1付きで開かれた場合は、スタッフ管理画面側と同じ
+// storageKey('sb-saitofoods-staff-auth')を使ってセッションを読む。これが無いと、スタッフの
+// ログインセッションが見えず「印刷済みにする」更新がRLS(is_staff_or_admin())に拒否され、
+// エラー表示も無いまま静かに失敗する(2026-08-20発覚: 印刷してもステータスが変わらない不具合)。
+// お客様が自分の伝票を見る場合(staff無し)は、今まで通り標準のセッションキーのまま。
+const isStaffViewParam = new URLSearchParams(location.search).get('staff') === '1';
+const supabaseClient = isStaffViewParam
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { storageKey: 'sb-saitofoods-staff-auth' } })
+  : window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const PROMPTPAY_BILLER_ID = '010554007919109';
 const PROMPTPAY_REF1 = 'REF001';
@@ -329,7 +337,7 @@ async function loadReceipt() {
   const params = new URLSearchParams(location.search);
   const orderId = params.get('order_id');
   currentOrderId = orderId;
-  isStaffView = params.get('staff') === '1';
+  isStaffView = isStaffViewParam;
   if (!orderId) { showError(); return; }
 
   const { data: order, error } = await supabaseClient
