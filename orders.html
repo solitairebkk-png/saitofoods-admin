@@ -1685,13 +1685,13 @@ async function awardPointsForOrder(order) {
 
 // まるごとキャンセル: 削除(Delete)とは異なり記録は残す。スタッフ全員が実行可能。
 // Sales Summaryは is_cancelled=true の注文を必ず除外すること。
+// キャンセル: 在庫戻し・ポイント使用分の払い戻しも含めてSQL側(staff_cancel_order)で
+// 1トランザクションとして処理する(2026-08-21、在庫連動追加にあわせてRPC化)
 async function cancelOrder(orderId) {
   if (!confirm('ต้องการยกเลิกคำสั่งซื้อนี้ทั้งหมดหรือไม่? รายการนี้จะไม่ถูกนับในยอดขาย\nCancel this entire order? It will be excluded from sales totals but kept on record.')) return;
-  await updateOrder(orderId, {
-    is_cancelled: true,
-    cancelled_at: new Date().toISOString(),
-    cancelled_by: currentCustomer ? currentCustomer.id : null,
-  });
+  const { error } = await supabaseClient.rpc('staff_cancel_order', { p_order_id: orderId });
+  if (error) { alert('ยกเลิกไม่สำเร็จ / Cancel failed: ' + error.message); return; }
+  loadOrders();
 }
 
 function makeButton(label, onClick, cls) {
@@ -2278,9 +2278,12 @@ async function updateOrder(orderId, fields) {
   loadOrders();
 }
 
+// 完全削除: まだキャンセル済みでない注文は在庫・ポイント使用分をSQL側(staff_delete_order)で
+// 巻き戻してから削除する。Complete時に付与済みのポイントは取り消さない(方針確定済み)。
+// 既にキャンセル済みの注文はstaff_cancel_orderで在庫・ポイントが戻し済みのため二重に戻さない。
 async function deleteOrder(orderId) {
   if (!confirm('ต้องการลบคำสั่งซื้อนี้หรือไม่?\nDelete this order? This cannot be undone.')) return;
-  const { error } = await supabaseClient.from('orders').delete().eq('id', orderId);
+  const { error } = await supabaseClient.rpc('staff_delete_order', { p_order_id: orderId });
   if (error) { alert('ลบไม่สำเร็จ / Delete failed: ' + error.message); return; }
   loadOrders();
 }

@@ -446,6 +446,9 @@ let editingOrderOriginalWeightItemsKey = null;
 // 無いため常に0のまま。
 let editingOrderDiscountAmount = 0;
 let editingOrderPointsUsed = 0;
+// 編集開始時点の商品構成(product_id/quantity)。保存時に一旦この分を在庫へ戻し、
+// 新しい商品構成分を改めて減算するために使う(adjust_stock関数を2回呼ぶ)。
+let editingOrderOriginalItems = [];
 
 // ---------------- Auth ----------------
 async function login() {
@@ -962,6 +965,9 @@ async function loadOrderForEdit(orderId) {
       .map(i => ({ pid: i.product_id, qty: i.quantity }))
       .sort((a, b) => (a.pid > b.pid ? 1 : -1))
   );
+  // 保存時の在庫戻しに使うため、編集開始時点の商品構成を保持しておく
+  editingOrderOriginalItems = (order.order_items || [])
+    .map(i => ({ product_id: i.product_id, quantity: i.quantity }));
 
   // ヘッダー・保存ボタンの表示をEditモードに切り替え
   const titleEl = document.querySelector('header h1');
@@ -1288,6 +1294,24 @@ async function submitOrder() {
       return;
     }
 
+    // 在庫調整: 元の商品構成分を一旦在庫へ戻し、新しい商品構成分を改めて減算する。
+    // 注文・商品構成自体はすでに保存済みのため、ここでのエラーは在庫のズレとして
+    // アラートで知らせるのみとし、保存フロー自体は止めない。
+    if (editingOrderOriginalItems.length > 0) {
+      const { error: restoreStockErr } = await supabaseClient.rpc('adjust_stock', {
+        p_items: editingOrderOriginalItems,
+        p_direction: 'increment',
+      });
+      if (restoreStockErr) console.error('在庫の戻しに失敗:', restoreStockErr);
+    }
+    if (cart.length > 0) {
+      const { error: deductStockErr } = await supabaseClient.rpc('adjust_stock', {
+        p_items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+        p_direction: 'decrement',
+      });
+      if (deductStockErr) alert('คำสั่งซื้อบันทึกแล้ว แต่ปรับสต๊อกไม่สำเร็จ / Order saved, but stock adjustment failed: ' + deductStockErr.message);
+    }
+
     msgEl.textContent = 'บันทึกการแก้ไขสำเร็จ! / Order updated successfully!';
     msgEl.className = 'success';
 
@@ -1343,6 +1367,14 @@ async function submitOrder() {
     msgEl.className = 'error';
     return;
   }
+
+  // 在庫調整: 注文・商品構成はすでに保存済みのため、ここでのエラーは在庫のズレとして
+  // アラートで知らせるのみとし、保存フロー自体は止めない。
+  const { error: newStockErr } = await supabaseClient.rpc('adjust_stock', {
+    p_items: itemsPayload.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+    p_direction: 'decrement',
+  });
+  if (newStockErr) alert('บันทึกคำสั่งซื้อแล้ว แต่ปรับสต๊อกไม่สำเร็จ / Order saved, but stock adjustment failed: ' + newStockErr.message);
 
   msgEl.textContent = 'บันทึกคำสั่งซื้อสำเร็จ! / Order saved successfully!';
   msgEl.className = 'success';
