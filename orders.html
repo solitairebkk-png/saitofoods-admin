@@ -626,6 +626,10 @@
       <label>Date / วันที่</label>
       <input type="date" id="wholesale-date-input">
     </div>
+    <div class="manualpay-field">
+      <label>Note / หมายเหตุ (optional / ไม่บังคับ)</label>
+      <input type="text" id="wholesale-note-input" placeholder="e.g. 集金は現金、来週分の前払い分含む">
+    </div>
     <div id="wholesale-modal-actions">
       <button id="wholesale-modal-cancel-btn" onclick="closeWholesaleModal()">Cancel / ยกเลิก</button>
       <button id="wholesale-modal-confirm-btn" onclick="submitWholesaleEntry()">Save / บันทึก</button>
@@ -1620,7 +1624,9 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
 
   if (!isLocked) {
-    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
+    if (!order.is_wholesale) {
+      manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
+    }
     if (!order.is_completed) {
       const editLabel = (order.has_weight_items && !order.weight_email_sent)
         ? 'ชั่งน้ำหนัก / Weigh'
@@ -1807,6 +1813,7 @@ function closeManualPayModal() {
 function openWholesaleModal() {
   document.getElementById('wholesale-name-input').value = '';
   document.getElementById('wholesale-amount-input').value = '';
+  document.getElementById('wholesale-note-input').value = '';
   // デフォルトはバンコク時間の今日
   const now = new Date();
   const bkkNow = new Date(now.getTime() + 7 * 3600000);
@@ -1824,6 +1831,7 @@ async function submitWholesaleEntry() {
   const name = document.getElementById('wholesale-name-input').value.trim();
   const amountVal = document.getElementById('wholesale-amount-input').value;
   const dateVal = document.getElementById('wholesale-date-input').value;
+  const noteVal = document.getElementById('wholesale-note-input').value.trim();
 
   if (!name) { alert('Please enter the restaurant name / กรุณากรอกชื่อร้าน'); return; }
   const amount = Number(amountVal);
@@ -1837,6 +1845,7 @@ async function submitWholesaleEntry() {
     p_restaurant_name: name,
     p_amount: amount,
     p_date: dateVal || null,
+    p_note: noteVal || null,
   });
 
   if (error) {
