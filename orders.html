@@ -1454,7 +1454,7 @@ function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
 
   if (order.departed_at) {
-    const staffName = order.staff?.name || '(unknown)';
+    const staffName = order.staff?.name || (order.area_name === 'Sriracha' ? '—' : '(unknown)');
     const timeStr = new Date(order.departed_at).toLocaleTimeString('en-GB', {
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
     });
@@ -1481,6 +1481,15 @@ function renderDispatchBlock(order) {
       </div>`;
   }
 
+  // シラチャの配送は「誰が行くか」を指定しない運用のため、スタッフ選択欄を出さず
+  // ボタン一つで出発記録だけを残す(assigned_staff_idはnullのまま)
+  if (order.area_name === 'Sriracha') {
+    return `
+      <div class="dispatch-controls">
+        <button class="btn-dispatch" onclick="departOrder('${order.id}')">🚴 Depart / ออกเดินทาง</button>
+      </div>`;
+  }
+
   const options = staffList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
   return `
     <div class="dispatch-controls">
@@ -1496,16 +1505,20 @@ function renderDispatchBlock(order) {
 async function departOrder(orderId) {
   const sel = document.getElementById('staff-select-' + orderId);
   const staffId = sel ? sel.value : '';
-  if (!staffId) { alert('กรุณาเลือกพนักงาน / Please select a staff member.'); return; }
+  // スタッフ選択欄自体が無い(=シラチャ)場合は未選択のまま出発扱いにする。
+  // 選択欄があるのに未選択の場合だけエラーにする。
+  if (sel && !staffId) { alert('กรุณาเลือกพนักงาน / Please select a staff member.'); return; }
 
   const nowIso = new Date().toISOString();
   const { error } = await supabaseClient
-    .from('orders').update({ assigned_staff_id: staffId, departed_at: nowIso }).eq('id', orderId);
+    .from('orders').update({ assigned_staff_id: staffId || null, departed_at: nowIso }).eq('id', orderId);
   if (error) { alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message); return; }
 
-  const staffRow = staffList.find(s => s.id === staffId);
-  if (staffRow) {
-    await supabaseClient.from('staff').update({ selection_count: (staffRow.selection_count || 0) + 1 }).eq('id', staffId);
+  if (staffId) {
+    const staffRow = staffList.find(s => s.id === staffId);
+    if (staffRow) {
+      await supabaseClient.from('staff').update({ selection_count: (staffRow.selection_count || 0) + 1 }).eq('id', staffId);
+    }
   }
   loadOrders();
 }
@@ -1645,7 +1658,11 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
-      manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
+      // シラチャの配送注文は、配送当日になったらキャンセル不可(現地への手配が既に進んでいるため)
+      const isSrirachaToday = order.area_name === 'Sriracha' && order.delivery_date === todayStr();
+      if (!isSrirachaToday) {
+        manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
+      }
     }
     // 配送時に電話が繋がらないお客様向けの、自由文面メール送信。Walk-in等メール未登録の顧客には出さない。
     // 上の「📧 Send Email」(重量確定後の自動金額連絡)とは目的も見た目の色も分けて、
