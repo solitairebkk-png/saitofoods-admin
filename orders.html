@@ -1534,7 +1534,8 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const address = escapeHtml(addressParts.join(', '));
 
   const itemsHtml = order.is_wholesale
-    ? '<div class="order-items-grid"><div class="item-cell">Wholesale sale / ยอดขายส่ง (ไม่มีรายการสินค้า)</div></div>'
+    ? `<div class="order-items-grid"><div class="item-cell">Wholesale sale / ยอดขายส่ง (ไม่มีรายการสินค้า)</div></div>`
+      + (order.comment ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">📝 ${escapeHtml(order.comment)}</div>` : '')
     : '<div class="order-items-grid">' + (order.order_items || []).map(item => {
         const enName = item.products?.name_en ? ` / ${escapeHtml(item.products.name_en)}` : '';
         const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
@@ -1628,15 +1629,17 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     }
     if (!order.is_completed) {
-      const editLabel = (order.has_weight_items && !order.weight_email_sent)
-        ? 'ชั่งน้ำหนัก / Weigh'
-        : 'Edit / แก้ไข';
-      manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
-      // 重量確定済みだが、まだ金額連絡メールを送っていない場合のみ「Send Email」ボタンを出す。
-      // メールアドレスが無い顧客は自動的にweight_email_sent=trueになる(confirmWeight側)ため、
-      // ここには出てこない。
-      if (order.has_weight_items && order.is_weight_confirmed && !order.weight_email_sent) {
-        manageCol.appendChild(makeButton('📧 Send Email / ส่งอีเมล', () => sendWeightEmailManually(order), 'btn-send-email'));
+      if (!order.is_wholesale) {
+        const editLabel = (order.has_weight_items && !order.weight_email_sent)
+          ? 'ชั่งน้ำหนัก / Weigh'
+          : 'Edit / แก้ไข';
+        manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
+        // 重量確定済みだが、まだ金額連絡メールを送っていない場合のみ「Send Email」ボタンを出す。
+        // メールアドレスが無い顧客は自動的にweight_email_sent=trueになる(confirmWeight側)ため、
+        // ここには出てこない。
+        if (order.has_weight_items && order.is_weight_confirmed && !order.weight_email_sent) {
+          manageCol.appendChild(makeButton('📧 Send Email / ส่งอีเมล', () => sendWeightEmailManually(order), 'btn-send-email'));
+        }
       }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
