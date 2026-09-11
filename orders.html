@@ -263,6 +263,22 @@
   #manualpay-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #manualpay-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
 
+  /* 卸売り簡易入力モーダル(manualpay-modalのスタイルを流用) */
+  #wholesale-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #wholesale-modal.open { display: flex; }
+  #wholesale-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #wholesale-modal-actions button {
+    flex: 1; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  #wholesale-modal-confirm-btn { background: #6b4fa0; color: white; }
+  #wholesale-modal-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #wholesale-modal-cancel-btn { background: white; color: #6b4fa0; border: 1px solid #6b4fa0 !important; }
+  .wholesale-badge { background: #efe7f7; color: #6b4fa0; }
+
   /* 個別メール送信(顧客への自由文面メール)モーダル */
   #email-modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
@@ -504,6 +520,7 @@
     </label>
     <button class="btn btn-search" onclick="loadOrders()">Search / ค้นหา</button>
     <button class="btn" onclick="resetToToday()">Today / วันนี้</button>
+    <button class="btn" style="background:#6b4fa0;color:#fff;" onclick="openWholesaleModal()">🏢 Wholesale Entry / คีย์ขายส่ง</button>
   </div>
 
   <div class="legend">
@@ -580,6 +597,33 @@
     <div id="manualpay-modal-actions">
       <button id="manualpay-modal-cancel-btn" onclick="closeManualPayModal()">Cancel / ยกเลิก</button>
       <button id="manualpay-modal-confirm-btn" onclick="confirmManualPayment()">Confirm / ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<!-- 卸売り簡易入力モーダル -->
+<div id="wholesale-modal">
+  <div class="manualpay-modal-box">
+    <h3>Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(คีย์ขายส่ง)</span></h3>
+    <div class="manualpay-modal-sub">
+      For restaurant/wholesale sales — enter the restaurant name and total amount only. No product or stock tracking.<br>
+      สำหรับยอดขายส่งร้านอาหาร กรอกแค่ชื่อร้านและยอดรวม ไม่กระทบสต๊อกสินค้า
+    </div>
+    <div class="manualpay-field">
+      <label>Restaurant Name / ชื่อร้าน</label>
+      <input type="text" id="wholesale-name-input" placeholder="e.g. MIYABI RESTAURANT">
+    </div>
+    <div class="manualpay-field">
+      <label>Amount (THB) / จำนวนเงิน</label>
+      <input type="number" id="wholesale-amount-input" min="0" step="1">
+    </div>
+    <div class="manualpay-field">
+      <label>Date / วันที่</label>
+      <input type="date" id="wholesale-date-input">
+    </div>
+    <div id="wholesale-modal-actions">
+      <button id="wholesale-modal-cancel-btn" onclick="closeWholesaleModal()">Cancel / ยกเลิก</button>
+      <button id="wholesale-modal-confirm-btn" onclick="submitWholesaleEntry()">Save / บันทึก</button>
     </div>
   </div>
 </div>
@@ -905,6 +949,7 @@ async function loadOrders() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
+      is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
@@ -1469,20 +1514,25 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   const tr = document.createElement('tr');
   tr.style.background = getStatusColor(order);
 
-  const customerName = order.customers
-    ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
-    : 'หน้าร้าน / Walk-in';
+  const customerName = order.is_wholesale
+    ? `🏢 ${escapeHtml(order.wholesale_restaurant_name || 'Wholesale')}`
+    : (order.customers
+      ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
+      : 'หน้าร้าน / Walk-in');
   const tel = escapeHtml(order.customers?.tel1 || '');
   const addressParts = [order.customers?.address1, order.customers?.address2].filter(Boolean);
   const address = escapeHtml(addressParts.join(', '));
 
-  const itemsHtml = '<div class="order-items-grid">' + (order.order_items || []).map(item => {
-    const enName = item.products?.name_en ? ` / ${escapeHtml(item.products.name_en)}` : '';
-    const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
-    return `<div class="item-cell">${escapeHtml(item.product_name_snapshot)}${enName} ${qtyLabel}</div>`;
-  }).join('') + '</div>';
+  const itemsHtml = order.is_wholesale
+    ? '<div class="order-items-grid"><div class="item-cell">Wholesale sale / ยอดขายส่ง (ไม่มีรายการสินค้า)</div></div>'
+    : '<div class="order-items-grid">' + (order.order_items || []).map(item => {
+        const enName = item.products?.name_en ? ` / ${escapeHtml(item.products.name_en)}` : '';
+        const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
+        return `<div class="item-cell">${escapeHtml(item.product_name_snapshot)}${enName} ${qtyLabel}</div>`;
+      }).join('') + '</div>';
 
   const paymentBadges = [];
+  if (order.is_wholesale) paymentBadges.push('<span class="badge wholesale-badge">🏢 Wholesale / ขายส่ง</span>');
   if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
   if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ Additional Order / คำสั่งซื้อเพิ่มเติม #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
@@ -1745,6 +1795,52 @@ function openManualPayModal(order) {
 function closeManualPayModal() {
   document.getElementById('manualpay-modal').classList.remove('open');
   manualPayOrder = null;
+}
+
+function openWholesaleModal() {
+  document.getElementById('wholesale-name-input').value = '';
+  document.getElementById('wholesale-amount-input').value = '';
+  // デフォルトはバンコク時間の今日
+  const now = new Date();
+  const bkkNow = new Date(now.getTime() + 7 * 3600000);
+  document.getElementById('wholesale-date-input').value = bkkNow.toISOString().slice(0, 10);
+  document.getElementById('wholesale-modal-confirm-btn').disabled = false;
+  document.getElementById('wholesale-modal-confirm-btn').textContent = 'Save / บันทึก';
+  document.getElementById('wholesale-modal').classList.add('open');
+}
+
+function closeWholesaleModal() {
+  document.getElementById('wholesale-modal').classList.remove('open');
+}
+
+async function submitWholesaleEntry() {
+  const name = document.getElementById('wholesale-name-input').value.trim();
+  const amountVal = document.getElementById('wholesale-amount-input').value;
+  const dateVal = document.getElementById('wholesale-date-input').value;
+
+  if (!name) { alert('Please enter the restaurant name / กรุณากรอกชื่อร้าน'); return; }
+  const amount = Number(amountVal);
+  if (!amount || amount <= 0) { alert('Please enter a valid amount / กรุณากรอกจำนวนเงินให้ถูกต้อง'); return; }
+
+  const btn = document.getElementById('wholesale-modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving... / กำลังบันทึก...';
+
+  const { error } = await supabaseClient.rpc('record_wholesale_sale', {
+    p_restaurant_name: name,
+    p_amount: amount,
+    p_date: dateVal || null,
+  });
+
+  if (error) {
+    alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Save / บันทึก';
+    return;
+  }
+
+  closeWholesaleModal();
+  loadOrders();
 }
 
 async function confirmManualPayment() {

@@ -47,6 +47,9 @@
   .card.plaatapian { border: 1px solid #8B2E8B; }
   .card.plaatapian .label { color: #8B2E8B; font-weight: 600; }
   .card.plaatapian .amount { color: #8B2E8B; }
+  .card.wholesale { border: 1px solid #6b4fa0; }
+  .card.wholesale .label { color: #6b4fa0; font-weight: 600; }
+  .card.wholesale .amount { color: #6b4fa0; }
 
   .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
   .info-box { background: #eaf1f8; border: 1px solid #b9d0e6; color: var(--navy); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
@@ -241,14 +244,21 @@ async function loadSummary() {
     .from('plaa_tapian_sales').select('total_price')
     .eq('sale_date', date);
 
+  // 卸売り分(レストラン名+金額のみの簡易入力): delivery_date で判定
+  const wholesalePromise = supabaseClient
+    .from('orders').select('id, total_amount, wholesale_restaurant_name, is_cancelled')
+    .eq('order_type', 'wholesale')
+    .eq('delivery_date', date);
+
   const [
     { data: deliveryData, error: err1 },
     { data: walkinData, error: err2 },
     { data: plaaTapianData, error: err3 },
-  ] = await Promise.all([deliveryPromise, walkinPromise, plaaTapianPromise]);
+    { data: wholesaleData, error: err4 },
+  ] = await Promise.all([deliveryPromise, walkinPromise, plaaTapianPromise, wholesalePromise]);
 
-  if (err1 || err2 || err3) {
-    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message || err3?.message) + '</div>';
+  if (err1 || err2 || err3 || err4) {
+    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message || err3?.message || err4?.message) + '</div>';
     document.getElementById('prod-tbody').innerHTML = '';
     document.getElementById('staff-tbody').innerHTML = '';
     return;
@@ -256,12 +266,13 @@ async function loadSummary() {
 
   const allOrders = [...(deliveryData || []), ...(walkinData || [])].filter(o => !o.is_cancelled);
   const plaaTapianRows = plaaTapianData || [];
+  const wholesaleRows = (wholesaleData || []).filter(o => !o.is_cancelled);
 
-  renderSummary(allOrders, plaaTapianRows);
+  renderSummary(allOrders, plaaTapianRows, wholesaleRows);
   renderStaffDeliveries(allOrders);
 }
 
-function renderSummary(orders, plaaTapianRows) {
+function renderSummary(orders, plaaTapianRows, wholesaleRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   const buckets = {
     walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
@@ -309,7 +320,12 @@ function renderSummary(orders, plaaTapianRows) {
   const plaaTapianAmount = plaaTapianRows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
   const plaaTapianCount = plaaTapianRows.length;
 
-  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount;
+  // 卸売り(レストラン名+金額のみ)の当日合計。ordersテーブルには入っているが、
+  // Bangkok等のbucketとは別枠のカードとして表示し、Totalにのみ合算する。
+  const wholesaleAmount = wholesaleRows.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
+  const wholesaleCount = wholesaleRows.length;
+
+  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount + wholesaleAmount;
   const grandOrders = Object.values(buckets).reduce((s, b) => s + b.orders, 0);
 
   const cardsEl = document.getElementById('summary-cards');
@@ -335,11 +351,19 @@ function renderSummary(orders, plaaTapianRows) {
       <div class="count">${plaaTapianCount} items / รายการ</div>
     </div>`;
 
+  // 卸売り専用カード(常に表示。件数0でも「まだデータが無い」ことが分かるように)
+  cardsEl.innerHTML += `
+    <div class="card wholesale">
+      <div class="label">🏢 Wholesale / ขายส่ง</div>
+      <div class="amount">${wholesaleAmount.toLocaleString()} THB</div>
+      <div class="count">${wholesaleCount} orders / คำสั่งซื้อ</div>
+    </div>`;
+
   cardsEl.innerHTML += `
     <div class="card total">
       <div class="label">Total / รวมทั้งหมด</div>
       <div class="amount">${grandTotal.toLocaleString()} THB</div>
-      <div class="count">${grandOrders} orders / คำสั่งซื้อ + ${plaaTapianCount} Plaa-Ta-Pian items</div>
+      <div class="count">${grandOrders} orders / คำสั่งซื้อ + ${plaaTapianCount} Plaa-Ta-Pian items + ${wholesaleCount} Wholesale</div>
     </div>`;
 
   const warnEl = document.getElementById('unconfirmed-warn');
