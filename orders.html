@@ -609,7 +609,7 @@
 <!-- 卸売り簡易入力モーダル -->
 <div id="wholesale-modal">
   <div class="manualpay-modal-box">
-    <h3>Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(คีย์ขายส่ง)</span></h3>
+    <h3 id="wholesale-modal-title">Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(คีย์ขายส่ง)</span></h3>
     <div class="manualpay-modal-sub">
       For restaurant/wholesale sales — enter the restaurant name and total amount only. No product or stock tracking.<br>
       สำหรับยอดขายส่งร้านอาหาร กรอกแค่ชื่อร้านและยอดรวม ไม่กระทบสต๊อกสินค้า
@@ -1640,6 +1640,8 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         if (order.has_weight_items && order.is_weight_confirmed && !order.weight_email_sent) {
           manageCol.appendChild(makeButton('📧 Send Email / ส่งอีเมล', () => sendWeightEmailManually(order), 'btn-send-email'));
         }
+      } else {
+        manageCol.appendChild(makeButton('Edit / แก้ไข', () => openWholesaleModal(order), 'btn-reorder'));
       }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
@@ -1813,14 +1815,27 @@ function closeManualPayModal() {
   manualPayOrder = null;
 }
 
-function openWholesaleModal() {
-  document.getElementById('wholesale-name-input').value = '';
-  document.getElementById('wholesale-amount-input').value = '';
-  document.getElementById('wholesale-note-input').value = '';
-  // デフォルトはバンコク時間の今日
+let wholesaleEditOrder = null; // 編集中の注文(nullなら新規登録)
+
+function openWholesaleModal(order) {
+  wholesaleEditOrder = order || null;
   const now = new Date();
   const bkkNow = new Date(now.getTime() + 7 * 3600000);
-  document.getElementById('wholesale-date-input').value = bkkNow.toISOString().slice(0, 10);
+
+  if (wholesaleEditOrder) {
+    document.getElementById('wholesale-modal-title').innerHTML = 'Edit Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(แก้ไขรายการขายส่ง)</span>';
+    document.getElementById('wholesale-name-input').value = wholesaleEditOrder.wholesale_restaurant_name || '';
+    document.getElementById('wholesale-amount-input').value = wholesaleEditOrder.total_amount || '';
+    document.getElementById('wholesale-date-input').value = wholesaleEditOrder.delivery_date || bkkNow.toISOString().slice(0, 10);
+    document.getElementById('wholesale-note-input').value = wholesaleEditOrder.comment || '';
+  } else {
+    document.getElementById('wholesale-modal-title').innerHTML = 'Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(คีย์ขายส่ง)</span>';
+    document.getElementById('wholesale-name-input').value = '';
+    document.getElementById('wholesale-amount-input').value = '';
+    document.getElementById('wholesale-note-input').value = '';
+    document.getElementById('wholesale-date-input').value = bkkNow.toISOString().slice(0, 10);
+  }
+
   document.getElementById('wholesale-modal-confirm-btn').disabled = false;
   document.getElementById('wholesale-modal-confirm-btn').textContent = 'Save / บันทึก';
   document.getElementById('wholesale-modal').classList.add('open');
@@ -1828,6 +1843,7 @@ function openWholesaleModal() {
 
 function closeWholesaleModal() {
   document.getElementById('wholesale-modal').classList.remove('open');
+  wholesaleEditOrder = null;
 }
 
 async function submitWholesaleEntry() {
@@ -1844,12 +1860,20 @@ async function submitWholesaleEntry() {
   btn.disabled = true;
   btn.textContent = 'Saving... / กำลังบันทึก...';
 
-  const { error } = await supabaseClient.rpc('record_wholesale_sale', {
-    p_restaurant_name: name,
-    p_amount: amount,
-    p_date: dateVal || null,
-    p_note: noteVal || null,
-  });
+  const { error } = wholesaleEditOrder
+    ? await supabaseClient.rpc('update_wholesale_sale', {
+        p_order_id: wholesaleEditOrder.id,
+        p_restaurant_name: name,
+        p_amount: amount,
+        p_date: dateVal || null,
+        p_note: noteVal || null,
+      })
+    : await supabaseClient.rpc('record_wholesale_sale', {
+        p_restaurant_name: name,
+        p_amount: amount,
+        p_date: dateVal || null,
+        p_note: noteVal || null,
+      });
 
   if (error) {
     alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message);
