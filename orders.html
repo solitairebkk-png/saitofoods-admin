@@ -1520,6 +1520,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
       : 'หน้าร้าน / Walk-in');
   const tel = escapeHtml(order.customers?.tel1 || '');
+  const email = escapeHtml(order.customers?.email || '');
   const addressParts = [order.customers?.address1, order.customers?.address2].filter(Boolean);
   const address = escapeHtml(addressParts.join(', '));
 
@@ -1587,6 +1588,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
           <div class="customer-tel">📞 ${tel || '-'}</div>
         </div>
         ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
+        ${email ? `<div class="customer-address">✉️ ${email}</div>` : ''}
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
       <div style="margin-top:6px;">${paidStampHtml}${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>

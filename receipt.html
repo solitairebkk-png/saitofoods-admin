@@ -181,6 +181,7 @@
           <h3>Delivery to</h3>
           <div class="row"><span class="k">Name</span><span class="v" id="f-customer-name"></span></div>
           <div class="row"><span class="k">Tel</span><span class="v" id="f-customer-tel"></span></div>
+          <div class="row"><span class="k">Email</span><span class="v" id="f-customer-email"></span></div>
           <div class="row"><span class="k">Address</span><span class="v" id="f-customer-address"></span></div>
         </div>
         <div class="info-box">
@@ -349,7 +350,7 @@ async function loadReceipt() {
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled,
-      customers!customer_id ( family_name, first_name, tel1, address1, address2, point_balance, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, email, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .eq('id', orderId)
@@ -446,6 +447,7 @@ function renderReceipt(order) {
 
   document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
   document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
+  document.getElementById('f-customer-email').textContent = c.email || '-';
   document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(Boolean).join(' ') || '-';
 
   document.getElementById('f-delivery-date').textContent = fmtDate(order.delivery_date);
