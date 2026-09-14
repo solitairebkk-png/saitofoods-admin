@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新しいオンラインストアへの移行のお知らせ | サイトウフーズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #F5A93C;
+    --brand-deep: #D98A1F;
+    --cream: #FFF8EC;
+    --paper: #FFFFFF;
+    --ink: #3B2A1E;
+    --ink-soft: #6B5A4A;
+    --line: #EADFCB;
+    --accent-red: #C4432B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Noto Sans JP', sans-serif;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+  header.hero {
+    padding: 56px 0 36px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 40px;
+  }
+  .mark {
+    font-family: 'Shippori Mincho', serif;
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.12em;
+    color: var(--brand-deep);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: 'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+  .lead {
+    font-size: 15.5px;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+  section {
+    margin-bottom: 44px;
+  }
+  h2 {
+    font-family: 'Shippori Mincho', serif;
+    font-weight: 700;
+    font-size: 19px;
+    margin: 0 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--brand);
+    display: inline-block;
+  }
+  p { font-size: 15px; margin: 0 0 14px; }
+  .steps { counter-reset: step; margin: 0; padding: 0; list-style: none; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 20px 20px 20px 60px;
+    margin-bottom: 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 18px;
+    top: 20px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps h3 {
+    margin: 0 0 6px;
+    font-size: 15.5px;
+    font-weight: 700;
+  }
+  .steps p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .note {
+    background: #FDF1E4;
+    border-left: 4px solid var(--brand);
+    padding: 16px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .note strong { color: var(--brand-deep); }
+  .caution {
+    background: #FBEAE6;
+    border-left: 4px solid var(--accent-red);
+    padding: 16px 18px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .caution strong { color: var(--accent-red); }
+  .faq dt {
+    font-weight: 700;
+    font-size: 14.5px;
+    margin-top: 18px;
+  }
+  .faq dt::before {
+    content: "Q. ";
+    color: var(--brand-deep);
+  }
+  .faq dd {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .faq dd::before {
+    content: "A. ";
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  footer {
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  a.cta {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 14px 30px;
+    background: var(--brand);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <p class="mark">SAITO FOODS より大切なお知らせ</p>
+    <h1>オンラインストアが<br>新しくなります</h1>
+    <p class="lead">日頃よりサイトウフーズをご利用いただき、誠にありがとうございます。オンラインストアのシステムを刷新いたします。ご利用にあたり、お客様に一度だけお願いしたい手続きがございますので、ご案内いたします。</p>
+  </header>
+
+  <section>
+    <h2>お願いしたいこと</h2>
+    <p>今までご登録いただいていたメールアドレスはそのまま引き継がれますが、以前のサイトのパスワードは新サイトではお使いいただけません。「新規登録」の画面から、最初の一回だけパスワードを設定していただく必要がございます。難しい操作ではございませんので、下記の手順にそってお進みください。</p>
+  </section>
+
+  <section>
+    <h2>お手続きの手順</h2>
+    <ol class="steps">
+      <li>
+        <h3>新しいオンラインストアにアクセスする</h3>
+        <p>いつものサイトウフーズのウェブサイトにアクセスし、マイページを開いてください。</p>
+      </li>
+      <li>
+        <h3>「新規登録」タブを選択する</h3>
+        <p>ログイン画面の上部にある「新規登録」タブをタップしてください。</p>
+      </li>
+      <li>
+        <h3>今まで通りのメールアドレスを入力する</h3>
+        <p>「ご登録のメールアドレス」欄に、以前ご登録いただいていたメールアドレスをそのまま入力してください。このメールアドレスをもとに、これまでのご注文履歴やポイントが自動的に連携されます。</p>
+      </li>
+      <li>
+        <h3>新しいパスワードを設定する</h3>
+        <p>新しいパスワード(6文字以上)を2回入力し、「パスワードを設定する」をタップしてください。</p>
+      </li>
+      <li>
+        <h3>(確認メールが届いた場合)メール内のリンクを開く</h3>
+        <p>「確認メールをお送りしました」と表示された場合は、届いたメール内のリンクをタップしたあと、あらためて「ログイン」タブからメールアドレスと今設定したパスワードでログインしてください。表示されなかった場合は、そのままログイン済みの状態になります。</p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="note">
+      <strong>ご購入履歴・ポイントについて</strong><br>
+      これまでのご購入履歴およびポイントは、上記のご登録が完了すると自動的に引き継がれます。お客様側で別途申請などのお手続きをいただく必要はございません。
+    </div>
+  </section>
+
+  <section>
+    <div class="caution">
+      <strong>メールが届かない場合</strong><br>
+      迷惑メールフォルダをご確認いただくか、しばらく経ってから再度お試しください。それでも解決しない場合は、店頭またはお電話にてスタッフまでお声がけください。
+    </div>
+  </section>
+
+  <section>
+    <div class="caution">
+      <strong>長期間ご利用のないお客様へ</strong><br>
+      直近1年以上ご注文のないお客様につきましては、大変恐れ入りますが、これまでのご購入履歴・ポイントは新しいシステムには引き継がれません。お手続きの手順は同じですが、登録完了後は新規のお客様としてのご利用となります(改めてポイントが貯まっていきます)。
+    </div>
+  </section>
+
+  <section>
+    <div class="caution">
+      <strong>ご登録の配送エリアをご確認ください</strong><br>
+      新サイトでは、これまでのバンコク・シラチャの「サイト分け」がなくなり、1つのサイトに統合されます。ご登録いただいている配送エリアの種別に応じて、選べる配送可能日・時間帯の表示が変わりますので、ログイン後は登録内容(エリア)に誤りがないか、必ずご確認をお願いいたします。
+    </div>
+  </section>
+
+  <section>
+    <h2>マイページでできること</h2>
+    <p>ログイン後の「マイページ」から、以下のことがご自身で行えるようになりました。</p>
+    <ul style="font-size:15px; padding-left: 22px; margin: 0 0 14px;">
+      <li style="margin-bottom:8px;">配送状況の確認</li>
+      <li style="margin-bottom:8px;">お気に入り商品の登録・編集</li>
+      <li style="margin-bottom:8px;">配送準備前であれば、配送日時の変更・ご注文のキャンセル</li>
+      <li style="margin-bottom:8px;">お客様情報(メールアドレス・パスワード・ご住所・お電話番号など)の変更</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="note">
+      <strong>配送料金について</strong><br>
+      1回のご注文の合計金額が600バーツ未満の場合、配送料金として100バーツを別途頂戴いたします。600バーツ以上のご注文で配送料が無料となりますので、あわせてご確認ください。
+    </div>
+  </section>
+
+  <section>
+    <h2>よくあるご質問</h2>
+    <dl class="faq">
+      <dt>今までのメールアドレスを覚えていません。</dt>
+      <dd>店頭またはお電話にてスタッフにお伝えいただければ、ご登録状況を確認いたします。</dd>
+
+      <dt>お気に入り登録していた商品はどうなりますか?</dt>
+      <dd>お気に入り登録の内容も、ご登録完了後にそのまま引き継がれます。</dd>
+
+      <dt>特に何もしなくても大丈夫ですか?</dt>
+      <dd>いいえ、次回ご注文の際にログインいただくために、上記の「新規登録」からのパスワード設定を一度だけお願いいたします。</dd>
+
+      <dt>「パスワードをお忘れですか?」から進めても大丈夫ですか?</dt>
+      <dd>いいえ、そちらは新サイトに一度ログインされたことがある方向けのリンクです。初めての方は必ず「新規登録」からお進みください。</dd>
+    </dl>
+  </section>
+
+  <footer>
+    ご不明な点がございましたら、店頭スタッフまたはお電話にてお気軽にお問い合わせください。<br>
+    サイトウフーズ株式会社
+  </footer>
+
+</div>
+</body>
+</html>
