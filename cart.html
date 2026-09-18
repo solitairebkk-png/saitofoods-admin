@@ -111,8 +111,20 @@
   .row-2 { display: flex; gap: 10px; }
   .row-2 .field { flex: 1; }
 
-  /* shipping banner */
-  .shipping-banner { background: #FFF8EA; border: 1.5px dashed var(--accent); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: #7A5C1E; line-height: 1.6; margin-bottom: 12px; }
+  /* shipping banner: 送料無料までの状況をカートの中身に応じて色・文言で強調表示する */
+  .shipping-banner {
+    background: #FFF8EA; border: 2px solid var(--accent); border-radius: 12px;
+    padding: 14px 16px; font-size: 14px; font-weight: 700; color: #7A5C1E; line-height: 1.6;
+    margin-bottom: 12px; text-align: center;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .shipping-banner b { font-size: 16.5px; }
+  .shipping-banner.notfree { background: #FDEDED; border-color: var(--red); color: #9c3a2c; animation: shipping-pulse 1.4s ease infinite; }
+  .shipping-banner.free { background: #E6F7EC; border-color: #2c8f5c; color: #1a6b45; }
+  @keyframes shipping-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(197,83,63,0.25); }
+    50% { box-shadow: 0 0 0 6px rgba(197,83,63,0); }
+  }
   .totals-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
   .totals-row.total { border-top: 1.5px solid var(--line-soft); margin-top: 6px; padding-top: 10px; font-size: 16px; font-weight: 800; color: var(--brand-dark); }
   .totals-row.free { color: var(--brand-dark); font-weight: 700; }
@@ -486,7 +498,7 @@
         </div>
         <div class="footer-area-image-item">
           <a href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" target="_blank" rel="noopener noreferrer">
-            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャ配送エリア">
+            <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/delivery-area-sriracha.jpg" alt="シラチャエリア">
           </a>
           <span>シラチャエリア</span>
         </div>
@@ -536,6 +548,7 @@ let currentCustomer = null; // customersテーブルの行(ログイン中のお
 let cart = [];              // { product_id, name, sale_type, price, unit_price, unit_label, quantity, image_url }
 let shippingFreeThreshold = 600;
 let shippingFeeAmount = 100;
+let lastShippingJudgeSubtotal = 0; // 直近の送料無料判定用小計(バナー再描画に使う)
 let appliedCoupon = null;
 let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
@@ -794,7 +807,7 @@ async function loadSidebarCategories() {
 
 document.addEventListener('saitofoods-langchange', function () {
   if (typeof cart !== 'undefined' && cart.length) renderCart();
-  if (typeof shippingFreeThreshold !== 'undefined') loadShippingSettings();
+  if (typeof shippingFreeThreshold !== 'undefined') renderShippingBanner(lastShippingJudgeSubtotal);
   loadSidebarCategories();
 });
 
@@ -822,11 +835,39 @@ async function loadShippingSettings() {
       if (row.key === 'shipping_fee_amount') shippingFeeAmount = parseFloat(row.value) || 100;
     });
   }
-  document.getElementById('shipping-banner').innerHTML = i18nGetLang() === 'en'
-    ? `🚚 Orders of <b>฿${shippingFreeThreshold}</b> or more get free shipping.<br>` +
-      `Below ฿${shippingFreeThreshold}, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
-    : `🚚 合計金額 <b>฿${shippingFreeThreshold}</b> 以上のご注文で配送料無料です。<br>` +
-      `฿${shippingFreeThreshold} 未満の場合、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+  renderShippingBanner(lastShippingJudgeSubtotal);
+}
+
+// カートの中身(現在の送料無料判定用小計)に応じて、バナーの色・文言を切り替える。
+// 600baht以上なら緑で「送料無料達成」、未満なら赤系で強めに「あといくらで無料」を案内する
+// (カートが空の場合は通常の案内文のみ表示)。
+function renderShippingBanner(judgeSubtotal) {
+  const bannerEl = document.getElementById('shipping-banner');
+  if (!bannerEl) return;
+  const lang = i18nGetLang();
+  const amount = judgeSubtotal || 0;
+
+  bannerEl.classList.remove('free', 'notfree');
+
+  if (amount <= 0) {
+    bannerEl.innerHTML = lang === 'en'
+      ? `🚚 Orders of <b>฿${shippingFreeThreshold}</b> or more get free shipping.<br>` +
+        `Below ฿${shippingFreeThreshold}, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
+      : `🚚 合計金額 <b>฿${shippingFreeThreshold}</b> 以上のご注文で配送料無料です。<br>` +
+        `฿${shippingFreeThreshold} 未満の場合、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+    return;
+  }
+
+  if (amount >= shippingFreeThreshold) {
+    bannerEl.classList.add('free');
+    bannerEl.innerHTML = lang === 'en' ? `🎉 <b>Free shipping unlocked!</b>` : `🎉 <b>配送料無料になりました！</b>`;
+  } else {
+    bannerEl.classList.add('notfree');
+    const diff = shippingFreeThreshold - amount;
+    bannerEl.innerHTML = lang === 'en'
+      ? `🚚 <b>฿${diff} more</b> for free shipping!<br>Currently, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
+      : `🚚 あと <b>฿${diff}</b> で配送料無料！<br>現在、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+  }
 }
 
 // ---------------- カート読み込み(product_list.htmlのlocalStorageと同じキー) ----------------
@@ -934,6 +975,8 @@ function updateTotals() {
   // 合算で無料ラインを超えていて、かつ元注文が既に送料を払っている場合は、
   // その送料分を今回の追加注文の請求額からマイナスして相殺する(現金の払い戻しはしない)。
   const shippingJudgeSubtotal = addToOrderId ? (addToOrderInfo.subtotal || 0) + subtotal : subtotal;
+  // カートの中身に応じて、送料無料までの案内バナーの色・文言を更新する
+  renderShippingBanner(shippingJudgeSubtotal);
   let shippingCost = 0;
   if (subtotal > 0) {
     if (shippingJudgeSubtotal < shippingFreeThreshold) {
