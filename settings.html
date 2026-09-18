@@ -168,7 +168,7 @@
   </div>
 
   <div class="card">
-    <h2>只今プロモーション中 / Currently on Promotion(最大2件)</h2>
+    <h2>只今プロモーション中 / Currently on Promotion(最大3件)</h2>
     <div class="sub">トップページ(index.html)の「只今プロモーション中」に表示されます。割引価格を入れると、元の価格に取り消し線が付いて割引額も表示されます。「ストーリー・コメント」に理由(例: 賞味期限8/2までにつき、在庫一掃セール等)を入れると価格の下に表示されます。</div>
 
     <div id="promo-current-list">
@@ -743,8 +743,8 @@ async function addMonthlyPromotion(productId) {
   const { count, error: countErr } = await supabaseClient
     .from('products').select('id', { count: 'exact', head: true }).eq('is_monthly_promotion', true);
 
-  if (!countErr && count >= 2) {
-    showSaveMsg('只今プロモーション中の商品は最大2件までです。先に他の商品を削除してください / Currently on Promotion is limited to 2 products at a time.', true);
+  if (!countErr && count >= 3) {
+    showSaveMsg('只今プロモーション中の商品は最大3件までです。先に他の商品を削除してください / Currently on Promotion is limited to 3 products at a time.', true);
     return;
   }
 

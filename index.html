@@ -605,7 +605,7 @@ async function loadPromotions() {
   try {
     // セールカテゴリとは独立した「今月のプロモーション品」フラグ(is_monthly_promotion)を使用
     // 商品管理画面(product_control.html)またはsettings.htmlで最大2件までON/OFFできる
-    const products = await supabase('GET', `products?is_monthly_promotion=eq.true&is_published=eq.true&select=id,name_ja,name_en,price,promotion_price,promotion_comment,image_url&limit=2`);
+    const products = await supabase('GET', `products?is_monthly_promotion=eq.true&is_published=eq.true&select=id,name_ja,name_en,price,promotion_price,promotion_comment,image_url&limit=3`);
 
     if (!products.length) { scrollEl.innerHTML = '<div class="empty-note">現在プロモーション中の商品はありません / No promotions right now</div>'; return; }
 

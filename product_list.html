@@ -105,6 +105,22 @@
 
   .section-title { padding: 18px 16px 8px; font-size: 15px; font-weight: 800; color: var(--brand-dark); display:flex; align-items:center; gap:8px; }
   .section-title .badge-local { font-size:10.5px; font-weight:700; background: var(--accent); color:#5A3E00; padding:2px 8px; border-radius:10px; }
+  .ttl-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* お気に入りページの下に表示する「プロモーション中」「お買い得商品」セクション(トップページと同じ見た目) */
+  .fav-extra-block { margin-bottom: 8px; }
+  .promo-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 0 16px 14px; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+  .promo-card { flex: 0 0 220px; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; text-decoration: none; color: inherit; box-shadow: var(--shadow-sm); transition: transform 0.18s ease, box-shadow 0.18s ease; }
+  .promo-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .promo-img-wrap { width: 100%; aspect-ratio: 1/1; background: var(--line-soft); overflow: hidden; }
+  .promo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-body { padding: 8px 10px 10px; }
+  .promo-name { font-size: 12px; font-weight: 700; line-height: 1.3; }
+  .promo-price { font-size: 12.5px; color: var(--brand-dark); font-weight: 800; margin-top: 4px; }
+  .promo-price-original { font-size: 11px; color: #999; text-decoration: line-through; font-weight: 600; margin-right: 5px; }
+  .promo-discount-badge { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: var(--red); padding: 1px 6px; border-radius: 8px; margin-top: 3px; }
+  .promo-comment { font-size: 11px; color: #8A6B1E; font-weight: 700; margin-top: 5px; line-height: 1.4; }
+  .fav-extra-empty { text-align: center; color: #999; font-size: 12.5px; padding: 4px 16px 16px; }
   .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; padding: 0 16px 20px; }
   .product-card { background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; box-shadow: var(--shadow-sm); transition: transform 0.18s ease, box-shadow 0.18s ease; }
   .product-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
@@ -323,6 +339,18 @@
 
     <div id="product-sections"></div>
 
+    <!-- お気に入り表示中のみ、その下にトップページと同じ「プロモーション中」「お買い得商品」を表示する -->
+    <div id="favorites-extra-sections" style="display:none;">
+      <div class="fav-extra-block">
+        <div class="section-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"></path></svg> <span data-i18n="section.promotion">只今プロモーション中 / Currently on Promotion</span></div>
+        <div class="promo-scroll" id="pl-promo-scroll"><div class="fav-extra-empty">読み込み中… / Loading…</div></div>
+      </div>
+      <div class="fav-extra-block">
+        <div class="section-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.5L12 21 3 12l7-8.5H18a2 2 0 0 1 2 2z"></path><circle cx="15" cy="7.5" r="1"></circle></svg> <span data-i18n="section.bargain">お買い得商品 / On Sale</span></div>
+        <div class="promo-scroll" id="pl-bargain-scroll"><div class="fav-extra-empty">読み込み中… / Loading…</div></div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <div class="footer-social">
         <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
@@ -447,6 +475,7 @@ let allProducts = [];
 let allProductCategories = [];
 let cart = {};
 let currentSearchQuery = '';
+let favoritesExtraSectionsLoaded = false;
 let currentCategoryFilter = null;
 let showFavoritesOnly = false;
 let pmodalProductId = null;
@@ -717,10 +746,88 @@ function getFilteredProducts() {
   return matches;
 }
 
+// お気に入り表示中のみ、その下にトップページと同じ「プロモーション中」「お買い得商品」を表示する。
+// お気に入りが少ない/0件のお客様が、そこで商品探しをやめてしまわないようにするための導線。
+function promoCardHtml(p, opts) {
+  const img = p.image_url ? `<img src="${p.image_url}" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
+  const lang = i18nGetLang();
+  const name = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
+  let priceHtml = `<div class="promo-price">฿${p.price}</div>`;
+  let commentHtml = '';
+  if (opts && opts.withPromotionPrice) {
+    const hasDiscount = p.promotion_price !== null && p.promotion_price !== undefined && p.promotion_price < p.price;
+    priceHtml = hasDiscount
+      ? `<div><span class="promo-price-original">฿${p.price}</span><span class="promo-price">฿${p.promotion_price}</span></div><div class="promo-discount-badge">-฿${(p.price - p.promotion_price).toFixed(0)}</div>`
+      : `<div class="promo-price">฿${p.price}</div>`;
+    commentHtml = p.promotion_comment ? `<div class="promo-comment">${p.promotion_comment}</div>` : '';
+  }
+  return `
+    <a class="promo-card" href="product_list.html?view=${p.id}">
+      <div class="promo-img-wrap">${img}</div>
+      <div class="promo-body">
+        <div class="promo-name">${name}</div>
+        ${priceHtml}
+        ${commentHtml}
+      </div>
+    </a>
+  `;
+}
+
+async function loadFavoritesExtraPromotions() {
+  const scrollEl = document.getElementById('pl-promo-scroll');
+  try {
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('id, name_ja, name_en, price, promotion_price, promotion_comment, image_url')
+      .eq('is_monthly_promotion', true).eq('is_published', true).limit(3);
+    if (error) throw error;
+    if (!data || !data.length) { scrollEl.innerHTML = '<div class="fav-extra-empty">現在プロモーション中の商品はありません / No promotions right now</div>'; return; }
+    scrollEl.innerHTML = data.map(p => promoCardHtml(p, { withPromotionPrice: true })).join('');
+  } catch (e) {
+    scrollEl.innerHTML = '<div class="fav-extra-empty">読み込みに失敗しました / Failed to load</div>';
+  }
+}
+
+async function loadFavoritesExtraBargains() {
+  const scrollEl = document.getElementById('pl-bargain-scroll');
+  try {
+    let { data: categories } = await supabaseClient.from('categories').select('id').ilike('name_ja', '%セール%');
+    if (!categories || !categories.length) {
+      ({ data: categories } = await supabaseClient.from('categories').select('id').ilike('name_en', '%sale%'));
+    }
+    const categoryId = categories && categories[0] && categories[0].id;
+    if (!categoryId) { scrollEl.innerHTML = '<div class="fav-extra-empty">「セール中」カテゴリが見つかりませんでした / Sale category not found</div>'; return; }
+
+    const { data: pcRows } = await supabaseClient.from('product_categories').select('product_id').eq('category_id', categoryId);
+    const ids = (pcRows || []).map(r => r.product_id);
+    if (!ids.length) { scrollEl.innerHTML = '<div class="fav-extra-empty">現在お買い得商品はありません / No sale items right now</div>'; return; }
+
+    const { data: products, error } = await supabaseClient
+      .from('products').select('id, name_ja, name_en, price, image_url')
+      .in('id', ids).eq('is_published', true).limit(12);
+    if (error) throw error;
+    if (!products || !products.length) { scrollEl.innerHTML = '<div class="fav-extra-empty">現在お買い得商品はありません / No sale items right now</div>'; return; }
+    scrollEl.innerHTML = products.map(p => promoCardHtml(p)).join('');
+  } catch (e) {
+    scrollEl.innerHTML = '<div class="fav-extra-empty">読み込みに失敗しました / Failed to load</div>';
+  }
+}
+
 function renderProducts() {
   const wrap = document.getElementById('product-sections');
-  if (!allProducts.length) { wrap.innerHTML = `<div class="loading">商品がまだありません / No products yet</div>`; return; }
+  const extraWrap = document.getElementById('favorites-extra-sections');
+  if (!allProducts.length) { wrap.innerHTML = `<div class="loading">商品がまだありません / No products yet</div>`; if (extraWrap) extraWrap.style.display = 'none'; return; }
   const matches = getFilteredProducts();
+
+  if (extraWrap) {
+    extraWrap.style.display = showFavoritesOnly ? '' : 'none';
+    if (showFavoritesOnly && !favoritesExtraSectionsLoaded) {
+      favoritesExtraSectionsLoaded = true;
+      loadFavoritesExtraPromotions();
+      loadFavoritesExtraBargains();
+    }
+  }
+
   if (!matches.length) {
     wrap.innerHTML = showFavoritesOnly
       ? (!currentCustomerId
