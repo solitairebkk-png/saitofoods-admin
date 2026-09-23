@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receivables Upload | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+
+  header { background: var(--navy); color: white; padding: 14px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { display: block; font-weight: 500; color: #cdd8e6; font-size: 12px; }
+  header nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header nav a { color: #cdd8e6; text-decoration: none; font-size: 13px; }
+  header nav a:hover { color: white; }
+  header .logout-link { margin-left: auto; color: #cdd8e6; text-decoration: none; font-size: 13px; }
+  header .logout-link:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { background: var(--navy); color: white; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.danger { background: var(--red-accent); }
+  .btn.ghost { background: transparent; border: 1px solid var(--navy); color: var(--navy); }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 24px; max-width: 760px; margin: 0 auto; display: none; }
+
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 14px; margin: 0 0 4px; color: var(--navy); }
+  .card .sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-header .cal-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+  .cal-header .cal-title .th { display: block; font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .cal-nav { display: flex; gap: 8px; }
+  .cal-nav button { font-size: 12.5px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-family: inherit; color: var(--navy); }
+  .cal-nav button:hover { background: var(--bg); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 10.5px; color: var(--text-muted); font-weight: 700; padding: 4px 0; }
+  .cal-cell {
+    position: relative; aspect-ratio: 1 / 1; min-height: 46px; border-radius: 6px;
+    border: 1px solid var(--border); background: #fafafa; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 12.5px; padding: 2px;
+  }
+  .cal-cell:hover { border-color: var(--navy); }
+  .cal-cell.empty { visibility: hidden; cursor: default; }
+  .cal-cell.today { border-color: var(--navy); border-width: 2px; }
+  .cal-cell.selected { background: #e6f0f8; border-color: var(--navy); border-width: 2px; }
+  .cal-cell.has-upload { background: #eaf5ee; }
+  .cal-cell.has-upload.selected { background: #d7ecdf; }
+  .cal-cell .day-num { font-weight: 600; }
+  .cal-cell .day-icon { font-size: 13px; }
+
+  .detail-panel { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .detail-panel .detail-date { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+  .detail-row { font-size: 13px; margin-bottom: 6px; color: var(--text); }
+  .detail-row .label { color: var(--text-muted); font-size: 11.5px; display: block; margin-bottom: 2px; }
+  .detail-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+  .upload-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+  .upload-form input[type=file] { font-size: 12.5px; }
+
+  #save-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
+  #save-msg.success { color: var(--green); }
+  #save-msg.error { color: var(--red-accent); }
+
+  .empty-note { color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Receivables Upload <span class="th">อัปโหลดรายการลูกหนี้รายวัน</span></h1>
+  <nav>
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="settings.html">⚙️ Settings</a>
+  </nav>
+  <a href="#" onclick="logout()" class="logout-link">Logout / ออกจากระบบ</a>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email" onkeydown="if(event.key==='Enter')login()">
+  <input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+  <div class="card">
+    <h2>売掛一覧PDF アップロード</h2>
+    <div class="sub">
+      毎日の売掛一覧PDFをアップロードしてください。同じ日付に再アップロードすると上書きされます。日付をクリックすると、その日のPDFの表示・アップロード・削除ができます。<br>
+      Upload the daily receivables PDF here. Re-uploading on the same date overwrites the previous file. Click a date to view, upload, or delete that day's PDF.
+    </div>
+
+    <div class="cal-header">
+      <div class="cal-title" id="cal-title"></div>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">‹ Prev / ก่อนหน้า</button>
+        <button onclick="goToToday()">Today / วันนี้</button>
+        <button onclick="changeMonth(1)">Next / ถัดไป ›</button>
+      </div>
+    </div>
+
+    <div class="cal-grid" id="cal-dow-row"></div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:4px;"></div>
+
+    <div class="detail-panel" id="detail-panel"></div>
+    <div id="save-msg"></div>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // orders.html/settings.htmlと同じストレージキーを使い、スタッフのログインセッションを共有する
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
+
+const BUCKET = 'receivables-pdf';
+
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+let currentCustomer = null;
+let viewYear, viewMonth; // viewMonth: 0-11
+let selectedDate = null; // 'YYYY-MM-DD'
+let uploadsMap = new Map(); // 'YYYY-MM-DD' -> row
+
+function todayStr() {
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 3600000); // Asia/Bangkok (UTC+7)
+  return bkk.toISOString().slice(0, 10);
+}
+
+// ---------------- Auth ----------------
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'บัญชีนี้ไม่มีสิทธิ์เข้าถึงระบบ / This account has no access.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  afterLogin();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function afterLogin() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+
+  const today = new Date();
+  const bkk = new Date(today.getTime() + 7 * 3600000);
+  viewYear = bkk.getUTCFullYear();
+  viewMonth = bkk.getUTCMonth();
+  selectedDate = todayStr();
+
+  loadMonthUploads();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; afterLogin(); }
+  }
+})();
+
+// ---------------- Calendar ----------------
+const MONTH_LABELS = [
+  ['January', 'มกราคม'], ['February', 'กุมภาพันธ์'], ['March', 'มีนาคม'], ['April', 'เมษายน'],
+  ['May', 'พฤษภาคม'], ['June', 'มิถุนายน'], ['July', 'กรกฎาคม'], ['August', 'สิงหาคม'],
+  ['September', 'กันยายน'], ['October', 'ตุลาคม'], ['November', 'พฤศจิกายน'], ['December', 'ธันวาคม'],
+];
+const DOW_LABELS = ['Sun/อา', 'Mon/จ', 'Tue/อ', 'Wed/พ', 'Thu/พฤ', 'Fri/ศ', 'Sat/ส'];
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+async function loadMonthUploads() {
+  const firstDay = `${viewYear}-${pad2(viewMonth + 1)}-01`;
+  const lastDayNum = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+  const lastDay = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(lastDayNum)}`;
+
+  const { data, error } = await supabaseClient
+    .from('receivables_uploads')
+    .select('upload_date, file_path, file_name, file_size, uploaded_by_name, uploaded_at')
+    .gte('upload_date', firstDay).lte('upload_date', lastDay);
+
+  uploadsMap = new Map();
+  if (!error && data) {
+    data.forEach(row => uploadsMap.set(row.upload_date, row));
+  }
+  renderCalendar();
+  renderDetailPanel();
+}
+
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth < 0) { viewMonth = 11; viewYear -= 1; }
+  if (viewMonth > 11) { viewMonth = 0; viewYear += 1; }
+  loadMonthUploads();
+}
+
+function goToToday() {
+  const bkk = new Date(Date.now() + 7 * 3600000);
+  viewYear = bkk.getUTCFullYear();
+  viewMonth = bkk.getUTCMonth();
+  selectedDate = todayStr();
+  loadMonthUploads();
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').innerHTML =
+    `${MONTH_LABELS[viewMonth][0]} ${viewYear}<span class="th">${MONTH_LABELS[viewMonth][1]} ${viewYear}</span>`;
+
+  const dowRow = document.getElementById('cal-dow-row');
+  dowRow.innerHTML = DOW_LABELS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+  const grid = document.getElementById('cal-grid');
+  const firstWeekday = new Date(Date.UTC(viewYear, viewMonth, 1)).getUTCDay(); // 0=Sun
+  const daysInMonth = new Date(Date.UTC(viewYear, viewMonth + 1, 0)).getUTCDate();
+  const today = todayStr();
+
+  let html = '';
+  for (let i = 0; i < firstWeekday; i++) html += '<div class="cal-cell empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${viewYear}-${pad2(viewMonth + 1)}-${pad2(d)}`;
+    const hasUpload = uploadsMap.has(dateStr);
+    const classes = ['cal-cell'];
+    if (dateStr === today) classes.push('today');
+    if (dateStr === selectedDate) classes.push('selected');
+    if (hasUpload) classes.push('has-upload');
+    html += `
+      <div class="${classes.join(' ')}" onclick="selectDate('${dateStr}')">
+        <div class="day-num">${d}</div>
+        ${hasUpload ? '<div class="day-icon">📄</div>' : ''}
+      </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+  renderDetailPanel();
+}
+
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  const dow = DOW_LABELS[d.getUTCDay()];
+  return `${dateStr} (${dow})`;
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '-';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderDetailPanel() {
+  const panel = document.getElementById('detail-panel');
+  if (!selectedDate) { panel.innerHTML = ''; return; }
+
+  const row = uploadsMap.get(selectedDate);
+
+  if (row) {
+    const uploadedAtStr = row.uploaded_at
+      ? new Date(row.uploaded_at).toLocaleString('en-GB', {
+          year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+        })
+      : '-';
+    panel.innerHTML = `
+      <div class="detail-date">${formatDateLabel(selectedDate)}</div>
+      <div class="detail-row"><span class="label">ファイル名 / File name</span>${escapeHtml(row.file_name)}</div>
+      <div class="detail-row"><span class="label">アップロード者 / Uploaded by</span>${escapeHtml(row.uploaded_by_name || '-')}</div>
+      <div class="detail-row"><span class="label">アップロード日時 / Uploaded at</span>${uploadedAtStr} (Bangkok time)</div>
+      <div class="detail-row"><span class="label">サイズ / Size</span>${formatBytes(row.file_size)}</div>
+      <div class="detail-actions">
+        <button class="btn" onclick="downloadFile('${selectedDate}')">📥 ダウンロード / Download</button>
+        <button class="btn danger" onclick="deleteFile('${selectedDate}')">🗑️ 削除 / Delete</button>
+      </div>
+      <div class="detail-row" style="margin-top:14px;"><span class="label">差し替え(別のPDFで上書き) / Replace with a different PDF</span></div>
+      <div class="upload-form">
+        <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
+        <button class="btn" onclick="uploadFile('${selectedDate}')">アップロード / Upload</button>
+      </div>
+    `;
+  } else {
+    panel.innerHTML = `
+      <div class="detail-date">${formatDateLabel(selectedDate)}</div>
+      <div class="empty-note">この日はまだPDFがアップロードされていません / No PDF uploaded for this date yet.</div>
+      <div class="upload-form">
+        <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
+        <button class="btn" onclick="uploadFile('${selectedDate}')">アップロード / Upload</button>
+      </div>
+    `;
+  }
+}
+
+// ---------------- Upload / Download / Delete ----------------
+function showSaveMsg(msg, isError) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className = isError ? 'error' : 'success';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+}
+
+async function uploadFile(dateStr) {
+  const input = document.getElementById(`file-input-${dateStr}`);
+  const file = input && input.files[0];
+  if (!file) { showSaveMsg('PDFファイルを選択してください / Please choose a PDF file.', true); return; }
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+    showSaveMsg('PDFファイルのみアップロードできます / Only PDF files are allowed.', true);
+    return;
+  }
+  const maxBytes = 20 * 1024 * 1024; // 20MB
+  if (file.size > maxBytes) {
+    showSaveMsg('ファイルサイズが大きすぎます(上限20MB) / File is too large (20MB limit).', true);
+    return;
+  }
+
+  const alreadyExists = uploadsMap.has(dateStr);
+  if (alreadyExists && !confirm(`${dateStr} には既にPDFがアップロードされています。上書きしますか？\nA PDF already exists for ${dateStr}. Overwrite it?`)) {
+    return;
+  }
+
+  const path = `${dateStr}.pdf`;
+  const { error: uploadErr } = await supabaseClient.storage
+    .from(BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+
+  if (uploadErr) { showSaveMsg('อัปโหลดไม่สำเร็จ / Upload failed: ' + uploadErr.message, true); return; }
+
+  const uploaderName = `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim();
+  const { error: dbErr } = await supabaseClient
+    .from('receivables_uploads')
+    .upsert({
+      upload_date: dateStr,
+      file_path: path,
+      file_name: file.name,
+      file_size: file.size,
+      uploaded_by: currentCustomer.id,
+      uploaded_by_name: uploaderName,
+      uploaded_at: new Date().toISOString(),
+    }, { onConflict: 'upload_date' });
+
+  if (dbErr) { showSaveMsg('อัปโหลดไม่สำเร็จ (DB) / Upload failed (DB): ' + dbErr.message, true); return; }
+
+  showSaveMsg('อัปโหลดแล้ว / Uploaded successfully.');
+  selectedDate = dateStr;
+  loadMonthUploads();
+}
+
+async function downloadFile(dateStr) {
+  const row = uploadsMap.get(dateStr);
+  if (!row) return;
+
+  const { data, error } = await supabaseClient.storage.from(BUCKET).download(row.file_path);
+  if (error) { showSaveMsg('ดาวน์โหลดไม่สำเร็จ / Download failed: ' + error.message, true); return; }
+
+  const blobUrl = URL.createObjectURL(data);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = row.file_name || `${dateStr}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+}
+
+async function deleteFile(dateStr) {
+  const row = uploadsMap.get(dateStr);
+  if (!row) return;
+  if (!confirm(`${dateStr} のPDFを削除しますか？この操作は取り消せません。\nDelete the PDF for ${dateStr}? This cannot be undone.`)) return;
+
+  const { error: storageErr } = await supabaseClient.storage.from(BUCKET).remove([row.file_path]);
+  if (storageErr) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + storageErr.message, true); return; }
+
+  const { error: dbErr } = await supabaseClient.from('receivables_uploads').delete().eq('upload_date', dateStr);
+  if (dbErr) { showSaveMsg('ลบไม่สำเร็จ (DB) / Delete failed (DB): ' + dbErr.message, true); return; }
+
+  showSaveMsg('ลบแล้ว / Deleted.');
+  loadMonthUploads();
+}
+</script>
+
+</body>
+</html>
