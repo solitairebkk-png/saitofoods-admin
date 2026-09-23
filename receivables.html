@@ -101,10 +101,10 @@
 
 <main id="main">
   <div class="card">
-    <h2>売掛一覧PDF アップロード</h2>
+    <h2>Receivables PDF Upload <span style="font-weight:400;color:var(--text-muted);">/ อัปโหลด PDF ลูกหนี้</span></h2>
     <div class="sub">
-      毎日の売掛一覧PDFをアップロードしてください。同じ日付に再アップロードすると上書きされます。日付をクリックすると、その日のPDFの表示・アップロード・削除ができます。<br>
-      Upload the daily receivables PDF here. Re-uploading on the same date overwrites the previous file. Click a date to view, upload, or delete that day's PDF.
+      Upload the daily receivables PDF here. Re-uploading on the same date overwrites the previous file. Click a date to view, upload, or delete that day's PDF.<br>
+      อัปโหลดไฟล์ PDF รายการลูกหนี้ประจำวันที่นี่ หากอัปโหลดซ้ำในวันเดียวกัน ไฟล์เดิมจะถูกเขียนทับ คลิกที่วันที่เพื่อดู อัปโหลด หรือลบไฟล์ของวันนั้น
     </div>
 
     <div class="cal-header">
@@ -306,27 +306,28 @@ function renderDetailPanel() {
       : '-';
     panel.innerHTML = `
       <div class="detail-date">${formatDateLabel(selectedDate)}</div>
-      <div class="detail-row"><span class="label">ファイル名 / File name</span>${escapeHtml(row.file_name)}</div>
-      <div class="detail-row"><span class="label">アップロード者 / Uploaded by</span>${escapeHtml(row.uploaded_by_name || '-')}</div>
-      <div class="detail-row"><span class="label">アップロード日時 / Uploaded at</span>${uploadedAtStr} (Bangkok time)</div>
-      <div class="detail-row"><span class="label">サイズ / Size</span>${formatBytes(row.file_size)}</div>
+      <div class="detail-row"><span class="label">File name / ชื่อไฟล์</span>${escapeHtml(row.file_name)}</div>
+      <div class="detail-row"><span class="label">Uploaded by / อัปโหลดโดย</span>${escapeHtml(row.uploaded_by_name || '-')}</div>
+      <div class="detail-row"><span class="label">Uploaded at / เวลาอัปโหลด</span>${uploadedAtStr} (Bangkok time)</div>
+      <div class="detail-row"><span class="label">Size / ขนาดไฟล์</span>${formatBytes(row.file_size)}</div>
       <div class="detail-actions">
-        <button class="btn" onclick="downloadFile('${selectedDate}')">📥 ダウンロード / Download</button>
-        <button class="btn danger" onclick="deleteFile('${selectedDate}')">🗑️ 削除 / Delete</button>
+        <button class="btn" onclick="viewFile('${selectedDate}')">👁️ View / ดูไฟล์</button>
+        <button class="btn ghost" onclick="downloadFile('${selectedDate}')">📥 Download / ดาวน์โหลด</button>
+        <button class="btn danger" onclick="deleteFile('${selectedDate}')">🗑️ Delete / ลบ</button>
       </div>
-      <div class="detail-row" style="margin-top:14px;"><span class="label">差し替え(別のPDFで上書き) / Replace with a different PDF</span></div>
+      <div class="detail-row" style="margin-top:14px;"><span class="label">Replace with a different PDF / แทนที่ด้วยไฟล์ PDF อื่น</span></div>
       <div class="upload-form">
         <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
-        <button class="btn" onclick="uploadFile('${selectedDate}')">アップロード / Upload</button>
+        <button class="btn" onclick="uploadFile('${selectedDate}')">Upload / อัปโหลด</button>
       </div>
     `;
   } else {
     panel.innerHTML = `
       <div class="detail-date">${formatDateLabel(selectedDate)}</div>
-      <div class="empty-note">この日はまだPDFがアップロードされていません / No PDF uploaded for this date yet.</div>
+      <div class="empty-note">No PDF uploaded for this date yet. / ยังไม่มีไฟล์ PDF สำหรับวันที่นี้</div>
       <div class="upload-form">
         <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
-        <button class="btn" onclick="uploadFile('${selectedDate}')">アップロード / Upload</button>
+        <button class="btn" onclick="uploadFile('${selectedDate}')">Upload / อัปโหลด</button>
       </div>
     `;
   }
@@ -343,19 +344,19 @@ function showSaveMsg(msg, isError) {
 async function uploadFile(dateStr) {
   const input = document.getElementById(`file-input-${dateStr}`);
   const file = input && input.files[0];
-  if (!file) { showSaveMsg('PDFファイルを選択してください / Please choose a PDF file.', true); return; }
+  if (!file) { showSaveMsg('Please choose a PDF file. / กรุณาเลือกไฟล์ PDF', true); return; }
   if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-    showSaveMsg('PDFファイルのみアップロードできます / Only PDF files are allowed.', true);
+    showSaveMsg('Only PDF files are allowed. / อัปโหลดได้เฉพาะไฟล์ PDF เท่านั้น', true);
     return;
   }
   const maxBytes = 20 * 1024 * 1024; // 20MB
   if (file.size > maxBytes) {
-    showSaveMsg('ファイルサイズが大きすぎます(上限20MB) / File is too large (20MB limit).', true);
+    showSaveMsg('File is too large (20MB limit). / ไฟล์มีขนาดใหญ่เกินไป (จำกัด 20MB)', true);
     return;
   }
 
   const alreadyExists = uploadsMap.has(dateStr);
-  if (alreadyExists && !confirm(`${dateStr} には既にPDFがアップロードされています。上書きしますか？\nA PDF already exists for ${dateStr}. Overwrite it?`)) {
+  if (alreadyExists && !confirm(`A PDF already exists for ${dateStr}. Overwrite it?\nมีไฟล์ PDF สำหรับวันที่ ${dateStr} อยู่แล้ว ต้องการเขียนทับหรือไม่?`)) {
     return;
   }
 
@@ -386,6 +387,21 @@ async function uploadFile(dateStr) {
   loadMonthUploads();
 }
 
+async function viewFile(dateStr) {
+  const row = uploadsMap.get(dateStr);
+  if (!row) return;
+
+  const { data, error } = await supabaseClient.storage.from(BUCKET).download(row.file_path);
+  if (error) { showSaveMsg('เปิดไฟล์ไม่สำเร็จ / Failed to open file: ' + error.message, true); return; }
+
+  // 別タブでブラウザ内蔵のPDFビューアーで直接開く(ダウンロードプロンプトを出さない)。
+  // タブはユーザーのクリックを起点に開いているので、ポップアップブロックにはかからない。
+  const blobUrl = URL.createObjectURL(data);
+  window.open(blobUrl, '_blank');
+  // 開いたタブがBlobを読み込み終える時間を見込んで少し遅らせてから解放する
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+}
+
 async function downloadFile(dateStr) {
   const row = uploadsMap.get(dateStr);
   if (!row) return;
@@ -406,7 +422,7 @@ async function downloadFile(dateStr) {
 async function deleteFile(dateStr) {
   const row = uploadsMap.get(dateStr);
   if (!row) return;
-  if (!confirm(`${dateStr} のPDFを削除しますか？この操作は取り消せません。\nDelete the PDF for ${dateStr}? This cannot be undone.`)) return;
+  if (!confirm(`Delete the PDF for ${dateStr}? This cannot be undone.\nต้องการลบไฟล์ PDF ของวันที่ ${dateStr} หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
 
   const { error: storageErr } = await supabaseClient.storage.from(BUCKET).remove([row.file_path]);
   if (storageErr) { showSaveMsg('ลบไม่สำเร็จ / Delete failed: ' + storageErr.message, true); return; }
