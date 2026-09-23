@@ -250,9 +250,9 @@
   #manualpay-modal .manualpay-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
   .manualpay-field { margin-bottom: 12px; }
   .manualpay-field label { font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
-  .manualpay-field input {
+  .manualpay-field input, .manualpay-field select {
     width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px;
-    font-size: 14px; font-family: inherit;
+    font-size: 14px; font-family: inherit; background: #fff;
   }
   #manualpay-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
   #manualpay-modal-actions button {
@@ -417,6 +417,18 @@
   .express-code-missing { font-weight: 700; color: var(--red-accent); }
   .express-cust-code { font-weight: 800; font-size: 14px; color: var(--navy); }
 
+  /* お米集計パネル(シラチャ/パタヤタブ専用) */
+  .rice-summary-panel { background: var(--panel); border: 2px solid #c9a227; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+  .rice-summary-header { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; }
+  .rice-summary-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+  .rice-summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rice-summary-table th, .rice-summary-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+  .rice-summary-table th.num, .rice-summary-table td.num { text-align: right; }
+  .rice-summary-table thead th { background: var(--bg); font-size: 11px; color: var(--text-muted); }
+  .rice-summary-total-row td { font-weight: 700; background: var(--bg); border-top: 2px solid var(--table-border); }
+  .rice-summary-empty { padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px; }
+  .rice-summary-warn { margin-top: 10px; padding: 8px 10px; background: #fdf3d0; border: 1px solid #e8d68a; border-radius: 6px; font-size: 11.5px; line-height: 1.7; color: #6b5a00; }
+
   /* Express入力用 印刷専用エリア(画面上は非表示、印刷時のみA4に2段組で表示) */
   #express-print-area { display: none; }
   #express-print-row-source { display: none; }
@@ -537,6 +549,12 @@
     <span class="swatch"><span class="stamp-sample">PAID</span>ชำระเงินแล้ว / Payment confirmed (shown separately from row color / แสดงแยกจากสีพื้นแถว)</span>
   </div>
 
+  <div class="rice-summary-panel" id="rice-summary-panel" style="display:none;">
+    <div class="rice-summary-header">🍚 お米集計 / Rice Summary <span class="rice-summary-sub">配送日ごとの数量(点) / Quantity by delivery date</span></div>
+    <table class="rice-summary-table" id="rice-summary-table"></table>
+    <div class="rice-summary-warn" id="rice-summary-warn" style="display:none;"></div>
+  </div>
+
   <div class="express-toolbar" id="express-toolbar" style="display:none;">
     <button class="btn-express-selectall" onclick="selectAllExpressRows()">Select All / เลือกทั้งหมด</button>
     <button class="btn-express-print" onclick="printSelectedExpress()">🖨️ Print Selected / พิมพ์รายการที่เลือก</button>
@@ -617,6 +635,13 @@
     <div class="manualpay-field">
       <label>Restaurant Name / ชื่อร้าน</label>
       <input type="text" id="wholesale-name-input" placeholder="e.g. MIYABI RESTAURANT">
+    </div>
+    <div class="manualpay-field">
+      <label>Area / พื้นที่ (Bangkok tab vs Sriracha/Pattaya tab)</label>
+      <select id="wholesale-area-input">
+        <option value="Bangkok">Bangkok</option>
+        <option value="Sriracha">Sriracha / Pattaya</option>
+      </select>
     </div>
     <div class="manualpay-field">
       <label>Amount (THB) / จำนวนเงิน</label>
@@ -920,12 +945,121 @@ function resetToToday() {
   }
 })();
 
+// ---------------- Rice summary (Sriracha / Pattaya tab only) ----------------
+// お米コード一覧(商品名の "=CODE" の部分)。旧ECキューブ時代のスニペットと同じ判定基準を踏襲。
+const RICE_CODE_MAP = {
+  'RR0': 'blackrice',
+  'RR05': 'rice5kg',
+  'RR02': 'rice2kg',
+  'RR01': 'rice1kg',
+  'RRI5': 'nigata',
+  'RRI2': 'nanatsu',
+};
+const RICE_CATEGORY_LABELS = [
+  { key: 'rice5kg', label: '日本米 5kg' },
+  { key: 'rice2kg', label: '日本米 2kg' },
+  { key: 'rice1kg', label: '日本米 1kg' },
+  { key: 'nigata', label: '新潟米(無洗米)' },
+  { key: 'nanatsu', label: 'ななつぼし' },
+  { key: 'blackrice', label: '紫黒米' },
+];
+
+function getRiceCategory(item) {
+  const nameEn = item.products?.name_en || '';
+  const nameJa = item.product_name_snapshot || '';
+  const combined = `${nameEn} ${nameJa}`;
+  const codes = [...combined.matchAll(/=([A-Za-z0-9]+)/g)].map(m => m[1].toUpperCase());
+  const matchedCode = codes.find(c => RICE_CODE_MAP[c]);
+  if (matchedCode) return RICE_CODE_MAP[matchedCode];
+
+  if (combined.includes('紫黒米')) return 'blackrice';
+  if (combined.includes('新潟の米') || combined.includes('Musenmai')) return 'nigata';
+  if (combined.includes('ななつぼし') || combined.includes('Nanatsuboshi')) return 'nanatsu';
+  if (combined.includes('日本米') && combined.includes('5kg')) return 'rice5kg';
+  if (combined.includes('日本米') && combined.includes('2kg')) return 'rice2kg';
+  if (combined.includes('日本米') && combined.includes('1kg')) return 'rice1kg';
+  return null;
+}
+
+function isRiceLike(item) {
+  const nameJa = item.product_name_snapshot || '';
+  const nameEn = item.products?.name_en || '';
+  return (nameJa.includes('米') && !nameJa.includes('新米')) || /rice/i.test(nameEn);
+}
+
+function renderRiceSummary(rows) {
+  const panel = document.getElementById('rice-summary-panel');
+  if (currentAreaFilter !== 'Sriracha,Pattaya') { panel.style.display = 'none'; return; }
+
+  const activeOrders = (rows || []).filter(o => !o.is_cancelled);
+  const byDate = new Map();
+  const unmatched = [];
+
+  activeOrders.forEach(order => {
+    const date = order.delivery_date || '(日付未設定)';
+    (order.order_items || []).forEach(item => {
+      const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+      const cat = getRiceCategory(item);
+      if (cat) {
+        if (!byDate.has(date)) byDate.set(date, { rice5kg: 0, rice2kg: 0, rice1kg: 0, nigata: 0, nanatsu: 0, blackrice: 0 });
+        byDate.get(date)[cat] += qty;
+      } else if (isRiceLike(item)) {
+        unmatched.push({ date, orderId: (order.id || '').slice(0, 8).toUpperCase(), name: item.product_name_snapshot || item.products?.name_en || '(no name)' });
+      }
+    });
+  });
+
+  const table = document.getElementById('rice-summary-table');
+  const warnBox = document.getElementById('rice-summary-warn');
+
+  if (byDate.size === 0 && unmatched.length === 0) {
+    table.innerHTML = '<tr><td class="rice-summary-empty">該当するお米の注文はありません / No rice orders in current results</td></tr>';
+    warnBox.style.display = 'none';
+    panel.style.display = 'block';
+    return;
+  }
+
+  const dates = [...byDate.keys()].sort();
+  const totals = { rice5kg: 0, rice2kg: 0, rice1kg: 0, nigata: 0, nanatsu: 0, blackrice: 0 };
+
+  let html = '<thead><tr><th>วันที่จัดส่ง<br>Delivery date</th>'
+    + RICE_CATEGORY_LABELS.map(c => `<th class="num">${escapeHtml(c.label)}</th>`).join('')
+    + '</tr></thead><tbody>';
+
+  dates.forEach(date => {
+    const bucket = byDate.get(date);
+    html += `<tr><td>${escapeHtml(date)}</td>`
+      + RICE_CATEGORY_LABELS.map(c => {
+        totals[c.key] += bucket[c.key];
+        return `<td class="num">${bucket[c.key] > 0 ? bucket[c.key] : '-'}</td>`;
+      }).join('')
+      + '</tr>';
+  });
+
+  html += '<tr class="rice-summary-total-row"><td>合計 / Total</td>'
+    + RICE_CATEGORY_LABELS.map(c => `<td class="num">${totals[c.key]}</td>`).join('')
+    + '</tr></tbody>';
+
+  table.innerHTML = html;
+
+  if (unmatched.length > 0) {
+    warnBox.innerHTML = '⚠️ 分類できなかったお米らしき商品 / Rice-like items that could not be categorized:<br>'
+      + unmatched.map(u => `・${escapeHtml(u.date)} #${escapeHtml(u.orderId)}: ${escapeHtml(u.name)}`).join('<br>');
+    warnBox.style.display = 'block';
+  } else {
+    warnBox.style.display = 'none';
+  }
+
+  panel.style.display = 'block';
+}
+
 // ---------------- Area tabs ----------------
 function setAreaTab(btn, area) {
   document.querySelectorAll('.area-tabs button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentAreaFilter = area;
   document.getElementById('express-toolbar').style.display = (area === '__EXPRESS__') ? 'flex' : 'none';
+  document.getElementById('rice-summary-panel').style.display = 'none';
   loadOrders();
 }
 
@@ -1006,6 +1140,8 @@ async function loadOrders() {
       return full.toLowerCase().includes(name.toLowerCase());
     });
   }
+
+  renderRiceSummary(rows);
 
   if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
@@ -1842,12 +1978,15 @@ function openWholesaleModal(order) {
   if (wholesaleEditOrder) {
     document.getElementById('wholesale-modal-title').innerHTML = 'Edit Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(แก้ไขรายการขายส่ง)</span>';
     document.getElementById('wholesale-name-input').value = wholesaleEditOrder.wholesale_restaurant_name || '';
+    document.getElementById('wholesale-area-input').value = wholesaleEditOrder.area_name === 'Sriracha' ? 'Sriracha' : 'Bangkok';
     document.getElementById('wholesale-amount-input').value = wholesaleEditOrder.total_amount || '';
     document.getElementById('wholesale-date-input').value = wholesaleEditOrder.delivery_date || bkkNow.toISOString().slice(0, 10);
     document.getElementById('wholesale-note-input').value = wholesaleEditOrder.comment || '';
   } else {
     document.getElementById('wholesale-modal-title').innerHTML = 'Wholesale Entry <span style="font-size:11px;color:var(--text-muted);">(คีย์ขายส่ง)</span>';
     document.getElementById('wholesale-name-input').value = '';
+    // 現在開いているタブに合わせて初期値を選ぶ(シラチャ/パタヤタブならSriracha、それ以外はBangkok)
+    document.getElementById('wholesale-area-input').value = currentAreaFilter === 'Sriracha,Pattaya' ? 'Sriracha' : 'Bangkok';
     document.getElementById('wholesale-amount-input').value = '';
     document.getElementById('wholesale-note-input').value = '';
     document.getElementById('wholesale-date-input').value = bkkNow.toISOString().slice(0, 10);
@@ -1865,6 +2004,7 @@ function closeWholesaleModal() {
 
 async function submitWholesaleEntry() {
   const name = document.getElementById('wholesale-name-input').value.trim();
+  const areaVal = document.getElementById('wholesale-area-input').value;
   const amountVal = document.getElementById('wholesale-amount-input').value;
   const dateVal = document.getElementById('wholesale-date-input').value;
   const noteVal = document.getElementById('wholesale-note-input').value.trim();
@@ -1884,12 +2024,14 @@ async function submitWholesaleEntry() {
         p_amount: amount,
         p_date: dateVal || null,
         p_note: noteVal || null,
+        p_area_name: areaVal,
       })
     : await supabaseClient.rpc('record_wholesale_sale', {
         p_restaurant_name: name,
         p_amount: amount,
         p_date: dateVal || null,
         p_note: noteVal || null,
+        p_area_name: areaVal,
       });
 
   if (error) {
