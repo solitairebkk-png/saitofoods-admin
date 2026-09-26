@@ -698,7 +698,7 @@ async function loadProductGrid() {
     const ids = popData.map(p => p.product_id);
     const { data: prodData, error: prodError } = await supabaseClient
       .from('products')
-      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
       .in('id', ids);
 
     if (prodError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + prodError.message + '</div>'; return; }
@@ -716,7 +716,7 @@ async function loadProductGrid() {
   if (currentCategoryId === 'weight') {
     const { data: weightData, error: weightError } = await supabaseClient
       .from('products')
-      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
       .eq('sale_type', 'weight')
       .order('name_ja')
       .limit(200);
@@ -731,12 +731,12 @@ async function loadProductGrid() {
   if (currentCategoryId) {
     query = supabaseClient
       .from('product_categories')
-      .select('products ( id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published )')
+      .select('products ( id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published )')
       .eq('category_id', currentCategoryId);
   } else {
     query = supabaseClient
       .from('products')
-      .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type, is_published')
+      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
       .order('name_ja')
       .limit(500);
   }
@@ -751,6 +751,13 @@ async function loadProductGrid() {
   renderProductGrid(products);
 }
 
+// プロモーション価格の判定(cart.html・product_list.htmlと同じルール):
+// is_monthly_promotionがtrueかつpromotion_priceが設定されていて通常価格より安い場合のみ、その価格を使う
+function effectivePrice(p) {
+  const promo = p.promotion_price;
+  return (p.is_monthly_promotion && promo !== null && promo !== undefined && promo < p.price) ? promo : p.price;
+}
+
 function renderProductGrid(products, orderMap) {
   const gridEl = document.getElementById('product-grid');
 
@@ -763,9 +770,13 @@ function renderProductGrid(products, orderMap) {
     const isWeight = p.sale_type === 'weight';
     // 量り売りも「価格未入力」の警告対象に含める(product_control.htmlの方針と統一)
     const noPrice = !p.price || p.price === 0;
+    const eff = effectivePrice(p);
+    const hasDiscount = !isWeight && !noPrice && eff < p.price;
     const priceLabel = isWeight
       ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (approx.)`)
-      : (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB`);
+      : (noPrice ? 'ยังไม่ตั้งราคา / No price' : (hasDiscount
+          ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:10px;margin-right:4px;">${p.price}</span>${eff} THB 🔥`
+          : `${p.price} THB`));
     const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${escapeHtml(p.name_th)}</div>` : '';
     const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
     card.innerHTML = `<div class="p-name">${escapeHtml(p.name_en || p.name_ja)}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
@@ -782,7 +793,7 @@ async function searchProducts() {
 
   const { data, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, name_th, price, unit_price, unit_label, sale_type')
+    .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type')
     .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
     .limit(15);
 
@@ -791,7 +802,10 @@ async function searchProducts() {
   resultEl.innerHTML = '';
   data.forEach(p => {
     const div = document.createElement('div');
-    const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label} (approx. ${p.price} THB)` : `${p.price} THB`;
+    const eff = effectivePrice(p);
+    const priceLabel = p.sale_type === 'weight'
+      ? `${p.unit_price} THB / ${p.unit_label} (approx. ${p.price} THB)`
+      : (eff < p.price ? `${eff} THB 🔥 (was ${p.price})` : `${p.price} THB`);
     const thPart = p.name_th ? ` / ${escapeHtml(p.name_th)}` : '';
     div.innerHTML = `${escapeHtml(p.name_en || p.name_ja)}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
     div.onclick = () => addToCart(p);
@@ -807,7 +821,8 @@ function addToCart(p) {
     name_display: p.name_en || p.name_ja, // 画面表示用(タイ人スタッフ向けに英語優先)
     name_th: p.name_th || '',
     sale_type: p.sale_type,
-    price: p.price,
+    price: effectivePrice(p),
+    original_price: p.price,
     unit_price: p.unit_price,
     unit_label: p.unit_label,
     quantity: 1
@@ -835,11 +850,18 @@ function renderCart() {
     const lineTotal = item.price * item.quantity;
     subtotal += lineTotal;
 
+    const hasDiscount = !isWeight && item.original_price != null && item.price < item.original_price;
+    const unitPriceCell = isWeight
+      ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(approx. / unit ' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>'
+      : (hasDiscount
+          ? '<span style="text-decoration:line-through;color:var(--text-muted);font-size:10px;margin-right:4px;">' + item.original_price + '</span>' + item.price + ' THB 🔥'
+          : item.price + ' THB');
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(item.name_display || item.name)}${item.name_th ? '<br><span style="color:var(--text-muted);font-size:10px;">' + escapeHtml(item.name_th) + '</span>' : ''}${isWeight ? '<span class="weight-tag">ชั่งน้ำหนัก / Weight</span>' : ''}</td>
       <td><input type="number" min="1" value="${item.quantity}" onchange="updateQty(${i}, this.value)"></td>
-      <td>${isWeight ? item.price + ' THB <span style="color:var(--text-muted);font-size:10px;">(approx. / unit ' + (item.unit_price ?? '-') + '/' + (item.unit_label || 'kg') + ')</span>' : item.price + ' THB'}</td>
+      <td>${unitPriceCell}</td>
       <td>${isWeight ? lineTotal + ' THB <span style="color:var(--text-muted);font-size:10px;">(approx.)</span>' : lineTotal + ' THB'}</td>
       <td><button class="remove-btn" onclick="removeFromCart(${i})">×</button></td>
     `;

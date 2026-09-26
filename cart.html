@@ -870,6 +870,13 @@ function renderShippingBanner(judgeSubtotal) {
   }
 }
 
+// プロモーション価格の判定(product_list.html・local_order.htmlと同じルール):
+// is_monthly_promotionがtrueかつpromotion_priceが設定されていて通常価格より安い場合のみ、その価格を使う
+function effectivePrice(p) {
+  const promo = p.promotion_price;
+  return (p.is_monthly_promotion && promo !== null && promo !== undefined && promo < p.price) ? promo : p.price;
+}
+
 // ---------------- カート読み込み(product_list.htmlのlocalStorageと同じキー) ----------------
 async function loadCartItems() {
   const listEl = document.getElementById('cart-items-list');
@@ -886,7 +893,7 @@ async function loadCartItems() {
 
   const { data: products, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, price, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty')
+    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty')
     .in('id', ids);
 
   if (error || !products) {
@@ -899,7 +906,8 @@ async function loadCartItems() {
     name: p.name_ja,
     name_en: p.name_en,
     sale_type: p.sale_type,
-    price: p.price,
+    price: effectivePrice(p),
+    original_price: p.price,
     unit_price: p.unit_price,
     unit_label: p.unit_label,
     image_url: p.image_url,
@@ -927,9 +935,12 @@ function renderCart() {
   listEl.innerHTML = cart.map((item, i) => {
     const isWeight = item.sale_type === 'weight';
     const img = item.image_url ? `<img src="${item.image_url}" class="cart-item-img" onerror="this.style.visibility='hidden'">` : `<div class="cart-item-img"></div>`;
+    const hasDiscount = !isWeight && item.original_price != null && item.price < item.original_price;
     const priceLabel = isWeight
       ? `฿${item.price} <span style="font-weight:400;color:#999;">(概算・単価 ${item.unit_price ?? '-'} / ${item.unit_label || ''})</span>`
-      : `฿${item.price}`;
+      : (hasDiscount
+          ? `<span style="text-decoration:line-through;color:#999;font-weight:600;margin-right:5px;">฿${item.original_price}</span>฿${item.price}`
+          : `฿${item.price}`);
     const displayName = i18nGetLang() === 'en' && item.name_en ? item.name_en : item.name;
     return `
       <div class="cart-item-row">

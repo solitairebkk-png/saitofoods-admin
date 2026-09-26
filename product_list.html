@@ -529,6 +529,13 @@ function isAvailable(p) {
   return !!(p.is_unlimited_stock || (p.stock_qty && p.stock_qty > 0));
 }
 
+// プロモーション価格の判定(cart.html・local_order.htmlと同じルール):
+// is_monthly_promotionがtrueかつpromotion_priceが設定されていて通常価格より安い場合のみ、その価格を使う
+function effectivePrice(p) {
+  const promo = p.promotion_price;
+  return (p.is_monthly_promotion && promo !== null && promo !== undefined && promo < p.price) ? promo : p.price;
+}
+
 function maxQtyFor(p) {
   return p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
 }
@@ -851,7 +858,13 @@ function productCardHtml(p) {
   const isFav = favoriteProductIds.has(p.id);
   const isWeight = p.sale_type === 'weight';
   const lang = i18nGetLang();
-  const priceLabel = isWeight ? `฿ ${p.unit_price} <span>/ ${p.unit_label}</span>` : `฿ ${p.price}<span></span>`;
+  const eff = effectivePrice(p);
+  const hasDiscount = !isWeight && eff < p.price;
+  const priceLabel = isWeight
+    ? `฿ ${p.unit_price} <span>/ ${p.unit_label}</span>`
+    : (hasDiscount
+        ? `<span style="text-decoration:line-through;color:#999;font-weight:600;font-size:0.65em;margin-right:4px;">฿${p.price}</span>฿ ${eff}<span></span>`
+        : `฿ ${p.price}<span></span>`);
   const stepper = !available
     ? `<span class="out-of-stock">${i18nText('plist.outOfStockShort')}</span>`
     : inCart > 0
@@ -906,7 +919,7 @@ function changeQty(productId, delta) {
 function updateCartBar() {
   const items = Object.values(cart);
   const count = items.reduce((s, i) => s + i.qty, 0);
-  const total = items.reduce((s, i) => s + i.qty * (i.product.price || 0), 0);
+  const total = items.reduce((s, i) => s + i.qty * (effectivePrice(i.product) || 0), 0);
   document.getElementById('cart-count').textContent = count;
   document.getElementById('cart-total').textContent = total;
   document.getElementById('cart-bar').classList.toggle('show', count > 0);
@@ -1038,9 +1051,17 @@ function openPModal(productId, fromBack) {
   document.getElementById('pmodal-name-ja').textContent = pModalLang === 'en' && p.name_en ? p.name_en : p.name_ja;
   document.getElementById('pmodal-local-tag').style.display = p.is_local_special ? 'block' : 'none';
   applyPModalDescLang(p);
-  document.getElementById('pmodal-price').textContent = p.sale_type === 'weight'
-    ? `฿ ${p.unit_price} / ${p.unit_label}`
-    : `฿ ${p.price}`;
+  const pmodalPriceEl = document.getElementById('pmodal-price');
+  if (p.sale_type === 'weight') {
+    pmodalPriceEl.textContent = `฿ ${p.unit_price} / ${p.unit_label}`;
+  } else {
+    const pmodalEffPrice = effectivePrice(p);
+    if (pmodalEffPrice < p.price) {
+      pmodalPriceEl.innerHTML = `<span style="text-decoration:line-through;color:#999;font-weight:600;font-size:0.6em;margin-right:8px;">฿${p.price}</span>฿ ${pmodalEffPrice}`;
+    } else {
+      pmodalPriceEl.textContent = `฿ ${p.price}`;
+    }
+  }
 
   const addBtn = document.getElementById('pmodal-addcart-btn');
   const alreadyInCart = cart[productId]?.qty || 0;
