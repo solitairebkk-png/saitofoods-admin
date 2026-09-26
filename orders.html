@@ -863,6 +863,7 @@ async function login() {
     return;
   }
   currentCustomer = customerRow;
+  currentCustomer.email = (data.user && data.user.email) || email;
   showMain();
 }
 
@@ -942,7 +943,11 @@ function resetToToday() {
   if (session) {
     const { data: customerRow } = await supabaseClient
       .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
-    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) {
+      currentCustomer = customerRow;
+      currentCustomer.email = session.user.email;
+      showMain();
+    }
   }
 })();
 
@@ -1766,7 +1771,8 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   if (order.is_cancelled) {
     // キャンセル済み: 閲覧のみ(adminはDeleteも可能)、Edit/Complete/Cancelは出さない
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
-    if (currentCustomer && currentCustomer.role === 'admin') {
+    // Delete(完全削除)はmakokunn@live.jpのみ(2026-09-26変更)
+    if (currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
       manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
     return tr;
@@ -1797,7 +1803,9 @@ function renderOrderRow(order, idx, showDate, countForDate) {
       manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       // シラチャの配送注文は、配送当日になったらキャンセル不可(現地への手配が既に進んでいるため)
       const isSrirachaToday = order.area_name === 'Sriracha' && order.delivery_date === todayStr();
-      if (!isSrirachaToday) {
+      // Cancel(キャンセル処理)はmakokunn@live.jpのみ(2026-09-26変更): 従来からキャンセルは
+      // スタッフが行わず本人に連絡する運用だったため、これをシステム側でも強制する
+      if (!isSrirachaToday && currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
         manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
       }
     }
@@ -1817,8 +1825,8 @@ function renderOrderRow(order, idx, showDate, countForDate) {
         manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
-    // Delete(完全削除)は管理者のみ
-    if (currentCustomer && currentCustomer.role === 'admin') {
+    // Delete(完全削除)はmakokunn@live.jpのみ(2026-09-26変更)
+    if (currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
       manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
   } else {
