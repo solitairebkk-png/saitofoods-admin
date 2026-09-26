@@ -1596,7 +1596,7 @@ function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
 
   if (order.departed_at) {
-    const staffName = order.staff?.name || (order.area_name === 'Sriracha' ? '—' : '(unknown)');
+    const staffName = order.staff?.name || ((order.area_name === 'Sriracha' || order.area_name === 'Pattaya') ? '—' : '(unknown)');
     const timeStr = new Date(order.departed_at).toLocaleTimeString('en-GB', {
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
     });
@@ -1623,9 +1623,9 @@ function renderDispatchBlock(order) {
       </div>`;
   }
 
-  // シラチャの配送は「誰が行くか」を指定しない運用のため、スタッフ選択欄を出さず
-  // ボタン一つで出発記録だけを残す(assigned_staff_idはnullのまま)
-  if (order.area_name === 'Sriracha') {
+  // シラチャ・パタヤの配送は「誰が行くか」を指定しない運用のため、スタッフ選択欄を出さず
+  // ボタン一つで出発記録だけを残す(assigned_staff_idはnullのまま)(2026-09-26: パタヤも追加)
+  if (order.area_name === 'Sriracha' || order.area_name === 'Pattaya') {
     return `
       <div class="dispatch-controls">
         <button class="btn-dispatch" onclick="departOrder('${order.id}')">🚴 Depart / ออกเดินทาง</button>
