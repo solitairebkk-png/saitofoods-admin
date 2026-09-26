@@ -995,7 +995,7 @@ function openPaymentModal(orderId, amount) {
   new QRCode(codeEl, { text: buildPromptPayPayload(amount), width: 190, height: 190 });
   document.getElementById('payment-modal-amount').textContent = amount;
   const customerName = currentCustomer ? `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() : '';
-  const params = new URLSearchParams({ amount: amount, name: customerName, ref: orderId });
+  const params = new URLSearchParams({ amount: amount, name: customerName, ref: orderId, email: (currentCustomer && currentCustomer.email) || '' });
   document.getElementById('payment-modal-slip-link').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
   document.getElementById('payment-modal-overlay').classList.add('open');
 }

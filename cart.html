@@ -1502,7 +1502,7 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
   } else {
     noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>下記QRコードでお支払い後、スリップアップロード用リンクから写真をお送りください。${pointsLine}`;
     renderPromptPayQr(amount);
-    const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId });
+    const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId, email: (currentCustomer && currentCustomer.email) || '' });
     document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
     document.getElementById('slip-link-row').style.display = 'flex';
   }
