@@ -551,7 +551,7 @@
   </div>
 
   <div class="rice-summary-panel" id="rice-summary-panel" style="display:none;">
-    <div class="rice-summary-header">🍚 お米集計 / Rice Summary <span class="rice-summary-sub">配送日ごとの数量(点) / Quantity by delivery date</span></div>
+    <div class="rice-summary-header">🍚 Rice Summary / สรุปยอดข้าว <span class="rice-summary-sub">Quantity by delivery date / จำนวนตามวันที่จัดส่ง</span></div>
     <table class="rice-summary-table" id="rice-summary-table"></table>
     <div class="rice-summary-warn" id="rice-summary-warn" style="display:none;"></div>
   </div>
@@ -962,12 +962,12 @@ const RICE_CODE_MAP = {
   'RRI2': 'nanatsu',
 };
 const RICE_CATEGORY_LABELS = [
-  { key: 'rice5kg', label: '日本米 5kg' },
-  { key: 'rice2kg', label: '日本米 2kg' },
-  { key: 'rice1kg', label: '日本米 1kg' },
-  { key: 'nigata', label: '新潟米(無洗米)' },
-  { key: 'nanatsu', label: 'ななつぼし' },
-  { key: 'blackrice', label: '紫黒米' },
+  { key: 'rice5kg', label: 'Japanese Rice 5kg / ข้าวญี่ปุ่น 5kg' },
+  { key: 'rice2kg', label: 'Japanese Rice 2kg / ข้าวญี่ปุ่น 2kg' },
+  { key: 'rice1kg', label: 'Japanese Rice 1kg / ข้าวญี่ปุ่น 1kg' },
+  { key: 'nigata', label: 'Niigata Rice (Musenmai) / ข้าวนีงาตะ (ไม่ต้องซาว)' },
+  { key: 'nanatsu', label: 'Nanatsuboshi / นานัตสึโบชิ' },
+  { key: 'blackrice', label: 'Purple-Black Rice / ข้าวสีม่วงดำ' },
 ];
 
 function getRiceCategory(item) {
@@ -1002,7 +1002,7 @@ function renderRiceSummary(rows) {
   const unmatched = [];
 
   activeOrders.forEach(order => {
-    const date = order.delivery_date || '(日付未設定)';
+    const date = order.delivery_date || '(No date / ไม่มีวันที่)';
     (order.order_items || []).forEach(item => {
       const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
       const cat = getRiceCategory(item);
@@ -1019,7 +1019,7 @@ function renderRiceSummary(rows) {
   const warnBox = document.getElementById('rice-summary-warn');
 
   if (byDate.size === 0 && unmatched.length === 0) {
-    table.innerHTML = '<tr><td class="rice-summary-empty">該当するお米の注文はありません / No rice orders in current results</td></tr>';
+    table.innerHTML = '<tr><td class="rice-summary-empty">No rice orders in current results / ไม่มีคำสั่งซื้อข้าวในผลลัพธ์ปัจจุบัน</td></tr>';
     warnBox.style.display = 'none';
     panel.style.display = 'block';
     return;
@@ -1028,7 +1028,7 @@ function renderRiceSummary(rows) {
   const dates = [...byDate.keys()].sort();
   const totals = { rice5kg: 0, rice2kg: 0, rice1kg: 0, nigata: 0, nanatsu: 0, blackrice: 0 };
 
-  let html = '<thead><tr><th>วันที่จัดส่ง<br>Delivery date</th>'
+  let html = '<thead><tr><th>Delivery date<br>วันที่จัดส่ง</th>'
     + RICE_CATEGORY_LABELS.map(c => `<th class="num">${escapeHtml(c.label)}</th>`).join('')
     + '</tr></thead><tbody>';
 
@@ -1042,14 +1042,14 @@ function renderRiceSummary(rows) {
       + '</tr>';
   });
 
-  html += '<tr class="rice-summary-total-row"><td>合計 / Total</td>'
+  html += '<tr class="rice-summary-total-row"><td>Total / รวม</td>'
     + RICE_CATEGORY_LABELS.map(c => `<td class="num">${totals[c.key]}</td>`).join('')
     + '</tr></tbody>';
 
   table.innerHTML = html;
 
   if (unmatched.length > 0) {
-    warnBox.innerHTML = '⚠️ 分類できなかったお米らしき商品 / Rice-like items that could not be categorized:<br>'
+    warnBox.innerHTML = '⚠️ Rice-like items that could not be categorized / สินค้าคล้ายข้าวที่ไม่สามารถจัดหมวดหมู่ได้:<br>'
       + unmatched.map(u => `・${escapeHtml(u.date)} #${escapeHtml(u.orderId)}: ${escapeHtml(u.name)}`).join('<br>');
     warnBox.style.display = 'block';
   } else {
