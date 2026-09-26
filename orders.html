@@ -1338,7 +1338,7 @@ async function loadExpressInput() {
   let query = supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, customer_id, total_amount,
+      id, order_type, delivery_date, customer_id, total_amount, points_used,
       customers!customer_id ( family_name, first_name, tel1 ),
       order_items ( id, product_name_snapshot, quantity, sale_type, products ( name_en ) )
     `)
@@ -1352,17 +1352,6 @@ async function loadExpressInput() {
 
   const { data: orders, error } = await query;
   if (error) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Error: ' + error.message + '</td></tr>'; return; }
-
-  // 使用ポイント(points_ledgerの「獲得(earn)」以外の記録)を注文IDごとに集計
-  const orderIds = (orders || []).map(o => o.id);
-  const pointsUsedMap = {};
-  if (orderIds.length > 0) {
-    const { data: ledgerRows } = await supabaseClient
-      .from('points_ledger').select('order_id, points, change_type').in('order_id', orderIds).neq('change_type', 'earn');
-    (ledgerRows || []).forEach(r => {
-      pointsUsedMap[r.order_id] = (pointsUsedMap[r.order_id] || 0) + Math.abs(r.points || 0);
-    });
-  }
 
   // プラータピアン: Express未入力の売上をレシート単位でグループ化
   let ptQuery = supabaseClient
@@ -1399,7 +1388,7 @@ async function loadExpressInput() {
   tbody.innerHTML = '';
   combined.forEach(entry => {
     if (entry.kind === 'order') {
-      tbody.appendChild(renderExpressOrderRow(entry.data, pointsUsedMap[entry.data.id] || 0));
+      tbody.appendChild(renderExpressOrderRow(entry.data, Number(entry.data.points_used) || 0));
     } else {
       tbody.appendChild(renderExpressPtRow(entry.data));
     }
