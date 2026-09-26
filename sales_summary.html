@@ -47,9 +47,6 @@
   .card.plaatapian { border: 1px solid #8B2E8B; }
   .card.plaatapian .label { color: #8B2E8B; font-weight: 600; }
   .card.plaatapian .amount { color: #8B2E8B; }
-  .card.wholesale { border: 1px solid #6b4fa0; }
-  .card.wholesale .label { color: #6b4fa0; font-weight: 600; }
-  .card.wholesale .amount { color: #6b4fa0; }
 
   .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
   .info-box { background: #eaf1f8; border: 1px solid #b9d0e6; color: var(--navy); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
@@ -244,9 +241,12 @@ async function loadSummary() {
     .from('plaa_tapian_sales').select('total_price')
     .eq('sale_date', date);
 
-  // 卸売り分(レストラン名+金額のみの簡易入力): delivery_date で判定
+  // 卸売り分(レストラン名+金額のみの簡易入力): delivery_date で判定。
+  // area_name(Bangkok/Sriracha)が付与されているので、独立集計はせず、
+  // 通常の配送注文と同じくエリアの売上へそのまま合算する
+  // (2026-09-26: 卸売りを独立カードにせず、選んだエリアの売上に含める方針に変更)。
   const wholesalePromise = supabaseClient
-    .from('orders').select('id, total_amount, wholesale_restaurant_name, is_cancelled')
+    .from('orders').select('id, total_amount, wholesale_restaurant_name, area_name, is_cancelled')
     .eq('order_type', 'wholesale')
     .eq('delivery_date', date);
 
@@ -266,14 +266,30 @@ async function loadSummary() {
 
   const allOrders = [...(deliveryData || []), ...(walkinData || [])].filter(o => !o.is_cancelled);
   const plaaTapianRows = plaaTapianData || [];
-  const wholesaleRows = (wholesaleData || []).filter(o => !o.is_cancelled);
+  // 卸売り分は、通常の注文と同じ形(order_type/area_name/total_amount)に整えて
+  // allOrdersと合流させる(商品明細は無いのでorder_itemsは空のまま)。
+  const wholesaleRows = (wholesaleData || [])
+    .filter(o => !o.is_cancelled)
+    .map(o => ({
+      id: o.id,
+      order_type: 'delivery', // エリア別バケット振り分けのため、通常配送と同じ扱いにする
+      area_name: o.area_name,
+      total_amount: o.total_amount,
+      is_cancelled: false,
+      has_weight_items: false,
+      is_weight_confirmed: true,
+      order_items: [],
+      _isWholesale: true,
+      _wholesaleName: o.wholesale_restaurant_name,
+    }));
 
-  renderSummary(allOrders, plaaTapianRows, wholesaleRows);
+  renderSummary([...allOrders, ...wholesaleRows], plaaTapianRows);
   renderStaffDeliveries(allOrders);
 }
 
-function renderSummary(orders, plaaTapianRows, wholesaleRows) {
+function renderSummary(orders, plaaTapianRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
+  // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
     walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
     Bangkok: { label: 'Bangkok', orders: 0, amount: 0 },
@@ -320,12 +336,7 @@ function renderSummary(orders, plaaTapianRows, wholesaleRows) {
   const plaaTapianAmount = plaaTapianRows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
   const plaaTapianCount = plaaTapianRows.length;
 
-  // 卸売り(レストラン名+金額のみ)の当日合計。ordersテーブルには入っているが、
-  // Bangkok等のbucketとは別枠のカードとして表示し、Totalにのみ合算する。
-  const wholesaleAmount = wholesaleRows.reduce((sum, r) => sum + (Number(r.total_amount) || 0), 0);
-  const wholesaleCount = wholesaleRows.length;
-
-  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount + wholesaleAmount;
+  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount;
   const grandOrders = Object.values(buckets).reduce((s, b) => s + b.orders, 0);
 
   const cardsEl = document.getElementById('summary-cards');
@@ -351,19 +362,11 @@ function renderSummary(orders, plaaTapianRows, wholesaleRows) {
       <div class="count">${plaaTapianCount} items / รายการ</div>
     </div>`;
 
-  // 卸売り専用カード(常に表示。件数0でも「まだデータが無い」ことが分かるように)
-  cardsEl.innerHTML += `
-    <div class="card wholesale">
-      <div class="label">🏢 Wholesale / ขายส่ง</div>
-      <div class="amount">${wholesaleAmount.toLocaleString()} THB</div>
-      <div class="count">${wholesaleCount} orders / คำสั่งซื้อ</div>
-    </div>`;
-
   cardsEl.innerHTML += `
     <div class="card total">
       <div class="label">Total / รวมทั้งหมด</div>
       <div class="amount">${grandTotal.toLocaleString()} THB</div>
-      <div class="count">${grandOrders} orders / คำสั่งซื้อ + ${plaaTapianCount} Plaa-Ta-Pian items + ${wholesaleCount} Wholesale</div>
+      <div class="count">${grandOrders} orders / คำสั่งซื้อ + ${plaaTapianCount} Plaa-Ta-Pian items</div>
     </div>`;
 
   const warnEl = document.getElementById('unconfirmed-warn');
