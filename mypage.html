@@ -706,6 +706,7 @@ const ORDER_SELECT_FIELDS = `
       id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, is_slip_printed, total_amount, related_order_id,
       paid_amount, manual_payment_confirmed, has_weight_items, weight_email_sent,
+      area_name, condo_name,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
@@ -817,7 +818,12 @@ function renderOrderCard(order, index, childOrderIdSet) {
   // 配送日時の変更はDelivery注文のみ対象(Walk-inには配送日時の概念が無いため)。
   // 追加注文(related_order_id有り=自分が子注文/childOrderIdSetに載っている=自分が親注文)は、
   // 元注文と配送日時を共有している前提のため対象外とする。
-  const canChangeSchedule = canModify && order.order_type !== 'walk_in'
+  // シラチャ・パタヤは「配送可能な特定の日付(コンドミニアムごとに火曜/木曜固定など)」しか
+  // 選べない特殊な配送日ルールのため、この汎用の日時変更モーダル(日曜以外なら何でも選べてしまう)
+  // では対象外とする(2026-09-26: 誤って任意の曜日に変更できてしまうバグが発覚したため)。
+  const areaLower = (order.area_name || '').toLowerCase();
+  const isSrirachaOrPattaya = areaLower.includes('sriracha') || areaLower.includes('pattaya');
+  const canChangeSchedule = canModify && order.order_type !== 'walk_in' && !isSrirachaOrPattaya
     && !order.related_order_id && !(childOrderIdSet && childOrderIdSet.has(order.id));
   // 支払い済みの注文は、伝票印刷前でも「キャンセル」だけはできないようにする
   // (配送日時の変更は支払い済みでも引き続き可能、という要望のため canModify とは別条件にする)。
@@ -883,6 +889,9 @@ function renderOrderCard(order, index, childOrderIdSet) {
       : ''}
     ${canChangeSchedule
       ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>`
+      : ''}
+    ${(isSrirachaOrPattaya && canModify && !order.related_order_id && !(childOrderIdSet && childOrderIdSet.has(order.id)))
+      ? `<div style="width:100%;margin-top:8px;padding:8px;border-radius:8px;background:var(--yellow-light);color:var(--muted);font-size:11.5px;text-align:center;">配送日の変更は店舗までご連絡ください / Please contact us to change this delivery date</div>`
       : ''}
     ${canCancel
       ? `<button class="cancel-btn" onclick="cancelOrder('${order.id}', this)">${i18nText('my.cancelBtn')}</button>`
