@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   :root {
     --yellow: #F5A93C;
@@ -434,6 +435,25 @@
       </div>
     </div>
 
+    <!-- お支払いモーダル(PromptPay QR + スリップアップロード用リンク) -->
+    <div id="payment-modal-overlay" class="time-modal-overlay">
+      <div class="time-modal-box" style="max-width:320px;text-align:center;">
+        <h3 data-i18n="my.paymentModalTitle">お支払い / Payment</h3>
+        <div id="payment-modal-qr-wrap" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin:14px 0;padding:14px;background:var(--yellow-light);border-radius:10px;">
+          <div id="payment-modal-qr-code" style="width:190px;height:190px;display:flex;align-items:center;justify-content:center;"></div>
+          <div style="font-size:11px;color:var(--muted);"><span data-i18n="my.paymentModalQrCaption">PromptPay QR —</span> <span id="payment-modal-amount"></span> THB</div>
+        </div>
+        <div class="time-modal-note" data-i18n="my.paymentModalSlipNote">お支払い後、下記リンクからスリップ写真をお送りください / After paying, please send your slip photo via the link below</div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <input type="text" id="payment-modal-slip-link" readonly onclick="this.select()" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;">
+          <button class="time-modal-cancel" style="flex:none;padding:8px 12px;" onclick="copyPaymentSlipLink()" data-i18n="my.paymentModalCopyBtn">コピー / Copy</button>
+        </div>
+        <div class="time-modal-actions" style="margin-top:14px;">
+          <button class="time-modal-cancel" onclick="closePaymentModal()" data-i18n="my.paymentModalCloseBtn">閉じる / Close</button>
+        </div>
+      </div>
+    </div>
+
     <footer class="site-footer">
       <div class="footer-social">
         <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">𝕏</a>
@@ -685,7 +705,7 @@ let orderHistoryCustomerId = null;
 const ORDER_SELECT_FIELDS = `
       id, order_type, delivery_date, delivery_time_slot, payment_method, payment_status,
       is_completed, is_cancelled, is_slip_printed, total_amount, related_order_id,
-      paid_amount, manual_payment_confirmed,
+      paid_amount, manual_payment_confirmed, has_weight_items, weight_email_sent,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
@@ -803,6 +823,11 @@ function renderOrderCard(order, index, childOrderIdSet) {
   // (配送日時の変更は支払い済みでも引き続き可能、という要望のため canModify とは別条件にする)。
   const isPaid = isOrderPaid(order);
   const canCancel = canModify && !isPaid;
+  // 支払いボタン: キャンセル済み・支払い済み・現金/代引き・量り売り未確定(金額未確定)は対象外
+  const canPay = !order.is_cancelled && !isPaid
+    && (order.payment_method === 'qr' || order.payment_method === 'transfer')
+    && !(order.has_weight_items && !order.weight_email_sent)
+    && Number(order.total_amount) > 0;
   let statusHtml = '';
   const todayStr = new Date().toISOString().slice(0, 10);
   const isPastDeliveryDateUnhandled = order.delivery_date && order.delivery_date < todayStr
@@ -853,6 +878,9 @@ function renderOrderCard(order, index, childOrderIdSet) {
       <button class="receipt-btn" onclick="window.open('receipt.html?order_id=${order.id}', '_blank')">🧾 伝票を見る / View receipt</button>
       <button class="reorder-btn" onclick="reorderOrder(${index})">🔁 もう一度注文する / Order again</button>
     </div>
+    ${canPay
+      ? `<button class="change-time-btn" style="border-color:var(--yellow-dark);background:var(--yellow-light);font-weight:800;" onclick="openPaymentModal('${order.id}', ${Number(order.total_amount)})">💰 支払う / Pay now</button>`
+      : ''}
     ${canChangeSchedule
       ? `<button class="change-time-btn" onclick="openScheduleModal('${order.id}', '${order.delivery_date || ''}', '${(order.delivery_time_slot || '').replace(/'/g, "\\'")}')">${i18nText('my.changeScheduleBtn')}</button>`
       : ''}
@@ -928,6 +956,49 @@ async function openScheduleModal(orderId, currentDate, currentTimeSlot) {
 function closeScheduleModal() {
   document.getElementById('schedule-modal-overlay').classList.remove('open');
   scheduleOrderId = null;
+}
+
+// ---------------- お支払い(PromptPay QR + スリップアップロードリンク) ----------------
+// cart.html の注文完了画面と同一ロジック・同一口座(金額・注文ID・お客様名から都度組み立てる)
+const SLIP_UPLOAD_BASE_URL = 'https://slip.saitofoods.shop/';
+const PROMPTPAY_BILLER_ID = '010554007919109';
+const PROMPTPAY_REF1 = 'REF001';
+const PROMPTPAY_REF2 = 'REF002';
+const PROMPTPAY_TERMINAL = 'IFB0639311943';
+function ppTlv(tag, value) { return `${tag}${String(value.length).padStart(2, '0')}${value}`; }
+function ppCrc16(str) {
+  let crc = 0xFFFF;
+  for (let i = 0; i < str.length; i++) {
+    crc ^= (str.charCodeAt(i) << 8);
+    for (let j = 0; j < 8; j++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+  }
+  return crc.toString(16).toUpperCase().padStart(4, '0');
+}
+function buildPromptPayPayload(amount) {
+  const merchantInfo = ppTlv('00', 'A000000677010112') + ppTlv('01', PROMPTPAY_BILLER_ID) + ppTlv('02', PROMPTPAY_REF1) + ppTlv('03', PROMPTPAY_REF2);
+  const payload = ppTlv('00', '01') + ppTlv('01', '12') + ppTlv('30', merchantInfo) + ppTlv('53', '764') + ppTlv('54', amount.toFixed(2)) + ppTlv('58', 'TH') + ppTlv('62', ppTlv('07', PROMPTPAY_TERMINAL));
+  const withCrcTag = payload + '6304';
+  return withCrcTag + ppCrc16(withCrcTag);
+}
+function openPaymentModal(orderId, amount) {
+  const codeEl = document.getElementById('payment-modal-qr-code');
+  codeEl.innerHTML = '';
+  new QRCode(codeEl, { text: buildPromptPayPayload(amount), width: 190, height: 190 });
+  document.getElementById('payment-modal-amount').textContent = amount;
+  const customerName = currentCustomer ? `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() : '';
+  const params = new URLSearchParams({ amount: amount, name: customerName, ref: orderId });
+  document.getElementById('payment-modal-slip-link').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+  document.getElementById('payment-modal-overlay').classList.add('open');
+}
+function closePaymentModal() {
+  document.getElementById('payment-modal-overlay').classList.remove('open');
+}
+function copyPaymentSlipLink() {
+  const inputEl = document.getElementById('payment-modal-slip-link');
+  inputEl.select();
+  inputEl.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); } catch (e) {}
+  if (navigator.clipboard) { navigator.clipboard.writeText(inputEl.value).catch(() => {}); }
 }
 async function onScheduleDateChange(preselectTimeSlot) {
   const val = document.getElementById('schedule-date-input').value;
