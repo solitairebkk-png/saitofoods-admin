@@ -362,18 +362,23 @@ async function loadReceipt() {
   loadOrderPoints(order);
 }
 
-// 印刷ボタンを押した瞬間に更新する(awaitしないので印刷アクション自体はブロックしない)。
-// 以前afterprintイベントに切り替えたが、ブラウザによってはafterprintが確実に発火しないため、
-// 「伝票未印刷のままになる」不具合が発生した。こちらの方式に戻す。
-function handlePrint() {
+// 印刷ボタンを押した瞬間に更新する。
+// 以前はawaitせずに(保存を待たずに)window.print()を呼んでいたが、印刷後にこのタブが
+// 自動で閉じる仕組み(下のafterprintイベント)と組み合わさると、保存リクエストがサーバーに
+// 届く前にタブが閉じられてリクエスト自体がキャンセルされ、「印刷はできるがDB上は未印刷の
+// ままになる」不具合が発生していた(2026-09-26発覚)。保存が終わるのを待ってから印刷ダイアログを
+// 開くように修正する。
+async function handlePrint() {
+  const btn = document.querySelector('button[onclick="handlePrint()"]');
   if (isStaffView && currentOrderId) {
-    supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('is_slip_printed更新エラー:', error);
-          alert('伝票を印刷済みにする処理でエラーが発生しました / Failed to mark as printed:\n' + error.message);
-        }
-      });
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving...'; }
+    const { error } = await supabaseClient.from('orders').update({ is_slip_printed: true }).eq('id', currentOrderId);
+    if (btn) { btn.disabled = false; btn.textContent = '🖨️ Print / Save as PDF'; }
+    if (error) {
+      console.error('is_slip_printed更新エラー:', error);
+      alert('伝票を印刷済みにする処理でエラーが発生しました / Failed to mark as printed:\n' + error.message);
+      return;
+    }
   }
   window.print();
 }
