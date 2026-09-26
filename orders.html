@@ -416,6 +416,8 @@
   .express-code { font-weight: 700; color: var(--navy); }
   .express-code-missing { font-weight: 700; color: var(--red-accent); }
   .express-cust-code { font-weight: 800; font-size: 14px; color: var(--navy); }
+  /* 数量を行頭の固定幅に揃えて表示する(2026-09-26: 数量の位置がまちまちで見間違えやすいとの指摘で変更) */
+  .express-qty { display: inline-block; width: 46px; font-weight: 800; color: var(--red-accent); font-family: 'DM Mono', monospace, Arial, sans-serif; }
 
   /* お米集計パネル(シラチャ/パタヤタブ専用) */
   .rice-summary-panel { background: var(--panel); border: 2px solid #c9a227; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
@@ -1428,7 +1430,7 @@ function renderExpressOrderRow(order, pointsUsed) {
       ? escapeHtml(item.products.name_en)
       : `${escapeHtml(item.product_name_snapshot)} <span style="color:var(--red-accent);font-size:10px;">(JA only)</span>`;
     const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `x${item.quantity}`;
-    return `<div>${codeHtml} ${displayName} ${qtyLabel}</div>`;
+    return `<div><span class="express-qty">${escapeHtml(qtyLabel)}</span>${codeHtml} ${displayName}</div>`;
   }).join('');
 
   tr.innerHTML = `
@@ -1452,7 +1454,7 @@ function renderExpressPtRow(g) {
 
   const total = g.items.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
   const itemsHtml = g.items.map(item =>
-    `<div><span class="express-code-missing">[No code]</span> ${escapeHtml(item.product_name)} x${item.quantity}</div>`
+    `<div><span class="express-qty">x${escapeHtml(String(item.quantity))}</span><span class="express-code-missing">[No code]</span> ${escapeHtml(item.product_name)}</div>`
   ).join('');
 
   tr.innerHTML = `
