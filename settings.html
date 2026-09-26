@@ -635,7 +635,7 @@ async function deleteStaff(id) {
 // ---------------- GPS車両追跡情報 ----------------
 async function loadGpsSettings() {
   const { data, error } = await supabaseClient
-    .from('settings').select('key, value')
+    .from('private_settings').select('key, value')
     .in('key', ['gps_tracking_url', 'gps_tracking_username', 'gps_tracking_password']);
 
   if (error || !data) return;
@@ -652,9 +652,9 @@ async function saveGpsSettings() {
   const password = document.getElementById('gps-password-input').value.trim();
 
   const results = await Promise.all([
-    supabaseClient.from('settings').upsert({ key: 'gps_tracking_url', value: url }, { onConflict: 'key' }),
-    supabaseClient.from('settings').upsert({ key: 'gps_tracking_username', value: username }, { onConflict: 'key' }),
-    supabaseClient.from('settings').upsert({ key: 'gps_tracking_password', value: password }, { onConflict: 'key' }),
+    supabaseClient.from('private_settings').upsert({ key: 'gps_tracking_url', value: url }, { onConflict: 'key' }),
+    supabaseClient.from('private_settings').upsert({ key: 'gps_tracking_username', value: username }, { onConflict: 'key' }),
+    supabaseClient.from('private_settings').upsert({ key: 'gps_tracking_password', value: password }, { onConflict: 'key' }),
   ]);
   const failed = results.find(r => r.error);
   if (failed) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + failed.error.message, true); return; }
