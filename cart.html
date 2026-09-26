@@ -1507,8 +1507,8 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
 
 async function fetchGpsInfo() {
   try {
-    const { data } = await supabaseClient.from('settings').select('key, value')
-      .in('key', ['gps_tracking_url', 'gps_tracking_username', 'gps_tracking_password']);
+    const { data, error } = await supabaseClient.rpc('get_gps_info');
+    if (error || !data) return null;
     const map = {};
     (data || []).forEach(row => { map[row.key] = row.value; });
     return map.gps_tracking_url ? map : null;
