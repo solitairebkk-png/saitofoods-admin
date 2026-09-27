@@ -633,6 +633,12 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     document.getElementById('auth-panel').style.display = 'block';
     document.getElementById('mypage-main').style.display = 'none';
     switchAuthTab('reset');
+    return;
+  }
+  // メール確認リンクを踏んだ直後など、init()側のgetSession()より後から
+  // セッションが確定するケースをここで拾い、マイページ初期化を確実に行う。
+  if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session) {
+    initMyPageOnce(session.user);
   }
 });
 async function logout() {
@@ -644,14 +650,27 @@ async function logout() {
   if (el) el.textContent = new Date().getFullYear() - 1997;
 })();
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// メール確認リンクからの遷移直後は、Supabaseクライアントがリンク内のトークンを
+// 読み取ってセッションを確立するまでに一瞬のタイムラグがあることがある。
+// getSession()を1回呼ぶだけだとこのタイミングで session が null のまま
+// 返ってきてしまい(紐付け処理が一切走らない)ことがあるため、
+// onAuthStateChangeの'INITIAL_SESSION'イベントも合わせて待つようにする。
+let myPageInitDone = false;
+async function initMyPageOnce(user) {
+  if (myPageInitDone) return;
+  myPageInitDone = true;
+  const favLink = document.getElementById('sidebar-fav-quicklink');
+  if (favLink) favLink.style.display = 'flex';
+  await loadMyPage(user);
+}
 (async function init() {
   updateHeaderCartCount();
   loadSidebarCategories();
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
-    const favLink = document.getElementById('sidebar-fav-quicklink');
-    if (favLink) favLink.style.display = 'flex';
-    await loadMyPage(session.user);
+    await initMyPageOnce(session.user);
   }
 })();
 async function loadMyPage(user) {
@@ -671,13 +690,19 @@ async function loadMyPage(user) {
       showAuthMsg('紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。お手数ですが店舗までご連絡ください。', true);
       return;
     }
-    const retry = await supabaseClient
-      .from('customers')
-      .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
-      .eq('auth_user_id', user.id)
-      .single();
-    customerRow = retry.data;
-    error = retry.error;
+    // 直後の再取得が失敗しても、念のため少し間を空けて数回リトライしてから
+    // お客様にエラーを表示する(反映の遅延によるすれ違いを防ぐため)。
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt > 0) await sleep(500 * attempt);
+      const retry = await supabaseClient
+        .from('customers')
+        .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
+        .eq('auth_user_id', user.id)
+        .single();
+      customerRow = retry.data;
+      error = retry.error;
+      if (!error && customerRow) break;
+    }
   }
   if (error || !customerRow) {
     showAuthMsg('このアカウントはまだお客様情報と連携していません。お手数ですが店舗までご連絡ください。', true);
