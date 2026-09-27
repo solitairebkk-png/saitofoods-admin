@@ -1110,8 +1110,18 @@ async function loadOrders() {
     .order('delivery_date', { ascending: true })
     .order('delivery_time_slot', { ascending: true });
 
-  if (start) query = query.gte('delivery_date', start);
-  if (end) query = query.lte('delivery_date', end);
+  // 配送エリア外(Other Provinces等)の注文は配送日未確定のため delivery_date が null。
+  // 通常の .gte()/.lte() だけだと null は範囲外として除外され、日付フィルターが
+  // 入っている限り Out-of-area タブに永遠に出てこなくなってしまうため、
+  // 「delivery_date が null」または「範囲内」のどちらかに一致する形でフィルターする
+  // (2026-09-27)。
+  if (start && end) {
+    query = query.or(`delivery_date.is.null,and(delivery_date.gte.${start},delivery_date.lte.${end})`);
+  } else if (start) {
+    query = query.or(`delivery_date.is.null,delivery_date.gte.${start}`);
+  } else if (end) {
+    query = query.or(`delivery_date.is.null,delivery_date.lte.${end}`);
+  }
   if (orderType) query = query.eq('order_type', orderType);
   if (tel) query = query.ilike('customers.tel1', `%${tel}%`);
 
