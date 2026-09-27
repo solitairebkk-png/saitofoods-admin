@@ -453,6 +453,48 @@
     #express-print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; padding: 8mm; }
     #express-print-body { column-count: 2; column-gap: 10mm; }
   }
+
+  /* ===== スマホ対応(2026-09-27追加) =====
+     テーブルはそのまま横スクロールできるようにし、列を無理に潰さない。
+     ヘッダー・タブ・検索欄はスマホ幅で縦積み/横スクロールに切り替える。 */
+  .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--table-border); border-top: none; }
+  .table-scroll-wrap table { border: none; }
+
+  @media (max-width: 760px) {
+    header { padding: 10px 12px; gap: 10px; }
+    header h1 { font-size: 13px; }
+    header .nav-links { width: 100%; }
+    header .nav-row {
+      flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      gap: 14px; padding-bottom: 4px;
+    }
+    header .nav-row a { white-space: nowrap; }
+    header .user-right { width: 100%; margin-left: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+    main { padding: 12px 10px 60px; }
+
+    /* エリアタブ: 折り返さず横スクロール、指で押しやすいサイズに */
+    .area-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+    .area-tabs button { white-space: nowrap; padding: 10px 14px; font-size: 13px; flex: 0 0 auto; }
+
+    /* 検索欄は縦積みで全幅、タップしやすく */
+    .filter-bar { flex-direction: column; align-items: stretch; padding: 12px; gap: 12px; }
+    .filter-bar label { width: 100%; }
+    .filter-bar input, .filter-bar select { width: 100%; padding: 10px; font-size: 14px; }
+    .filter-bar .btn { width: 100%; padding: 12px; font-size: 14px; }
+
+    .legend { font-size: 11px; gap: 10px; }
+
+    /* テーブルは列幅を保ったまま横スクロール(潰れて読めなくなるのを防ぐ) */
+    .table-scroll-wrap table { min-width: 900px; }
+
+    /* 管理列のボタンをタップしやすい大きさに */
+    .manage-col { min-width: 90px; }
+    .manage-col button { padding: 10px 6px; font-size: 12px; min-height: 40px; }
+
+    .scroll-fab-wrap { right: 10px; bottom: 14px; }
+    .scroll-fab { width: 48px; height: 48px; font-size: 20px; }
+  }
 </style>
 </head>
 <body>
@@ -567,6 +609,7 @@
     <button class="btn-express-mark" onclick="markSelectedExpressEntered()">✅ Mark as Entered / คีย์เข้า Express แล้ว</button>
   </div>
 
+  <div class="table-scroll-wrap">
   <table>
     <thead id="orders-thead">
       <tr>
@@ -582,6 +625,7 @@
       <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
+  </div>
 </main>
 
 <div id="slip-modal" onclick="closeSlipModal()">
