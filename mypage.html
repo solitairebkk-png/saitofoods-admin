@@ -590,12 +590,20 @@ async function signup() {
   await claimCustomerRecord(email, data.user.id);
 }
 async function claimCustomerRecord(email, userId) {
-  const { data, error } = await supabaseClient.rpc('claim_customer_record');
-  if (error) {
+  let claimed = false;
+  let lastError = null;
+  for (let attempt = 0; attempt < 4 && !claimed; attempt++) {
+    if (attempt > 0) await sleep(500 * attempt);
+    const { data, error } = await supabaseClient.rpc('claim_customer_record');
+    if (error) { lastError = error; continue; }
+    lastError = null;
+    claimed = !!data;
+  }
+  if (lastError) {
     showAuthMsg('アカウントは作成されましたが、既存のご注文履歴との連携に失敗しました。お手数ですが店舗までご連絡ください。', true);
     return;
   }
-  if (!data) {
+  if (!claimed) {
     showAuthMsg('このメールアドレスでの過去のご注文履歴は見つかりませんでした。アカウントは作成されましたので、これから先のご注文からポイントが貯まります。');
   }
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -681,12 +689,27 @@ async function loadMyPage(user) {
     .eq('auth_user_id', user.id)
     .single();
   if ((error || !customerRow) && user.email) {
-    const claimResult = await supabaseClient.rpc('claim_customer_record');
-    if (claimResult.error) {
-      showAuthMsg('紐付け処理でエラー: ' + claimResult.error.message, true);
+    // ログイン直後・メール確認直後はセッションの確立が一瞬遅れることがあり、
+    // その状態でclaim_customer_record()を呼ぶと"該当なし"扱いで失敗することがある。
+    // そのため紐付けRPC自体も間隔を空けて複数回試し、最後の試行でのみ
+    // エラー内容をお客様に表示する。
+    let claimed = false;
+    let lastClaimError = null;
+    for (let attempt = 0; attempt < 4 && !claimed; attempt++) {
+      if (attempt > 0) await sleep(500 * attempt);
+      const claimResult = await supabaseClient.rpc('claim_customer_record');
+      if (claimResult.error) {
+        lastClaimError = claimResult.error;
+        continue;
+      }
+      lastClaimError = null;
+      claimed = !!claimResult.data;
+    }
+    if (lastClaimError) {
+      showAuthMsg('紐付け処理でエラー: ' + lastClaimError.message, true);
       return;
     }
-    if (!claimResult.data) {
+    if (!claimed) {
       showAuthMsg('紐付け対象の顧客レコードが見つかりませんでした(email: ' + user.email + ')。お手数ですが店舗までご連絡ください。', true);
       return;
     }
