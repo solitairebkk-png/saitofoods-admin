@@ -1110,7 +1110,7 @@ function hideSlipLinkCard() {
   hidePromptPayQr();
 }
 
-function showSlipLink({ orderId, amount, hasWeightItems, customerName }) {
+function showSlipLink({ orderId, amount, hasWeightItems, customerName, customerEmail }) {
   const cardEl = document.getElementById('slip-link-card');
   const titleEl = document.getElementById('slip-link-title');
   const noteEl = document.getElementById('slip-link-note');
@@ -1140,6 +1140,7 @@ function showSlipLink({ orderId, amount, hasWeightItems, customerName }) {
     amount: amount,
     name: customerName || '',
     ref: orderId,
+    email: customerEmail || '',
   });
   inputEl.value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
   rowEl.style.display = 'flex';
@@ -1157,7 +1158,8 @@ function generateManualPaymentLink() {
     return;
   }
   const customerName = selectedCustomer ? `${selectedCustomer.family_name || ''} ${selectedCustomer.first_name || ''}`.trim() : '';
-  showSlipLink({ orderId: editingOrderId || 'manual', amount, hasWeightItems: false, customerName });
+  const customerEmail = selectedCustomer ? (selectedCustomer.email || '') : '';
+  showSlipLink({ orderId: editingOrderId || 'manual', amount, hasWeightItems: false, customerName, customerEmail });
   document.getElementById('slip-link-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -1398,6 +1400,7 @@ async function submitOrder() {
         amount: finalTotal,
         hasWeightItems: hasWeightItems,
         customerName: isWalkin ? '' : customerName,
+        customerEmail: isWalkin ? '' : (selectedCustomer?.email || ''),
       });
       // QR振込みの場合はスリップリンクをコピーする時間が必要なため自動では戻らず、ボタンで戻る
       document.getElementById('back-to-orders-btn').style.display = 'block';
@@ -1463,6 +1466,7 @@ async function submitOrder() {
       amount: subtotal + shippingCost,
       hasWeightItems: hasWeightItems,
       customerName: isWalkin ? '' : customerName,
+      customerEmail: isWalkin ? '' : (selectedCustomer?.email || ''),
     });
   }
 

@@ -395,7 +395,7 @@
     </div>
 
     <div class="card">
-      <div class="field">
+      <div class="field" id="delivery-opts-field">
         <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
         <div class="delivery-opts-list">
           <label class="delivery-opt-item">
@@ -709,6 +709,10 @@ async function initDeliveryArea() {
   // 支払い方法の選択自体を表示しない(金額確定後にスタッフが個別に案内する)
   document.getElementById('shipping-card').style.display = customerAreaType === 'other' ? 'none' : 'block';
   document.getElementById('payment-card').style.display = customerAreaType === 'other' ? 'none' : 'block';
+
+  // 配送エリア外は外部の配送業者が届けるため、置き配・フロント預けなどの
+  // 自社配送スタッフ向けの選択肢は意味が無い。備考欄だけ残す。
+  document.getElementById('delivery-opts-field').style.display = customerAreaType === 'other' ? 'none' : 'block';
 
   if (customerAreaType === 'bangkok') {
     await initDeliveryDatePicker();
