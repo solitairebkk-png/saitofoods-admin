@@ -278,7 +278,7 @@
     </div>
 
 
-    <div class="card">
+    <div class="card" id="shipping-card">
       <h2 data-i18n="cart.shippingTitle">💰 配送料について / Shipping fee</h2>
       <div class="shipping-banner" id="shipping-banner"></div>
       <div class="field">
@@ -357,9 +357,17 @@
         </div>
         <div style="font-size:11px;color:#999;" data-i18n="cart.pattayaNote">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
+
+      <div id="delivery-fields-other" style="display:none;">
+        <div style="font-size:13px;line-height:1.9;color:var(--ink);background:var(--line-soft);border-radius:10px;padding:14px 16px;">
+          <b data-i18n="cart.otherAreaTitle">🚚 配送エリア外(Other Provinces)のご注文について</b><br>
+          <span data-i18n="cart.otherAreaNote1">この地域は外部の配送業者(クール便)でのお届けとなるため、配送日時はご指定いただけません。</span><br>
+          <span data-i18n="cart.otherAreaNote2">ご注文後、スタッフより配送業者の送料を確認のうえ、商品代金と送料を合わせた合計金額をご案内いたします。ご入金確認後に発送を手配いたします。</span>
+        </div>
+      </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="payment-card">
       <h2 data-i18n="cart.paymentTitle">💳 支払い方法 / Payment method</h2>
       <div class="pay-options">
         <label class="pay-option" id="pay-option-qr">
@@ -684,6 +692,10 @@ async function initDeliveryArea() {
         const text = Object.values(areaRow).filter(v => typeof v === 'string').join(' ').toLowerCase();
         if (text.includes('pattaya')) customerAreaType = 'pattaya';
         else if (text.includes('sriracha')) customerAreaType = 'sriracha';
+        // バンコク・シラチャ・パタヤのいずれでもなければ「配送エリア外」として扱う
+        // (Other Provinces等。外部配送業者の実費で送料が別途かかるため、
+        // 配送日時の指定・送料無料バナー・支払い方法の選択はさせない)
+        else if (!text.includes('bangkok')) customerAreaType = 'other';
       }
     } catch (e) { /* 取得失敗時はバンコク扱いのまま続行 */ }
   }
@@ -691,6 +703,12 @@ async function initDeliveryArea() {
   document.getElementById('delivery-fields-bangkok').style.display = customerAreaType === 'bangkok' ? 'block' : 'none';
   document.getElementById('delivery-fields-sriracha').style.display = customerAreaType === 'sriracha' ? 'block' : 'none';
   document.getElementById('delivery-fields-pattaya').style.display = customerAreaType === 'pattaya' ? 'block' : 'none';
+  document.getElementById('delivery-fields-other').style.display = customerAreaType === 'other' ? 'block' : 'none';
+
+  // 配送エリア外は送料(実費)が確定していないため、送料無料バナーや
+  // 支払い方法の選択自体を表示しない(金額確定後にスタッフが個別に案内する)
+  document.getElementById('shipping-card').style.display = customerAreaType === 'other' ? 'none' : 'block';
+  document.getElementById('payment-card').style.display = customerAreaType === 'other' ? 'none' : 'block';
 
   if (customerAreaType === 'bangkok') {
     await initDeliveryDatePicker();
@@ -1361,6 +1379,13 @@ async function submitOrder() {
 
   if (cart.length === 0) { msgEl.textContent = '商品をカートに入れてください / Please add at least one product.'; msgEl.className = 'error'; return; }
 
+  // 配送エリア外(Other Provinces等)は、配送日時・支払い方法を選ばせず
+  // 受注だけを行う専用RPCへ分岐する(送料確定・入金確認・配送手配はスタッフが手動対応)
+  if (customerAreaType === 'other') {
+    await submitOutOfAreaOrder();
+    return;
+  }
+
   let deliveryDate = '';
   let deliveryTimeSlot = null;
   let condoName = null;
@@ -1484,6 +1509,66 @@ async function submitOrder() {
     btn.disabled = false;
     btn.textContent = '注文を確定する / Place order';
   }
+}
+
+// ---------------- 配送エリア外(Other Provinces等)の受注専用フロー ----------------
+// 配送日時・支払い方法は選択させず、商品と数量だけを受け付ける(place_out_of_area_order RPC)。
+// 送料の確定・入金確認・配送手配はスタッフが電話/LINE/メールで手動対応する
+// (orders.htmlの「Out-of-area」タブ、local_order.htmlの「Edit」、既存の入金確認機能を利用)。
+async function submitOutOfAreaOrder() {
+  const msgEl = document.getElementById('submit-msg');
+  const comment = document.getElementById('order-comment').value.trim();
+  const rpcItems = cart.map(item => ({ product_id: item.product_id, quantity: item.quantity }));
+
+  const btn = document.querySelector('#cart-content .btn-primary');
+  btn.disabled = true;
+  btn.textContent = '送信中... / Submitting...';
+
+  try {
+    const { data: result, error: rpcErr } = await supabaseClient.rpc('place_out_of_area_order', {
+      p_items: rpcItems,
+      p_comment: comment || null,
+    });
+    if (rpcErr) throw rpcErr;
+
+    const orderId = result.order_id;
+    sendOrderConfirmationEmail({ orderId }).catch(() => {});
+    showOutOfAreaSuccess({ orderId });
+
+    cart = [];
+    localStorage.removeItem('saitofoods_cart');
+    document.getElementById('cart-items-list').innerHTML = '';
+    document.getElementById('delivery-card').style.display = 'none';
+    document.querySelectorAll('#cart-content > .card').forEach(el => { if (el.id !== 'success-panel') el.style.display = 'none'; });
+  } catch (e) {
+    const raw = (e && e.message) ? e.message : '';
+    let friendly = '注文の送信に失敗しました / Failed to submit order';
+    if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
+    else if (raw.includes('PRODUCT_NOT_FOUND')) friendly = '現在ご購入いただけない商品がカートに含まれています / Your cart contains an item that is no longer available.';
+    else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
+    else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
+    else if (raw) friendly += ': ' + raw;
+
+    msgEl.textContent = friendly;
+    msgEl.className = 'error';
+    btn.disabled = false;
+    btn.textContent = '注文を確定する / Place order';
+  }
+}
+
+function showOutOfAreaSuccess({ orderId }) {
+  const panel = document.getElementById('success-panel');
+  const noteEl = document.getElementById('success-note');
+  panel.style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>` +
+    `ご注文を受け付けました。配送業者の送料を確認のうえ、商品代金と送料を合わせた合計金額を、スタッフより電話・LINE・メールでご案内いたします。ご確認・お振込み後に発送を手配いたします。<br>` +
+    `<span style="font-size:11.5px;color:#999;">Order received. Our staff will contact you by phone, LINE, or email with the total amount (product cost + shipping) once the courier fee is confirmed. We will arrange shipping after payment is confirmed.</span>`;
+
+  const receiptBtn = document.getElementById('receipt-link-btn');
+  receiptBtn.style.display = 'block';
+  receiptBtn.onclick = () => window.open('receipt.html?order_id=' + encodeURIComponent(orderId), '_blank');
 }
 
 function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUsed, customerName }) {
