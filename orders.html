@@ -959,6 +959,14 @@ function todayStr() {
   return bkk.toISOString().slice(0, 10);
 }
 
+// Walk-in注文はdelivery_dateを持たないため、取引日時(created_at)をBangkok時間の
+// 日付文字列(YYYY-MM-DD)に変換して、日付フィルターや日付表示に使う(2026-09-27)。
+function toBkkDateStr(isoString) {
+  if (!isoString) return '';
+  const bkk = new Date(new Date(isoString).getTime() + 7 * 3600000);
+  return bkk.toISOString().slice(0, 10);
+}
+
 // 検索欄の×(クリア)ボタン共通処理
 function toggleSearchClearBtn(inputId, btnId) {
   const input = document.getElementById(inputId);
@@ -1138,7 +1146,7 @@ async function loadOrders() {
   let query = supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id,
+      id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id, created_at,
       has_weight_items, is_weight_confirmed, weight_email_sent, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
@@ -1193,6 +1201,18 @@ async function loadOrders() {
   let rows = data || [];
   if (currentAreaFilter === '__WALKIN__') {
     rows = rows.filter(o => o.order_type === 'walk_in');
+    // walk_in注文はdelivery_dateが常にnullで日付フィルターの対象外になり、
+    // いつまでも一覧に残り続けてしまうため、代わりに取引日時(created_at)を
+    // Bangkok時間の日付に変換して絞り込む(2026-09-27)。
+    if (start || end) {
+      rows = rows.filter(o => {
+        const d = toBkkDateStr(o.created_at);
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      });
+    }
+    rows.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   } else if (currentAreaFilter === '__OUTOFAREA__') {
     rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.area_name));
   } else if (currentAreaFilter) {
@@ -1213,9 +1233,13 @@ async function loadOrders() {
   tbody.innerHTML = '';
   let lastDate = null;
   let renderedAny = false;
+  // walk_in注文は delivery_date が無いため、表示・グループ分けには取引日時(created_at)
+  // から求めたBangkok時間の日付を代わりに使う(2026-09-27)。
+  const rowDisplayDate = (o) => o.order_type === 'walk_in' ? toBkkDateStr(o.created_at) : o.delivery_date;
   rows.forEach((order, idx) => {
-    const tr = renderOrderRow(order, idx, order.delivery_date !== lastDate, rows.filter(r => r.delivery_date === order.delivery_date).length);
-    lastDate = order.delivery_date;
+    const displayDate = rowDisplayDate(order);
+    const tr = renderOrderRow(order, idx, displayDate !== lastDate, rows.filter(r => rowDisplayDate(r) === displayDate).length, displayDate);
+    lastDate = displayDate;
     tbody.appendChild(tr);
     renderedAny = true;
   });
@@ -1722,7 +1746,7 @@ async function resetDeparture(orderId) {
   loadOrders();
 }
 
-function renderOrderRow(order, idx, showDate, countForDate) {
+function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const tr = document.createElement('tr');
   tr.style.background = getStatusColor(order);
 
@@ -1760,7 +1784,7 @@ function renderOrderRow(order, idx, showDate, countForDate) {
   }
 
   const dateCell = showDate
-    ? `${order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
+    ? `${displayDate || order.delivery_date || '-'}<br><span class="count-badge">(${countForDate})</span>`
     : '';
 
   const slipThumbHtml = order.slip_image_url
