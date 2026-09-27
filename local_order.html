@@ -1019,9 +1019,15 @@ async function loadOrderForEdit(orderId) {
     }, 0);
   }
 
-  document.querySelectorAll('input[name=payment]').forEach(r => {
-    r.checked = (r.value === order.payment_method);
-  });
+  // order.payment_methodが未設定(配送エリア外の注文はお客様側で支払い方法を
+  // 選ばせていないためnull)の場合は、HTML側のデフォルト(現金にチェック)を
+  // そのまま残す。ここで全部チェックを外してしまうと、保存時に「チェック済みの
+  // ボタンを探す」処理が失敗してエラーになり、保存ボタンが反応しなくなるため。
+  if (order.payment_method) {
+    document.querySelectorAll('input[name=payment]').forEach(r => {
+      r.checked = (r.value === order.payment_method);
+    });
+  }
   document.getElementById('order-comment').value = order.comment || '';
   document.getElementById('opt-leave-at-table').checked = !!order.delivery_leave_at_table;
   document.getElementById('opt-no-contact').checked = !!order.delivery_no_contact;
@@ -1135,7 +1141,13 @@ async function submitOrder() {
   hideSlipLinkCard();
 
   const isWalkin = document.getElementById('is-walkin').checked;
-  const paymentMethod = document.querySelector('input[name=payment]:checked').value;
+  const paymentRadio = document.querySelector('input[name=payment]:checked');
+  if (!paymentRadio) {
+    msgEl.textContent = 'กรุณาเลือกวิธีชำระเงิน / Please choose a payment method.';
+    msgEl.className = 'error';
+    return;
+  }
+  const paymentMethod = paymentRadio.value;
   const comment = document.getElementById('order-comment').value.trim();
 
   if (cart.length === 0) {
