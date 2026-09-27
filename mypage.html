@@ -878,7 +878,7 @@ function renderOrderCard(order, index, childOrderIdSet) {
     <div class="order-items-list">${itemsHtml || i18nText('my.noProductInfo')}</div>
     <div class="order-footer">
       <span style="font-size:12px;color:var(--muted);">${order.payment_method ? (order.payment_method === 'qr' ? i18nText('my.paymentQr') : i18nText('my.paymentCash')) : ''}</span>
-      ${order.total_amount === null || order.total_amount === undefined
+      ${(!order.delivery_date && order.order_type === 'delivery' && !order.is_cancelled)
         ? `<span class="order-total" style="font-size:12px;font-weight:700;color:var(--muted);text-align:right;">配送エリア外のご注文です。送料含む合計金額は追ってご連絡します / Shipping area outside our zone — final total (incl. shipping) to be confirmed separately</span>`
         : `<span class="order-total">${order.total_amount || 0} THB</span>`}
     </div>
