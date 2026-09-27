@@ -287,10 +287,60 @@
   .footer-store-map { border: 1px solid var(--line-soft); overflow: hidden; background: #eee; }
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+
+  /* 移行ガイドのポップアップ(2026-09-27) */
+  .mg-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(58,46,31,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+  .mg-modal-overlay.open { display: flex; }
+  .mg-modal-box { background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 30px 24px 22px; position: relative; box-shadow: var(--shadow-md); text-align: center; }
+  .mg-modal-close { position: absolute; top: 8px; right: 12px; background: none; border: none; font-size: 24px; color: var(--ink); cursor: pointer; line-height: 1; padding: 6px; }
+  .mg-modal-box h2 { font-size: 17px; color: var(--brand-dark); margin-bottom: 12px; line-height: 1.4; }
+  .mg-modal-box p { font-size: 13.5px; line-height: 1.7; margin-bottom: 20px; color: var(--ink); }
+  .mg-modal-btn { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14px; padding: 12px 30px; border-radius: 24px; text-decoration: none; margin-bottom: 18px; }
+  .mg-modal-checkbox { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: var(--ink); cursor: pointer; }
+  .mg-modal-checkbox input { width: 15px; height: 15px; cursor: pointer; }
 </style>
 <script src="i18n.js"></script>
 </head>
 <body>
+<div id="migration-guide-modal" class="mg-modal-overlay">
+  <div class="mg-modal-box">
+    <button class="mg-modal-close" onclick="closeMigrationGuideModal()" aria-label="close">&times;</button>
+    <h2>サイトがリニューアルしました！</h2>
+    <p style="text-align:left;">リニューアルに伴い、お客様情報・これまでのポイント・ご注文履歴が自動的に反映されますよう、お客様情報の引継ぎを<strong>【かならず】</strong>行ってくださいませ(約2分で完了!)<br><br>
+    ❶マイページの「新規登録」を開く<br>
+    ❷今までと同じメールアドレスを入力する<br>
+    ❸新しいパスワードを設定する<br>
+    ❹(確認メールが届いた場合)メール内のリンクを開いてログインする<br><br>
+    引継ぎを行わない場合、ポイント等は失効となります。<br><br>
+    ご詳しい手順は下のボタンからご確認いただけます。<br><br>
+    【新規でご利用の方も、同じく「新規登録」からお進みください。】</p>
+    <a href="migration_guide.html" class="mg-modal-btn" onclick="saveMigrationGuidePref()">移行ガイドを見る</a>
+    <label class="mg-modal-checkbox">
+      <input type="checkbox" id="mg-modal-dont-show"> <strong>今後表示しない / Don't show again</strong>
+    </label>
+  </div>
+</div>
+<script>
+(function () {
+  const MG_KEY = 'saitofoods_hide_migration_guide';
+  try {
+    if (localStorage.getItem(MG_KEY) === '1') return;
+  } catch (e) {}
+  const modal = document.getElementById('migration-guide-modal');
+  if (modal) modal.classList.add('open');
+})();
+function saveMigrationGuidePref() {
+  const checkbox = document.getElementById('mg-modal-dont-show');
+  if (checkbox && checkbox.checked) {
+    try { localStorage.setItem('saitofoods_hide_migration_guide', '1'); } catch (e) {}
+  }
+}
+function closeMigrationGuideModal() {
+  saveMigrationGuidePref();
+  const modal = document.getElementById('migration-guide-modal');
+  if (modal) modal.classList.remove('open');
+}
+</script>
 <div class="app-shell">
 
 <header class="site-header">
