@@ -369,6 +369,25 @@
     <div id="submit-msg"></div>
     <button class="btn secondary" id="back-to-orders-btn" style="width:100%;" onclick="location.href='orders.html'">← กลับไปหน้ารายการคำสั่งซื้อ / Back to Order List</button>
 
+    <!-- 配送エリア外の注文など、システム上のtotal_amountとは別に、任意の金額で
+         支払い用QR/リンクをその場で作りたい時に使う(編集中の注文にのみ表示)。
+         ここで作った金額はorders.total_amount等には一切保存しない
+         (配送業者の実費を売上に混ぜないため、あくまでお客様への案内用)。 -->
+    <div class="card" id="manual-payment-link-card" style="display:none;">
+      <h2><span class="th">สร้างลิงก์ชำระเงิน</span><span class="en">Generate payment link (any amount)</span></h2>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.7;">
+        配送業者の送料が確定した後、商品代金+送料の合計金額を入力してQR/リンクを作成できます。<br>
+        この金額はシステムの合計・売上には反映されません(お客様への案内専用)。
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Amount (THB) / จำนวนเงิน</label>
+          <input type="number" id="manual-payment-amount" min="1" step="1" placeholder="701">
+        </div>
+      </div>
+      <button class="btn secondary" style="width:100%;" onclick="generateManualPaymentLink()">🔗 QR・リンクを作成 / Generate QR &amp; link</button>
+    </div>
+
     <!-- Slip upload link + PromptPay QR (shown after a QR-payment order is saved) -->
     <div id="slip-link-card">
       <div class="slip-link-title" id="slip-link-title"></div>
@@ -945,7 +964,7 @@ async function loadOrderForEdit(orderId) {
     .from('orders')
     .select(`
       id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
-      total_amount, paid_amount, payment_status, coupon_code, discount_amount, points_used,
+      subtotal, total_amount, paid_amount, payment_status, coupon_code, discount_amount, points_used,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
@@ -960,6 +979,14 @@ async function loadOrderForEdit(orderId) {
   }
 
   editingOrderId = order.id;
+  // 任意金額の支払いQR/リンク作成は編集中の注文にのみ表示する(新規作成時は不要)。
+  // 初期値として商品代金(subtotal)を入れておくが、実際の送料込み金額に
+  // 書き換えて使う想定(この金額自体はDBには保存されない)。
+  const manualPayCard = document.getElementById('manual-payment-link-card');
+  if (manualPayCard) {
+    manualPayCard.style.display = 'block';
+    document.getElementById('manual-payment-amount').value = order.subtotal || order.total_amount || '';
+  }
   editingOrderDiscountAmount = Number(order.discount_amount) || 0;
   editingOrderPointsUsed = Number(order.points_used) || 0;
 
@@ -1116,6 +1143,22 @@ function showSlipLink({ orderId, amount, hasWeightItems, customerName }) {
   });
   inputEl.value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
   rowEl.style.display = 'flex';
+}
+
+// 配送エリア外の注文など、確定金額(商品代金+送料実費)が分かった時点で、
+// その金額専用の支払いQR・スリップアップロードリンクをその場で作る。
+// 既存のPromptPay QR生成・スリップリンクの仕組み(showSlipLink)をそのまま流用するだけで、
+// 金額はDBのどこにも保存しない(配送業者への実費を売上に混在させないため)。
+function generateManualPaymentLink() {
+  const amountInput = document.getElementById('manual-payment-amount');
+  const amount = parseFloat(amountInput.value);
+  if (!amount || amount <= 0) {
+    alert('กรุณาใส่จำนวนเงินที่ถูกต้อง / Please enter a valid amount.');
+    return;
+  }
+  const customerName = selectedCustomer ? `${selectedCustomer.family_name || ''} ${selectedCustomer.first_name || ''}`.trim() : '';
+  showSlipLink({ orderId: editingOrderId || 'manual', amount, hasWeightItems: false, customerName });
+  document.getElementById('slip-link-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function copySlipLink() {
