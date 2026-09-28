@@ -58,11 +58,13 @@
   .chk-box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid var(--ink); border-radius: 2px; vertical-align: middle; }
 
   /* 数量(Qty)の見落としによる配送ミス(2026-09-28 スタッフ要望)対策。
-     以前は数量だけ独立した列にしていたが、視線移動が多く逆に見落としやすいとのことで、
-     商品名の先頭に「個数 → 商品名」の順で並べる形に変更(2026-09-28 再変更)。
+     一旦は商品名の先頭に「個数 → 商品名」で並べていたが、使っていなかった
+     Mgr列を廃止してその位置に独立列として戻すことになった(2026-09-28 再々変更)。
      2個以上の場合は黒塗り+白文字のバッジで囲む(モノクロレーザー印刷でも黒は
      確実に濃く出るため、色に頼らないデザインにしている)。「×」表記は無くし、
      数字だけを大きく表示する。 */
+  table.items-table th.qty-col { text-align: center; }
+  table.items-table td.qty-col { text-align: center; padding: 2px 4px; }
   .qty-value {
     display: inline-block;
     min-width: 26px;
@@ -71,7 +73,6 @@
     line-height: 1.1;
     color: var(--ink);
     text-align: center;
-    margin-right: 8px;
     vertical-align: middle;
   }
   .qty-value.qty-multi {
@@ -236,7 +237,7 @@
 
       <table class="items-table">
         <thead>
-          <tr><th class="chk-col">Staff</th><th class="chk-col">Mgr</th><th>Item</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
+          <tr><th class="chk-col">Staff</th><th class="qty-col">Qty</th><th>Item</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
         </thead>
         <tbody id="f-items-body"></tbody>
       </table>
@@ -599,7 +600,7 @@ function renderReceipt(order) {
   if (isWholesale) {
     itemsBody.innerHTML = `<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
-      <td class="chk-col"><span class="chk-box"></span></td>
+      <td class="qty-col">-</td>
       <td class="item-name">Wholesale sale / ยอดขายส่ง${order.comment ? `<div class="sub">📝 ${escapeHtml(order.comment)}</div>` : ''}</td>
       <td class="num">-</td>
       <td class="num">${baht(order.total_amount)}</td>
@@ -621,14 +622,13 @@ function renderReceipt(order) {
     const nameTh = (nameThRaw && !isDuplicateOfEn) ? `<div class="sub">${nameThRaw}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     // 個数(重量売りでない商品)が2以上の場合は黒バッジで強調し、1個/重量売りは通常の大きめ表示に留める。
-    // 2026-09-28: 独立列だと視線移動が多く見落としやすいとの要望で、商品名の先頭
-    // (個数 → 商品名の順)に移動した。
+    // Mgr列(使っていなかった)を廃止し、その位置をQty専用列として使う(2026-09-28)。
     const qtyClass = 'qty-value' + (isMultiQty ? ' qty-multi' : '');
     const nameSnapshotHighlighted = decorateProductName(item.product_name_snapshot || '');
     return `<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
-      <td class="chk-col"><span class="chk-box"></span></td>
-      <td class="item-name"><span class="${qtyClass}">${qtyLabel}</span>${nameSnapshotHighlighted}${nameEn}${nameTh}${weightTag}</td>
+      <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
+      <td class="item-name">${nameSnapshotHighlighted}${nameEn}${nameTh}${weightTag}</td>
       <td class="num">${unitLabel}</td>
       <td class="num">${subtotalLabel}</td>
     </tr>`;
