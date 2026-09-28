@@ -434,6 +434,16 @@
   .rice-summary-empty { padding: 12px; text-align: center; color: var(--text-muted); font-size: 12px; }
   .rice-summary-warn { margin-top: 10px; padding: 8px 10px; background: #fdf3d0; border: 1px solid #e8d68a; border-radius: 6px; font-size: 11.5px; line-height: 1.7; color: #6b5a00; }
 
+  /* 本日配送分の件数パネル(バンコクタブ専用、注文が入りすぎていないか一目で確認するため) */
+  .today-count-panel { background: var(--panel); border: 2px solid #c9a227; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+  .today-count-header { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px; }
+  .today-count-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .today-count-box { flex: 1; min-width: 110px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center; }
+  .today-count-box .label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .today-count-box .value { font-size: 26px; font-weight: 800; color: var(--navy); font-family: 'DM Mono', monospace, Arial, sans-serif; }
+  .today-count-box.total { background: #fff8ec; border-color: #c9a227; }
+  .today-count-box.total .value { color: #7A5C1E; }
+
   /* Express入力用 印刷専用エリア(画面上は非表示、印刷時のみA4に2段組で表示) */
   #express-print-area { display: none; }
   #express-print-row-source { display: none; }
@@ -606,6 +616,24 @@
   <div class="rice-summary-panel" id="tuna-tofu-summary-panel" style="display:none;">
     <div class="rice-summary-header"><span id="tuna-tofu-summary-header-title">🐟🧊 Tuna &amp; Tofu Summary / สรุปยอดทูน่าและเต้าหู้</span> <span class="rice-summary-sub">Quantity by delivery date / จำนวนตามวันที่จัดส่ง</span></div>
     <table class="rice-summary-table" id="tuna-tofu-summary-table"></table>
+  </div>
+
+  <div class="today-count-panel" id="today-count-panel" style="display:none;">
+    <div class="today-count-header">📦 Today's Delivery Orders / ยอดสั่งซื้อส่งวันนี้ <span class="rice-summary-sub" id="today-count-date-label"></span></div>
+    <div class="today-count-row">
+      <div class="today-count-box">
+        <div class="label">Morning / ช่วงเช้า</div>
+        <div class="value" id="today-count-am">0</div>
+      </div>
+      <div class="today-count-box">
+        <div class="label">Afternoon / ช่วงบ่าย</div>
+        <div class="value" id="today-count-pm">0</div>
+      </div>
+      <div class="today-count-box total">
+        <div class="label">Total / รวม</div>
+        <div class="value" id="today-count-total">0</div>
+      </div>
+    </div>
   </div>
 
   <div class="express-toolbar" id="express-toolbar" style="display:none;">
@@ -1242,6 +1270,32 @@ function renderTunaTofuSummary(rows) {
   panel.style.display = 'block';
 }
 
+// ---------------- Today's delivery order count (Bangkok tab only) ----------------
+// 本日配送分の件数を午前/午後で集計して表示する。注文が入りすぎていないか
+// 一目で確認し、必要であれば受付を止める判断に使うためのもの(2026-09-28)。
+// 正午(12:00)未満を午前、それ以降を午後として分類する。
+function renderTodayOrderCount(rows) {
+  const panel = document.getElementById('today-count-panel');
+  if (currentAreaFilter !== 'Bangkok') { panel.style.display = 'none'; return; }
+
+  const today = todayStr();
+  const todayOrders = (rows || []).filter(o =>
+    !o.is_cancelled && o.order_type !== 'walk_in' && o.delivery_date === today
+  );
+
+  let amCount = 0, pmCount = 0;
+  todayOrders.forEach(o => {
+    if (deliveryTimeSlotRank(o) < 12 * 60) amCount++;
+    else pmCount++;
+  });
+
+  document.getElementById('today-count-date-label').textContent = `(${today})`;
+  document.getElementById('today-count-am').textContent = amCount;
+  document.getElementById('today-count-pm').textContent = pmCount;
+  document.getElementById('today-count-total').textContent = todayOrders.length;
+  panel.style.display = 'block';
+}
+
 // ---------------- Area tabs ----------------
 function setAreaTab(btn, area) {
   document.querySelectorAll('.area-tabs button').forEach(b => b.classList.remove('active'));
@@ -1250,6 +1304,7 @@ function setAreaTab(btn, area) {
   document.getElementById('express-toolbar').style.display = (area === '__EXPRESS__') ? 'flex' : 'none';
   document.getElementById('rice-summary-panel').style.display = 'none';
   document.getElementById('tuna-tofu-summary-panel').style.display = 'none';
+  document.getElementById('today-count-panel').style.display = 'none';
   loadOrders();
 }
 
@@ -1381,6 +1436,7 @@ async function loadOrders() {
 
   renderRiceSummary(rows);
   renderTunaTofuSummary(rows);
+  renderTodayOrderCount(rows);
 
   if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
