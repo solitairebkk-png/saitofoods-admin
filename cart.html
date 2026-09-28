@@ -1424,13 +1424,27 @@ async function submitOrder() {
   } else if (customerAreaType === 'sriracha') {
     deliveryDate = document.getElementById('sriracha-date-select').value;
     const condoSelect = document.getElementById('sriracha-condo-select');
-    condoName = condoSelect.value;
+    const condoValueBeforeOther = condoSelect.value;
+    condoName = condoValueBeforeOther;
     if (condoName && condoName.toLowerCase().includes('other')) {
       condoName = document.getElementById('sriracha-condo-other').value.trim() || 'Other';
     }
     deliveryTimeSlot = 'Sriracha Delivery (no time specified)';
     if (!deliveryDate) { msgEl.textContent = '配送日を選択してください / Please choose a delivery date.'; msgEl.className = 'error'; return; }
     if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
+    // 選択済みのコンドミニアムが、選択中の配送日の曜日グループ(火曜/木曜)に
+    // 実在するか最終確認する(何らかの理由で古い選択が残ったまま送信されるのを防ぐ、2026-09-28)。
+    if (condoValueBeforeOther && !condoValueBeforeOther.toLowerCase().includes('other')) {
+      const dateOption = document.getElementById('sriracha-date-select').selectedOptions[0];
+      const dow = dateOption ? parseInt(dateOption.dataset.dow, 10) : null;
+      const expectedGroup = dow === 2 ? 'sriracha_tuesday' : (dow === 4 ? 'sriracha_thursday' : null);
+      const stillValid = allCondos.some(c => c.name === condoValueBeforeOther && c.area_group === expectedGroup);
+      if (!stillValid) {
+        msgEl.textContent = '配送日とコンドミニアムの組み合わせが正しくありません。もう一度選び直してください / The selected date and condominium don\'t match — please reselect both.';
+        msgEl.className = 'error';
+        return;
+      }
+    }
   } else if (customerAreaType === 'pattaya') {
     deliveryDate = document.getElementById('pattaya-date-select').value;
     const condoSelect = document.getElementById('pattaya-condo-select');
