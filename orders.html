@@ -1933,11 +1933,12 @@ function isOrderPaid(order) {
 
 // Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
 // (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
-function formatTimeSlotCell(text) {
+function formatTimeSlotCell(text, condoName) {
   if (!text) return '';
   const escaped = escapeHtml(text);
-  if (text.includes('シラチャ') || text.includes('Sriracha')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>`;
-  if (text.includes('パタヤ') || text.includes('Pattaya')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>`;
+  const condoHtml = condoName ? `<div style="font-weight:700; font-size:12px; margin-top:2px;">🏢 ${escapeHtml(condoName)}</div>` : '';
+  if (text.includes('シラチャ') || text.includes('Sriracha')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>${condoHtml}`;
+  if (text.includes('パタヤ') || text.includes('Pattaya')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>${condoHtml}`;
   return escaped;
 }
 
@@ -2094,7 +2095,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
 
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
-    <td class="center">${formatTimeSlotCell(order.delivery_time_slot)}</td>
+    <td class="center">${formatTimeSlotCell(order.delivery_time_slot, order.condo_name)}</td>
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
