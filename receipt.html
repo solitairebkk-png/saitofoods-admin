@@ -361,6 +361,52 @@ function highlightSize(escapedText) {
   return escapedText.replace(/(\d+(?:\.\d+)?\s?(?:kg|กก\.?))/gi, '<span class="size-badge">$1</span>');
 }
 
+// 見た目が似ている商品同士(味・種類違い)の取り違え対策(2026-09-28 スタッフ要望:
+// 天然味噌の白/赤、サバの味噌煮/みぞれ煮、豆腐のsoft/firm、唐揚げの通常/竜田揚げ風味、
+// サバの塩焼/照り焼き 等)。実際の商品名一覧を精査し、名前がほぼ同じで
+// この部分だけが違う「取り違えやすいキーワード」を洗い出して黒枠で囲む。
+// 新しい似た商品を追加した場合は、ここにキーワードを追記すれば同様に強調される。
+const VARIANT_KEYWORDS = [
+  // 魚の味付け違い
+  'みぞれ煮', '味噌煮',
+  '西京味噌漬け', '西京味噌漬', '白味噌漬け', '塩麹漬け', '塩麹漬',
+  '天然醸造白', '天然醸造赤',
+  '塩焼き', '照り焼き風味', '照り焼き', '一夜干し',
+  // 唐揚げの種類
+  '竜田揚げ風味',
+  // 豆腐の種類・食感
+  '寄せ豆腐', '絹ごし', 'Firm', 'Soft',
+  // 麺類
+  '赤城そうめん', '赤城そば',
+  // ソースの辛さ
+  '〈Mild〉', '〈Strong〉',
+  // 豆・調味の味違い
+  'サムンプライ味', '塩味',
+  // 豆乳の味
+  'オリジナル', 'プレーン 無糖',
+  // プリンのフレーバー
+  '[[ミルク]]', '[[メロン]]', '[[抹茶]]',
+  // サイズ違い
+  'Jサイズ', 'Mサイズ', 'Sサイズ', 'L Size', 'M Size',
+  // 本体/詰め替え
+  'ポンプボトル', 'ボトル', '詰め替え',
+  // 色・柄(お土産バッグ等)
+  'パープル', 'ライトグリーン', 'グリーン', 'オレンジ レッド', 'オレンジ', 'ピンク', 'ブルー', 'アソート',
+];
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+const VARIANT_KEYWORD_REGEX = new RegExp('(' + VARIANT_KEYWORDS.map(escapeRegex).join('|') + ')', 'gi');
+function highlightVariant(escapedText) {
+  if (!escapedText) return '';
+  return escapedText.replace(VARIANT_KEYWORD_REGEX, '<span class="size-badge">$1</span>');
+}
+
+// 容量・種類違いの両方をまとめて強調する
+function decorateProductName(rawText) {
+  return highlightVariant(highlightSize(rawText));
+}
+
 function fmtDate(d) {
   if (!d) return '-';
   try {
@@ -575,7 +621,7 @@ function renderReceipt(order) {
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     // 個数(重量売りでない商品)が2以上の場合は黒バッジで強調し、1個/重量売りは通常の大きめ表示に留める。
     const qtyClass = 'qty-value' + (isMultiQty ? ' qty-multi' : '');
-    const nameSnapshotHighlighted = highlightSize(item.product_name_snapshot || '');
+    const nameSnapshotHighlighted = decorateProductName(item.product_name_snapshot || '');
     return `<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="chk-col"><span class="chk-box"></span></td>
