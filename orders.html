@@ -1258,12 +1258,20 @@ async function loadOrders() {
   // "13:00-15:00"のような数字始まりの値が"เช้า / Morning (AM)"のようなタイ文字始まりの値より
   // 文字コード順で前に来てしまい、結果として午後便が午前便より前に表示される不具合があった
   // (Walk-in注文の並び替えは上のWALKINブロックで既にcreated_at順にソート済みのため対象外)。
+  //
+  // さらに、同じ日付・同じ時間帯の注文が複数ある場合、delivery_date/delivery_time_slotだけでは
+  // 順序が確定しない(タイ)ため、印刷等でその行を更新するとPostgres内部の物理的な並びが変わり、
+  // 見た目上その注文だけ勝手に下に移動してしまう不具合が発覚した(2026-09-28)。
+  // 常に注文が入った時刻(created_at)を最終的なタイブレークに使うことで、印刷などの更新操作を
+  // 挟んでも表示順が変わらないようにする。
   if (currentAreaFilter !== '__WALKIN__') {
     rows.sort((a, b) => {
       const da = rowDisplayDate(a) || '';
       const db = rowDisplayDate(b) || '';
       if (da !== db) return da < db ? -1 : 1;
-      return deliveryTimeSlotRank(a) - deliveryTimeSlotRank(b);
+      const rankDiff = deliveryTimeSlotRank(a) - deliveryTimeSlotRank(b);
+      if (rankDiff !== 0) return rankDiff;
+      return (a.created_at || '').localeCompare(b.created_at || '');
     });
   }
 
