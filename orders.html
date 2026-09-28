@@ -1404,6 +1404,20 @@ async function loadOrders() {
   } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
     rows = rows.filter(o => o.order_type !== 'walk_in' && filterList.includes(o.area_name));
+  } else if (start || end) {
+    // Totalタブ(currentAreaFilter === '')。walk_in注文はdelivery_dateが常にnullのため、
+    // 通常の日付フィルター(delivery_dateベース、DBクエリ側でOR条件になっている)の対象外に
+    // なってしまい、過去のwalk_in注文がいつまでも一覧に残り続けてしまっていた(2026-09-28)。
+    // ここでも__WALKINタブと同様に、取引日時(created_at)をBangkok時間の日付に変換して
+    // 絞り込む。walk_in以外の注文は既にDBクエリ側でdelivery_dateによる絞り込み済みのため
+    // そのまま通す。
+    rows = rows.filter(o => {
+      if (o.order_type !== 'walk_in') return true;
+      const d = toBkkDateStr(o.created_at);
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
   }
   if (name) {
     rows = rows.filter(o => {
