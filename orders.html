@@ -943,11 +943,18 @@ function showMain() {
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
   // 短時間に連続でフォーカスが発生しても再読み込みが重複しないよう間引く。
+  //
+  // 以前は`window`の`focus`イベントを見ていたが、スマホの「ページ内検索」機能や
+  // 画面タップでもfocusイベントが発生してしまい、お客様名を検索した直後に画面へ触れる
+  // たびに一覧が再読み込みされて先頭にスクロールが戻ってしまう不具合があった。
+  // `visibilitychange`(実際にタブ/アプリを切り替えて離れ、戻ってきた時だけ発生し、
+  // 同じ画面内での操作では発生しない)に変更して解消(2026-09-28)。
   let lastAutoRefresh = Date.now();
-  window.addEventListener('focus', () => {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
     if (!currentCustomer) return;
     const now = Date.now();
-    if (now - lastAutoRefresh < 2000) return; // 2秒以内の連続フォーカスは無視
+    if (now - lastAutoRefresh < 2000) return; // 2秒以内の連続復帰は無視
     lastAutoRefresh = now;
     loadOrders();
     loadInboxBadge();
