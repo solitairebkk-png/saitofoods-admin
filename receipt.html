@@ -216,7 +216,7 @@
         <div id="f-points-pending" style="flex-basis:100%;"></div>
       </div>
 
-      <div class="pay-section">
+      <div class="pay-section" id="f-pay-section">
         <h3>Payment options</h3>
         <div class="pay-content-wrap">
           <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
@@ -308,6 +308,12 @@ function goBack() {
   }
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 function fmtDate(d) {
   if (!d) return '-';
   try {
@@ -349,7 +355,7 @@ async function loadReceipt() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
-      is_cancelled,
+      is_cancelled, is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, email, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
@@ -440,6 +446,7 @@ function renderStatusStamps(order) {
 
 function renderReceipt(order) {
   const c = order.customers || {};
+  const isWholesale = !!order.is_wholesale;
 
   document.getElementById('f-order-no').textContent = '#' + String(order.id).slice(0, 8).toUpperCase();
   document.getElementById('f-issue-date').textContent = order.created_at ? new Date(order.created_at).toLocaleString('en-GB') : '';
@@ -450,37 +457,60 @@ function renderReceipt(order) {
   areaBanner.textContent = `📍 ${areaName}`;
   areaBanner.className = 'area-banner ' + (areaClassMap[areaName] || 'area-other');
 
-  document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
-  document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
-  document.getElementById('f-customer-email').textContent = c.email || '-';
-  document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(Boolean).join(' ') || '-';
+  if (isWholesale) {
+    document.getElementById('f-customer-name').textContent = `🏢 ${order.wholesale_restaurant_name || 'Wholesale'}`;
+    document.getElementById('f-customer-tel').textContent = '-';
+    document.getElementById('f-customer-email').textContent = '-';
+    document.getElementById('f-customer-address').textContent = '-';
+  } else {
+    document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
+    document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
+    document.getElementById('f-customer-email').textContent = c.email || '-';
+    document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(Boolean).join(' ') || '-';
+  }
 
   document.getElementById('f-delivery-date').textContent = fmtDate(order.delivery_date);
   document.getElementById('f-delivery-time').textContent = order.condo_name
     ? `🏢 ${order.condo_name}`
     : (order.delivery_time_slot || '-');
 
-  document.getElementById('f-payment-method').textContent = PAYMENT_LABELS[order.payment_method] || order.payment_method || '-';
   const statusEl = document.getElementById('f-payment-status');
-  const totalForStatus = Number(order.total_amount) || 0;
-  const paidForStatus = Number(order.paid_amount) || 0;
-  const isFullyPaid = (totalForStatus > 0 && paidForStatus >= totalForStatus) || order.payment_status === 'paid' || order.manual_payment_confirmed;
-  const isPartiallyPaid = !isFullyPaid && paidForStatus > 0;
-  if (order.payment_method === 'cash') {
-    statusEl.textContent = 'Pay on delivery';
-    statusEl.className = 'status-pill status-cod';
-  } else if (isFullyPaid) {
-    statusEl.textContent = 'Paid';
-    statusEl.className = 'status-pill status-paid';
-  } else if (isPartiallyPaid) {
-    statusEl.textContent = `Partially paid — ฿${(totalForStatus - paidForStatus)} due`;
-    statusEl.className = 'status-pill status-unpaid';
+  if (isWholesale) {
+    document.getElementById('f-payment-method').textContent = 'Wholesale / ขายส่ง';
+    statusEl.style.display = 'none';
   } else {
-    statusEl.textContent = 'Awaiting payment';
-    statusEl.className = 'status-pill status-unpaid';
+    statusEl.style.display = '';
+    document.getElementById('f-payment-method').textContent = PAYMENT_LABELS[order.payment_method] || order.payment_method || '-';
+    const totalForStatus = Number(order.total_amount) || 0;
+    const paidForStatus = Number(order.paid_amount) || 0;
+    const isFullyPaid = (totalForStatus > 0 && paidForStatus >= totalForStatus) || order.payment_status === 'paid' || order.manual_payment_confirmed;
+    const isPartiallyPaid = !isFullyPaid && paidForStatus > 0;
+    if (order.payment_method === 'cash') {
+      statusEl.textContent = 'Pay on delivery';
+      statusEl.className = 'status-pill status-cod';
+    } else if (isFullyPaid) {
+      statusEl.textContent = 'Paid';
+      statusEl.className = 'status-pill status-paid';
+    } else if (isPartiallyPaid) {
+      statusEl.textContent = `Partially paid — ฿${(totalForStatus - paidForStatus)} due`;
+      statusEl.className = 'status-pill status-unpaid';
+    } else {
+      statusEl.textContent = 'Awaiting payment';
+      statusEl.className = 'status-pill status-unpaid';
+    }
   }
 
   const itemsBody = document.getElementById('f-items-body');
+  if (isWholesale) {
+    itemsBody.innerHTML = `<tr>
+      <td class="chk-col"><span class="chk-box"></span></td>
+      <td class="chk-col"><span class="chk-box"></span></td>
+      <td class="item-name">Wholesale sale / ยอดขายส่ง${order.comment ? `<div class="sub">📝 ${escapeHtml(order.comment)}</div>` : ''}</td>
+      <td class="num">-</td>
+      <td class="num">-</td>
+      <td class="num">${baht(order.total_amount)}</td>
+    </tr>`;
+  } else {
   itemsBody.innerHTML = (order.order_items || []).map(item => {
     const isWeight = item.sale_type === 'weight';
     const qtyLabel = isWeight
@@ -504,6 +534,7 @@ function renderReceipt(order) {
       <td class="num">${subtotalLabel}</td>
     </tr>`;
   }).join('');
+  }
 
   document.getElementById('f-subtotal').textContent = baht(order.subtotal);
   document.getElementById('f-shipping').textContent = order.shipping_cost > 0 ? baht(order.shipping_cost) : 'Free';
@@ -541,32 +572,38 @@ function renderReceipt(order) {
     document.getElementById('f-delivery-flags-note').innerHTML = '📦 ' + activeDeliveryFlags.map(f => f.th).join(' ・ ');
   }
 
-  if (order.comment) {
+  if (order.comment && !isWholesale) {
     document.getElementById('f-comment-note').style.display = 'block';
     document.getElementById('f-comment-text').textContent = order.comment;
   }
 
-  if (c.point_balance !== undefined && c.point_balance !== null) {
+  if (!isWholesale && c.point_balance !== undefined && c.point_balance !== null) {
     document.getElementById('f-points-box').style.display = 'flex';
     document.getElementById('f-points-balance').textContent = c.point_balance.toLocaleString('en-US');
   }
 
-  const qrAmount = Number(order.total_amount || 0);
-  if (qrAmount > 0) {
-    new QRCode(document.getElementById('f-qr-code'), { text: buildPromptPayPayload(qrAmount), width: 100, height: 100 });
-    document.getElementById('f-qr-amount').textContent = qrAmount.toLocaleString('en-US');
+  if (isWholesale) {
+    // 卸売り(レストラン向け)は自社からのQR/銀行振込による回収ではなく、別途集金するため
+    // 支払いオプション(QR・銀行口座)欄自体を表示しない。
+    document.getElementById('f-pay-section').style.display = 'none';
   } else {
-    document.getElementById('f-qr-code').textContent = '(After weighing)';
-  }
+    const qrAmount = Number(order.total_amount || 0);
+    if (qrAmount > 0) {
+      new QRCode(document.getElementById('f-qr-code'), { text: buildPromptPayPayload(qrAmount), width: 100, height: 100 });
+      document.getElementById('f-qr-amount').textContent = qrAmount.toLocaleString('en-US');
+    } else {
+      document.getElementById('f-qr-code').textContent = '(After weighing)';
+    }
 
-  if (qrAmount > 0) {
-    const noteCount = Math.ceil(qrAmount / 1000);
-    const paidAmount = noteCount * 1000;
-    const change = paidAmount - qrAmount;
-    document.getElementById('f-change-box').style.display = 'block';
-    document.getElementById('f-change-amount').textContent = baht(change);
-    document.getElementById('f-change-detail').textContent =
-      `Received ${paidAmount.toLocaleString('en-US')}฿ (${noteCount} × 1,000฿ note${noteCount > 1 ? 's' : ''})`;
+    if (qrAmount > 0) {
+      const noteCount = Math.ceil(qrAmount / 1000);
+      const paidAmount = noteCount * 1000;
+      const change = paidAmount - qrAmount;
+      document.getElementById('f-change-box').style.display = 'block';
+      document.getElementById('f-change-amount').textContent = baht(change);
+      document.getElementById('f-change-detail').textContent =
+        `Received ${paidAmount.toLocaleString('en-US')}฿ (${noteCount} × 1,000฿ note${noteCount > 1 ? 's' : ''})`;
+    }
   }
 
   document.getElementById('state-loading').style.display = 'none';

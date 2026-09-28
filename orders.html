@@ -2060,9 +2060,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const isLocked = order.is_completed && (!currentCustomer || currentCustomer.role !== 'admin');
 
   if (!isLocked) {
-    if (!order.is_wholesale) {
-      manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
-    }
+    manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     if (!order.is_completed) {
       if (!order.is_wholesale) {
         const editLabel = (order.has_weight_items && !order.weight_email_sent)
