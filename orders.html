@@ -1110,7 +1110,11 @@ function getRiceCategory(item) {
 function isRiceLike(item) {
   const nameJa = item.product_name_snapshot || '';
   const nameEn = item.products?.name_en || '';
-  return (nameJa.includes('米') && !nameJa.includes('新米')) || /rice/i.test(nameEn);
+  // 単語境界(\b)を付けずに/rice/iだけで判定していたため、"Special Price!"のような
+  // "rice"を含む無関係な単語(Price等)まで誤って「お米っぽい商品」判定されていた
+  // (例: 鶏肉餃子の英語名 "Special Price! Chicken Gyoza"、2026-09-28発覚)。
+  // \b(単語境界)を付けて、"rice"が独立した単語として出てくる場合のみ判定するよう修正。
+  return (nameJa.includes('米') && !nameJa.includes('新米')) || /\brice\b/i.test(nameEn);
 }
 
 function renderRiceSummary(rows) {
