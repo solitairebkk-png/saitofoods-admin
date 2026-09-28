@@ -618,6 +618,11 @@
     <table class="rice-summary-table" id="tuna-tofu-summary-table"></table>
   </div>
 
+  <div class="rice-summary-panel" id="condo-summary-panel" style="display:none;">
+    <div class="rice-summary-header">🏢 Condo/Building Summary <span class="rice-summary-sub" id="condo-summary-date-label"></span></div>
+    <table class="rice-summary-table" id="condo-summary-table"></table>
+  </div>
+
   <div class="today-count-panel" id="today-count-panel" style="display:none;">
     <div class="today-count-header">📦 Today's Delivery Orders / ยอดสั่งซื้อส่งวันนี้ <span class="rice-summary-sub" id="today-count-date-label"></span></div>
     <div class="today-count-row">
@@ -1280,6 +1285,48 @@ function renderTunaTofuSummary(rows) {
   panel.style.display = 'block';
 }
 
+// ---------------- Condo/Building summary (Sriracha/Pattaya tab only) ----------------
+// 直近の配送日1日分について、コンド/建物(condo_name)ごとに何件配送があるかを一覧表示する。
+// お米集計と同じ理由(次回以降の配送分はまだ確定途中)で、直近1日分のみに絞る(2026-09-28新規)。
+function renderCondoSummary(rows) {
+  const panel = document.getElementById('condo-summary-panel');
+  if (currentAreaFilter !== 'Sriracha,Pattaya') { panel.style.display = 'none'; return; }
+
+  // 卸売り(is_wholesale)はレストラン向けでコンド配送ではないため対象外。
+  const activeOrders = (rows || []).filter(o => !o.is_cancelled && !o.is_wholesale && o.delivery_date);
+
+  const table = document.getElementById('condo-summary-table');
+  const dateLabelEl = document.getElementById('condo-summary-date-label');
+
+  if (activeOrders.length === 0) {
+    dateLabelEl.textContent = '';
+    table.innerHTML = '<tr><td class="rice-summary-empty">No deliveries in current results / ไม่มีคำสั่งซื้อในผลลัพธ์ปัจจุบัน</td></tr>';
+    panel.style.display = 'block';
+    return;
+  }
+
+  const nearestDate = [...new Set(activeOrders.map(o => o.delivery_date))].sort()[0];
+  dateLabelEl.textContent = `Nearest delivery date / วันจัดส่งที่ใกล้ที่สุด: ${nearestDate}`;
+
+  const counts = new Map();
+  activeOrders.filter(o => o.delivery_date === nearestDate).forEach(order => {
+    const name = (order.condo_name || '').trim() || '(No condo / ไม่มีคอนโด)';
+    counts.set(name, (counts.get(name) || 0) + 1);
+  });
+
+  const entries = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const total = entries.reduce((sum, [, c]) => sum + c, 0);
+
+  let html = '<thead><tr><th>Condo / Building<br>คอนโด/อาคาร</th><th class="num">Orders<br>จำนวน</th></tr></thead><tbody>';
+  entries.forEach(([name, count]) => {
+    html += `<tr><td>${escapeHtml(name)}</td><td class="num">${count}</td></tr>`;
+  });
+  html += `<tr class="rice-summary-total-row"><td>Total / รวม</td><td class="num">${total}</td></tr></tbody>`;
+
+  table.innerHTML = html;
+  panel.style.display = 'block';
+}
+
 // ---------------- Today's delivery order count (Bangkok tab only) ----------------
 // 本日配送分の件数を午前/午後で集計して表示する。注文が入りすぎていないか
 // 一目で確認し、必要であれば受付を止める判断に使うためのもの(2026-09-28)。
@@ -1314,6 +1361,7 @@ function setAreaTab(btn, area) {
   document.getElementById('express-toolbar').style.display = (area === '__EXPRESS__') ? 'flex' : 'none';
   document.getElementById('rice-summary-panel').style.display = 'none';
   document.getElementById('tuna-tofu-summary-panel').style.display = 'none';
+  document.getElementById('condo-summary-panel').style.display = 'none';
   document.getElementById('today-count-panel').style.display = 'none';
   loadOrders();
 }
@@ -1338,7 +1386,7 @@ async function loadOrders() {
   let query = supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot, customer_id, related_order_id, created_at,
+      id, order_type, delivery_date, delivery_time_slot, condo_name, customer_id, related_order_id, created_at,
       has_weight_items, is_weight_confirmed, weight_email_sent, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
@@ -1460,6 +1508,7 @@ async function loadOrders() {
 
   renderRiceSummary(rows);
   renderTunaTofuSummary(rows);
+  renderCondoSummary(rows);
   renderTodayOrderCount(rows);
 
   if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
