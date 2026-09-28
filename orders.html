@@ -967,6 +967,29 @@ function toBkkDateStr(isoString) {
   return bkk.toISOString().slice(0, 10);
 }
 
+// Walk-in注文の時系列順ソート用: 取引日時(created_at)からBangkok時間の「その日の分数」を求める(2026-09-28)。
+function toBkkMinutesOfDay(isoString) {
+  if (!isoString) return 0;
+  const bkk = new Date(new Date(isoString).getTime() + 7 * 3600000);
+  return bkk.getUTCHours() * 60 + bkk.getUTCMinutes();
+}
+
+// 同じ配送日内での時系列順ソート用のランク(分単位)を返す(2026-09-28修正)。
+// delivery_time_slotは"13:00-15:00"のような具体的な時刻の他に、"เช้า / Morning (AM)"
+// のような固定文言も混在しており、これを単純に文字列の昇順(alphabetical)でソートすると
+// 数字の"1"がタイ文字より文字コード順で前に来てしまい、午後便が午前便より前に
+// 表示されてしまう不具合があった(注文一覧が時系列順になっていない原因)。
+// ここで時刻を明示的に分単位のランクへ変換し、正しい時系列順にソートできるようにする。
+function deliveryTimeSlotRank(order) {
+  if (order.order_type === 'walk_in') return toBkkMinutesOfDay(order.created_at);
+  const slot = order.delivery_time_slot || '';
+  const m = slot.match(/^(\d{1,2}):(\d{2})/);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  if (/เช้า|morning|\bam\b/i.test(slot)) return 8 * 60;  // 午前便(具体的な時刻指定なし)は8:00相当として扱う
+  if (/บ่าย|afternoon|\bpm\b/i.test(slot)) return 13 * 60; // 午後便(具体的な時刻指定なし)は13:00相当として扱う
+  return Infinity; // シラチャ/パタヤの「時間指定なし」等、時刻情報が無いものは同日内で最後に表示
+}
+
 // 検索欄の×(クリア)ボタン共通処理
 function toggleSearchClearBtn(inputId, btnId) {
   const input = document.getElementById(inputId);
@@ -1198,6 +1221,10 @@ async function loadOrders() {
     badgeEl.style.display = 'none';
   }
 
+  // walk_in注文は delivery_date が無いため、表示・グループ分けには取引日時(created_at)
+  // から求めたBangkok時間の日付を代わりに使う(2026-09-27)。
+  const rowDisplayDate = (o) => o.order_type === 'walk_in' ? toBkkDateStr(o.created_at) : o.delivery_date;
+
   let rows = data || [];
   if (currentAreaFilter === '__WALKIN__') {
     rows = rows.filter(o => o.order_type === 'walk_in');
@@ -1226,6 +1253,20 @@ async function loadOrders() {
     });
   }
 
+  // 同じ配送日の中で、便(午前/午後の具体的な時刻)の順に並び替える(2026-09-28修正)。
+  // Supabase側の.order('delivery_time_slot')は文字列としてのアルファベット順ソートのため、
+  // "13:00-15:00"のような数字始まりの値が"เช้า / Morning (AM)"のようなタイ文字始まりの値より
+  // 文字コード順で前に来てしまい、結果として午後便が午前便より前に表示される不具合があった
+  // (Walk-in注文の並び替えは上のWALKINブロックで既にcreated_at順にソート済みのため対象外)。
+  if (currentAreaFilter !== '__WALKIN__') {
+    rows.sort((a, b) => {
+      const da = rowDisplayDate(a) || '';
+      const db = rowDisplayDate(b) || '';
+      if (da !== db) return da < db ? -1 : 1;
+      return deliveryTimeSlotRank(a) - deliveryTimeSlotRank(b);
+    });
+  }
+
   renderRiceSummary(rows);
 
   if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
@@ -1233,9 +1274,6 @@ async function loadOrders() {
   tbody.innerHTML = '';
   let lastDate = null;
   let renderedAny = false;
-  // walk_in注文は delivery_date が無いため、表示・グループ分けには取引日時(created_at)
-  // から求めたBangkok時間の日付を代わりに使う(2026-09-27)。
-  const rowDisplayDate = (o) => o.order_type === 'walk_in' ? toBkkDateStr(o.created_at) : o.delivery_date;
   rows.forEach((order, idx) => {
     const displayDate = rowDisplayDate(order);
     const tr = renderOrderRow(order, idx, displayDate !== lastDate, rows.filter(r => rowDisplayDate(r) === displayDate).length, displayDate);
