@@ -96,9 +96,15 @@
   tbody td { padding: 10px 12px; vertical-align: top; border: 1px solid var(--table-border); }
   tbody td.center { text-align: center; }
 
-  /* 同じ配送日に複数オーダーが並んだ際、行の境目をはっきりさせるための太い区切り線 */
+  /* 注文一覧(#orders-tbody)の行区切り線(2026-09-28変更): 同じ配送日の注文同士は
+     細い罫線、日付が変わる境目だけ太い罫線にして日付の切れ目を一目で分かるようにする。
+     .date-start は各日付グループの最初の行に付与される(renderOrderRow参照)。 */
   tbody tr + tr { border-top: 4px solid var(--navy); }
   tbody tr + tr td { border-top: 4px solid var(--navy); }
+  #orders-tbody tr + tr { border-top: 1px solid var(--table-border); }
+  #orders-tbody tr + tr td { border-top: 1px solid var(--table-border); }
+  #orders-tbody tr.date-start { border-top: 4px solid var(--navy); }
+  #orders-tbody tr.date-start td { border-top: 4px solid var(--navy); }
 
   .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
   .badge-cash { background: #ece7de; color: #5b5140; }
@@ -2057,6 +2063,8 @@ async function resetDeparture(orderId) {
 function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const tr = document.createElement('tr');
   tr.style.background = getStatusColor(order);
+  // 日付が変わる最初の行に印を付け、その行の上だけ太い罫線になるようにする(CSS参照)。
+  if (showDate) tr.classList.add('date-start');
 
   const customerName = order.is_wholesale
     ? `🏢 ${escapeHtml(order.wholesale_restaurant_name || 'Wholesale')}`
