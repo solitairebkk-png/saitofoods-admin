@@ -721,7 +721,7 @@ async function loadBargainProducts() {
 async function loadAnnouncements() {
   const listEl = document.getElementById('announce-list');
   try {
-    const rows = await supabase('GET', 'announcements?is_active=eq.true&order=published_at.desc&limit=10');
+    const rows = await supabase('GET', 'announcements?is_active=eq.true&order=sort_order.asc.nullslast,published_at.desc&limit=10');
     if (!rows.length) { listEl.innerHTML = '<div class="empty-note">現在お知らせはありません / No announcements right now</div>'; return; }
 
     listEl.innerHTML = rows.map(a => {

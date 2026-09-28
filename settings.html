@@ -116,11 +116,14 @@
 
   <div class="card" id="section-announcements">
     <h2>お知らせ管理 / Announcements</h2>
-    <div class="sub">トップページ(index.html)のお知らせ欄に表示される内容です。「有効」のものだけ、公開日の新しい順に表示されます。</div>
+    <div class="sub">トップページ(index.html)のお知らせ欄に表示される内容です。「有効」のものが、ここでの並び順(↑↓)の通りに表示されます。並び替えたら「並び順を保存」を押してください。</div>
     <div id="announce-tbody">
       <div style="color:var(--text-muted);font-size:13px;">Loading...</div>
     </div>
-    <button class="btn" onclick="addNewAnnouncementRow()">+ お知らせを追加 / Add announcement</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn" onclick="addNewAnnouncementRow()">+ お知らせを追加 / Add announcement</button>
+      <button class="btn" onclick="saveAnnouncementOrder()" style="background:var(--navy);">並び順を保存 / Save order</button>
+    </div>
   </div>
 
   <div class="card">
@@ -1035,12 +1038,15 @@ async function loadAnnouncements() {
   if (!announcementCategoryOptions) await loadAnnouncementCategoryOptions();
 
   const { data, error } = await supabaseClient
-    .from('announcements').select('*').order('published_at', { ascending: false });
+    .from('announcements').select('*')
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('published_at', { ascending: false });
 
   if (error) { wrap.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
 
   wrap.innerHTML = '';
   (data || []).forEach(a => wrap.appendChild(renderAnnouncementRow(a)));
+  refreshAnnouncementOrderButtons();
 }
 
 function renderAnnouncementRow(a) {
@@ -1063,6 +1069,9 @@ function renderAnnouncementRow(a) {
       <label>有効 / Active<input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
     </div>
     <div class="entry-card-actions">
+      <span class="ann-order-label" style="font-size:11px;color:var(--text-muted);align-self:center;margin-right:2px;">#<span class="ann-order-num">?</span></span>
+      <button type="button" class="btn-move-row ann-move-up" onclick="moveAnnouncementCard(this, -1)">↑</button>
+      <button type="button" class="btn-move-row ann-move-down" onclick="moveAnnouncementCard(this, 1)">↓</button>
       <button class="btn-save-row" onclick="saveAnnouncementRow(this)">保存 / Save</button>
       ${a.id ? `<button class="btn-delete-row" onclick="deleteAnnouncementRow(this)">削除 / Del</button>` : ''}
     </div>
@@ -1074,6 +1083,58 @@ function addNewAnnouncementRow() {
   const wrap = document.getElementById('announce-tbody');
   const todayStr = new Date().toISOString().slice(0, 10);
   wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', link_text: '', is_active: true }));
+  refreshAnnouncementOrderButtons();
+}
+
+// 「並び順を保存」を押さなくても各行を移動できるよう、カード要素自体をDOM上で
+// 上下入れ替える(データ配列を作り直して再描画すると、他の行の未保存の入力内容が
+// 消えてしまうため、あえてDOM操作にしている)。
+function moveAnnouncementCard(btn, direction) {
+  const wrap = document.getElementById('announce-tbody');
+  const card = btn.closest('.entry-card');
+  const cards = Array.from(wrap.children);
+  const idx = cards.indexOf(card);
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= cards.length) return;
+  if (direction < 0) {
+    wrap.insertBefore(card, cards[targetIdx]);
+  } else {
+    wrap.insertBefore(cards[targetIdx], card);
+  }
+  refreshAnnouncementOrderButtons();
+}
+
+function refreshAnnouncementOrderButtons() {
+  const wrap = document.getElementById('announce-tbody');
+  const cards = Array.from(wrap.children);
+  cards.forEach((card, i) => {
+    const numEl = card.querySelector('.ann-order-num');
+    if (numEl) numEl.textContent = i + 1;
+    const upBtn = card.querySelector('.ann-move-up');
+    const downBtn = card.querySelector('.ann-move-down');
+    if (upBtn) upBtn.disabled = (i === 0);
+    if (downBtn) downBtn.disabled = (i === cards.length - 1);
+  });
+}
+
+// 一覧に表示されている今のDOM上の並び順を、そのままsort_orderとしてDBに保存する。
+// まだ未保存(idが無い)の新規追加行はここでは無視し、その行自身の「保存」を押した
+// 時点でsaveAnnouncementRow側がその時点の位置からsort_orderを決める。
+async function saveAnnouncementOrder() {
+  const wrap = document.getElementById('announce-tbody');
+  const cards = Array.from(wrap.children);
+  const updates = cards
+    .map((card, i) => ({ id: card.dataset.id, sortOrder: i + 1 }))
+    .filter(x => x.id)
+    .map(x => supabaseClient.from('announcements').update({ sort_order: x.sortOrder }).eq('id', x.id));
+
+  if (updates.length === 0) { showSaveMsg('並び順を保存する項目がありません / Nothing to save', true); return; }
+
+  const results = await Promise.all(updates);
+  const failed = results.find(r => r.error);
+  if (failed) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + failed.error.message, true); return; }
+  showSaveMsg('並び順を保存しました / Order saved');
+  loadAnnouncements();
 }
 
 // カテゴリを選ぶと、そのカテゴリ一覧へのリンクURLを自動でリンク先URL欄に入れる
@@ -1104,7 +1165,12 @@ async function saveAnnouncementRow(btn) {
   if (!title) { showSaveMsg('タイトルを入力してください / Please enter a title', true); return; }
   if (!publishedAt) { showSaveMsg('公開日を選択してください / Please choose a date', true); return; }
 
-  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, link_text: linkText || null, is_active: isActive };
+  // その行が今どの位置に並んでいるか(↑↓で動かした後の位置)をsort_orderとして一緒に保存する。
+  // これにより、「並び順を保存」を押さずにこの行だけ保存しても、見た目の並び順とズレない。
+  const wrap = document.getElementById('announce-tbody');
+  const sortOrder = Array.from(wrap.children).indexOf(card) + 1;
+
+  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, link_text: linkText || null, is_active: isActive, sort_order: sortOrder };
 
   let error;
   if (id) {
