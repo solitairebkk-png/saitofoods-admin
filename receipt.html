@@ -53,7 +53,7 @@
   table.items-table th { text-align: left; font-size: 10px; color: #888; font-weight: 700; padding: 0 4px 4px; border-bottom: 2px solid var(--line); letter-spacing: 0.02em; text-transform: uppercase; }
   table.items-table th.num, table.items-table td.num { text-align: right; }
   table.items-table td { padding: 4px 4px; border-bottom: 1px solid var(--line); font-size: 12px; vertical-align: top; }
-  table.items-table td.item-name .sub { font-size: 10.5px; color: #999; line-height: 1.3; }
+  table.items-table td.item-name .sub { font-size: 11.5px; color: #666; line-height: 1.3; }
   table.items-table th.chk-col, table.items-table td.chk-col { text-align: center; width: 30px; }
   .chk-box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid var(--ink); border-radius: 2px; vertical-align: middle; }
 
@@ -616,10 +616,8 @@ function renderReceipt(order) {
     const subtotalLabel = isWeight
       ? (order.is_weight_confirmed ? baht(item.total_price) : 'TBC')
       : baht(item.total_price);
+    // タイ語名(3行目)は表示せず、1行目:日本語 / 2行目:英語の2行構成にする(2026-09-28 要望)。
     const nameEn = item.products?.name_en ? `<div class="sub">${item.products.name_en}</div>` : '';
-    const nameThRaw = item.products?.name_th ? item.products.name_th.trim() : '';
-    const isDuplicateOfEn = nameThRaw && item.products?.name_en && nameThRaw.toLowerCase() === item.products.name_en.trim().toLowerCase();
-    const nameTh = (nameThRaw && !isDuplicateOfEn) ? `<div class="sub">${nameThRaw}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
     // 個数(重量売りでない商品)が2以上の場合は黒バッジで強調し、1個/重量売りは通常の大きめ表示に留める。
     // Mgr列(使っていなかった)を廃止し、その位置をQty専用列として使う(2026-09-28)。
@@ -628,7 +626,7 @@ function renderReceipt(order) {
     return `<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
-      <td class="item-name">${nameSnapshotHighlighted}${nameEn}${nameTh}${weightTag}</td>
+      <td class="item-name">${nameSnapshotHighlighted}${nameEn}${weightTag}</td>
       <td class="num">${unitLabel}</td>
       <td class="num">${subtotalLabel}</td>
     </tr>`;
