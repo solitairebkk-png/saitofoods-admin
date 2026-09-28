@@ -57,6 +57,28 @@
   table.items-table th.chk-col, table.items-table td.chk-col { text-align: center; width: 30px; }
   .chk-box { display: inline-block; width: 13px; height: 13px; border: 1.5px solid var(--ink); border-radius: 2px; vertical-align: middle; }
 
+  /* 数量(Qty)の見落としによる配送ミス(2026-09-28 スタッフ要望)対策:
+     数量だけ他の列より大幅に大きく・太字にして目立たせる。特に2個以上の場合は
+     赤背景のバッジで囲み、印刷(モノクロ)でも一目で「複数個」と分かるようにする。 */
+  table.items-table th.qty-col { text-align: center; }
+  table.items-table td.qty-col { text-align: center; padding: 2px 4px; }
+  .qty-value {
+    display: inline-block;
+    min-width: 30px;
+    font-size: 21px;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--ink);
+  }
+  .qty-value.qty-multi {
+    min-width: 34px;
+    padding: 2px 9px;
+    border-radius: 8px;
+    background: var(--red);
+    color: #fff;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
   .totals-box { margin-left: auto; width: 100%; max-width: 260px; }
   .totals-box .t-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 12px; }
   .totals-box .t-row.discount { color: var(--red); }
@@ -194,7 +216,7 @@
 
       <table class="items-table">
         <thead>
-          <tr><th class="chk-col">Staff</th><th class="chk-col">Mgr</th><th>Item</th><th class="num">Qty</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
+          <tr><th class="chk-col">Staff</th><th class="chk-col">Mgr</th><th>Item</th><th class="qty-col">Qty</th><th class="num">Unit</th><th class="num">Subtotal</th></tr>
         </thead>
         <tbody id="f-items-body"></tbody>
       </table>
@@ -506,7 +528,7 @@ function renderReceipt(order) {
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="item-name">Wholesale sale / ยอดขายส่ง${order.comment ? `<div class="sub">📝 ${escapeHtml(order.comment)}</div>` : ''}</td>
-      <td class="num">-</td>
+      <td class="qty-col">-</td>
       <td class="num">-</td>
       <td class="num">${baht(order.total_amount)}</td>
     </tr>`;
@@ -525,11 +547,14 @@ function renderReceipt(order) {
     const isDuplicateOfEn = nameThRaw && item.products?.name_en && nameThRaw.toLowerCase() === item.products.name_en.trim().toLowerCase();
     const nameTh = (nameThRaw && !isDuplicateOfEn) ? `<div class="sub">${nameThRaw}</div>` : '';
     const weightTag = isWeight ? '<div class="sub">Sold by weight</div>' : '';
+    // 個数(重量売りでない商品)が2以上の場合は赤バッジで強調し、1個/重量売りは通常の大きめ表示に留める。
+    const isMulti = !isWeight && Number(item.quantity) >= 2;
+    const qtyClass = 'qty-value' + (isMulti ? ' qty-multi' : '');
     return `<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="item-name">${item.product_name_snapshot || ''}${nameEn}${nameTh}${weightTag}</td>
-      <td class="num">${qtyLabel}</td>
+      <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
       <td class="num">${unitLabel}</td>
       <td class="num">${subtotalLabel}</td>
     </tr>`;
