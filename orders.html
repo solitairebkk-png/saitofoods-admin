@@ -1501,6 +1501,14 @@ async function loadOrders() {
       const da = rowDisplayDate(a) || '';
       const db = rowDisplayDate(b) || '';
       if (da !== db) return da < db ? -1 : 1;
+      // シラチャ/パタヤはコンドミニアム名ごとにまとめて表示する(2026-09-28)。
+      // 時間帯の概念が無いため、通常のdeliveryTimeSlotRankの代わりにcondo_nameでソートする。
+      if (a.condo_name || b.condo_name) {
+        const ca = a.condo_name || '';
+        const cb = b.condo_name || '';
+        if (ca !== cb) return ca < cb ? -1 : 1;
+        return (a.created_at || '').localeCompare(b.created_at || '');
+      }
       const rankDiff = deliveryTimeSlotRank(a) - deliveryTimeSlotRank(b);
       if (rankDiff !== 0) return rankDiff;
       return (a.created_at || '').localeCompare(b.created_at || '');
@@ -1935,10 +1943,17 @@ function isOrderPaid(order) {
 // (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
 function formatTimeSlotCell(text, condoName) {
   if (!text) return '';
+  const isSriracha = text.includes('シラチャ') || text.includes('Sriracha');
+  const isPattaya = text.includes('パタヤ') || text.includes('Pattaya');
+  const color = isSriracha ? '#e08a2e' : (isPattaya ? '#3b9dd6' : null);
+  // シラチャ/パタヤは常に「時間指定なし」の固定文言のため、その文字列自体は表示せず
+  // コンドミニアム名だけを表示する(2026-09-28)。
+  if (/\(no time specified\)/i.test(text) && (isSriracha || isPattaya)) {
+    return condoName ? `<span style="color:${color}; font-weight:700;">🏢 ${escapeHtml(condoName)}</span>` : '';
+  }
   const escaped = escapeHtml(text);
   const condoHtml = condoName ? `<div style="font-weight:700; font-size:12px; margin-top:2px;">🏢 ${escapeHtml(condoName)}</div>` : '';
-  if (text.includes('シラチャ') || text.includes('Sriracha')) return `<span style="color:#e08a2e; font-weight:700;">${escaped}</span>${condoHtml}`;
-  if (text.includes('パタヤ') || text.includes('Pattaya')) return `<span style="color:#3b9dd6; font-weight:700;">${escaped}</span>${condoHtml}`;
+  if (color) return `<span style="color:${color}; font-weight:700;">${escaped}</span>${condoHtml}`;
   return escaped;
 }
 
