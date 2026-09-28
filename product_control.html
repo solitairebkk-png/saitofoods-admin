@@ -508,10 +508,12 @@ function renderProductRow(p) {
         ? `${p.price} THB <span style="color:var(--text-muted);font-size:11px;">(概算・単価${p.unit_price ?? '-'}/${p.unit_label || 'kg'})</span>`
         : `${p.price} THB`));
 
+  const exclAreas = p.excluded_areas || [];
   const tags = [
     p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
     p.sale_type === 'weight' ? '<span class="tag weight">Weight</span>' : '',
     p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
+    exclAreas.length ? `<span class="tag unpub">🚫 ${exclAreas.join('・')}では販売不可</span>` : '',
   ].join('');
 
   const imgCell = p.image_url
@@ -594,6 +596,8 @@ function toggleEdit(productId) {
         <label class="checkbox-field"><input type="checkbox" class="e-free" onchange="toggleFreeField(this)" ${p.is_free ? 'checked' : ''}> 無料配布 / Free item</label>
         <label class="checkbox-field"><input type="checkbox" class="e-published" ${p.is_published !== false ? 'checked' : ''}> 公開 / Published</label>
         <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-excl-sriracha" ${(p.excluded_areas || []).includes('Sriracha') ? 'checked' : ''}> シラチャでは販売しない / Not sold in Sriracha</label>
+        <label class="checkbox-field"><input type="checkbox" class="e-excl-pattaya" ${(p.excluded_areas || []).includes('Pattaya') ? 'checked' : ''}> パタヤでは販売しない / Not sold in Pattaya</label>
         <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
         <label>YouTube URL<input type="text" class="e-youtube" value="${p.youtube_url || ''}" placeholder="https://www.youtube.com/watch?v=..."></label>
       </div>
@@ -1032,6 +1036,10 @@ async function saveProduct(productId) {
     is_free: g('.e-free').checked,
     is_published: g('.e-published').checked,
     is_available_en: g('.e-availen').checked,
+    excluded_areas: [
+      g('.e-excl-sriracha').checked ? 'Sriracha' : null,
+      g('.e-excl-pattaya').checked ? 'Pattaya' : null,
+    ].filter(Boolean),
     instagram_url: g('.e-instagram').value.trim() || null,
     youtube_url: g('.e-youtube').value.trim() || null,
     search_keywords: g('.e-search-keywords').value.trim() || null,

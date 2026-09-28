@@ -913,14 +913,32 @@ async function loadCartItems() {
     return;
   }
 
-  const { data: products, error } = await supabaseClient
+  const { data: fetchedProducts, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty')
+    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty, excluded_areas')
     .in('id', ids);
 
-  if (error || !products) {
+  if (error || !fetchedProducts) {
     listEl.innerHTML = '<div class="empty-cart-note">読み込みに失敗しました / Failed to load cart</div>';
     return;
+  }
+
+  // 商圏の関係などで、お客様の配送エリアでは取り扱えない商品(products.excluded_areas)が
+  // エリア変更前・product_list.html側の絞り込み実装前などの理由でカートに残っている場合、
+  // ここで最終チェックとして取り除く(例: 山口豆腐店の豆腐はシラチャ・パタヤ不可、2026-09-28)。
+  const blockedProducts = fetchedProducts.filter(p => (p.excluded_areas || []).includes(customerAreaName));
+  let products = fetchedProducts;
+  if (blockedProducts.length) {
+    const blockedIds = new Set(blockedProducts.map(p => p.id));
+    products = fetchedProducts.filter(p => !blockedIds.has(p.id));
+    blockedIds.forEach(id => delete map[id]);
+    localStorage.setItem('saitofoods_cart', JSON.stringify(map));
+    alert(
+      `申し訳ございません、以下の商品は${customerAreaName}エリアではお取り扱いできないため、カートから外しました。\n` +
+      blockedProducts.map(p => '・' + (p.name_ja || p.name_en || p.id)).join('\n') +
+      `\n\nSorry, the following item(s) are not available in the ${customerAreaName} area and have been removed from your cart:\n` +
+      blockedProducts.map(p => '・' + (p.name_en || p.name_ja || p.id)).join('\n')
+    );
   }
 
   cart = products.map(p => ({

@@ -469,6 +469,7 @@ const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentCustomerId = null;
 let favoriteProductIds = new Set();
+let currentCustomerAreaName = null; // ログイン中のお客様の配送エリア名(areas.name)。未ログイン・未設定ならnull
 
 let allCategories = [];
 let allProducts = [];
@@ -572,7 +573,13 @@ async function init() {
       loadShippingSettings(),
     ]);
     allCategories = cats;
-    allProducts = prods;
+    // 商圏の関係などで特定エリアでは取り扱えない商品(products.excluded_areas)を、
+    // そのお客様の配送エリアに応じて一覧から除外する(例: 山口豆腐店の豆腐はシラチャ・
+    // パタヤでは販売不可、2026-09-28)。未ログイン・エリア未設定の場合は絞り込まない
+    // (実際の注文確定はcart.html側でも改めてチェックする)。
+    allProducts = currentCustomerAreaName
+      ? prods.filter(p => !(p.excluded_areas || []).includes(currentCustomerAreaName))
+      : prods;
     allProductCategories = prodCats;
     loadCartFromStorage();
     renderSidebarCategories();
@@ -606,9 +613,10 @@ async function loadFavoritesState() {
     if (!session) return;
 
     const { data: customerRows } = await supabaseClient
-      .from('customers').select('id').eq('auth_user_id', session.user.id).limit(1);
+      .from('customers').select('id, area_id, areas ( name )').eq('auth_user_id', session.user.id).limit(1);
     if (!customerRows || !customerRows.length) return;
     currentCustomerId = customerRows[0].id;
+    currentCustomerAreaName = customerRows[0].areas?.name || null;
 
     const { data: favRows } = await supabaseClient
       .from('customer_favorites').select('product_id').eq('customer_id', currentCustomerId);
