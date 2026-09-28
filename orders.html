@@ -1941,20 +1941,19 @@ function isOrderPaid(order) {
 
 // Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
 // (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
-function formatTimeSlotCell(text, condoName) {
-  if (!text) return '';
-  const isSriracha = text.includes('シラチャ') || text.includes('Sriracha');
-  const isPattaya = text.includes('パタヤ') || text.includes('Pattaya');
-  const color = isSriracha ? '#e08a2e' : (isPattaya ? '#3b9dd6' : null);
-  // シラチャ/パタヤは常に「時間指定なし」の固定文言のため、その文字列自体は表示せず
-  // コンドミニアム名だけを表示する(2026-09-28)。
-  if (/\(no time specified\)/i.test(text) && (isSriracha || isPattaya)) {
+function formatTimeSlotCell(text, condoName, areaName) {
+  const isSrirachaArea = (areaName || '').includes('Racha') || (text || '').includes('シラチャ') || (text || '').includes('Sriracha');
+  const isPattayaArea = (areaName || '') === 'Pattaya' || (text || '').includes('パタヤ') || (text || '').includes('Pattaya');
+  const color = isSrirachaArea ? '#e08a2e' : (isPattayaArea ? '#3b9dd6' : null);
+  // シラチャ/パタヤは、旧システムからの移行分でdelivery_time_slotがnullのものが多数あり、
+  // 従来は`!text`で早期returnしてしまいコンド名が出ていなかった(2026-09-28修正)。
+  // また現行システムでも常に「時間指定なし」の固定文言のため、その文字列自体は表示せず
+  // コンドミニアム名だけを表示する。
+  if (isSrirachaArea || isPattayaArea) {
     return condoName ? `<span style="color:${color}; font-weight:700;">🏢 ${escapeHtml(condoName)}</span>` : '';
   }
-  const escaped = escapeHtml(text);
-  const condoHtml = condoName ? `<div style="font-weight:700; font-size:12px; margin-top:2px;">🏢 ${escapeHtml(condoName)}</div>` : '';
-  if (color) return `<span style="color:${color}; font-weight:700;">${escaped}</span>${condoHtml}`;
-  return escaped;
+  if (!text) return '';
+  return escapeHtml(text);
 }
 
 // 出発管理ブロック(スタッフ選択プルダウン+出発ボタン、または出発済み表示)を組み立てる。
@@ -2110,7 +2109,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
 
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
-    <td class="center">${formatTimeSlotCell(order.delivery_time_slot, order.condo_name)}</td>
+    <td class="center">${formatTimeSlotCell(order.delivery_time_slot, order.condo_name, order.area_name)}</td>
     <td class="center">${order.id.slice(0, 8)}</td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
