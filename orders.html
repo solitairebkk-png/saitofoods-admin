@@ -1149,7 +1149,10 @@ function renderRiceSummary(rows) {
     return;
   }
 
-  const dates = [...byDate.keys()].sort();
+  // 直近の配送日1日分だけを表示する(次回以降の配送分はまだ確定・追加が入る途中のため、
+  // 表示すると仕込み数を早合点してしまう。2026-09-28、要望により直近日のみに変更)。
+  const nearestDate = [...new Set([...byDate.keys(), ...unmatched.map(u => u.date)])].sort()[0];
+  const dates = byDate.has(nearestDate) ? [nearestDate] : [];
   const totals = { rice5kg: 0, rice2kg: 0, rice1kg: 0, nigata: 0, nanatsu: 0, blackrice: 0 };
 
   let html = '<thead><tr><th>Delivery date<br>วันที่จัดส่ง</th>'
@@ -1166,15 +1169,18 @@ function renderRiceSummary(rows) {
       + '</tr>';
   });
 
-  html += '<tr class="rice-summary-total-row"><td>Total / รวม</td>'
-    + RICE_CATEGORY_LABELS.map(c => `<td class="num">${totals[c.key]}</td>`).join('')
-    + '</tr></tbody>';
+  if (dates.length === 0) {
+    html += `<tr><td class="rice-summary-empty" colspan="${RICE_CATEGORY_LABELS.length + 1}">No categorized rice orders for the nearest delivery date / ไม่มีคำสั่งซื้อข้าวที่จัดหมวดหมู่ได้สำหรับวันจัดส่งที่ใกล้ที่สุด</td></tr>`;
+  }
+
+  html += '</tbody>';
 
   table.innerHTML = html;
 
-  if (unmatched.length > 0) {
+  const unmatchedNearest = unmatched.filter(u => u.date === nearestDate);
+  if (unmatchedNearest.length > 0) {
     warnBox.innerHTML = '⚠️ Rice-like items that could not be categorized / สินค้าคล้ายข้าวที่ไม่สามารถจัดหมวดหมู่ได้:<br>'
-      + unmatched.map(u => `・${escapeHtml(u.date)} #${escapeHtml(u.orderId)}: ${escapeHtml(u.name)}`).join('<br>');
+      + unmatchedNearest.map(u => `・${escapeHtml(u.date)} #${escapeHtml(u.orderId)}: ${escapeHtml(u.name)}`).join('<br>');
     warnBox.style.display = 'block';
   } else {
     warnBox.style.display = 'none';
