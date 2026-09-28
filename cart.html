@@ -399,12 +399,12 @@
         <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
         <div class="delivery-opts-list">
           <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-leave-at-table">
-            <span data-i18n="cart.optLeaveAtTable">置き配希望(デリバリー用テーブルに置いてください) / Leave at delivery table</span>
+            <input type="checkbox" id="opt-leave-no-contact" onchange="if(this.checked) document.getElementById('opt-leave-with-contact').checked = false;">
+            <span data-i18n="cart.optLeaveNoContact">置き配希望　電話連絡不要(デリバリー用テーブルに置いてください) / Leave at delivery table, no call needed</span>
           </label>
           <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-no-contact">
-            <span data-i18n="cart.optNoContact">到着時のご連絡は不要です / No need to call on arrival</span>
+            <input type="checkbox" id="opt-leave-with-contact" onchange="if(this.checked) document.getElementById('opt-leave-no-contact').checked = false;">
+            <span data-i18n="cart.optLeaveWithContact">置き配希望　要電話連絡(デリバリー用テーブルに置いてください) / Leave at delivery table, please call on arrival</span>
           </label>
           <label class="delivery-opt-item">
             <input type="checkbox" id="opt-leave-at-front">
@@ -1459,8 +1459,8 @@ async function submitOrder() {
       p_points_to_use: pointsToUse || 0,
       p_related_order_id: addToOrderId || null,
       p_comment: comment || null,
-      p_leave_at_table: document.getElementById('opt-leave-at-table').checked,
-      p_no_contact: document.getElementById('opt-no-contact').checked,
+      p_leave_at_table: document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked,
+      p_no_contact: document.getElementById('opt-leave-no-contact').checked,
       p_leave_at_front: document.getElementById('opt-leave-at-front').checked,
       p_payment_at_front: document.getElementById('opt-payment-at-front').checked,
       p_no_change: document.getElementById('opt-no-change').checked,
@@ -1487,7 +1487,7 @@ async function submitOrder() {
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     sessionStorage.removeItem(ADDTO_STORAGE_KEY);
-    ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
+    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.checked = false;
     });

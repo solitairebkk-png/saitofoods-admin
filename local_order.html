@@ -344,12 +344,12 @@
       <label><span class="th">ความต้องการด้านการจัดส่ง</span>Delivery preferences</label>
       <div class="delivery-opts-list">
         <label class="delivery-opt-item">
-          <input type="checkbox" id="opt-leave-at-table">
-          <span>วางบนโต๊ะเดลิเวอรี่ / Leave at delivery table</span>
+          <input type="checkbox" id="opt-leave-no-contact" onchange="if(this.checked) document.getElementById('opt-leave-with-contact').checked = false;">
+          <span>วางบนโต๊ะเดลิเวอรี่ ไม่ต้องโทรแจ้ง / Leave at delivery table, no call needed</span>
         </label>
         <label class="delivery-opt-item">
-          <input type="checkbox" id="opt-no-contact">
-          <span>ไม่ต้องโทรแจ้งเมื่อถึง / No contact on arrival</span>
+          <input type="checkbox" id="opt-leave-with-contact" onchange="if(this.checked) document.getElementById('opt-leave-no-contact').checked = false;">
+          <span>วางบนโต๊ะเดลิเวอรี่ แต่โทรแจ้งด้วย / Leave at delivery table, please call on arrival</span>
         </label>
         <label class="delivery-opt-item">
           <input type="checkbox" id="opt-leave-at-front">
@@ -1056,8 +1056,8 @@ async function loadOrderForEdit(orderId) {
     });
   }
   document.getElementById('order-comment').value = order.comment || '';
-  document.getElementById('opt-leave-at-table').checked = !!order.delivery_leave_at_table;
-  document.getElementById('opt-no-contact').checked = !!order.delivery_no_contact;
+  document.getElementById('opt-leave-no-contact').checked = !!order.delivery_leave_at_table && !!order.delivery_no_contact;
+  document.getElementById('opt-leave-with-contact').checked = !!order.delivery_leave_at_table && !order.delivery_no_contact;
   document.getElementById('opt-leave-at-front').checked = !!order.delivery_leave_at_front;
   document.getElementById('opt-payment-at-front').checked = !!order.delivery_payment_at_front;
   document.getElementById('opt-no-change').checked = !!order.delivery_no_change;
@@ -1281,8 +1281,8 @@ async function submitOrder() {
     total_amount: finalTotal,
     comment: comment || null,
     // Walk-in(店頭受け渡し)には配送は発生しないため、フォームが隠れていても値を送らない
-    delivery_leave_at_table: !isWalkin && document.getElementById('opt-leave-at-table').checked,
-    delivery_no_contact: !isWalkin && document.getElementById('opt-no-contact').checked,
+    delivery_leave_at_table: !isWalkin && (document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked),
+    delivery_no_contact: !isWalkin && document.getElementById('opt-leave-no-contact').checked,
     delivery_leave_at_front: !isWalkin && document.getElementById('opt-leave-at-front').checked,
     delivery_payment_at_front: !isWalkin && document.getElementById('opt-payment-at-front').checked,
     delivery_no_change: !isWalkin && document.getElementById('opt-no-change').checked,
@@ -1475,7 +1475,7 @@ async function submitOrder() {
   document.getElementById('order-comment').value = '';
   document.getElementById('existing-payment-note').style.display = 'none';
   document.getElementById('existing-discount-note').style.display = 'none';
-  ['opt-leave-at-table', 'opt-no-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
+  ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.checked = false;
   });
