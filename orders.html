@@ -2068,11 +2068,14 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
 // Editボタン: 量り売りの重量が未確定なら重量確定モーダルを優先して開く。
 // それ以外は本格的な編集画面(local_order.html)に遷移し、
 // 顧客・商品・配送日時・支払い方法などを丸ごと編集できるようにする。
+// 編集画面は別タブで開く(2026-09-28)。同じタブでlocation.hrefすると、
+// Ctrl+Fでお客様名を検索してからEditを押した際に画面が一覧の一番上まで
+// 戻ってしまい、編集後にまた検索し直す必要があって不便だったため。
 function editOrder(order) {
   if (order.has_weight_items && !order.weight_email_sent) {
     openWeightModal(order);
   } else {
-    location.href = `local_order.html?edit=${order.id}`;
+    window.open(`local_order.html?edit=${order.id}`, '_blank');
   }
 }
 
