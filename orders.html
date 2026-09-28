@@ -2736,65 +2736,30 @@ async function confirmWeight() {
   btn.textContent = 'กำลังบันทึก... / Saving...';
 
   try {
-    // 1. 各 order_item を実測重量で更新
-    // 入力はグラムだが、保存はこれまで通り unit_label 換算後の quantity(unit_priceとの整合性維持)
-    for (const inp of inputs) {
+    // 重量入力はグラムだが、保存はこれまで通り unit_label 換算後の quantity(unit_priceとの整合性維持)
+    const itemsPayload = Array.from(inputs).map(inp => {
       const itemId = inp.dataset.itemId;
       const unitPrice = parseFloat(inp.dataset.unitPrice) || 0;
       const gramsPerUnit = parseFloat(inp.dataset.gramsPerUnit) || 100;
       const grams = parseFloat(inp.value);
       const quantity = grams / gramsPerUnit;
       const price = Math.round(unitPrice * quantity);
-      const { error } = await supabaseClient
-        .from('order_items')
-        .update({ quantity: quantity, price: price, total_price: price })
-        .eq('id', itemId);
-      if (error) throw error;
-    }
+      return { item_id: itemId, quantity: quantity, price: price, total_price: price };
+    });
 
-    // 2. 注文全体の合計金額を再計算(固定価格商品+確定した量り売り商品)
-    // 配送料(shipping_cost)は注文作成時に一度決めたら変更しない(後から追加課金しない方針)
-    const { data: items, error: itemsErr } = await supabaseClient
-      .from('order_items').select('total_price').eq('order_id', order.id);
-    if (itemsErr) throw itemsErr;
-    const newSubtotal = (items || []).reduce((sum, i) => sum + (i.total_price || 0), 0);
-
-    // 送料は注文作成時点の見積り小計で一度決まるが、量り売り商品の実測結果によって
-    // 確定小計が無料ラインを超えるケースがある。追加請求は絶対にしない方針は維持しつつ、
-    // 「見積りでは600未満だったが実測後は600以上」の場合は送料を無料に修正する。
-    // (逆に「見積りでは600以上だったが実測で600未満」になった場合も、追加請求はしないため送料は据え置き=無料のまま)
-    let newShippingCost = order.shipping_cost || 0;
-    if (newShippingCost > 0 && newSubtotal >= shippingFreeThreshold) {
-      newShippingCost = 0;
-    }
-
-    // クーポン割引(discount_amount)とポイント使用分(points_used)は、注文時点で既に
-    // 確定・消費済みのものなので、重量確定による金額の再計算でも必ず反映する。
-    // これらを忘れて「新しい小計+送料」だけで合計を作り直すと、割引やポイント分が
-    // 消えてお客様に払込済みの割引が反映されない請求になってしまう(2026-08-20発覚)。
-    // 割引は、新しい小計+送料に対して再度上限キャップする(place_order関数の
-    // least(coupon.discount_amount, pre_discount)と同じ考え方。実測後に金額が
-    // 大きく下がった場合に合計がマイナスにならないようにするため)。
-    const preDiscount = newSubtotal + newShippingCost;
-    const cappedDiscount = Math.min(order.discount_amount || 0, preDiscount);
-    const newTotal = Math.max(0, preDiscount - cappedDiscount - (order.points_used || 0));
-
-    // メールアドレスが無い顧客は、そもそも送るメールが無いので、この時点で
-    // weight_email_sentを自動的にtrueにして出発ブロックが永久に解除されない事態を防ぐ。
-    // メールアドレスがある顧客は、今回の変更でメール送信を手動化したため、ここではfalseのまま
-    // (何度でも重量を入れ直せる状態を維持し、スタッフが「Send Email」ボタンを押すまで待つ)。
-    const orderUpdate = {
-      subtotal: newSubtotal, total_amount: newTotal, shipping_cost: newShippingCost, is_weight_confirmed: true,
-    };
-    if (!order.customers?.email) {
-      orderUpdate.weight_email_sent = true;
-    }
-
-    const { error: orderErr } = await supabaseClient
-      .from('orders')
-      .update(orderUpdate)
-      .eq('id', order.id);
-    if (orderErr) throw orderErr;
+    // order_itemsの更新〜ordersの更新(is_weight_confirmed含む)までを、DB側の単一トランザクション
+    // (confirm_order_weight RPC)にまとめている。以前はこれをクライアント側で2回の別々のリクエストに
+    // 分けていたため、1回目(order_items)が成功した直後に通信断・タブを閉じる等が起きると、
+    // 実測重量・金額は保存済みなのにis_weight_confirmedだけfalseのまま、という不整合が発生していた
+    // (2026-09-28発覚)。RPC化により、途中で失敗すれば全体がロールバックされるため、
+    // 「重量だけ保存されて確定フラグが立たない」状態が構造的に起こらなくなる。
+    // 送料無料ライン・クーポン上限再計算・ポイント使用分の反映・メール不要判定は、いずれもRPC内で行う。
+    const { error: rpcErr } = await supabaseClient.rpc('confirm_order_weight', {
+      p_order_id: order.id,
+      p_items: itemsPayload,
+      p_shipping_free_threshold: shippingFreeThreshold,
+    });
+    if (rpcErr) throw rpcErr;
 
     closeWeightModal();
     loadOrders();
