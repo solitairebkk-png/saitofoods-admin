@@ -1401,6 +1401,20 @@ async function submitOrder() {
 
   if (cart.length === 0) { msgEl.textContent = '商品をカートに入れてください / Please add at least one product.'; msgEl.className = 'error'; return; }
 
+  // プロフィール(名前・電話・住所)が未入力のまま注文できてしまう抜け穴の対策(2026-09-28)。
+  // サインアップ直後、名前反映のタイミングによっては空のまま、住所・電話に至っては
+  // マイページで一度も入力していなくても、このチェックが無いと注文が完了できてしまい、
+  // 配送先が分からない注文が発生していた。ここで一括してブロックする。
+  const missingProfileFields = [];
+  if (!currentCustomer?.family_name || !currentCustomer?.first_name) missingProfileFields.push('お名前 / Name');
+  if (!currentCustomer?.tel1) missingProfileFields.push('電話番号 / Phone number');
+  if (!currentCustomer?.address1) missingProfileFields.push('ご住所 / Address');
+  if (missingProfileFields.length > 0) {
+    msgEl.innerHTML = `ご注文の前に、マイページでプロフィール情報(${missingProfileFields.join('・')})の入力をお願いします。 / Please complete your profile (${missingProfileFields.join(', ')}) on My Page before placing an order.<br><a href="mypage.html" style="color:inherit;text-decoration:underline;font-weight:700;">→ マイページへ / Go to My Page</a>`;
+    msgEl.className = 'error';
+    return;
+  }
+
   // 配送エリア外(Other Provinces等)は、配送日時・支払い方法を選ばせず
   // 受注だけを行う専用RPCへ分岐する(送料確定・入金確認・配送手配はスタッフが手動対応)
   if (customerAreaType === 'other') {
