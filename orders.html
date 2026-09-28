@@ -1709,6 +1709,7 @@ async function loadExpressInput() {
     .from('orders')
     .select(`
       id, order_type, delivery_date, customer_id, total_amount, points_used,
+      is_wholesale, wholesale_restaurant_name, comment,
       customers!customer_id ( family_name, first_name, tel1 ),
       order_items ( id, product_name_snapshot, quantity, sale_type, products ( name_en ) )
     `)
@@ -1770,12 +1771,18 @@ function renderExpressOrderRow(order, pointsUsed) {
   tr.dataset.exprType = 'order';
   tr.dataset.exprId = order.id;
 
-  const custCode = order.order_type === 'walk_in'
-    ? 'Walk-in'
-    : (order.customers?.tel1 ? String(order.customers.tel1).replace(/\D/g, '').slice(-5) : '-');
-  const custName = order.customers
-    ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
-    : 'Walk-in';
+  // 卸売(wholesale)注文はcustomer_idを持たないためorder.customersがnullになり、
+  // 以前はWalk-inと誤表示されていた(2026-09-28修正)。is_wholesaleを先に判定する。
+  const custCode = order.is_wholesale
+    ? 'Wholesale'
+    : (order.order_type === 'walk_in'
+      ? 'Walk-in'
+      : (order.customers?.tel1 ? String(order.customers.tel1).replace(/\D/g, '').slice(-5) : '-'));
+  const custName = order.is_wholesale
+    ? escapeHtml(order.wholesale_restaurant_name || 'Wholesale')
+    : (order.customers
+      ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
+      : 'Walk-in');
 
   const itemsHtml = (order.order_items || []).map(item => {
     const code = extractExpressCode(item.products?.name_en);
@@ -1792,12 +1799,17 @@ function renderExpressOrderRow(order, pointsUsed) {
     return `<div class="express-item-line"><span class="express-qty">${escapeHtml(qtyLabel)}</span>${codeHtml} ${displayName}</div>`;
   }).join('');
 
+  // 備考(comment)欄に入力があれば、商品リストの下に表示する(2026-09-28)
+  const commentHtml = order.comment
+    ? `<div class="express-item-line" style="color:var(--red-accent); font-weight:700;">📝 ${escapeHtml(order.comment)}</div>`
+    : '';
+
   tr.innerHTML = `
     <td class="center"><input type="checkbox" class="express-row-check"></td>
     <td class="center">${order.delivery_date || '-'}</td>
     <td class="center express-cust-code">${escapeHtml(custCode)}</td>
     <td>${custName}</td>
-    <td style="font-size:12px;">${itemsHtml}</td>
+    <td style="font-size:12px;">${itemsHtml}${commentHtml}</td>
     <td class="center">${pointsUsed > 0 ? pointsUsed + ' pt' : '-'}</td>
     <td class="center" style="font-weight:700;">${order.total_amount || 0} THB</td>
   `;
