@@ -603,6 +603,11 @@
     <div class="rice-summary-warn" id="rice-summary-warn" style="display:none;"></div>
   </div>
 
+  <div class="rice-summary-panel" id="tuna-tofu-summary-panel" style="display:none;">
+    <div class="rice-summary-header"><span id="tuna-tofu-summary-header-title">🐟🧊 Tuna &amp; Tofu Summary / สรุปยอดทูน่าและเต้าหู้</span> <span class="rice-summary-sub">Quantity by delivery date / จำนวนตามวันที่จัดส่ง</span></div>
+    <table class="rice-summary-table" id="tuna-tofu-summary-table"></table>
+  </div>
+
   <div class="express-toolbar" id="express-toolbar" style="display:none;">
     <button class="btn-express-selectall" onclick="selectAllExpressRows()">Select All / เลือกทั้งหมด</button>
     <button class="btn-express-print" onclick="printSelectedExpress()">🖨️ Print Selected / พิมพ์รายการที่เลือก</button>
@@ -1139,6 +1144,97 @@ function renderRiceSummary(rows) {
   panel.style.display = 'block';
 }
 
+// ---------------- Tuna / Tofu summary (Bangkok tab: 4 items, Sriracha/Pattaya tab: tuna only) ----------------
+// マグロ・豆腐は商品名の表記ゆれが少ない主力商品なので、まず product_id で厳密に一致させ、
+// 万一 product_id が無い古いデータ等に備えて商品名(スナップショット)でのフォールバックも用意する。
+const TUNA_TOFU_PRODUCT_MAP = {
+  '0a1cb230-5365-4a0b-8e78-9a18945f0f3b': 'tunaAkami',   // 本マグロ 赤身
+  '264f3979-8be3-42af-b660-6dd1dca80dda': 'tunaChutoro', // 本マグロ 中トロ
+  'b1920be3-b49e-4fa1-a078-890e17ccec34': 'tofuSilken',  // 山口豆腐店 絹ごし
+  'e48f43bc-7243-4894-85ca-08050d6eb0c2': 'tofuYose',    // 山口豆腐店 寄せ豆腐
+};
+const TUNA_TOFU_CATEGORY_LABELS = [
+  { key: 'tunaAkami', label: 'Bluefin Tuna Akami / ทูน่าครีบน้ำเงิน อากามิ' },
+  { key: 'tunaChutoro', label: 'Bluefin Tuna Chutoro / ทูน่าครีบน้ำเงิน ชูโทโร่' },
+  { key: 'tofuSilken', label: 'Yamaguchi Tofu Silken / เต้าหู้อ่อนยามากูจิ' },
+  { key: 'tofuYose', label: 'Yamaguchi Tofu Yose / เต้าหู้โยเสะยามากูจิ' },
+];
+
+function getTunaTofuCategory(item) {
+  if (item.product_id && TUNA_TOFU_PRODUCT_MAP[item.product_id]) return TUNA_TOFU_PRODUCT_MAP[item.product_id];
+  const nameJa = item.product_name_snapshot || '';
+  if (nameJa.includes('本マグロ') && nameJa.includes('赤身')) return 'tunaAkami';
+  if (nameJa.includes('本マグロ') && nameJa.includes('中トロ')) return 'tunaChutoro';
+  if (nameJa.includes('山口豆腐店') && nameJa.includes('絹')) return 'tofuSilken';
+  if (nameJa.includes('山口豆腐店') && nameJa.includes('寄せ')) return 'tofuYose';
+  return null;
+}
+
+function renderTunaTofuSummary(rows) {
+  const panel = document.getElementById('tuna-tofu-summary-panel');
+  let categories;
+  let headerText;
+  if (currentAreaFilter === 'Bangkok') {
+    categories = TUNA_TOFU_CATEGORY_LABELS;
+    headerText = '🐟🧊 Tuna & Tofu Summary / สรุปยอดทูน่าและเต้าหู้';
+  } else if (currentAreaFilter === 'Sriracha,Pattaya') {
+    categories = TUNA_TOFU_CATEGORY_LABELS.filter(c => c.key === 'tunaAkami' || c.key === 'tunaChutoro');
+    headerText = '🐟 Tuna Summary / สรุปยอดทูน่า';
+  } else {
+    panel.style.display = 'none';
+    return;
+  }
+  document.getElementById('tuna-tofu-summary-header-title').textContent = headerText;
+
+  const activeOrders = (rows || []).filter(o => !o.is_cancelled);
+  const byDate = new Map();
+  const emptyBucket = () => Object.fromEntries(categories.map(c => [c.key, 0]));
+
+  activeOrders.forEach(order => {
+    const date = order.delivery_date || '(No date / ไม่มีวันที่)';
+    (order.order_items || []).forEach(item => {
+      const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+      const cat = getTunaTofuCategory(item);
+      if (cat && categories.some(c => c.key === cat)) {
+        if (!byDate.has(date)) byDate.set(date, emptyBucket());
+        byDate.get(date)[cat] += qty;
+      }
+    });
+  });
+
+  const table = document.getElementById('tuna-tofu-summary-table');
+
+  if (byDate.size === 0) {
+    table.innerHTML = '<tr><td class="rice-summary-empty">No matching items in current results / ไม่มีสินค้าที่ตรงกันในผลลัพธ์ปัจจุบัน</td></tr>';
+    panel.style.display = 'block';
+    return;
+  }
+
+  const dates = [...byDate.keys()].sort();
+  const totals = emptyBucket();
+
+  let html = '<thead><tr><th>Delivery date<br>วันที่จัดส่ง</th>'
+    + categories.map(c => `<th class="num">${escapeHtml(c.label)}</th>`).join('')
+    + '</tr></thead><tbody>';
+
+  dates.forEach(date => {
+    const bucket = byDate.get(date);
+    html += `<tr><td>${escapeHtml(date)}</td>`
+      + categories.map(c => {
+        totals[c.key] += bucket[c.key];
+        return `<td class="num">${bucket[c.key] > 0 ? bucket[c.key] : '-'}</td>`;
+      }).join('')
+      + '</tr>';
+  });
+
+  html += '<tr class="rice-summary-total-row"><td>Total / รวม</td>'
+    + categories.map(c => `<td class="num">${totals[c.key]}</td>`).join('')
+    + '</tr></tbody>';
+
+  table.innerHTML = html;
+  panel.style.display = 'block';
+}
+
 // ---------------- Area tabs ----------------
 function setAreaTab(btn, area) {
   document.querySelectorAll('.area-tabs button').forEach(b => b.classList.remove('active'));
@@ -1146,6 +1242,7 @@ function setAreaTab(btn, area) {
   currentAreaFilter = area;
   document.getElementById('express-toolbar').style.display = (area === '__EXPRESS__') ? 'flex' : 'none';
   document.getElementById('rice-summary-panel').style.display = 'none';
+  document.getElementById('tuna-tofu-summary-panel').style.display = 'none';
   loadOrders();
 }
 
@@ -1276,6 +1373,7 @@ async function loadOrders() {
   }
 
   renderRiceSummary(rows);
+  renderTunaTofuSummary(rows);
 
   if (rows.length === 0 && currentAreaFilter !== '') { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่พบคำสั่งซื้อ / No orders found</td></tr>'; return; }
 
