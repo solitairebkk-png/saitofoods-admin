@@ -1430,8 +1430,12 @@ function buildPickupSection(dateStr, orders) {
   let body = '';
   orders.forEach(order => {
     const cust = order.customers || {};
-    const name = `${cust.family_name || ''} ${cust.first_name || ''}`.trim();
-    const condo = (order.condo_name || '').trim() || '(not set)';
+    const isWs = !!order.is_wholesale;
+    // Wholesale(レストラン向け)も同じ日の一覧に含める。名前は店名、コンドが未設定なら "Wholesale" と表示。
+    const name = isWs
+      ? `[WS] ${order.wholesale_restaurant_name || 'Wholesale'}`
+      : `${cust.family_name || ''} ${cust.first_name || ''}`.trim();
+    const condo = (order.condo_name || '').trim() || (isWs ? 'Wholesale' : '(not set)');
     const isDummy = s => /^[-\s]*$/.test(s || '');
     const a1 = isDummy(cust.address1) ? '' : cust.address1;
     const a2 = isDummy(cust.address2) ? '' : cust.address2;
@@ -1463,7 +1467,9 @@ function buildPickupSection(dateStr, orders) {
     const statusLabel = total <= 0 ? '' : (payState === 'paid' ? '✓' : (payState === 'partial' ? '½' : '✗'));
     const payLabel = [methodLabel, statusLabel].filter(Boolean).join(' ');
     // 部屋番号が見つからない注文は黄色の空欄+住所の抜粋(人が見て補えるように)
-    const roomCell = room
+    const roomCell = isWs
+      ? '<td class="room"></td>'
+      : room
       ? `<td class="room">${escapeHtml(room)}<div class="addr addr-opt">${escapeHtml(addrText)}</div></td>`
       : `<td class="room room-missing"><div class="addr">${escapeHtml(addrText)}</div></td>`;
     body += '<tr>'
@@ -1521,8 +1527,8 @@ function buildPickupSection(dateStr, orders) {
 }
 
 function openPickupSheet() {
-  // 卸売り(レストラン向け)・キャンセル済み・配送日未定の注文は対象外
-  const all = (lastPickupRows || []).filter(o => !o.is_cancelled && !o.is_wholesale && o.delivery_date);
+  // キャンセル済み・配送日未定の注文は対象外。Wholesale(レストラン向け)は含める(2026-09-29)。
+  const all = (lastPickupRows || []).filter(o => !o.is_cancelled && o.delivery_date);
   if (all.length === 0) {
     alert('ไม่มีคำสั่งซื้อให้สร้างเอกสาร / No orders to include in the sheet.');
     return;
