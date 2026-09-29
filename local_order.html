@@ -388,6 +388,11 @@
         </label>
       </div>
     </div>
+  </div>
+
+  <!-- 保存ボタン等は配送オプションのカードの外に置く(Walk-inでは配送オプションのカードごと隠れるため、
+       中に入れていると保存ボタンも消えてしまっていた) -->
+  <div class="card" id="submit-card">
     <button class="btn" onclick="submitOrder()" style="width:100%; padding:14px; font-size:15px;">บันทึกคำสั่งซื้อ / Save Order</button>
     <div id="submit-msg"></div>
     <button class="btn secondary" id="back-to-orders-btn" style="width:100%;" onclick="goBackToOrderList()">← กลับไปหน้ารายการคำสั่งซื้อ / Back to Order List</button>
