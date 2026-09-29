@@ -44,6 +44,10 @@
   .info-box .row { font-size: 12px; line-height: 1.55; display: flex; gap: 6px; }
   .info-box .row .k { color: #888; flex: 0 0 62px; }
   .info-box .row .v { flex: 1; }
+  .addr-box { border: 2.5px solid #111; border-radius: 6px; padding: 7px 10px; margin-bottom: 12px; background: #fff8e1; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .addr-box .addr-label { font-size: 10.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #8a6300; }
+  .addr-box .addr-text { font-size: 19px; font-weight: 800; line-height: 1.35; color: #000; word-break: break-word; }
+  .addr-box .addr-condo { font-size: 16px; font-weight: 800; margin-top: 2px; color: #000; }
   .status-pill { display: inline-block; padding: 1px 8px; border-radius: 100px; font-size: 10.5px; font-weight: 700; margin-left: 4px; }
   .status-paid { background: #e4f3ea; color: #1a9a5c; }
   .status-unpaid { background: #fbe9e6; color: var(--red); }
@@ -225,7 +229,6 @@
           <div class="row"><span class="k">Name</span><span class="v" id="f-customer-name"></span></div>
           <div class="row"><span class="k">Tel</span><span class="v" id="f-customer-tel"></span></div>
           <div class="row"><span class="k">Email</span><span class="v" id="f-customer-email"></span></div>
-          <div class="row"><span class="k">Address</span><span class="v" id="f-customer-address"></span></div>
         </div>
         <div class="info-box">
           <h3>Order info</h3>
@@ -233,6 +236,12 @@
           <div class="row"><span class="k">Time</span><span class="v" id="f-delivery-time"></span></div>
           <div class="row"><span class="k">Payment</span><span class="v" id="f-payment-method"></span><span class="status-pill" id="f-payment-status"></span></div>
         </div>
+      </div>
+
+      <div class="addr-box">
+        <div class="addr-label">📍 Delivery address</div>
+        <div class="addr-text" id="f-customer-address"></div>
+        <div class="addr-condo" id="f-customer-condo" style="display:none;"></div>
       </div>
 
       <table class="items-table">
@@ -562,9 +571,12 @@ function renderReceipt(order) {
     document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
     document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
     document.getElementById('f-customer-email').textContent = c.email || '-';
-    document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(Boolean).join(' ') || '-';
+    document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(a => a && !/^[-\s]*$/.test(a)).join(' ') || '-';
   }
 
+  const condoEl = document.getElementById('f-customer-condo');
+  if (order.condo_name && !isWholesale) { condoEl.textContent = '🏢 ' + order.condo_name; condoEl.style.display = 'block'; }
+  else { condoEl.style.display = 'none'; }
   document.getElementById('f-delivery-date').textContent = fmtDate(order.delivery_date);
   document.getElementById('f-delivery-time').textContent = order.condo_name
     ? `🏢 ${order.condo_name}`
