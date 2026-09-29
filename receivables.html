@@ -6,6 +6,7 @@
 <title>Receivables Upload | Saito Foods</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
@@ -215,7 +216,7 @@ async function loadMonthUploads() {
 
   const { data, error } = await supabaseClient
     .from('receivables_uploads')
-    .select('upload_date, file_path, file_name, file_size, uploaded_by_name, uploaded_at')
+    .select('upload_date, file_path, file_name, file_size, uploaded_by_name, uploaded_at, total_amount, total_source')
     .gte('upload_date', firstDay).lte('upload_date', lastDay);
 
   uploadsMap = new Map();
@@ -310,6 +311,11 @@ function renderDetailPanel() {
       <div class="detail-row"><span class="label">Uploaded by / อัปโหลดโดย</span>${escapeHtml(row.uploaded_by_name || '-')}</div>
       <div class="detail-row"><span class="label">Uploaded at / เวลาอัปโหลด</span>${uploadedAtStr} (Bangkok time)</div>
       <div class="detail-row"><span class="label">Size / ขนาดไฟล์</span>${formatBytes(row.file_size)}</div>
+      <div class="detail-row"><span class="label">Total (incl. VAT) / ยอดรวมทั้งสิ้น</span>
+        <input type="number" step="0.01" id="saved-total-${selectedDate}" value="${row.total_amount ?? ''}" style="width:140px;padding:6px;font-size:14px;">
+        <button class="btn ghost" onclick="saveTotalOnly('${selectedDate}')">Save total</button>
+        <span style="font-size:11.5px;color:var(--text-muted);">${row.total_source ? '(' + escapeHtml(row.total_source) + ')' : '(not set)'}</span>
+      </div>
       <div class="detail-actions">
         <button class="btn" onclick="viewFile('${selectedDate}')">👁️ View / ดูไฟล์</button>
         <button class="btn ghost" onclick="downloadFile('${selectedDate}')">📥 Download / ดาวน์โหลด</button>
@@ -317,7 +323,15 @@ function renderDetailPanel() {
       </div>
       <div class="detail-row" style="margin-top:14px;"><span class="label">Replace with a different PDF / แทนที่ด้วยไฟล์ PDF อื่น</span></div>
       <div class="upload-form">
-        <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
+        <input type="file" id="file-input-${selectedDate}" accept="application/pdf" onchange="detectTotal('${selectedDate}')">
+      </div>
+      <div class="upload-form">
+        <label style="font-size:12.5px;">Total (incl. VAT) / ยอดรวมทั้งสิ้น
+          <input type="number" step="0.01" id="total-input-${selectedDate}" style="width:140px;padding:6px;font-size:14px;" placeholder="auto">
+        </label>
+        <span id="total-hint-${selectedDate}" style="font-size:12px;color:var(--text-muted);"></span>
+      </div>
+      <div class="upload-form">
         <button class="btn" onclick="uploadFile('${selectedDate}')">Upload / อัปโหลด</button>
       </div>
     `;
@@ -326,7 +340,15 @@ function renderDetailPanel() {
       <div class="detail-date">${formatDateLabel(selectedDate)}</div>
       <div class="empty-note">No PDF uploaded for this date yet. / ยังไม่มีไฟล์ PDF สำหรับวันที่นี้</div>
       <div class="upload-form">
-        <input type="file" id="file-input-${selectedDate}" accept="application/pdf">
+        <input type="file" id="file-input-${selectedDate}" accept="application/pdf" onchange="detectTotal('${selectedDate}')">
+      </div>
+      <div class="upload-form">
+        <label style="font-size:12.5px;">Total (incl. VAT) / ยอดรวมทั้งสิ้น
+          <input type="number" step="0.01" id="total-input-${selectedDate}" style="width:140px;padding:6px;font-size:14px;" placeholder="auto">
+        </label>
+        <span id="total-hint-${selectedDate}" style="font-size:12px;color:var(--text-muted);"></span>
+      </div>
+      <div class="upload-form">
         <button class="btn" onclick="uploadFile('${selectedDate}')">Upload / อัปโหลด</button>
       </div>
     `;
@@ -339,6 +361,57 @@ function showSaveMsg(msg, isError) {
   el.textContent = msg;
   el.className = isError ? 'error' : 'success';
   setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+}
+
+// ---------------- PDF grand-total detection ----------------
+let detectedTotals = {};
+function extractGrandTotal(text) {
+  // 最後の「a + b ≒ c」となる3つ組の金額の c を総合計とする(青字の右端合計)
+  const nums = [...text.matchAll(/\d{1,3}(?:,\d{3})*\.\d{2}/g)].map(m => parseFloat(m[0].replace(/,/g, '')));
+  for (let i = nums.length - 3; i >= 0; i--) {
+    const [a, b, c] = [nums[i], nums[i + 1], nums[i + 2]];
+    if (c > 0 && Math.abs(a + b - c) <= 0.015) return c;
+  }
+  return null;
+}
+async function detectTotal(dateStr) {
+  const input = document.getElementById(`file-input-${dateStr}`);
+  const hint = document.getElementById(`total-hint-${dateStr}`);
+  const totalEl = document.getElementById(`total-input-${dateStr}`);
+  const file = input && input.files[0];
+  delete detectedTotals[dateStr];
+  if (!file || !window.pdfjsLib) return;
+  hint.textContent = 'Reading PDF… / กำลังอ่าน PDF';
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let text = '';
+    for (let p = pdf.numPages; p >= 1; p--) { // 後ろのページから必要分だけ
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      text = tc.items.map(i => i.str).join(' ') + ' ' + text;
+      const t = extractGrandTotal(text);
+      if (t !== null) { detectedTotals[dateStr] = t; break; }
+    }
+    if (detectedTotals[dateStr] != null) {
+      totalEl.value = detectedTotals[dateStr].toFixed(2);
+      hint.textContent = 'Detected from PDF — please check / ตรวจพบจาก PDF โปรดตรวจสอบ';
+    } else {
+      hint.textContent = 'Could not detect. Enter manually. / อ่านยอดไม่ได้ กรุณากรอกเอง';
+    }
+  } catch (e) {
+    hint.textContent = 'Could not read PDF. Enter manually. / อ่าน PDF ไม่ได้ กรุณากรอกเอง';
+  }
+}
+async function saveTotalOnly(dateStr) {
+  const v = document.getElementById(`saved-total-${dateStr}`).value;
+  const total = v === '' ? null : parseFloat(v);
+  const { error } = await supabaseClient.from('receivables_uploads')
+    .update({ total_amount: total, total_source: total === null ? null : 'manual' })
+    .eq('upload_date', dateStr);
+  if (error) { showSaveMsg('Save failed: ' + error.message, true); return; }
+  showSaveMsg('Total saved. / บันทึกยอดแล้ว');
+  loadMonthUploads();
 }
 
 async function uploadFile(dateStr) {
@@ -360,6 +433,8 @@ async function uploadFile(dateStr) {
     return;
   }
 
+  const tv = document.getElementById(`total-input-${dateStr}`).value;
+  const totalVal = tv === '' ? null : parseFloat(tv);
   const path = `${dateStr}.pdf`;
   const { error: uploadErr } = await supabaseClient.storage
     .from(BUCKET)
@@ -378,6 +453,8 @@ async function uploadFile(dateStr) {
       uploaded_by: currentCustomer.id,
       uploaded_by_name: uploaderName,
       uploaded_at: new Date().toISOString(),
+      total_amount: totalVal,
+      total_source: totalVal === null ? null : (detectedTotals[dateStr] != null && Math.abs(detectedTotals[dateStr] - totalVal) < 0.005 ? 'pdf' : 'manual'),
     }, { onConflict: 'upload_date' });
 
   if (dbErr) { showSaveMsg('อัปโหลดไม่สำเร็จ (DB) / Upload failed (DB): ' + dbErr.message, true); return; }
