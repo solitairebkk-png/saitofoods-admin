@@ -91,6 +91,11 @@
   #customer-result { margin-top: 10px; padding: 12px; border-radius: 6px; background: #f0f4f8; font-size: 13px; display: none; }
   #customer-not-found { margin-top: 10px; padding: 12px; border-radius: 6px; background: #fdf3d0; font-size: 13px; display: none; }
   #customer-results-list { margin-top: 10px; }
+  .cust-addr-box { margin-top: 8px; padding: 10px 12px; background: #fff8e1; border: 2px solid #f0a500; border-radius: 6px; }
+  .cust-addr-box .lbl { font-size: 11px; font-weight: 700; color: #8a6300; margin-bottom: 2px; }
+  .cust-addr-box .val { font-size: 17px; font-weight: 800; color: #111; line-height: 1.4; word-break: break-word; }
+  .cust-addr-box .val.empty { font-size: 13px; font-weight: 600; color: #b00; }
+  .cust-addr-box .condo { margin-top: 4px; font-size: 14px; font-weight: 700; color: #1c5279; }
   .customer-result-item {
     padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 6px;
     cursor: pointer; font-size: 13px; background: white;
@@ -279,9 +284,18 @@
         <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
         <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
       </div>
-      <div class="field">
+      <div class="field" id="time-slot-field">
         <label><span class="th">ช่วงเวลา</span>Time slot</label>
         <select id="delivery-time-slot"></select>
+      </div>
+    </div>
+    <!-- シラチャ/パタヤの注文を編集する時だけ表示(時間帯の代わりにコンドミニアムを選ぶ) -->
+    <div class="row" id="condo-field-row" style="display:none;">
+      <div class="field">
+        <label><span class="th">คอนโด</span>Condominium</label>
+        <select id="edit-condo-select" onchange="onEditCondoChange()"></select>
+        <input type="text" id="edit-condo-other" placeholder="Condominium name / ชื่อคอนโด" style="display:none;margin-top:6px;">
+        <div id="edit-condo-note" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div>
       </div>
     </div>
     <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
@@ -318,6 +332,10 @@
       <span>Subtotal / ยอดรวม</span>
       <span id="subtotal-display">0 THB</span>
     </div>
+    <div id="shipping-override-row" style="display:none;margin-top:6px;font-size:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:8px 10px;">
+      <div style="font-weight:700;color:#1b5e20;">✅ This order already qualified for free shipping — shipping is not added even if the total drops below the minimum. / ออเดอร์นี้ได้ส่งฟรีแล้ว จึงไม่คิดค่าส่งเพิ่มแม้ยอดลดลง</div>
+      <label style="display:block;margin-top:4px;"><input type="checkbox" id="charge-shipping-anyway" onchange="renderCart()"> Charge shipping anyway / คิดค่าส่งตามปกติ</label>
+    </div>
     <div style="font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.7;">
       * Weight-based item prices shown here are estimates (used only for the free-shipping calculation). The final amount will be confirmed later in the Order List screen after weighing.<br>
       * ราคาสินค้าชั่งน้ำหนักเป็นราคาโดยประมาณ ใช้สำหรับคำนวณค่าส่งเท่านั้น ยอดจริงจะยืนยันอีกครั้งหลังชั่งน้ำหนักในหน้ารายการคำสั่งซื้อ
@@ -331,7 +349,7 @@
   </div>
 
   <!-- Payment -->
-  <div class="card">
+  <div class="card" id="payment-card">
     <h2><span class="th">วิธีชำระเงิน</span><span class="en">Payment Method</span></h2>
     <div class="payment-options">
       <label><input type="radio" name="payment" value="cash" checked><span>เงินสด / Cash</span></label>
@@ -456,6 +474,11 @@ async function loadShippingSettings() {
 // 編集モード(orders.html の Edit ボタンから ?edit=<注文ID> で遷移してきた場合)
 const editOrderId = new URLSearchParams(location.search).get('edit');
 let editingOrderId = null;
+let editingOrderAreaName = null;          // 編集中の注文のarea_name (Sriracha/Pattaya判定用)
+let editingOrderIsSrPt = false;           // シラチャ/パタヤ注文か(時間帯不要・コンドミニアム選択)
+let editingOrderShippingWaived = false;   // 元々送料無料だった注文(商品削除で下回っても送料を足さない)
+let editingOrderOriginalPayment = null;   // 編集開始時の支払い方法(正規化後)。変更がなければ送らない
+let condoListCache = [];
 // 編集開始時点の「量り売り商品の確定状態・内容」を記録しておき、
 // 保存時に実際に変更が無ければ is_weight_confirmed を不必要にリセットしないようにする
 let editingOrderOriginalIsWeightConfirmed = false;
@@ -572,13 +595,25 @@ async function searchCustomer() {
   }
 }
 
+// 選択中のお客様表示。配送先住所を大きく目立たせる(ダミー住所 "-----" は「未登録」扱い)。
+function selectedCustomerHtml(c, condo) {
+  const isDummy = t => /^[-\s]*$/.test(t || '');
+  const parts = [c.address2, c.address1].filter(t => !isDummy(t));
+  const addr = parts.join(' ');
+  return `เลือกแล้ว / Selected: <b>${escapeHtml(c.family_name || '')} ${escapeHtml(c.first_name || '')}</b> (Tel: ${escapeHtml(c.tel1 || '-')})`
+    + `<div class="cust-addr-box"><div class="lbl">📍 ที่อยู่จัดส่ง / DELIVERY ADDRESS</div>`
+    + (addr ? `<div class="val">${escapeHtml(addr)}</div>` : `<div class="val empty">ยังไม่มีที่อยู่ / No address registered</div>`)
+    + (condo ? `<div class="condo">🏢 ${escapeHtml(condo)}</div>` : '')
+    + `</div>`;
+}
+
 function selectCustomerFromList(customer, el) {
   selectedCustomer = customer;
   document.querySelectorAll('.customer-result-item').forEach(item => item.classList.remove('selected'));
   el.classList.add('selected');
   const resultEl = document.getElementById('customer-result');
   resultEl.style.display = 'block';
-  resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${escapeHtml(customer.family_name || '')} ${escapeHtml(customer.first_name || '')}</b> (Tel: ${escapeHtml(customer.tel1 || '-')})`;
+  resultEl.innerHTML = selectedCustomerHtml(customer, '');
   document.getElementById('customer-not-found').style.display = 'none';
 }
 
@@ -859,6 +894,19 @@ function removeFromCart(index) {
 // 量り売り商品も、cart.html/product_list.htmlと同じく products.price(概算・参考価格)× 数量を
 // 小計・送料無料判定に使う。実際の請求額は orders.html の重量確定モーダルで
 // 実測後に unit_price × 実測重量へ差し替えられるまでの「暫定額」という位置づけ。
+// 送料の計算は表示(renderCart)と保存(submitOrder)で必ず同じ関数を使う。
+// 編集中で、元々送料無料(shipping_cost=0)だった注文は、商品削除で最低金額を下回っても
+// 送料を足さない。スタッフが「送料を取る」にチェックした場合だけ通常計算に戻す。
+function computeShipping(subtotal, isWalkin) {
+  if (isWalkin) return 0;
+  if (subtotal >= shippingFreeThreshold) return 0;
+  if (editingOrderId && editingOrderShippingWaived) {
+    const chk = document.getElementById('charge-shipping-anyway');
+    if (!(chk && chk.checked)) return 0;
+  }
+  return shippingFeeAmount;
+}
+
 function renderCart() {
   const tbody = document.getElementById('cart-tbody');
   tbody.innerHTML = '';
@@ -888,7 +936,9 @@ function renderCart() {
   });
 
   const isWalkin = document.getElementById('is-walkin').checked;
-  const needsShipping = !isWalkin && subtotal < shippingFreeThreshold;
+  const needsShipping = computeShipping(subtotal, isWalkin) > 0;
+  const waiveRow = document.getElementById('shipping-override-row');
+  if (waiveRow) waiveRow.style.display = (editingOrderId && editingOrderShippingWaived && !isWalkin && subtotal < shippingFreeThreshold) ? 'block' : 'none';
   const shippingNote = needsShipping
     ? ` + shipping ${shippingFeeAmount} THB / ค่าส่ง ${shippingFeeAmount} THB (< ${shippingFreeThreshold}THB)`
     : '';
@@ -963,7 +1013,7 @@ async function loadOrderForEdit(orderId) {
   const { data: order, error } = await supabaseClient
     .from('orders')
     .select(`
-      id, order_type, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
+      id, order_type, area_name, condo_name, shipping_cost, delivery_date, delivery_time_slot, payment_method, comment, is_weight_confirmed,
       subtotal, total_amount, paid_amount, payment_status, coupon_code, discount_amount, points_used,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
@@ -979,6 +1029,12 @@ async function loadOrderForEdit(orderId) {
   }
 
   editingOrderId = order.id;
+  editingOrderAreaName = order.area_name || null;
+  editingOrderIsSrPt = order.order_type !== 'walk_in' && (
+    editingOrderAreaName === 'Sriracha' || editingOrderAreaName === 'Pattaya'
+    || /^(Sriracha|Pattaya) Delivery/.test(order.delivery_time_slot || ''));
+  // 元々送料無料(shipping_cost=0)だった配送注文は、商品削除で最低金額を下回っても送料を足さない
+  editingOrderShippingWaived = order.order_type !== 'walk_in' && order.shipping_cost != null && Number(order.shipping_cost) === 0;
   // 任意金額の支払いQR/リンク作成は編集中の注文にのみ表示する(新規作成時は不要)。
   // 初期値として商品代金(subtotal)を入れておくが、実際の送料込み金額に
   // 書き換えて使う想定(この金額自体はDBには保存されない)。
@@ -1036,14 +1092,21 @@ async function loadOrderForEdit(orderId) {
     selectedCustomer = order.customers;
     const resultEl = document.getElementById('customer-result');
     resultEl.style.display = 'block';
-    resultEl.innerHTML = `เลือกแล้ว / Selected: <b>${escapeHtml(order.customers.family_name || '')} ${escapeHtml(order.customers.first_name || '')}</b> (Tel: ${escapeHtml(order.customers.tel1 || '-')})`;
+    resultEl.innerHTML = selectedCustomerHtml(order.customers, order.condo_name || '');
 
     document.getElementById('delivery-date').value = order.delivery_date || '';
     onDeliveryDateChange();
-    // 時間帯のoptionが生成されるのを待ってから値をセット
-    setTimeout(() => {
-      document.getElementById('delivery-time-slot').value = order.delivery_time_slot || '';
-    }, 0);
+    if (editingOrderIsSrPt) {
+      // シラチャ/パタヤは時間帯指定なし。時間帯欄は隠し、代わりにコンドミニアムを選ばせる。
+      document.getElementById('time-slot-field').style.display = 'none';
+      document.getElementById('condo-field-row').style.display = 'flex';
+      await setupEditCondo(order);
+    } else {
+      // 時間帯のoptionが生成されるのを待ってから値をセット
+      setTimeout(() => {
+        document.getElementById('delivery-time-slot').value = order.delivery_time_slot || '';
+      }, 0);
+    }
   }
 
   // order.payment_methodが未設定(配送エリア外の注文はお客様側で支払い方法を
@@ -1056,12 +1119,14 @@ async function loadOrderForEdit(orderId) {
   // どちらのボタンにもチェックが入らなくなり、商品を削除して保存しようとした際に
   // 「支払い方法を選択してください」というエラーになってしまっていた(2026-09-28)。
   const PAYMENT_METHOD_ALIAS = { transfer: 'qr', 'bank_transfer': 'qr', '現金': 'cash' };
-  if (order.payment_method) {
-    const normalizedPayment = PAYMENT_METHOD_ALIAS[order.payment_method] || order.payment_method;
-    document.querySelectorAll('input[name=payment]').forEach(r => {
-      r.checked = (r.value === normalizedPayment);
-    });
-  }
+  // 編集時は支払い方法の選択を必須にしない。未設定(null)の注文はどちらもチェックなしのまま開き、
+  // 選ばなければ支払い方法は変更しない(保存時のpayloadにも含めない)。
+  editingOrderOriginalPayment = order.payment_method ? (PAYMENT_METHOD_ALIAS[order.payment_method] || order.payment_method) : null;
+  document.querySelectorAll('input[name=payment]').forEach(r => {
+    r.checked = (r.value === editingOrderOriginalPayment);
+  });
+  const payHead = document.querySelector('#payment-card h2 .en');
+  if (payHead) payHead.textContent = 'Payment Method (optional when editing)';
   document.getElementById('order-comment').value = order.comment || '';
   document.getElementById('opt-leave-no-contact').checked = !!order.delivery_leave_at_table && !!order.delivery_no_contact;
   document.getElementById('opt-leave-with-contact').checked = !!order.delivery_leave_at_table && !order.delivery_no_contact;
@@ -1103,6 +1168,55 @@ async function loadOrderForEdit(orderId) {
     quantity: item.quantity,
   }));
   renderCart();
+}
+
+// ---------------- Edit: condominium selection (Sriracha / Pattaya) ----------------
+async function setupEditCondo(order) {
+  const groups = editingOrderAreaName === 'Pattaya' ? ['pattaya'] : ['sriracha_tuesday', 'sriracha_thursday'];
+  let list = [];
+  try {
+    const { data } = await supabaseClient.from('condominiums').select('*')
+      .in('area_group', groups).eq('is_active', true).order('sort_order');
+    list = data || [];
+  } catch (e) { list = []; }
+  // 同名のコンドが火曜/木曜に重複して出ないようにする
+  const seen = new Set();
+  condoListCache = list.filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; });
+
+  const sel = document.getElementById('edit-condo-select');
+  const otherOpt = condoListCache.find(c => /other/i.test(c.name));
+  const normal = condoListCache.filter(c => c !== otherOpt);
+  sel.innerHTML = '<option value="">-- select / เลือก --</option>'
+    + normal.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('')
+    + `<option value="__other__">${escapeHtml(otherOpt ? otherOpt.name : 'Other / อื่นๆ')}</option>`;
+
+  const noteEl = document.getElementById('edit-condo-note');
+  const otherInput = document.getElementById('edit-condo-other');
+  otherInput.value = '';
+  noteEl.textContent = '';
+  const cur = (order.condo_name || '').trim();
+  if (cur) {
+    if (normal.some(c => c.name === cur)) sel.value = cur;
+    else { sel.value = '__other__'; otherInput.value = cur; }
+  } else {
+    // 未設定の人: 住所欄に含まれるコンド名が「ちょうど1件」だけ一致した場合のみ候補として選んでおく
+    const cust = order.customers || {};
+    const hay = ((cust.address1 || '') + ' ' + (cust.address2 || '')).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const hits = normal.filter(c => {
+      const key = String(c.name).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
+      return key.length >= 4 && hay.indexOf(key) >= 0;
+    });
+    if (hits.length === 1) {
+      sel.value = hits[0].name;
+      noteEl.textContent = 'Guessed from the customer address — please check. / เดาจากที่อยู่ลูกค้า กรุณาตรวจสอบ';
+    }
+  }
+  onEditCondoChange();
+}
+
+function onEditCondoChange() {
+  const sel = document.getElementById('edit-condo-select');
+  document.getElementById('edit-condo-other').style.display = sel.value === '__other__' ? 'block' : 'none';
 }
 
 // ---------------- Slip upload link ----------------
@@ -1205,12 +1319,13 @@ async function submitOrder() {
 
   const isWalkin = document.getElementById('is-walkin').checked;
   const paymentRadio = document.querySelector('input[name=payment]:checked');
-  if (!paymentRadio) {
+  // 編集時は支払い方法を必須にしない(新規作成時のみ必須)
+  if (!paymentRadio && !editingOrderId) {
     msgEl.textContent = 'กรุณาเลือกวิธีชำระเงิน / Please choose a payment method.';
     msgEl.className = 'error';
     return;
   }
-  const paymentMethod = paymentRadio.value;
+  const paymentMethod = paymentRadio ? paymentRadio.value : null;
   const comment = document.getElementById('order-comment').value.trim();
 
   if (cart.length === 0) {
@@ -1219,7 +1334,7 @@ async function submitOrder() {
     return;
   }
 
-  if (!isWalkin) {
+  if (!isWalkin && !(editingOrderId && editingOrderIsSrPt)) {
     const timeSlot = document.getElementById('delivery-time-slot').value;
     if (!timeSlot) {
       msgEl.textContent = 'กรุณาเลือกวันที่จัดส่งที่ถูกต้อง (ไม่ใช่วันอาทิตย์) / Please choose a valid delivery date (not Sunday).';
@@ -1273,7 +1388,7 @@ async function submitOrder() {
   const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   // 配送(delivery)注文かつ設定金額未満の場合のみ配送料を加算(ウォークインは対象外)
-  const shippingCost = (!isWalkin && subtotal < shippingFreeThreshold) ? shippingFeeAmount : 0;
+  const shippingCost = computeShipping(subtotal, isWalkin);
 
   // 合計金額は「小計+送料」だけでなく、この注文が元々持っていた割引・ポイント使用分も
   // 必ず差し引く。新規作成時はeditingOrderDiscountAmount/editingOrderPointsUsedは0のまま
@@ -1291,9 +1406,7 @@ async function submitOrder() {
     order_source: 'local',
     customer_id: customerId,
     delivery_date: isWalkin ? null : document.getElementById('delivery-date').value,
-    delivery_time_slot: isWalkin ? null : document.getElementById('delivery-time-slot').value,
     has_weight_items: hasWeightItems,
-    payment_method: paymentMethod,
     subtotal: subtotal,
     shipping_cost: shippingCost,
     total_amount: finalTotal,
@@ -1308,6 +1421,30 @@ async function submitOrder() {
     // area_nameはここでは設定しない(編集時に当時のエリアを上書きしてしまわないため)。
     // 新規作成時のみ、この後で顧客の現在のエリアをスナップショットとして追加する。
   };
+
+  // 時間帯: シラチャ/パタヤの編集では触らない(元の値を維持)。それ以外は従来どおり。
+  if (isWalkin) {
+    orderPayload.delivery_time_slot = null;
+  } else if (!(editingOrderId && editingOrderIsSrPt)) {
+    orderPayload.delivery_time_slot = document.getElementById('delivery-time-slot').value;
+  }
+  // 支払い方法: 新規は必須。編集では、選択があり、かつ元の値から変わった時だけ送る。
+  if (!editingOrderId) {
+    orderPayload.payment_method = paymentMethod;
+  } else if (paymentMethod && paymentMethod !== editingOrderOriginalPayment) {
+    orderPayload.payment_method = paymentMethod;
+  }
+  // コンドミニアム(シラチャ/パタヤの編集のみ)
+  if (editingOrderId && editingOrderIsSrPt && !isWalkin) {
+    const condoSel = document.getElementById('edit-condo-select').value;
+    let condoVal = null;
+    if (condoSel === '__other__') {
+      condoVal = document.getElementById('edit-condo-other').value.trim() || 'Other';
+    } else if (condoSel) {
+      condoVal = condoSel;
+    }
+    if (condoVal !== null) orderPayload.condo_name = condoVal; // 未選択なら現状維持
+  }
 
   // Walk-inには配送エリアの概念が無いため、新規・編集どちらでも常にクリアする
   // (例: 元々配送注文として作られたものを、後からWalk-inに切り替えて保存した場合に
@@ -1412,7 +1549,8 @@ async function submitOrder() {
     msgEl.textContent = 'บันทึกการแก้ไขสำเร็จ! / Order updated successfully!';
     msgEl.className = 'success';
 
-    if (paymentMethod === 'qr') {
+    const effectivePayment = paymentMethod || editingOrderOriginalPayment;
+    if (effectivePayment === 'qr') {
       showSlipLink({
         orderId: editingOrderId,
         amount: finalTotal,
