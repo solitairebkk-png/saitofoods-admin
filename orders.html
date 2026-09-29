@@ -221,6 +221,9 @@
   #weight-modal .weight-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
   .weight-item-row { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
   .weight-item-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .weight-item-packs { display: inline-block; font-size: 14px; background: #fff3cd; border: 1px solid #e0c060; border-radius: 4px; padding: 4px 10px; margin-bottom: 8px; }
+  .weight-item-packs b { font-size: 16px; color: #8a4b00; }
+  .weight-item-packs-unknown { font-size: 11px; background: #f0f0f0; border-color: #ccc; color: var(--text-muted); }
   .weight-item-input-row { display: flex; align-items: center; gap: 8px; }
   .weight-input {
     width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px;
@@ -2345,7 +2348,17 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       + (order.comment ? `<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">📝 ${escapeHtml(order.comment)}</div>` : '')
     : '<div class="order-items-grid">' + (order.order_items || []).map(item => {
         const enName = item.products?.name_en ? ` / ${escapeHtml(item.products.name_en)}` : '';
-        const qtyLabel = item.sale_type === 'weight' ? `${item.quantity}kg` : `(${item.quantity})`;
+        // 量り売りは、重量確定前の quantity は「注文パック数」、確定後は「unit_label換算の重量倍数」
+        // (例: 100g単位で2.4 = 240g)。従来は常に「Nkg」と表示していたため、パック数が重さに見えたり、
+        // 確定後もkgと10倍ずれて見えていた。確定前はパック数、確定後はグラムで表示する(2026-09-29)。
+        let qtyLabel;
+        if (item.sale_type === 'weight') {
+          qtyLabel = order.is_weight_confirmed
+            ? `${Math.round(item.quantity * parseGramsPerUnit(item.products?.unit_label))}g`
+            : `<b style="color:#8a4b00;">${item.quantity} pack${Number(item.quantity) === 1 ? '' : 's'} / ${item.quantity} แพ็ค</b>`;
+        } else {
+          qtyLabel = `(${item.quantity})`;
+        }
         return `<div class="item-cell">${escapeHtml(item.product_name_snapshot)}${enName} ${qtyLabel}</div>`;
       }).join('') + '</div>';
 
@@ -2922,10 +2935,20 @@ function openWeightModal(order) {
     const gramsPerUnit = parseGramsPerUnit(unitLabel);
     const thName = item.products?.name_th ? ` / ${escapeHtml(item.products.name_th)}` : '';
     // 既存の quantity は「unit_label(例:100g)を1とした倍数」で保存されているため、
-    // 編集時にグラム表示へ変換して見せる(例: quantity=1.3, unit_label=100g → 130g)
-    const prefillGrams = (item.quantity && item.quantity > 0) ? Math.round(item.quantity * gramsPerUnit) : '';
+    // 編集時にグラム表示へ変換して見せる(例: quantity=1.3, unit_label=100g → 130g)。
+    // ただしこれは重量確定後の話。確定前の quantity は「お客様が注文したパック数」なので、
+    // グラムへ換算せず空欄にする(2パック→200gのように、実測でもない値が入って見えるのを避ける)。
+    const isConfirmed = !!order.is_weight_confirmed;
+    const prefillGrams = (isConfirmed && item.quantity && item.quantity > 0) ? Math.round(item.quantity * gramsPerUnit) : '';
+    // 重量入力の際に、お客様が何パック注文したかを確認できるよう明示する(2026-09-29)。
+    // 重量確定時に quantity が実測重量へ上書きされるため、確定済みの注文では注文パック数は残っていない。
+    const packs = Number(item.quantity) || 0;
+    const packsHtml = isConfirmed
+      ? `<div class="weight-item-packs weight-item-packs-unknown">Ordered pack count is not kept once weight is confirmed / เมื่อยืนยันน้ำหนักแล้ว จะไม่แสดงจำนวนแพ็คที่สั่ง</div>`
+      : `<div class="weight-item-packs">Ordered / จำนวนที่สั่ง: <b>${packs} pack${packs === 1 ? '' : 's'} / ${packs} แพ็ค</b></div>`;
     row.innerHTML = `
       <div class="weight-item-name">${escapeHtml(item.product_name_snapshot)}${thName}</div>
+      ${packsHtml}
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Unit price: ${item.unit_price || 0} THB / ${unitLabel || '?'} — enter the actual measured grams / ราคาต่อหน่วย: ${item.unit_price || 0} THB / ${unitLabel || '?'} — กรอกน้ำหนักที่ชั่งได้จริงเป็นกรัม</div>
       <div class="weight-item-input-row">
         <input type="number" step="1" min="0" class="weight-input"
