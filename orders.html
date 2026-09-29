@@ -617,7 +617,7 @@
 
   <div id="pickup-sheet-bar" style="display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
     <button class="btn" style="background:#2f6f3e;color:#fff;" onclick="openPickupSheet()">🖨 Pickup Sheet / ใบสรุปคำสั่งซื้อ (พิมพ์)</button>
-    <span style="font-size:12px;color:var(--text-muted);">Builds the sheet from the orders shown below (date filter applies). Nothing is saved. / สร้างจากรายการที่แสดงอยู่ด้านล่าง (ไม่บันทึก)</span>
+    <span style="font-size:12px;color:var(--text-muted);">Builds a one-page A4 sheet for the nearest delivery date in the list below. Nothing is saved. / สร้างเอกสาร A4 หนึ่งหน้าสำหรับวันจัดส่งที่ใกล้ที่สุดในรายการด้านล่าง (ไม่บันทึก)</span>
   </div>
 
   <div class="rice-summary-panel" id="rice-summary-panel" style="display:none;">
@@ -1459,6 +1459,7 @@ function buildPickupSection(dateStr, orders) {
     const methodLabel = kind === 'cash' ? '現金' : (kind === 'transfer' ? '振込' : '');
     const statusLabel = total <= 0 ? '' : (payState === 'paid' ? '済' : (payState === 'partial' ? '一部' : '未'));
     const payLabel = [methodLabel, statusLabel].filter(Boolean).join(' ');
+    // 部屋番号が見つからない注文は黄色の空欄+住所の抜粋(人が見て補えるように)
     const roomCell = room
       ? `<td class="room">${escapeHtml(room)}<div class="addr addr-opt">${escapeHtml(addrText)}</div></td>`
       : `<td class="room room-missing"><div class="addr">${escapeHtml(addrText)}</div></td>`;
@@ -1478,11 +1479,14 @@ function buildPickupSection(dateStr, orders) {
     + PICKUP_RICE_COLS.map(c => `<td class="num">${riceTotals[c.key] > 0 ? riceTotals[c.key] : ''}</td>`).join('')
     + '<td></td><td></td><td></td></tr>';
 
+  // A4縦1枚に収めるため、集計は表の下に「コンド別」と「売上・回収」を左右に並べる
   const condoEntries = [...condoCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const summary = '<table class="sum">'
+  const condoBlock = '<table class="sum">'
     + '<tr class="sum-head"><td colspan="2">【コンドミニアム別】</td></tr>'
     + `<tr class="sum-count"><td>合計件数</td><td class="num">${orders.length}</td></tr>`
     + condoEntries.map(([n, c]) => `<tr><td>${escapeHtml(n)}</td><td class="num">${c}</td></tr>`).join('')
+    + '</table>';
+  const salesBlock = '<table class="sum">'
     + `<tr class="sum-sales"><td>【売上概算】</td><td class="num">${sales.all}</td></tr>`
     + `<tr><td>未選択件数</td><td class="num">${noneCount}</td></tr>`
     + `<tr class="sum-cash"><td>現金合計</td><td class="num">${sales.cash}</td></tr>`
@@ -1500,7 +1504,7 @@ function buildPickupSection(dateStr, orders) {
     ? `<div class="warn">⚠ 分類できなかったお米商品(上の表には入っていません): ${unmatchedRice.map(escapeHtml).join(' ／ ')}</div>`
     : '';
 
-  return '<section class="sheet">'
+  return '<section class="sheet" id="sheet">'
     + `<h2>配送日 ${escapeHtml(dateStr)}（${dow}）　${orders.length}件</h2>`
     + '<table class="main"><thead><tr>'
     + '<th class="chk">check</th><th>Name</th><th>Condominium</th><th>Room</th>'
@@ -1508,64 +1512,79 @@ function buildPickupSection(dateStr, orders) {
     + '<th>payment</th><th class="num">total</th><th class="num">未払</th></tr></thead><tbody>'
     + body + '</tbody></table>'
     + warn
-    + summary
+    + `<div class="bottom">${condoBlock}${salesBlock}</div>`
     + '</section>';
 }
 
 function openPickupSheet() {
   // 卸売り(レストラン向け)・キャンセル済み・配送日未定の注文は対象外
-  const orders = (lastPickupRows || []).filter(o => !o.is_cancelled && !o.is_wholesale && o.delivery_date);
-  if (orders.length === 0) {
+  const all = (lastPickupRows || []).filter(o => !o.is_cancelled && !o.is_wholesale && o.delivery_date);
+  if (all.length === 0) {
     alert('ไม่มีคำสั่งซื้อให้สร้างเอกสาร / No orders to include in the sheet.');
     return;
   }
-  const byDate = new Map();
-  orders.forEach(o => {
-    if (!byDate.has(o.delivery_date)) byDate.set(o.delivery_date, []);
-    byDate.get(o.delivery_date).push(o);
-  });
-  const sections = [...byDate.keys()].sort().map(d => buildPickupSection(d, byDate.get(d))).join('');
+  // 表示中の結果のうち、最も近い(=一番早い)配送日の注文だけをまとめる(2026-09-29)。
+  // 過去分は、日付フィルターを過去にして検索し直せばその日がいちばん近い日になる。
+  const dates = [...new Set(all.map(o => o.delivery_date))].sort();
+  const nearest = dates[0];
+  const orders = all.filter(o => o.delivery_date === nearest);
+  const section = buildPickupSection(nearest, orders);
+  const note = dates.length > 1
+    ? `<span class="note">※ 表示中の結果のうち、最も近い配送日(${escapeHtml(nearest)})のみ / Nearest delivery date only</span>`
+    : '';
 
+  // A4縦(余白10mm)= 幅190mm × 高さ約277mm。1枚に収まるよう、コンパクトな文字・余白にした上で、
+  // 件数が多くて溢れる場合だけ、印刷前に全体を縮小して1枚に収める(fit関数)。
   const css = ''
     + '@page { size: A4 portrait; margin: 10mm; }'
-    + 'body { font-family: Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; font-size: 11px; color: #000; margin: 12px; }'
+    + 'body { font-family: Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif; font-size: 11.5px; color: #000; margin: 12px; }'
     + '.toolbar { margin-bottom: 12px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }'
     + '.toolbar button { font-size: 14px; padding: 8px 18px; cursor: pointer; }'
-    + '.toolbar label { font-size: 13px; }'
-    + 'h2 { font-size: 13px; margin: 0 0 6px; }'
+    + '.toolbar label, .toolbar .note { font-size: 13px; }'
+    + '.toolbar .note { color: #666; }'
+    + 'h2 { font-size: 13px; margin: 0 0 5px; }'
     + 'table { border-collapse: collapse; }'
-    + 'td, th { border: 1px solid #999; padding: 2px 5px; vertical-align: middle; }'
-    + '.sheet { page-break-after: always; margin-bottom: 24px; }'
-    + '.sheet:last-child { page-break-after: auto; }'
+    + 'td, th { border: 1px solid #999; padding: 2px 4px; vertical-align: middle; line-height: 1.25; }'
+    + '.sheet { width: 190mm; }'
     + 'table.main { width: 100%; }'
     + 'table.main th { background: #274e13; color: #fff; font-weight: bold; text-align: left; }'
     + '.num { text-align: right; }'
-    + 'td.chk, th.chk { text-align: center; width: 34px; }'
-    + 'td.room { min-width: 44px; }'
+    + 'td.chk, th.chk { text-align: center; width: 30px; }'
+    + 'td.nm { max-width: 110px; }'
+    + 'td.cd { max-width: 130px; }'
+    + 'td.room { min-width: 38px; }'
     + 'td.room-missing { background: #ffff99; }'
-    + '.addr { font-size: 8px; color: #555; line-height: 1.15; max-width: 150px; word-break: break-all; }'
+    + '.addr { font-size: 8px; color: #555; line-height: 1.1; max-width: 120px; word-break: break-all; }'
     + '.addr-opt { display: none; }'
     + 'body.show-addr .addr-opt { display: block; }'
     + 'tr.rice-total td { background: #f3f3f3; font-weight: bold; }'
-    + 'table.sum { margin-top: 10px; min-width: 330px; }'
-    + 'table.sum td { padding: 2px 8px; }'
+    + '.bottom { display: flex; gap: 14px; align-items: flex-start; margin-top: 8px; }'
+    + '.bottom table.sum { flex: 1 1 0; }'
+    + 'table.sum td { padding: 2px 6px; }'
     + 'tr.sum-head td { background: #fce5cd; font-weight: bold; }'
     + 'tr.sum-count td { background: #cfe2f3; font-weight: bold; }'
     + 'tr.sum-sales td { font-weight: bold; border-top: 2px solid #666; }'
     + 'tr.sum-cash td { background: #d9ead3; font-weight: bold; }'
     + 'tr.sum-none td { background: #fff2cc; font-weight: bold; }'
-    + 'tr.sum-collect td { background: #f4cccc; font-weight: bold; font-size: 13px; border: 2px solid #b00; }'
+    + 'tr.sum-collect td { background: #f4cccc; font-weight: bold; font-size: 12.5px; border: 2px solid #b00; }'
     + 'td.pay { white-space: nowrap; }'
     + 'td.pay-done { color: #555; }'
     + 'td.due { font-weight: bold; }'
-    + '.warn { margin-top: 8px; font-size: 11px; color: #b00; }'
+    + '.warn { margin-top: 6px; font-size: 10.5px; color: #b00; }'
     + '@media print { .toolbar { display: none; } body { margin: 0; } }';
+
+  // 1枚に収めるための縮小。印刷可能な高さ(277mm)を超える場合だけ zoom で縮める(最小55%)。
+  const fitScript = 'function fit(){var s=document.getElementById("sheet");if(!s)return;s.style.zoom=1;'
+    + 'var max=1020;var h=s.getBoundingClientRect().height;if(h>max){s.style.zoom=Math.max(0.55,max/h);}}'
+    + 'window.addEventListener("load",fit);window.addEventListener("beforeprint",fit);';
 
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pickup sheet</title>'
     + '<meta name="viewport" content="width=device-width, initial-scale=1"><style>' + css + '</style></head><body>'
     + '<div class="toolbar"><button onclick="window.print()">🖨 印刷 / Print</button>'
-    + '<label><input type="checkbox" onchange="document.body.classList.toggle(\'show-addr\', this.checked)"> 住所も表示 / Show address</label></div>'
-    + sections + '</body></html>';
+    + '<label><input type="checkbox" onchange="document.body.classList.toggle(\'show-addr\', this.checked);fit()"> 住所も表示 / Show address</label>'
+    + note + '</div>'
+    + section
+    + '<script>' + fitScript + '<\/script></body></html>';
 
   const w = window.open('', '_blank');
   if (!w) {
