@@ -620,8 +620,9 @@
   </div>
 
   <div id="pickup-sheet-bar" style="display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
-    <button class="btn" style="background:#2f6f3e;color:#fff;" onclick="openPickupSheet()">🖨 Pickup Sheet / ใบสรุปคำสั่งซื้อ (พิมพ์)</button>
-    <span style="font-size:12px;color:var(--text-muted);">Builds a one-page A4 sheet for the nearest delivery date in the list below. Nothing is saved. / สร้างเอกสาร A4 หนึ่งหน้าสำหรับวันจัดส่งที่ใกล้ที่สุดในรายการด้านล่าง (ไม่บันทึก)</span>
+    <button class="btn" id="pickup-export-btn" style="background:#2f6f3e;color:#fff;" onclick="exportPickupToSheet()">📊 Pickup Sheet / ส่งออกไป Google Sheets</button>
+    <button class="btn ghost" onclick="openPickupSheet()">🖨 Print view / พิมพ์</button>
+    <span style="font-size:12px;color:var(--text-muted);">Exports the nearest delivery date in the list below to a new tab in the SPDELI2026 spreadsheet (existing tabs are never changed). / ส่งออกวันจัดส่งที่ใกล้ที่สุดในรายการไปเป็นแท็บใหม่ใน Google Sheets (ไม่แก้แท็บเดิม)</span>
   </div>
 
   <div class="rice-summary-panel" id="rice-summary-panel" style="display:none;">
@@ -974,10 +975,12 @@ async function login() {
 async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
 
 // GASアプリへのリンク(トークン付きURL)はリポジトリに書かず、スタッフログイン後にSupabaseから取得する
+let staffLinkMap = {};
 async function loadStaffLinks() {
   const { data, error } = await supabaseClient.from('staff_links').select('link_key, url');
   if (error || !data) return;
   const map = {}; data.forEach(r => { map[r.link_key] = r.url; });
+  staffLinkMap = map;
   document.querySelectorAll('a.staff-link').forEach(a => {
     const url = map[a.dataset.linkKey];
     if (!url) return;
@@ -1538,6 +1541,76 @@ function buildPickupSection(dateStr, orders) {
     + warn
     + `<div class="bottom">${condoBlock}${salesBlock}</div>`
     + '</section>';
+}
+
+// ---- Pickup sheet → Google スプレッドシート(SPDELI2026)に新しいタブとして出力 (2026-09-29) ----
+// 印刷用シートと同じ集計ルール(部屋番号の抽出・お米の分類・支払い状態)で行データを作り、
+// staff_links の 'pickup_sheet' (GASのURL、トークン付き)へ送る。GAS側が新タブ(D/M/YYYY_N)を追加してURLを返す。
+async function exportPickupToSheet() {
+  const all = (lastPickupRows || []).filter(o => !o.is_cancelled && o.delivery_date);
+  if (all.length === 0) {
+    alert('ไม่มีคำสั่งซื้อให้ส่งออก / No orders to export.');
+    return;
+  }
+  const url = staffLinkMap['pickup_sheet'];
+  if (!url) {
+    alert('Pickup Sheet is not configured yet. / ยังไม่ได้ตั้งค่า Pickup Sheet');
+    return;
+  }
+  const dates = [...new Set(all.map(o => o.delivery_date))].sort();
+  const nearest = dates[0];
+  const orders = all.filter(o => o.delivery_date === nearest);
+  if (dates.length > 1 && !confirm(`Export only the nearest delivery date (${nearest}) - ${orders.length} orders?\nส่งออกเฉพาะวันจัดส่งที่ใกล้ที่สุด (${nearest}) จำนวน ${orders.length} รายการ`)) return;
+
+  const isDummy = t => /^[-\s]*$/.test(t || '');
+  const rows = orders.map(order => {
+    const cust = order.customers || {};
+    const isWs = !!order.is_wholesale;
+    const name = isWs
+      ? `[WS] ${order.wholesale_restaurant_name || 'Wholesale'}`
+      : `${cust.family_name || ''} ${cust.first_name || ''}`.trim();
+    const condo = (order.condo_name || '').trim() || (isWs ? 'Wholesale' : '(not set)');
+    const a1 = isDummy(cust.address1) ? '' : cust.address1;
+    const a2 = isDummy(cust.address2) ? '' : cust.address2;
+    const room = isWs ? '' : (extractRoomNumber(a1, a2) || '');
+    const rice = {};
+    PICKUP_RICE_COLS.forEach(c => { rice[c.key] = 0; });
+    (order.order_items || []).forEach(item => {
+      const qty = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+      const cat = getRiceCategory(item);
+      if (cat) rice[cat] += qty;
+    });
+    const total = Number(order.total_amount) || 0;
+    const kind = pickupPaymentKind(order);
+    const payState = getPaymentState(order);
+    const due = payState === 'paid' ? 0 : Math.max(0, total - (Number(order.paid_amount) || 0));
+    return {
+      name, condo, room, isWs,
+      rice: PICKUP_RICE_COLS.map(c => rice[c.key]),
+      pay: kind === 'cash' ? '現金' : (kind === 'transfer' ? '振込み' : ''),
+      total, due,
+    };
+  });
+
+  const btn = document.getElementById('pickup-export-btn');
+  const w = window.open('', '_blank'); // クリック直後に開いてポップアップブロックを避ける
+  if (w) w.document.write('<p style="font-family:sans-serif">Creating sheet... / กำลังสร้างชีต...</p>');
+  btn.disabled = true;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ date: nearest, rows }),
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'failed');
+    if (w) w.location.href = json.url; else window.location.href = json.url;
+  } catch (err) {
+    if (w) w.close();
+    alert('Export failed / ส่งออกไม่สำเร็จ: ' + (err.message || err));
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function openPickupSheet() {
