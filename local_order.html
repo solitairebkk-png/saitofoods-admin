@@ -332,6 +332,11 @@
       <span>Subtotal / ยอดรวม</span>
       <span id="subtotal-display">0 THB</span>
     </div>
+    <div id="manual-discount-row" style="display:none;margin-top:8px;background:#fdecea;border:1px solid #e57373;border-radius:6px;padding:8px 10px;">
+      <label style="display:block;font-size:12px;font-weight:700;color:#b71c1c;">🏷️ Extra discount (THB) / ส่วนลดเพิ่มเติม (บาท)</label>
+      <input type="number" id="manual-discount" min="0" step="1" value="0" oninput="renderCart()" style="width:140px;margin-top:4px;">
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Optional. Deducted from the order total (in addition to any coupon/points already applied). Enter 0 to remove. / ไม่บังคับ หักจากยอดรวม ใส่ 0 เพื่อยกเลิก</div>
+    </div>
     <div id="shipping-override-row" style="display:none;margin-top:6px;font-size:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:8px 10px;">
       <div style="font-weight:700;color:#1b5e20;">✅ This order already qualified for free shipping — shipping is not added even if the total drops below the minimum. / ออเดอร์นี้ได้ส่งฟรีแล้ว จึงไม่คิดค่าส่งเพิ่มแม้ยอดลดลง</div>
       <label style="display:block;margin-top:4px;"><input type="checkbox" id="charge-shipping-anyway" onchange="renderCart()"> Charge shipping anyway / คิดค่าส่งตามปกติ</label>
@@ -474,6 +479,7 @@ async function loadShippingSettings() {
 // 編集モード(orders.html の Edit ボタンから ?edit=<注文ID> で遷移してきた場合)
 const editOrderId = new URLSearchParams(location.search).get('edit');
 let editingOrderId = null;
+let editingOrderBaseDiscount = 0;  // クーポン等、編集画面では変更しない既存の割引額
 let editingOrderAreaName = null;          // 編集中の注文のarea_name (Sriracha/Pattaya判定用)
 let editingOrderIsSrPt = false;           // シラチャ/パタヤ注文か(時間帯不要・コンドミニアム選択)
 let editingOrderShippingWaived = false;   // 元々送料無料だった注文(商品削除で下回っても送料を足さない)
@@ -897,6 +903,12 @@ function removeFromCart(index) {
 // 送料の計算は表示(renderCart)と保存(submitOrder)で必ず同じ関数を使う。
 // 編集中で、元々送料無料(shipping_cost=0)だった注文は、商品削除で最低金額を下回っても
 // 送料を足さない。スタッフが「送料を取る」にチェックした場合だけ通常計算に戻す。
+function getManualDiscount() {
+  const el = document.getElementById('manual-discount');
+  const v = el ? parseFloat(el.value) : 0;
+  return (isFinite(v) && v > 0) ? v : 0;
+}
+
 function computeShipping(subtotal, isWalkin) {
   if (isWalkin) return 0;
   if (subtotal >= shippingFreeThreshold) return 0;
@@ -943,7 +955,11 @@ function renderCart() {
     ? ` + shipping ${shippingFeeAmount} THB / ค่าส่ง ${shippingFeeAmount} THB (< ${shippingFreeThreshold}THB)`
     : '';
 
-  document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote;
+  const discRow = document.getElementById('manual-discount-row');
+  if (discRow) discRow.style.display = (editingOrderId && !isWalkin) ? 'block' : 'none';
+  const md = (editingOrderId && !isWalkin) ? getManualDiscount() : 0;
+  const discNote = md > 0 ? ` − discount ${md} THB / ส่วนลด ${md} THB` : '';
+  document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote + discNote;
 }
 
 function updateQty(index, value) {
@@ -1044,6 +1060,14 @@ async function loadOrderForEdit(orderId) {
     document.getElementById('manual-payment-amount').value = order.subtotal || order.total_amount || '';
   }
   editingOrderDiscountAmount = Number(order.discount_amount) || 0;
+  // クーポン由来の割引は固定。クーポン無しで割引額が入っている場合は、手入力の割引として欄に出す(編集可能)。
+  if (order.coupon_code) {
+    editingOrderBaseDiscount = editingOrderDiscountAmount;
+    document.getElementById('manual-discount').value = 0;
+  } else {
+    editingOrderBaseDiscount = 0;
+    document.getElementById('manual-discount').value = editingOrderDiscountAmount;
+  }
   editingOrderPointsUsed = Number(order.points_used) || 0;
 
   // この注文が元々クーポン・ポイントを使っていた場合、編集画面を開いたスタッフが気づけるよう表示する。
@@ -1398,7 +1422,8 @@ async function submitOrder() {
   // (2026-08-20発覚: 以前はこの計算式が単純に「小計+送料」だけだったため、
   //  クーポン・ポイントを使ったオンライン注文をスタッフが編集すると割引が消えていた)
   const preDiscount = subtotal + shippingCost;
-  const cappedDiscount = Math.min(editingOrderDiscountAmount, preDiscount);
+  const manualDiscount = (editingOrderId && !isWalkin) ? getManualDiscount() : 0;
+  const cappedDiscount = Math.min(editingOrderBaseDiscount + manualDiscount, preDiscount);
   const finalTotal = Math.max(0, preDiscount - cappedDiscount - editingOrderPointsUsed);
 
   const orderPayload = {
@@ -1410,6 +1435,7 @@ async function submitOrder() {
     subtotal: subtotal,
     shipping_cost: shippingCost,
     total_amount: finalTotal,
+    ...(editingOrderId && !isWalkin ? { discount_amount: cappedDiscount } : {}),
     comment: comment || null,
     // Walk-in(店頭受け渡し)には配送は発生しないため、フォームが隠れていても値を送らない
     delivery_leave_at_table: !isWalkin && (document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked),
