@@ -1416,7 +1416,7 @@ function pickupPaymentKind(order) {
 
 function buildPickupSection(dateStr, orders) {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dow = ['Sun/อา.', 'Mon/จ.', 'Tue/อ.', 'Wed/พ.', 'Thu/พฤ.', 'Fri/ศ.', 'Sat/ส.'][new Date(y, m - 1, d).getDay()];
+  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(y, m - 1, d).getDay()];
 
   const riceTotals = {};
   PICKUP_RICE_COLS.forEach(c => { riceTotals[c.key] = 0; });
@@ -1431,7 +1431,7 @@ function buildPickupSection(dateStr, orders) {
   orders.forEach(order => {
     const cust = order.customers || {};
     const name = `${cust.family_name || ''} ${cust.first_name || ''}`.trim();
-    const condo = (order.condo_name || '').trim() || '(not set / ไม่ระบุ)';
+    const condo = (order.condo_name || '').trim() || '(not set)';
     const isDummy = s => /^[-\s]*$/.test(s || '');
     const a1 = isDummy(cust.address1) ? '' : cust.address1;
     const a2 = isDummy(cust.address2) ? '' : cust.address2;
@@ -1459,7 +1459,7 @@ function buildPickupSection(dateStr, orders) {
     if (kind === 'none') noneCount++;
     condoCounts.set(condo, (condoCounts.get(condo) || 0) + 1);
 
-    const methodLabel = kind === 'cash' ? 'Cash เงินสด' : (kind === 'transfer' ? 'Transfer โอน' : '');
+    const methodLabel = kind === 'cash' ? 'Cash' : (kind === 'transfer' ? 'Transfer' : '');
     const statusLabel = total <= 0 ? '' : (payState === 'paid' ? '✓' : (payState === 'partial' ? '½' : '✗'));
     const payLabel = [methodLabel, statusLabel].filter(Boolean).join(' ');
     // 部屋番号が見つからない注文は黄色の空欄+住所の抜粋(人が見て補えるように)
@@ -1478,43 +1478,43 @@ function buildPickupSection(dateStr, orders) {
       + '</tr>';
   });
 
-  body += '<tr class="rice-total"><td></td><td colspan="3">Rice total / รวมข้าว</td>'
+  body += '<tr class="rice-total"><td></td><td colspan="3">Rice total</td>'
     + PICKUP_RICE_COLS.map(c => `<td class="num">${riceTotals[c.key] > 0 ? riceTotals[c.key] : ''}</td>`).join('')
     + '<td></td><td></td><td></td></tr>';
 
   // A4縦1枚に収めるため、集計は表の下に「コンド別」と「売上・回収」を左右に並べる
   const condoEntries = [...condoCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const condoBlock = '<table class="sum">'
-    + '<tr class="sum-head"><td colspan="2">By condominium / แยกตามคอนโด</td></tr>'
-    + `<tr class="sum-count"><td>Total orders / ออเดอร์ทั้งหมด</td><td class="num">${orders.length}</td></tr>`
+    + '<tr class="sum-head"><td colspan="2">By condominium</td></tr>'
+    + `<tr class="sum-count"><td>Total orders</td><td class="num">${orders.length}</td></tr>`
     + condoEntries.map(([n, c]) => `<tr><td>${escapeHtml(n)}</td><td class="num">${c}</td></tr>`).join('')
     + '</table>';
   const salesBlock = '<table class="sum">'
-    + `<tr class="sum-sales"><td>Estimated sales / ยอดขายโดยประมาณ</td><td class="num">${sales.all}</td></tr>`
-    + `<tr><td>Payment not selected (orders) / ยังไม่เลือกวิธีชำระ (ออเดอร์)</td><td class="num">${noneCount}</td></tr>`
-    + `<tr class="sum-cash"><td>Cash total / รวมเงินสด</td><td class="num">${sales.cash}</td></tr>`
-    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Already paid / จ่ายแล้ว</td><td class="num">${sales.cash - due.cash}</td></tr>`
-    + `<tr class="sum-collect"><td>★ Cash to collect / เงินสดที่ต้องเก็บ</td><td class="num">${due.cash}</td></tr>`
-    + `<tr class="sum-cash"><td>Transfer total / รวมโอนเงิน</td><td class="num">${sales.transfer}</td></tr>`
-    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Received / รับแล้ว</td><td class="num">${sales.transfer - due.transfer}</td></tr>`
-    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Not yet received / ยังไม่ได้รับ</td><td class="num">${due.transfer}</td></tr>`
-    + `<tr class="sum-none"><td>Payment not selected total / รวมที่ยังไม่เลือกวิธีชำระ</td><td class="num">${sales.none}</td></tr>`
-    + `<tr class="sum-none"><td>&nbsp;&nbsp;- Unpaid / ค้างชำระ</td><td class="num">${due.none}</td></tr>`
-    + `<tr class="sum-sales"><td>Total unpaid (all) / รวมค้างชำระทั้งหมด</td><td class="num">${due.all}</td></tr>`
+    + `<tr class="sum-sales"><td>Estimated sales</td><td class="num">${sales.all}</td></tr>`
+    + `<tr><td>Payment not selected (orders)</td><td class="num">${noneCount}</td></tr>`
+    + `<tr class="sum-cash"><td>Cash total</td><td class="num">${sales.cash}</td></tr>`
+    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Already paid</td><td class="num">${sales.cash - due.cash}</td></tr>`
+    + `<tr class="sum-collect"><td>★ Cash to collect</td><td class="num">${due.cash}</td></tr>`
+    + `<tr class="sum-cash"><td>Transfer total</td><td class="num">${sales.transfer}</td></tr>`
+    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Received</td><td class="num">${sales.transfer - due.transfer}</td></tr>`
+    + `<tr class="sum-cash"><td>&nbsp;&nbsp;- Not yet received</td><td class="num">${due.transfer}</td></tr>`
+    + `<tr class="sum-none"><td>Payment not selected total</td><td class="num">${sales.none}</td></tr>`
+    + `<tr class="sum-none"><td>&nbsp;&nbsp;- Unpaid</td><td class="num">${due.none}</td></tr>`
+    + `<tr class="sum-sales"><td>Total unpaid (all)</td><td class="num">${due.all}</td></tr>`
     + '</table>';
 
   const warn = unmatchedRice.length
-    ? `<div class="warn">⚠ Rice items not categorized (not counted above) / สินค้าข้าวที่ไม่ได้จัดหมวด (ไม่ได้นับในตารางด้านบน): ${unmatchedRice.map(escapeHtml).join(' / ')}</div>`
+    ? `<div class="warn">⚠ Rice items not categorized (not counted above): ${unmatchedRice.map(escapeHtml).join(' / ')}</div>`
     : '';
 
   return '<section class="sheet" id="sheet">'
-    + `<h2>Delivery date / วันที่จัดส่ง: ${escapeHtml(dateStr)} (${dow}) &nbsp;&middot;&nbsp; ${orders.length} orders / ${orders.length} ออเดอร์</h2>`
+    + `<h2>Delivery date: ${escapeHtml(dateStr)} (${dow}) &nbsp;&middot;&nbsp; ${orders.length} orders</h2>`
     + '<table class="main"><thead><tr>'
     + '<th class="chk">check</th><th>Name</th><th>Condominium</th><th>Room</th>'
     + PICKUP_RICE_COLS.map(c => `<th class="num">${c.label}</th>`).join('')
-    + '<th>payment</th><th class="num">total</th><th class="num">due / ค้าง</th></tr></thead><tbody>'
+    + '<th>payment</th><th class="num">total</th><th class="num">due</th></tr></thead><tbody>'
     + body + '</tbody></table>'
-    + '<div class="legend">✓ Paid / จ่ายแล้ว &nbsp;&nbsp; ✗ Unpaid / ยังไม่จ่าย &nbsp;&nbsp; ½ Partial / จ่ายบางส่วน</div>'
+    + '<div class="legend">✓ Paid &nbsp;&nbsp; ✗ Unpaid &nbsp;&nbsp; ½ Partial</div>'
     + warn
     + `<div class="bottom">${condoBlock}${salesBlock}</div>`
     + '</section>';
@@ -1534,7 +1534,7 @@ function openPickupSheet() {
   const orders = all.filter(o => o.delivery_date === nearest);
   const section = buildPickupSection(nearest, orders);
   const note = dates.length > 1
-    ? `<span class="note">Nearest delivery date only (${escapeHtml(nearest)}) / เฉพาะวันจัดส่งที่ใกล้ที่สุด</span>`
+    ? `<span class="note">Nearest delivery date only (${escapeHtml(nearest)})</span>`
     : '';
 
   // A4縦(余白10mm)= 幅190mm × 高さ約277mm。1枚に収まるよう、コンパクトな文字・余白にした上で、
@@ -1585,8 +1585,8 @@ function openPickupSheet() {
 
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Pickup sheet</title>'
     + '<meta name="viewport" content="width=device-width, initial-scale=1"><style>' + css + '</style></head><body>'
-    + '<div class="toolbar"><button onclick="window.print()">🖨 Print / พิมพ์</button>'
-    + '<label><input type="checkbox" onchange="document.body.classList.toggle(\'show-addr\', this.checked);fit()"> Show address / แสดงที่อยู่</label>'
+    + '<div class="toolbar"><button onclick="window.print()">🖨 Print</button>'
+    + '<label><input type="checkbox" onchange="document.body.classList.toggle(\'show-addr\', this.checked);fit()"> Show address</label>'
     + note + '</div>'
     + section
     + '<script>' + fitScript + '<\/script></body></html>';
