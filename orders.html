@@ -2173,7 +2173,13 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     if (!order.is_completed) {
       if (!order.is_wholesale) {
-        const editLabel = (order.has_weight_items && !order.weight_email_sent)
+        const isWeighMode = order.has_weight_items && !order.weight_email_sent;
+        // 量り売りで重量メール未送信の注文は、EditがWeighに置き換わって数量等を直せなくなるため、
+        // 本格的な編集画面(local_order.html)へ行くEditボタンをWeighの上に別途出す(2026-09-29)。
+        if (isWeighMode) {
+          manageCol.appendChild(makeButton('Edit / แก้ไข', () => window.open(`local_order.html?edit=${order.id}`, '_blank'), 'btn-reorder'));
+        }
+        const editLabel = isWeighMode
           ? 'ชั่งน้ำหนัก / Weigh'
           : 'Edit / แก้ไข';
         manageCol.appendChild(makeButton(editLabel, () => editOrder(order), 'btn-reorder'));
