@@ -2400,17 +2400,21 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     ? `<div class="customer-cancelled-flag">⚠️ Customer Cancelled / ลูกค้ายกเลิกเอง</div>`
     : '';
 
+  // 置き配は電話連絡の要否をはっきり表示する(要電話は赤、不要は緑)。
+  const callFlagHtml = order.delivery_leave_at_table
+    ? (order.delivery_no_contact
+        ? `<div class="delivery-flags-note">🔕 Leave at table — NO call / วางบนโต๊ะ ไม่ต้องโทรแจ้ง</div>`
+        : `<div class="delivery-flags-note" style="background:#fdecea;color:#b71c1c;border-color:#e57373;font-size:13px;">📞 Leave at table — CALL on arrival / วางบนโต๊ะ และต้องโทรแจ้งเมื่อถึง</div>`)
+    : '';
   const deliveryFlagDefs = [
-    { key: 'delivery_leave_at_table', en: 'Leave at delivery table', th: 'วางบนโต๊ะเดลิเวอรี่' },
-    { key: 'delivery_no_contact', en: 'No contact on arrival', th: 'ไม่ต้องโทรแจ้งเมื่อถึง' },
     { key: 'delivery_leave_at_front', en: 'Leave with front desk', th: 'ฝากไว้ที่ Front / นิติบุคคล' },
     { key: 'delivery_payment_at_front', en: 'Payment left at front desk', th: 'ฝากเงินค่าสินค้าไว้ที่ Front' },
     { key: 'delivery_no_change', en: 'No change needed', th: 'ไม่ต้องทอนเงิน' },
   ];
   const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
-  const deliveryFlagsHtml = activeDeliveryFlags.length
+  const deliveryFlagsHtml = callFlagHtml + (activeDeliveryFlags.length
     ? `<div class="delivery-flags-note">📦 ${activeDeliveryFlags.map(f => `${f.en} / ${f.th}`).join(' ・ ')}</div>`
-    : '';
+    : '');
 
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
