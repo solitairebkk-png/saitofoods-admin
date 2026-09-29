@@ -723,6 +723,20 @@ async function initDeliveryArea() {
   }
 }
 
+// シラチャ・パタヤは当日朝8:00(バンコク時間)で受付終了。
+// 8:00以降は、配送日リストから「今日」を除外する(2026-09-29)。
+// 画面を開きっぱなしのお客様の送信は、サーバー側(place_order)が SAME_DAY_CUTOFF_PASSED で拒否する。
+function isSameDayCutoffPassed() {
+  return bangkokNow().getHours() >= 8;
+}
+
+// 配送日リスト(シラチャ/パタヤ共通)から、締切後の「今日」を取り除く
+function filterCutoffDates(rows) {
+  const todayBkk = formatDateLocal(bangkokNow());
+  const cutoffPassed = isSameDayCutoffPassed();
+  return (rows || []).filter(r => !(cutoffPassed && r.delivery_date === todayBkk));
+}
+
 // ---------------- シラチャ(火曜/木曜 + コンドミニアム選択) ----------------
 async function initSrirachaFlow() {
   try {
@@ -732,11 +746,11 @@ async function initSrirachaFlow() {
   } catch (e) { allCondos = []; }
 
   const select = document.getElementById('sriracha-date-select');
-  const todayStr = formatDateLocal(new Date());
+  const todayStr = formatDateLocal(bangkokNow());
   try {
     const { data } = await supabaseClient.from('sriracha_delivery_days').select('delivery_date')
       .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
-    const dates = data || [];
+    const dates = filterCutoffDates(data);
     select.innerHTML = dates.length
       ? dates.map(d => {
           // ローカルのタイムゾーンずれで曜日が1日ずれないよう、日付文字列から直接曜日を計算する
@@ -776,11 +790,11 @@ async function initPattayaFlow() {
   } catch (e) { allCondos = []; }
 
   const dateSelect = document.getElementById('pattaya-date-select');
-  const todayStr = formatDateLocal(new Date());
+  const todayStr = formatDateLocal(bangkokNow());
   try {
     const { data } = await supabaseClient.from('pattaya_delivery_days').select('delivery_date')
       .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
-    const dates = data || [];
+    const dates = filterCutoffDates(data);
     dateSelect.innerHTML = dates.length
       ? dates.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
       : '<option value="">配送日が設定されていません / No date set yet</option>';
@@ -1550,6 +1564,7 @@ async function submitOrder() {
     else if (raw.includes('COUPON_MAX_USES')) friendly = 'このクーポンは使用上限に達しています / This coupon has reached its usage limit.';
     else if (raw.includes('COUPON_ALREADY_USED')) friendly = 'このクーポンは既にご利用済みです / You have already used this coupon.';
     else if (raw.includes('COUPON_INVALID')) friendly = 'クーポンコードが無効です / This coupon code is invalid.';
+    else if (raw.includes('SAME_DAY_CUTOFF_PASSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日朝8:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for today closed at 8:00 AM. Please reload the page and choose another delivery date.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
     else if (raw) friendly += ': ' + raw;
