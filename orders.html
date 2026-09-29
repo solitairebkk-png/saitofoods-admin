@@ -1677,7 +1677,7 @@ async function loadOrders() {
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, email, address1, address2, area_id, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -2346,7 +2346,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     : (order.customers
       ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
       : 'หน้าร้าน / Walk-in');
-  const tel = escapeHtml(order.customers?.tel1 || '');
+  const tel = escapeHtml([order.customers?.tel1, order.customers?.tel2].filter(Boolean).join(' / '));
   const email = escapeHtml(order.customers?.email || '');
   const addressParts = [order.customers?.address1, order.customers?.address2].filter(Boolean);
   const address = escapeHtml(addressParts.join(', '));
@@ -2825,7 +2825,7 @@ function openReceiptModal(order) {
   const customerName = order.customers
     ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
     : 'Walk-in / ลูกค้าหน้าร้าน';
-  const tel = escapeHtml(order.customers?.tel1 || '-');
+  const tel = escapeHtml([order.customers?.tel1, order.customers?.tel2].filter(Boolean).join(' / ') || '-');
   const addressParts = [order.customers?.address1, order.customers?.address2].filter(Boolean);
   const address = escapeHtml(addressParts.join(', '));
 

@@ -466,7 +466,7 @@ async function loadReceipt() {
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, email, address1, address2, point_balance, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, point_balance, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .eq('id', orderId)
@@ -574,7 +574,7 @@ function renderReceipt(order) {
     document.getElementById('f-customer-address').textContent = '-';
   } else {
     document.getElementById('f-customer-name').textContent = `${c.family_name || ''} ${c.first_name || ''}`.trim() || '-';
-    document.getElementById('f-customer-tel').textContent = c.tel1 || '-';
+    document.getElementById('f-customer-tel').textContent = [c.tel1, c.tel2].filter(Boolean).join(' / ') || '-';
     document.getElementById('f-customer-email').textContent = c.email || '-';
     document.getElementById('f-customer-address').textContent = [c.address1, c.address2].filter(a => a && !/^[-\s]*$/.test(a)).join(' ') || '-';
   }
