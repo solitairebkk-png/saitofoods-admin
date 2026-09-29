@@ -426,14 +426,6 @@
             </label>
           </div>
           <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-leave-at-front">
-            <span data-i18n="cart.optLeaveAtFront">フロント(管理人室)に預けてください / Leave with front desk</span>
-          </label>
-          <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-payment-at-front">
-            <span data-i18n="cart.optPaymentAtFront">代金はフロントに預けてあります / Payment left with front desk</span>
-          </label>
-          <label class="delivery-opt-item">
             <input type="checkbox" id="opt-no-change">
             <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
           </label>
@@ -1540,8 +1532,8 @@ async function submitOrder() {
       p_comment: comment || null,
       p_leave_at_table: document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked,
       p_no_contact: document.getElementById('opt-leave-no-contact').checked,
-      p_leave_at_front: document.getElementById('opt-leave-at-front').checked,
-      p_payment_at_front: document.getElementById('opt-payment-at-front').checked,
+      p_leave_at_front: false, // 「フロントに預ける」選択肢は廃止(2026-09-29)
+      p_payment_at_front: false, // 「代金はフロントに」選択肢は廃止(2026-09-29)
       p_no_change: document.getElementById('opt-no-change').checked,
     });
 
@@ -1566,7 +1558,7 @@ async function submitOrder() {
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     sessionStorage.removeItem(ADDTO_STORAGE_KEY);
-    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-leave-at-front', 'opt-payment-at-front', 'opt-no-change'].forEach(id => {
+    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-no-change'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.checked = false;
     });
