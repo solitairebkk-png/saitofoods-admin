@@ -144,6 +144,18 @@
   .delivery-opt-item { display: flex; align-items: flex-start; gap: 9px; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
   .delivery-opt-item input { width: 17px; height: 17px; margin-top: 1px; flex-shrink: 0; accent-color: var(--brand); }
   .delivery-opt-item span { font-size: 13px; line-height: 1.4; }
+  .leave-group { display: flex; flex-direction: column; gap: 8px; }
+  .leave-title { font-size: 13px; font-weight: 700; color: #333; }
+  .leave-opt { display: flex; align-items: flex-start; gap: 9px; border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+  .leave-opt input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; }
+  .leave-opt .lo-body { display: flex; flex-direction: column; gap: 3px; }
+  .leave-opt .lo-badge { display: inline-block; align-self: flex-start; font-size: 14px; font-weight: 800; padding: 2px 10px; border-radius: 100px; }
+  .leave-opt .lo-text { font-size: 12.5px; line-height: 1.4; color: #444; }
+  .leave-opt.call { border-color: #e57373; background: #fff5f4; }
+  .leave-opt.call .lo-badge { background: #c62828; color: #fff; }
+  .leave-opt.nocall { border-color: #81a889; background: #f3f9f4; }
+  .leave-opt.nocall .lo-badge { background: #2e7d32; color: #fff; }
+  .leave-opt:has(input:checked) { box-shadow: 0 0 0 3px rgba(0,0,0,0.18); }
 
   .btn-primary { background: var(--brand); color: #fff; border: none; padding: 13px; border-radius: 12px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -398,14 +410,21 @@
       <div class="field" id="delivery-opts-field">
         <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
         <div class="delivery-opts-list">
-          <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-leave-no-contact" onchange="if(this.checked) document.getElementById('opt-leave-with-contact').checked = false;">
-            <span data-i18n="cart.optLeaveNoContact">置き配希望　電話連絡不要(デリバリー用テーブルに置いてください) / Leave at delivery table, no call needed</span>
-          </label>
-          <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-leave-with-contact" onchange="if(this.checked) document.getElementById('opt-leave-no-contact').checked = false;">
-            <span data-i18n="cart.optLeaveWithContact">置き配希望　要電話連絡(デリバリー用テーブルに置いてください) / Leave at delivery table, please call on arrival</span>
-          </label>
+          <div class="leave-group">
+            <div class="leave-title" data-i18n="cart.leaveTitle">置き配(デリバリー用テーブルに置く)について / Leave at delivery table?</div>
+            <label class="leave-opt">
+              <input type="radio" name="leave-opt" id="opt-leave-none" checked>
+              <span class="lo-body"><span class="lo-text" data-i18n="cart.leaveNone">置き配しない(直接お渡し) / No — hand it to me</span></span>
+            </label>
+            <label class="leave-opt call">
+              <input type="radio" name="leave-opt" id="opt-leave-with-contact">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveCallBadge">📞 電話連絡が必要</span><span class="lo-text" data-i18n="cart.leaveCallText">置き配OK。到着したら必ず電話してください / Leave at the table and call me when you arrive</span></span>
+            </label>
+            <label class="leave-opt nocall">
+              <input type="radio" name="leave-opt" id="opt-leave-no-contact">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 電話連絡は不要</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。電話はしないでください / Leave at the table, no call needed</span></span>
+            </label>
+          </div>
           <label class="delivery-opt-item">
             <input type="checkbox" id="opt-leave-at-front">
             <span data-i18n="cart.optLeaveAtFront">フロント(管理人室)に預けてください / Leave with front desk</span>
