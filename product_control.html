@@ -514,6 +514,8 @@ function renderProductRow(p) {
     p.sale_type === 'weight' ? '<span class="tag weight">Weight</span>' : '',
     p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
     exclAreas.length ? `<span class="tag unpub">🚫 ${exclAreas.join('・')}では販売不可</span>` : '',
+    (p.excluded_condos || []).length ? `<span class="tag unpub">🚫 ${p.excluded_condos.join('・')}宛は販売不可</span>` : '',
+    (p.order_cutoff_prev_day_hour ?? null) !== null ? `<span class="tag weight">⏰ 前日${p.order_cutoff_prev_day_hour}:00まで(シラチャ・パタヤ)</span>` : '',
   ].join('');
 
   const imgCell = p.image_url
@@ -598,6 +600,8 @@ function toggleEdit(productId) {
         <label class="checkbox-field"><input type="checkbox" class="e-availen" ${p.is_available_en !== false ? 'checked' : ''}> EN表示 / Show in EN</label>
         <label class="checkbox-field"><input type="checkbox" class="e-excl-sriracha" ${(p.excluded_areas || []).includes('Sriracha') ? 'checked' : ''}> シラチャでは販売しない / Not sold in Sriracha</label>
         <label class="checkbox-field"><input type="checkbox" class="e-excl-pattaya" ${(p.excluded_areas || []).includes('Pattaya') ? 'checked' : ''}> パタヤでは販売しない / Not sold in Pattaya</label>
+        <label>販売しないコンド(カンマ区切り) / Not sold to condos<input type="text" class="e-excl-condos" value="${(p.excluded_condos || []).join(', ')}" placeholder="例: Harmoniq, Harmonic"></label>
+        <label>注文締め切り: 配送日の前日の何時まで(シラチャ・パタヤ) / Order cutoff hour, day before<input type="number" class="e-cutoff-hour" min="0" max="23" step="1" value="${p.order_cutoff_prev_day_hour ?? ''}" placeholder="例: 15(空欄=通常ルール)"></label>
         <label>Instagram URL<input type="text" class="e-instagram" value="${p.instagram_url || ''}" placeholder="https://www.instagram.com/p/..."></label>
         <label>YouTube URL<input type="text" class="e-youtube" value="${p.youtube_url || ''}" placeholder="https://www.youtube.com/watch?v=..."></label>
       </div>
@@ -1040,6 +1044,11 @@ async function saveProduct(productId) {
       g('.e-excl-sriracha').checked ? 'Sriracha' : null,
       g('.e-excl-pattaya').checked ? 'Pattaya' : null,
     ].filter(Boolean),
+    excluded_condos: (() => {
+      const arr = g('.e-excl-condos').value.split(/[,、]/).map(t => t.trim()).filter(Boolean);
+      return arr.length ? arr : null;
+    })(),
+    order_cutoff_prev_day_hour: g('.e-cutoff-hour').value !== '' ? parseInt(g('.e-cutoff-hour').value, 10) : null,
     instagram_url: g('.e-instagram').value.trim() || null,
     youtube_url: g('.e-youtube').value.trim() || null,
     search_keywords: g('.e-search-keywords').value.trim() || null,

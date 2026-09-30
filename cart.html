@@ -352,8 +352,9 @@
         <div class="field">
           <label data-i18n="cart.condoLabel">コンドミニアム / Condominium</label>
           <select id="sriracha-condo-select" onchange="onCondoSelectChange('sriracha')"></select>
-          <input type="text" id="sriracha-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
+          <input type="text" id="sriracha-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;" oninput="updateDeliveryRestrictionNote()">
         </div>
+        <div id="sriracha-restrict-note" style="font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
         <div style="font-size:11px;color:#999;" data-i18n="cart.srirachaNote">※ シラチャエリアは時間指定不可・配送順に順次お届けします(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
 
@@ -365,8 +366,9 @@
         <div class="field">
           <label data-i18n="cart.condoLabel">コンドミニアム / Condominium</label>
           <select id="pattaya-condo-select" onchange="onCondoSelectChange('pattaya')"></select>
-          <input type="text" id="pattaya-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;">
+          <input type="text" id="pattaya-condo-other" data-i18n-placeholder="cart.condoOtherPlaceholder" placeholder="コンドミニアム名を入力してください" style="display:none;margin-top:8px;" oninput="updateDeliveryRestrictionNote()">
         </div>
+        <div id="pattaya-restrict-note" style="font-size:12px;line-height:1.7;margin-bottom:8px;"></div>
         <div style="font-size:11px;color:#999;" data-i18n="cart.pattayaNote">※ パタヤは月1回設定された配送日のみご注文いただけます(注文確定後、車両位置情報のご案内をいたします)</div>
       </div>
 
@@ -576,6 +578,8 @@ let addToOrderId = null; // マイページの「追加注文する」から来�
 const ADDTO_STORAGE_KEY = 'saitofoods_addto_order'; // 商品一覧などへ移動しても追加注文モードを覚えておくためのキー
 let addToOrderInfo = null; // 元の注文の配送日時・コンドミニアム情報(自動で引き継ぐ)
 let allCondos = [];          // シラチャ/パタヤ用コンドミニアム一覧
+let srirachaDateRows = [];   // シラチャの配送日リスト(商品ごとの締め切りで絞る前)
+let pattayaDateRows = [];    // パタヤの配送日リスト(同上)
 let gpsTrackingInfo = null;  // { url, username, password }
 
 // ---------------- 認証(supabase-js。mypage.html等と同じセッションを共有) ----------------
@@ -745,7 +749,88 @@ function isSameDayCutoffPassed() {
 function filterCutoffDates(rows) {
   const todayBkk = formatDateLocal(bangkokNow());
   const cutoffPassed = isSameDayCutoffPassed();
-  return (rows || []).filter(r => !(cutoffPassed && r.delivery_date === todayBkk));
+  const productHour = cartCutoffHour();
+  return (rows || []).filter(r =>
+    !(cutoffPassed && r.delivery_date === todayBkk) &&
+    !(productHour !== null && isPastProductCutoff(r.delivery_date, productHour)));
+}
+
+// 山口豆腐店など「配送日の前日◯時まで」の商品(products.order_cutoff_prev_day_hour)が
+// カートに入っている間だけ、配送日リストから締め切りを過ぎた日を外す(2026-09-30)。
+// その商品が入っていなければ、今までどおり当日朝8:00までのルールのまま。
+// 実際の確定時は、サーバー側(place_order)が PRODUCT_CUTOFF_PASSED で必ず拒否する。
+function cartCutoffHour() {
+  const hours = cart.map(i => i.cutoff_hour).filter(h => h !== null && h !== undefined);
+  return hours.length ? Math.min(...hours) : null;
+}
+
+// 配送日の前日 hour 時(バンコク時間)を過ぎているか
+function isPastProductCutoff(dateStr, hour) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return bangkokNow() >= new Date(y, m - 1, d - 1, hour, 0, 0);
+}
+
+// 選択中のコンドミニアム名(「その他」の場合は入力された名前)
+function selectedCondoName() {
+  const area = customerAreaType === 'sriracha' ? 'sriracha' : (customerAreaType === 'pattaya' ? 'pattaya' : null);
+  if (!area) return '';
+  const sel = document.getElementById(`${area}-condo-select`);
+  let name = sel ? sel.value : '';
+  if (name && name.toLowerCase().includes('other')) {
+    const other = document.getElementById(`${area}-condo-other`);
+    name = other ? other.value.trim() : '';
+  }
+  return name || '';
+}
+
+// そのコンドミニアム宛にはお届けできない商品(products.excluded_condos、部分一致・大文字小文字無視)
+function cartItemsBlockedForCondo(condoName) {
+  const c = (condoName || '').toLowerCase();
+  if (!c) return [];
+  return cart.filter(i => (i.excluded_condos || []).some(t => t && c.includes(String(t).trim().toLowerCase())));
+}
+
+function escNote(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+// 配送日・コンドミニアム欄の下の注意書き(締め切りの案内、お届けできない商品の警告)を更新する
+function updateDeliveryRestrictionNote() {
+  const box = document.getElementById(`${customerAreaType}-restrict-note`);
+  if (!box) return;
+  const parts = [];
+
+  const hour = cartCutoffHour();
+  if (hour !== null) {
+    const items = cart.filter(i => i.cutoff_hour !== null && i.cutoff_hour !== undefined);
+    const namesJa = [...new Set(items.map(i => i.name))].join('、');
+    const namesEn = [...new Set(items.map(i => i.name_en || i.name))].join(', ');
+    parts.push(`<div style="color:#8a5a00;background:#fdf3d0;border-radius:6px;padding:8px 10px;">` +
+      `※ カート内の「${escNote(namesJa)}」は、配送日の前日${hour}:00までのご注文が対象です。そのため、選べる配送日が限られています。<br>` +
+      `Items in your cart (${escNote(namesEn)}) must be ordered by ${hour}:00 the day before delivery, so some delivery dates are not available.</div>`);
+  }
+
+  const condo = selectedCondoName();
+  const blocked = cartItemsBlockedForCondo(condo);
+  if (blocked.length) {
+    parts.push(`<div style="color:#b3261e;background:#fdecea;border-radius:6px;padding:8px 10px;margin-top:6px;font-weight:600;">` +
+      `申し訳ございません、「${escNote(blocked.map(i => i.name).join('、'))}」は${escNote(condo)}へはお届けできません。カートから外してください。<br>` +
+      `Sorry, ${escNote(blocked.map(i => i.name_en || i.name).join(', '))} cannot be delivered to ${escNote(condo)}. Please remove it from your cart.</div>`);
+  }
+  box.innerHTML = parts.join('');
+}
+
+// カートの中身が変わったときに、配送日リストと注意書きを作り直す
+function refreshDeliveryDateOptions() {
+  if (customerAreaType === 'sriracha' && srirachaDateRows.length) {
+    const select = document.getElementById('sriracha-date-select');
+    const prev = select.value;
+    renderSrirachaDateOptions();
+    if (select.value !== prev) onSrirachaDateChange(); // 選択が変わったときだけコンド一覧を作り直す
+  } else if (customerAreaType === 'pattaya' && pattayaDateRows.length) {
+    renderPattayaDateOptions();
+  }
+  updateDeliveryRestrictionNote();
 }
 
 // ---------------- シラチャ(火曜/木曜 + コンドミニアム選択) ----------------
@@ -761,21 +846,30 @@ async function initSrirachaFlow() {
   try {
     const { data } = await supabaseClient.from('sriracha_delivery_days').select('delivery_date')
       .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
-    const dates = filterCutoffDates(data);
-    select.innerHTML = dates.length
-      ? dates.map(d => {
-          // ローカルのタイムゾーンずれで曜日が1日ずれないよう、日付文字列から直接曜日を計算する
-          const parts = d.delivery_date.split('-').map(Number);
-          const dow = new Date(parts[0], parts[1] - 1, parts[2]).getDay();
-          const label = `${d.delivery_date} (${dow === 2 ? '火' : (dow === 4 ? '木' : '')})`;
-          return `<option value="${d.delivery_date}" data-dow="${dow}">${label}</option>`;
-        }).join('')
-      : '<option value="">配送日が設定されていません / No date set yet</option>';
+    srirachaDateRows = data || [];
+    renderSrirachaDateOptions();
   } catch (e) {
     select.innerHTML = '<option value="">読み込みに失敗しました</option>';
   }
 
   onSrirachaDateChange();
+}
+
+// シラチャの配送日プルダウンを作る。締め切り(当日朝8:00、豆腐は前日15:00)を過ぎた日は出さない。
+function renderSrirachaDateOptions() {
+  const select = document.getElementById('sriracha-date-select');
+  const prev = select.value;
+  const dates = filterCutoffDates(srirachaDateRows);
+  select.innerHTML = dates.length
+    ? dates.map(d => {
+        // ローカルのタイムゾーンずれで曜日が1日ずれないよう、日付文字列から直接曜日を計算する
+        const parts = d.delivery_date.split('-').map(Number);
+        const dow = new Date(parts[0], parts[1] - 1, parts[2]).getDay();
+        const label = `${d.delivery_date} (${dow === 2 ? '火' : (dow === 4 ? '木' : '')})`;
+        return `<option value="${d.delivery_date}" data-dow="${dow}">${label}</option>`;
+      }).join('')
+    : '<option value="">配送日が設定されていません / No date set yet</option>';
+  if (prev && dates.some(d => d.delivery_date === prev)) select.value = prev;
 }
 
 function onSrirachaDateChange() {
@@ -805,10 +899,8 @@ async function initPattayaFlow() {
   try {
     const { data } = await supabaseClient.from('pattaya_delivery_days').select('delivery_date')
       .gte('delivery_date', todayStr).order('delivery_date', { ascending: true });
-    const dates = filterCutoffDates(data);
-    dateSelect.innerHTML = dates.length
-      ? dates.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
-      : '<option value="">配送日が設定されていません / No date set yet</option>';
+    pattayaDateRows = data || [];
+    renderPattayaDateOptions();
   } catch (e) {
     dateSelect.innerHTML = '<option value="">読み込みに失敗しました</option>';
   }
@@ -820,12 +912,24 @@ async function initPattayaFlow() {
   onCondoSelectChange('pattaya');
 }
 
+// パタヤの配送日プルダウンを作る。締め切り(当日朝8:00、豆腐は前日15:00)を過ぎた日は出さない。
+function renderPattayaDateOptions() {
+  const dateSelect = document.getElementById('pattaya-date-select');
+  const prev = dateSelect.value;
+  const dates = filterCutoffDates(pattayaDateRows);
+  dateSelect.innerHTML = dates.length
+    ? dates.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
+    : '<option value="">配送日が設定されていません / No date set yet</option>';
+  if (prev && dates.some(d => d.delivery_date === prev)) dateSelect.value = prev;
+}
+
 // 「その他 / Other」選択時にテキスト入力欄を出す(シラチャ・パタヤ共通)
 function onCondoSelectChange(area) {
   const select = document.getElementById(`${area}-condo-select`);
   const otherInput = document.getElementById(`${area}-condo-other`);
   const isOther = select.value && select.value.toLowerCase().includes('other');
   otherInput.style.display = isOther ? 'block' : 'none';
+  updateDeliveryRestrictionNote();
 }
 
 // ---------------- 初期化 ----------------
@@ -940,7 +1044,7 @@ async function loadCartItems() {
 
   const { data: fetchedProducts, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty, excluded_areas')
+    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty, excluded_areas, excluded_condos, order_cutoff_prev_day_hour')
     .in('id', ids);
 
   if (error || !fetchedProducts) {
@@ -978,6 +1082,8 @@ async function loadCartItems() {
     image_url: p.image_url,
     quantity: Math.max(1, parseInt(map[p.id], 10) || 1),
     maxQty: p.is_unlimited_stock ? 999 : (p.stock_qty || 0),
+    excluded_condos: p.excluded_condos || [],
+    cutoff_hour: p.order_cutoff_prev_day_hour ?? null,
   }));
 
   renderCart();
@@ -990,6 +1096,7 @@ function saveCartToStorage() {
 }
 
 function renderCart() {
+  refreshDeliveryDateOptions(); // 締め切りのある商品が入った/外れたら、配送日リストを作り直す
   const listEl = document.getElementById('cart-items-list');
   if (cart.length === 0) {
     listEl.innerHTML = '<div class="empty-cart-note">' + i18nText('cart.empty') + '</div>';
@@ -1496,6 +1603,22 @@ async function submitOrder() {
     if (!condoName) { msgEl.textContent = 'コンドミニアムを選択してください / Please choose your condominium.'; msgEl.className = 'error'; return; }
   }
 
+  // 山口豆腐店など、届け先コンドミニアム・配送日の制限がある商品の確認(サーバー側でも必ず再チェックされる)
+  if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
+    const blockedItems = cartItemsBlockedForCondo(condoName);
+    if (blockedItems.length) {
+      msgEl.textContent = `「${blockedItems.map(i => i.name).join('、')}」は${condoName}へはお届けできません。カートから外してください / ${blockedItems.map(i => i.name_en || i.name).join(', ')} cannot be delivered to ${condoName}. Please remove it from your cart.`;
+      msgEl.className = 'error';
+      return;
+    }
+    const productHour = cartCutoffHour();
+    if (productHour !== null && deliveryDate && isPastProductCutoff(deliveryDate, productHour)) {
+      msgEl.textContent = `カート内の商品は、配送日の前日${productHour}:00までのご注文です。別の配送日をお選びください / Some items in your cart must be ordered by ${productHour}:00 the day before delivery. Please choose another delivery date.`;
+      msgEl.className = 'error';
+      return;
+    }
+  }
+
   const paymentMethod = document.querySelector('input[name=payment]:checked')?.value;
   if (!paymentMethod) { msgEl.textContent = '支払い方法を選択してください / Please choose a payment method.'; msgEl.className = 'error'; return; }
 
@@ -1575,6 +1698,8 @@ async function submitOrder() {
     else if (raw.includes('COUPON_MAX_USES')) friendly = 'このクーポンは使用上限に達しています / This coupon has reached its usage limit.';
     else if (raw.includes('COUPON_ALREADY_USED')) friendly = 'このクーポンは既にご利用済みです / You have already used this coupon.';
     else if (raw.includes('COUPON_INVALID')) friendly = 'クーポンコードが無効です / This coupon code is invalid.';
+    else if (raw.includes('PRODUCT_NOT_FOR_CONDO')) friendly = '申し訳ございません、お届け先のコンドミニアムにはお届けできない商品がカートに含まれています。カートをご確認ください / Sorry, your cart contains an item that cannot be delivered to your condominium. Please review your cart.';
+    else if (raw.includes('PRODUCT_CUTOFF_PASSED')) friendly = '申し訳ございません、カート内の商品(' + (raw.split(':').slice(1).join(':').trim() || '') + ')は、配送日の前日の締め切りを過ぎたためご注文いただけません。ページを再読み込みして、別の配送日をお選びください / Sorry, the order deadline (the day before delivery) has passed for an item in your cart. Please reload the page and choose another delivery date.';
     else if (raw.includes('SAME_DAY_CUTOFF_PASSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日朝8:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for today closed at 8:00 AM. Please reload the page and choose another delivery date.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';

@@ -469,6 +469,7 @@ const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentCustomerId = null;
 let favoriteProductIds = new Set();
+let currentCustomerCondoText = ''; // ログイン中のお客様の住所欄+直近の注文先コンド名(小文字)。特定コンド宛に販売しない商品の判定用
 let currentCustomerAreaName = null; // ログイン中のお客様の配送エリア名(areas.name)。未ログイン・未設定ならnull
 
 let allCategories = [];
@@ -580,6 +581,10 @@ async function init() {
     allProducts = currentCustomerAreaName
       ? prods.filter(p => !(p.excluded_areas || []).includes(currentCustomerAreaName))
       : prods;
+    // 特定のコンドミニアムにお住まいのお客様には、その商品を出さない(山口豆腐店 × Harmoniq、2026-09-30)
+    if (currentCustomerCondoText.trim()) {
+      allProducts = allProducts.filter(p => !(p.excluded_condos || []).some(t => t && currentCustomerCondoText.includes(String(t).trim().toLowerCase())));
+    }
     allProductCategories = prodCats;
     loadCartFromStorage();
     renderSidebarCategories();
@@ -613,10 +618,21 @@ async function loadFavoritesState() {
     if (!session) return;
 
     const { data: customerRows } = await supabaseClient
-      .from('customers').select('id, area_id, areas ( name )').eq('auth_user_id', session.user.id).limit(1);
+      .from('customers').select('id, area_id, address1, address2, areas ( name )').eq('auth_user_id', session.user.id).limit(1);
     if (!customerRows || !customerRows.length) return;
     currentCustomerId = customerRows[0].id;
     currentCustomerAreaName = customerRows[0].areas?.name || null;
+
+    // 特定のコンドミニアム宛には販売しない商品(products.excluded_condos)の判定用に、
+    // 住所欄と直近3件の注文先コンド名をまとめて持っておく(2026-09-30)。
+    // 見つからなくても商品は表示されるが、カート・注文確定で必ず止まる。
+    currentCustomerCondoText = [customerRows[0].address1, customerRows[0].address2].filter(Boolean).join(' ').toLowerCase();
+    try {
+      const { data: recentOrders } = await supabaseClient
+        .from('orders').select('condo_name').eq('customer_id', currentCustomerId)
+        .not('condo_name', 'is', null).order('created_at', { ascending: false }).limit(3);
+      currentCustomerCondoText += ' ' + (recentOrders || []).map(o => o.condo_name || '').join(' ').toLowerCase();
+    } catch (e) { }
 
     const { data: favRows } = await supabaseClient
       .from('customer_favorites').select('product_id').eq('customer_id', currentCustomerId);
