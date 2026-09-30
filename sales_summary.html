@@ -62,6 +62,12 @@
   table.prod td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
   table.prod tr:last-child td { border-bottom: none; }
   table.prod td.num, table.prod th.num { text-align: right; }
+  .prod-wrap { overflow-x: auto; }
+  table.prod.by-area th, table.prod.by-area td { padding: 8px 8px; }
+  table.prod.by-area td.name { min-width: 150px; line-height: 1.4; }
+  table.prod.by-area td.num, table.prod.by-area th.num { white-space: nowrap; }
+  table.prod.by-area td.zero { color: var(--text-muted); }
+  table.prod.by-area td.total, table.prod.by-area th.total { font-weight: 700; background: var(--bg); }
 
   .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
   .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
@@ -110,20 +116,25 @@
     <div class="loading">กำลังโหลด... / Loading...</div>
   </div>
 
-  <div class="section-title">商品別 販売個数 / Items Sold</div>
-  <div class="section-note">サイトウフーズの商品のみ(Plaa-Ta-Pianの商品明細は上記カード・orders.htmlのPlaa-Ta-Pianタブでご確認ください) / Saito Foods products only</div>
-  <table class="prod">
+  <div class="section-title">Items Sold by Area / จำนวนสินค้าที่ขายแยกตามพื้นที่</div>
+  <div class="section-note">Saito Foods products only. Plaa-Ta-Pian items are shown in the card above and in the Plaa-Ta-Pian tab of orders.html. / เฉพาะสินค้าของ Saito Foods (สินค้า Plaa-Ta-Pian ดูได้ที่การ์ดด้านบนและแท็บ Plaa-Ta-Pian ใน orders.html)</div>
+  <div class="prod-wrap">
+  <table class="prod by-area">
     <thead>
       <tr>
-        <th>商品 / Product</th>
-        <th class="num">数量 / Qty</th>
-        <th class="num">売上 / Sales (THB)</th>
+        <th>Product / สินค้า</th>
+        <th class="num">Bangkok<br>กรุงเทพฯ</th>
+        <th class="num">Sriracha &amp; Pattaya<br>ศรีราชา &amp; พัทยา</th>
+        <th class="num">Walk-in<br>หน้าร้าน</th>
+        <th class="num total">Total<br>รวม</th>
+        <th class="num">Sales (THB)<br>ยอดขาย (บาท)</th>
       </tr>
     </thead>
     <tbody id="prod-tbody">
-      <tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
+  </div>
 
   <div class="section-title">スタッフ別配送件数 / Deliveries by Staff</div>
   <table class="prod">
@@ -220,7 +231,7 @@ async function loadSummary() {
   if (!date) return;
 
   document.getElementById('summary-cards').innerHTML = '<div class="loading">กำลังโหลด... / Loading...</div>';
-  document.getElementById('prod-tbody').innerHTML = '<tr><td colspan="3" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  document.getElementById('prod-tbody').innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
   document.getElementById('staff-tbody').innerHTML = '<tr><td colspan="2" class="loading">กำลังโหลด... / Loading...</td></tr>';
   document.getElementById('unconfirmed-warn').style.display = 'none';
   document.getElementById('outofarea-info').style.display = 'none';
@@ -301,7 +312,7 @@ function renderSummary(orders, plaaTapianRows) {
     Pattaya: { label: 'Pattaya', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
   };
 
-  const productMap = new Map(); // product_id -> { name, unit, qty, revenue }
+  const productMap = new Map(); // product_id -> { name, unit, qty: {bkk, sp, walk}, revenue }
   let unconfirmedCount = 0;
   let outOfAreaCount = 0;
   const KNOWN_AREAS = ['Sriracha', 'Pattaya'];
@@ -353,9 +364,11 @@ function renderSummary(orders, plaaTapianRows) {
       const key = item.product_id || item.product_name_snapshot;
       const name = item.products?.name_en || item.products?.name_th || item.product_name_snapshot || '(unknown)';
       const unit = item.products?.unit_label || (item.sale_type === 'weight' ? 'kg' : 'pcs');
-      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: 0, revenue: 0 });
+      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: { bkk: 0, sp: 0, walk: 0 }, revenue: 0 });
       const p = productMap.get(key);
-      p.qty += Number(item.quantity) || 0;
+      // エリア別の個数: 店頭 / シラチャ+パタヤ / バンコク(エリア外・未設定を含む、上のカードと同じ振り分け)
+      const grp = bucketKey === 'walk_in' ? 'walk' : (bucketKey === 'Bangkok' ? 'bkk' : 'sp');
+      p.qty[grp] += Number(item.quantity) || 0;
       p.revenue += Number(item.total_price) || 0;
     });
   });
@@ -421,15 +434,20 @@ function renderSummary(orders, plaaTapianRows) {
   }
 
   const prodTbody = document.getElementById('prod-tbody');
-  const products = [...productMap.values()].sort((a, b) => b.revenue - a.revenue);
+  const totalQty = p => p.qty.bkk + p.qty.sp + p.qty.walk;
+  const products = [...productMap.values()].sort((a, b) => totalQty(b) - totalQty(a) || b.revenue - a.revenue);
   if (products.length === 0) {
-    prodTbody.innerHTML = '<tr><td colspan="3" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
+    prodTbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
     return;
   }
+  const cell = q => q > 0 ? `<td class="num">${formatQty(q)}</td>` : '<td class="num zero">-</td>';
   prodTbody.innerHTML = products.map(p => `
     <tr>
-      <td>${p.name}</td>
-      <td class="num">${formatQty(p.qty)} ${p.unit}</td>
+      <td class="name">${escapeHtmlSS(p.name)}</td>
+      ${cell(p.qty.bkk)}
+      ${cell(p.qty.sp)}
+      ${cell(p.qty.walk)}
+      <td class="num total">${formatQty(totalQty(p))} ${escapeHtmlSS(p.unit)}</td>
       <td class="num">${Math.round(p.revenue).toLocaleString()}</td>
     </tr>
   `).join('');
@@ -464,6 +482,10 @@ function renderStaffDeliveries(orders) {
 
 function formatQty(qty) {
   return Number.isInteger(qty) ? qty : qty.toFixed(2);
+}
+
+function escapeHtmlSS(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
 </script>
 
