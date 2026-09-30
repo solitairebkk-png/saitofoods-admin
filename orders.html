@@ -2319,6 +2319,15 @@ function isOrderPaid(order) {
   return getPaymentState(order) === 'paid';
 }
 
+// 手動の集金済みボタン(Confirm Payment / Undo Confirmation)を押せる人。
+// メール添付でスリップが届いたお客様を手動で入金確認するための操作のため、この3人に限定する(2026-09-30変更)。
+// 従来は role==='admin' の全員に表示していた。
+const MANUAL_PAY_ALLOWED_EMAILS = ['makokunn@live.jp', 'yoshi@saitofoods.com', 'kwan@saitofoods.com'];
+function canManualPay() {
+  const email = (currentCustomer && currentCustomer.email || '').trim().toLowerCase();
+  return MANUAL_PAY_ALLOWED_EMAILS.includes(email);
+}
+
 // Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
 // (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
 function formatTimeSlotCell(text, condoName, areaName) {
@@ -2583,10 +2592,10 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     if (order.customers?.email) {
       manageCol.appendChild(makeButton('✉️ Email Customer / อีเมลลูกค้า', () => openEmailModal(order), 'btn-email-customer'));
     }
-    // 振込み確認(管理者のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う。
+    // 振込み確認(makokunn@live.jp / yoshi@saitofoods.com / kwan@saitofoods.com の3人のみ) — スリップ未アップロードの振込みにまことさんが気づいた際に使う。
     // 既に完済(自動照合含む)の注文には出さない: 出したままだと押した時にpaid_amountへ
     // さらに加算されてしまい、二重計上になるため(2026-08-20発覚)。
-    if (currentCustomer && currentCustomer.role === 'admin') {
+    if (canManualPay()) {
       if (order.manual_payment_confirmed) {
         manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       } else if (getPaymentState(order) !== 'paid') {
@@ -2604,8 +2613,8 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     lockedNote.textContent = 'เสร็จสิ้นแล้ว / Completed';
     manageCol.appendChild(lockedNote);
 
-    // Completedでロックされた後でも、管理者は振込み確認の追加・取消を行えるようにしておく
-    if (currentCustomer && currentCustomer.role === 'admin') {
+    // Completedでロックされた後でも、許可された3人は振込み確認の追加・取消を行えるようにしておく
+    if (canManualPay()) {
       if (order.manual_payment_confirmed) {
         manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       } else if (getPaymentState(order) !== 'paid') {

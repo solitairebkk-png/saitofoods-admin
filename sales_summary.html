@@ -40,6 +40,8 @@
   .card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
   .card .amount { font-size: 22px; font-weight: 700; color: var(--navy); }
   .card .count { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .card .cash-line { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .card .cash-line .cash-count { font-weight: 400; color: var(--text-muted); }
   .card.total { background: var(--navy); }
   .card.total .label { color: #cdd8e6; }
   .card.total .amount { color: white; }
@@ -207,6 +209,7 @@ function resetToToday() {
 const ORDER_SELECT = `
   id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost, area_name,
   is_cancelled, has_weight_items, is_weight_confirmed,
+  payment_method, payment_status, slip_image_url, manual_payment_confirmed,
   assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
   order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
@@ -292,9 +295,9 @@ function renderSummary(orders, plaaTapianRows) {
   // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
     walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
-    Bangkok: { label: 'Bangkok', orders: 0, amount: 0 },
-    Sriracha: { label: 'Sriracha', orders: 0, amount: 0 },
-    Pattaya: { label: 'Pattaya', orders: 0, amount: 0 },
+    Bangkok: { label: 'Bangkok', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
+    Sriracha: { label: 'Sriracha', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
+    Pattaya: { label: 'Pattaya', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
   };
 
   const productMap = new Map(); // product_id -> { name, unit, qty, revenue }
@@ -317,6 +320,16 @@ function renderSummary(orders, plaaTapianRows) {
     }
     buckets[bucketKey].orders += 1;
     buckets[bucketKey].amount += Number(order.total_amount) || 0;
+
+    // 現金での集金額(補足): 配送注文のうち、「スリップが送られていない」かつ「入金確認(payment_status='paid')が無い」かつ
+    // 「手動の集金済みボタン(manual_payment_confirmed)も押されていない」注文の合計。
+    // 手動の集金済みは、メール添付でスリップが届いたお客様を手動で入金確認したもののため、現金集金には含めない。
+    // 卸売り(請求書払い)と店頭(Walk-in)は対象外。
+    if (order.order_type === 'delivery' && !order._isWholesale &&
+        order.payment_status !== 'paid' && !order.slip_image_url && !order.manual_payment_confirmed) {
+      buckets[bucketKey].cashAmount += Number(order.total_amount) || 0;
+      buckets[bucketKey].cashOrders += 1;
+    }
 
     if (order.has_weight_items && !order.is_weight_confirmed) unconfirmedCount += 1;
 
@@ -346,11 +359,15 @@ function renderSummary(orders, plaaTapianRows) {
   order.forEach(key => {
     const b = buckets[key];
     if (key !== 'Bangkok' && key !== 'walk_in' && b.orders === 0) return; // Sriracha/Pattayaは件数0なら非表示
+    // Bangkok/Sriracha/Pattayaのカードには、現金での集金額を補足として表示する(Walk-inには出さない)
+    const cashLine = key === 'walk_in' ? '' : `
+        <div class="cash-line">💴 現金集金 / เก็บเงินสด: ${Math.round(b.cashAmount).toLocaleString()} THB
+          <span class="cash-count">(${b.cashOrders} orders)</span></div>`;
     cardsEl.innerHTML += `
       <div class="card">
         <div class="label">${b.label}</div>
         <div class="amount">${b.amount.toLocaleString()} THB</div>
-        <div class="count">${b.orders} orders / คำสั่งซื้อ</div>
+        <div class="count">${b.orders} orders / คำสั่งซื้อ</div>${cashLine}
       </div>`;
   });
 
