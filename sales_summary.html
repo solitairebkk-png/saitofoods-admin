@@ -42,6 +42,8 @@
   .card .count { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .card .cash-line { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
   .card .cash-line .cash-count { font-weight: 400; color: var(--text-muted); }
+  .card .points-line { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .card .points-line + .cash-line { border-top: none; margin-top: 4px; padding-top: 0; }
   .card .cash-line.warn { color: var(--amber); border-top: none; margin-top: 4px; padding-top: 0; }
   .card.total { background: var(--navy); }
   .card.total .label { color: #cdd8e6; }
@@ -233,7 +235,7 @@ function resetToToday() {
 // ---------------- 集計 ----------------
 // assigned_staff_id / departed_at / staff(name) はスタッフ別配送件数の集計に使用
 const ORDER_SELECT = `
-  id, order_type, delivery_date, created_at, total_amount, subtotal, shipping_cost, area_name,
+  id, order_type, delivery_date, created_at, total_amount, points_used, subtotal, shipping_cost, area_name,
   is_cancelled, has_weight_items, is_weight_confirmed,
   payment_method, payment_status, slip_image_url, manual_payment_confirmed,
   assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -307,6 +309,7 @@ async function loadSummary() {
       order_type: 'delivery', // エリア別バケット振り分けのため、通常配送と同じ扱いにする
       area_name: o.area_name,
       total_amount: o.total_amount,
+      points_used: 0, // 卸売りはポイント利用なし
       is_cancelled: false,
       has_weight_items: false,
       is_weight_confirmed: true,
@@ -323,10 +326,10 @@ function renderSummary(orders, plaaTapianRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
-    walk_in: { label: 'Walk-in', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0, unsetAmount: 0, unsetOrders: 0 },
-    Bangkok: { label: 'Bangkok', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
-    Sriracha: { label: 'Sriracha', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
-    Pattaya: { label: 'Pattaya', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
+    walk_in: { label: 'Walk-in', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0, unsetAmount: 0, unsetOrders: 0 },
+    Bangkok: { label: 'Bangkok', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
+    Sriracha: { label: 'Sriracha', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
+    Pattaya: { label: 'Pattaya', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
   };
 
   const productMap = new Map(); // product_id -> { name, unit, qty: {bkk, sp, walk}, revenue: {bkk, sp, walk} }
@@ -348,7 +351,11 @@ function renderSummary(orders, plaaTapianRows) {
       }
     }
     buckets[bucketKey].orders += 1;
-    buckets[bucketKey].amount += Number(order.total_amount) || 0;
+    // 売上はポイント前の金額で集計する(total_amountはポイントを引いた後の金額のため、使用ポイントを足し戻す)。
+    // これで「売上 = 現金 + 振込 + 使用ポイント」となり、CSV等の売上と一致する。
+    const pts = Number(order.points_used) || 0;
+    buckets[bucketKey].amount += (Number(order.total_amount) || 0) + pts;
+    buckets[bucketKey].pointsUsed += pts;
 
     // 現金での集金額(補足): 配送注文のうち、「スリップが送られていない」かつ「入金確認(payment_status='paid')が無い」かつ
     // 「手動の集金済みボタン(manual_payment_confirmed)も押されていない」注文の合計。
@@ -407,6 +414,12 @@ function renderSummary(orders, plaaTapianRows) {
     if (key !== 'Bangkok' && key !== 'walk_in' && b.orders === 0) return; // Sriracha/Pattayaは件数0なら非表示
     // 各カードに、現金での集金額を補足として表示する。
     // Walk-inは、スタッフがCash/QRを選んでいない注文があれば「未選択」も別行で表示する(現金に混ぜない)。
+    // 使用ポイント(売上に含まれているポイント分)。0のカードには表示しない。
+    let pointsLine = '';
+    if (b.pointsUsed > 0) {
+      pointsLine = `
+        <div class="points-line">⭐ ใช้พอยท์ / Points used: ${Math.round(b.pointsUsed).toLocaleString()} THB</div>`;
+    }
     let cashLine = `
         <div class="cash-line">💴 現金集金 / เก็บเงินสด: ${Math.round(b.cashAmount).toLocaleString()} THB
           <span class="cash-count">(${b.cashOrders} orders)</span></div>`;
@@ -419,7 +432,7 @@ function renderSummary(orders, plaaTapianRows) {
       <div class="card">
         <div class="label">${b.label}</div>
         <div class="amount">${b.amount.toLocaleString()} THB</div>
-        <div class="count">${b.orders} orders / คำสั่งซื้อ</div>${cashLine}
+        <div class="count">${b.orders} orders / คำสั่งซื้อ</div>${pointsLine}${cashLine}
       </div>`;
   });
 
