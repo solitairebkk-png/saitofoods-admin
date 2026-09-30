@@ -63,6 +63,8 @@
   table.prod tr:last-child td { border-bottom: none; }
   table.prod td.num, table.prod th.num { text-align: right; }
   .prod-wrap { overflow-x: auto; }
+  .export-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+  .export-bar select { padding: 7px 8px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: inherit; max-width: 100%; }
   table.prod.by-area th, table.prod.by-area td { padding: 8px 8px; }
   table.prod.by-area td.name { min-width: 150px; line-height: 1.4; }
   table.prod.by-area td.num, table.prod.by-area th.num { white-space: nowrap; }
@@ -118,6 +120,15 @@
 
   <div class="section-title">Items Sold by Area / จำนวนสินค้าที่ขายแยกตามพื้นที่</div>
   <div class="section-note">Saito Foods products only. Plaa-Ta-Pian items are shown in the card above and in the Plaa-Ta-Pian tab of orders.html. / เฉพาะสินค้าของ Saito Foods (สินค้า Plaa-Ta-Pian ดูได้ที่การ์ดด้านบนและแท็บ Plaa-Ta-Pian ใน orders.html)</div>
+  <div class="export-bar">
+    <select id="export-scope">
+      <option value="all">All areas / ทุกพื้นที่</option>
+      <option value="bkk">Bangkok only / เฉพาะกรุงเทพฯ</option>
+      <option value="sp">Sriracha &amp; Pattaya only / เฉพาะศรีราชา &amp; พัทยา</option>
+      <option value="walk">Walk-in only / เฉพาะหน้าร้าน</option>
+    </select>
+    <button class="btn" onclick="exportItemsCsv()">Download CSV / ดาวน์โหลด CSV</button>
+  </div>
   <div class="prod-wrap">
   <table class="prod by-area">
     <thead>
@@ -162,6 +173,8 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 });
 
 let currentCustomer = null;
+let lastItemsRows = [];   // 画面に表示中の商品別集計(CSV出力用)
+let lastItemsDate = '';
 
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -312,7 +325,7 @@ function renderSummary(orders, plaaTapianRows) {
     Pattaya: { label: 'Pattaya', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
   };
 
-  const productMap = new Map(); // product_id -> { name, unit, qty: {bkk, sp, walk}, revenue }
+  const productMap = new Map(); // product_id -> { name, unit, qty: {bkk, sp, walk}, revenue: {bkk, sp, walk} }
   let unconfirmedCount = 0;
   let outOfAreaCount = 0;
   const KNOWN_AREAS = ['Sriracha', 'Pattaya'];
@@ -364,12 +377,12 @@ function renderSummary(orders, plaaTapianRows) {
       const key = item.product_id || item.product_name_snapshot;
       const name = item.products?.name_en || item.products?.name_th || item.product_name_snapshot || '(unknown)';
       const unit = item.products?.unit_label || (item.sale_type === 'weight' ? 'kg' : 'pcs');
-      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: { bkk: 0, sp: 0, walk: 0 }, revenue: 0 });
+      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: { bkk: 0, sp: 0, walk: 0 }, revenue: { bkk: 0, sp: 0, walk: 0 } });
       const p = productMap.get(key);
       // エリア別の個数: 店頭 / シラチャ+パタヤ / バンコク(エリア外・未設定を含む、上のカードと同じ振り分け)
       const grp = bucketKey === 'walk_in' ? 'walk' : (bucketKey === 'Bangkok' ? 'bkk' : 'sp');
       p.qty[grp] += Number(item.quantity) || 0;
-      p.revenue += Number(item.total_price) || 0;
+      p.revenue[grp] += Number(item.total_price) || 0;
     });
   });
 
@@ -435,7 +448,11 @@ function renderSummary(orders, plaaTapianRows) {
 
   const prodTbody = document.getElementById('prod-tbody');
   const totalQty = p => p.qty.bkk + p.qty.sp + p.qty.walk;
-  const products = [...productMap.values()].sort((a, b) => totalQty(b) - totalQty(a) || b.revenue - a.revenue);
+  const totalRev = p => p.revenue.bkk + p.revenue.sp + p.revenue.walk;
+  const products = [...productMap.values()].sort((a, b) => totalQty(b) - totalQty(a) || totalRev(b) - totalRev(a));
+  // CSV出力用に、表示中の集計結果を保持しておく
+  lastItemsRows = products;
+  lastItemsDate = document.getElementById('filter-date').value;
   if (products.length === 0) {
     prodTbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
     return;
@@ -448,7 +465,7 @@ function renderSummary(orders, plaaTapianRows) {
       ${cell(p.qty.sp)}
       ${cell(p.qty.walk)}
       <td class="num total">${formatQty(totalQty(p))} ${escapeHtmlSS(p.unit)}</td>
-      <td class="num">${Math.round(p.revenue).toLocaleString()}</td>
+      <td class="num">${Math.round(totalRev(p)).toLocaleString()}</td>
     </tr>
   `).join('');
 }
@@ -482,6 +499,50 @@ function renderStaffDeliveries(orders) {
 
 function formatQty(qty) {
   return Number.isInteger(qty) ? qty : qty.toFixed(2);
+}
+
+// ---------------- CSV出力(商品別の表) ----------------
+// 選んだ範囲(全エリア / バンコク / シラチャ・パタヤ / 店頭)の商品別の表をCSVで保存する。
+// Excel・Googleスプレッドシートで文字化けしないよう、UTF-8(BOM付き)で出力する。
+function csvCell(v) {
+  let t = String(v == null ? '' : v);
+  // スプレッドシートで数式として実行されないよう、先頭が = + - @ の文字列には ' を付ける(数値は対象外)
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+
+function exportItemsCsv() {
+  if (!lastItemsRows.length) { alert('No data to export. / ไม่มีข้อมูลให้ส่งออก'); return; }
+  const scope = document.getElementById('export-scope').value;
+  const SCOPE_NAME = { all: 'all', bkk: 'bangkok', sp: 'sriracha-pattaya', walk: 'walk-in' };
+  const r = n => Math.round(n);
+  let header, rows;
+
+  if (scope === 'all') {
+    header = ['Date / วันที่', 'Product / สินค้า', 'Bangkok / กรุงเทพฯ', 'Sriracha & Pattaya / ศรีราชา & พัทยา', 'Walk-in / หน้าร้าน', 'Total / รวม', 'Unit / หน่วย', 'Sales (THB) / ยอดขาย (บาท)'];
+    rows = lastItemsRows.map(p => [
+      lastItemsDate, p.name, p.qty.bkk || '', p.qty.sp || '', p.qty.walk || '',
+      p.qty.bkk + p.qty.sp + p.qty.walk, p.unit, r(p.revenue.bkk + p.revenue.sp + p.revenue.walk),
+    ]);
+  } else {
+    // 1エリアだけ: そのエリアで売れた商品だけを、そのエリアの個数順に並べる
+    header = ['Date / วันที่', 'Product / สินค้า', 'Qty / จำนวน', 'Unit / หน่วย', 'Sales (THB) / ยอดขาย (บาท)'];
+    rows = lastItemsRows
+      .filter(p => p.qty[scope] > 0)
+      .sort((a, b) => b.qty[scope] - a.qty[scope] || b.revenue[scope] - a.revenue[scope])
+      .map(p => [lastItemsDate, p.name, p.qty[scope], p.unit, r(p.revenue[scope])]);
+    if (!rows.length) { alert('No sales in this area on this date. / ไม่มียอดขายในพื้นที่นี้ของวันที่เลือก'); return; }
+  }
+
+  const csv = [header, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `items-sold_${lastItemsDate}_${SCOPE_NAME[scope]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function escapeHtmlSS(t) {
