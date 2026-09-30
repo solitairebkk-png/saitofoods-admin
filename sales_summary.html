@@ -42,6 +42,7 @@
   .card .count { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
   .card .cash-line { font-size: 12px; color: var(--green); font-weight: 600; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); }
   .card .cash-line .cash-count { font-weight: 400; color: var(--text-muted); }
+  .card .cash-line.warn { color: var(--amber); border-top: none; margin-top: 4px; padding-top: 0; }
   .card.total { background: var(--navy); }
   .card.total .label { color: #cdd8e6; }
   .card.total .amount { color: white; }
@@ -294,7 +295,7 @@ function renderSummary(orders, plaaTapianRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
-    walk_in: { label: 'Walk-in', orders: 0, amount: 0 },
+    walk_in: { label: 'Walk-in', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0, unsetAmount: 0, unsetOrders: 0 },
     Bangkok: { label: 'Bangkok', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
     Sriracha: { label: 'Sriracha', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
     Pattaya: { label: 'Pattaya', orders: 0, amount: 0, cashAmount: 0, cashOrders: 0 },
@@ -331,6 +332,21 @@ function renderSummary(orders, plaaTapianRows) {
       buckets[bucketKey].cashOrders += 1;
     }
 
+    // Walk-inの現金集金額: Loyverseから転送された注文は全て「現金」としてレシートが出るため、
+    // orders.htmlのWalk-inタブで、スタッフが押した「Cash / QR」ボタンの結果(payment_method)を使う。
+    //   'cash' → 現金として集計 / 'qr'・'transfer' → 現金には含めない /
+    //   それ以外('現金'・未設定) → まだスタッフが選んでいないので「未選択」として別に表示する。
+    if (order.order_type === 'walk_in') {
+      const pm = order.payment_method;
+      if (pm === 'cash') {
+        buckets.walk_in.cashAmount += Number(order.total_amount) || 0;
+        buckets.walk_in.cashOrders += 1;
+      } else if (pm !== 'qr' && pm !== 'transfer') {
+        buckets.walk_in.unsetAmount += Number(order.total_amount) || 0;
+        buckets.walk_in.unsetOrders += 1;
+      }
+    }
+
     if (order.has_weight_items && !order.is_weight_confirmed) unconfirmedCount += 1;
 
     (order.order_items || []).forEach(item => {
@@ -359,10 +375,16 @@ function renderSummary(orders, plaaTapianRows) {
   order.forEach(key => {
     const b = buckets[key];
     if (key !== 'Bangkok' && key !== 'walk_in' && b.orders === 0) return; // Sriracha/Pattayaは件数0なら非表示
-    // Bangkok/Sriracha/Pattayaのカードには、現金での集金額を補足として表示する(Walk-inには出さない)
-    const cashLine = key === 'walk_in' ? '' : `
+    // 各カードに、現金での集金額を補足として表示する。
+    // Walk-inは、スタッフがCash/QRを選んでいない注文があれば「未選択」も別行で表示する(現金に混ぜない)。
+    let cashLine = `
         <div class="cash-line">💴 現金集金 / เก็บเงินสด: ${Math.round(b.cashAmount).toLocaleString()} THB
           <span class="cash-count">(${b.cashOrders} orders)</span></div>`;
+    if (key === 'walk_in' && b.unsetOrders > 0) {
+      cashLine += `
+        <div class="cash-line warn">⚠️ 支払い未選択 / ยังไม่เลือก: ${Math.round(b.unsetAmount).toLocaleString()} THB
+          <span class="cash-count">(${b.unsetOrders} orders)</span></div>`;
+    }
     cardsEl.innerHTML += `
       <div class="card">
         <div class="label">${b.label}</div>

@@ -160,6 +160,13 @@
   .btn-manual-pay { background: #2c8f6b; }
   .btn-manual-pay-undo { background: #6b7280; font-size: 10px !important; }
   .btn-send-email { background: #3b6fd6; }
+  .walkin-pay-box { display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed #dcdad4; padding-top: 6px; margin-top: 2px; }
+  .walkin-pay-label { font-size: 10px; color: var(--text-muted); }
+  .walkin-pay-unset { color: #b8560b; font-weight: 700; }
+  .btn-walkin-cash { background: #8a7a5a; }
+  .btn-walkin-qr { background: #2d6fa8; }
+  .btn-walkin-slip { background: #6a4fb0; }
+  .manage-col button.walkin-selected { outline: 2px solid #23272f; outline-offset: 1px; font-weight: 700; }
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
   .customer-cancelled-flag { color: #c0392b; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
@@ -2328,6 +2335,130 @@ function canManualPay() {
   return MANUAL_PAY_ALLOWED_EMAILS.includes(email);
 }
 
+// ---------------- Walk-inの支払い方法(現金 / QR)の選択 ----------------
+// WalkinはLoyverseから転送されて入り、Loyverse側では現金かQRかを区別できず、全て「現金」のレシートになる。
+// そのためスタッフが注文一覧のWalk-in行で「Cash / QR」ボタンを押し、payment_methodを 'cash' か 'qr' に確定させる。
+// まだ押されていない注文は、Loyverse由来の値('現金')や未設定のままなので「未選択」として扱う。
+// ('transfer'は旧EC-CUBEから移行した注文の値で、選択済み扱いにして警告は出さない)
+function isWalkinPayUnset(order) {
+  return order.order_type === 'walk_in' && !['cash', 'qr', 'transfer'].includes(order.payment_method);
+}
+
+// 行の操作欄(manageCol)の末尾に、支払い方法の選択欄を付ける。Completed済み(ロック中)でも全スタッフが押せる。
+function appendWalkinPayBox(manageCol, order) {
+  const box = document.createElement('div');
+  box.className = 'walkin-pay-box';
+  const label = document.createElement('div');
+  label.className = 'walkin-pay-label';
+  if (isWalkinPayUnset(order)) {
+    label.classList.add('walkin-pay-unset');
+    label.textContent = '⚠️ เลือกวิธีชำระเงิน / Select payment';
+  } else {
+    label.textContent = 'วิธีชำระเงิน / Payment';
+  }
+  box.appendChild(label);
+  const cashBtn = makeButton('💴 เงินสด / Cash', () => setWalkinPayment(order, 'cash'), 'btn-walkin-cash');
+  const qrBtn = makeButton('📱 โอน QR / QR', () => setWalkinPayment(order, 'qr'), 'btn-walkin-qr');
+  if (order.payment_method === 'cash') cashBtn.classList.add('walkin-selected');
+  if (order.payment_method === 'qr') qrBtn.classList.add('walkin-selected');
+  box.appendChild(cashBtn);
+  box.appendChild(qrBtn);
+
+  // QR払いのお客様のスリップ(スタッフがスマホで撮影→LINEで受け取った画像)を、この行から添付できる。
+  // 現金と選ばれた注文には出さない。画像は非公開の保存先 walkin-slips に入り、注文のslip_image_url欄に
+  // 'storage:walkin-slips/<注文ID>/<時刻>.jpg' の形で記録する(Google Driveのリンクと見分けるため 'storage:' を付ける)。
+  if (order.payment_method !== 'cash') {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.style.display = 'none';
+    fileInput.onchange = () => { const f = fileInput.files && fileInput.files[0]; fileInput.value = ''; uploadWalkinSlip(order, f); };
+    const hasSlip = !!order.slip_image_url;
+    const slipBtn = makeButton(hasSlip ? '📎 เปลี่ยนสลิป / Replace slip' : '📎 แนบสลิป / Attach slip', () => fileInput.click(), 'btn-walkin-slip');
+    box.appendChild(slipBtn);
+    box.appendChild(fileInput);
+  }
+  manageCol.appendChild(box);
+}
+
+const WALKIN_SLIP_BUCKET = 'walkin-slips';
+const WALKIN_SLIP_PREFIX = 'storage:' + WALKIN_SLIP_BUCKET + '/';
+function isStorageSlip(ref) { return typeof ref === 'string' && ref.startsWith(WALKIN_SLIP_PREFIX); }
+
+// スマホ写真は大きいので、長辺1200px・JPEG画質0.7に縮小してから保存する。
+function compressImageToJpeg(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Cannot read file'));
+    reader.onload = e => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Cannot open image (unsupported format)'));
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Image conversion failed')), 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadWalkinSlip(order, file) {
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { alert('Please choose an image file. / กรุณาเลือกไฟล์รูปภาพ'); return; }
+  let uploadedPath = null;
+  try {
+    const blob = await compressImageToJpeg(file, 1200, 0.7);
+    const path = `${order.id}/${Date.now()}.jpg`;
+    const { error: upErr } = await supabaseClient.storage.from(WALKIN_SLIP_BUCKET)
+      .upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '3600' });
+    if (upErr) throw upErr;
+    uploadedPath = path;
+    // スリップを添付するのはQR払いの場合なので、まだQRが選ばれていなければ同時にQRに確定する
+    if (order.payment_method !== 'qr') {
+      const { error: pmErr } = await supabaseClient.rpc('set_walkin_payment', { p_order_id: order.id, p_method: 'qr' });
+      if (pmErr) throw pmErr;
+    }
+    const { error: slipErr } = await supabaseClient.rpc('set_walkin_slip', { p_order_id: order.id, p_slip: WALKIN_SLIP_PREFIX + path });
+    if (slipErr) throw slipErr;
+    // 差し替えの場合、古い画像は不要になるので消す(失敗しても本体の保存には影響しないため結果は見ない)
+    if (isStorageSlip(order.slip_image_url)) {
+      supabaseClient.storage.from(WALKIN_SLIP_BUCKET).remove([order.slip_image_url.slice(WALKIN_SLIP_PREFIX.length)]);
+    }
+    loadOrders();
+  } catch (e) {
+    // 画像は保存できたのに注文への記録に失敗した場合、使われない画像が残らないように消す
+    if (uploadedPath) supabaseClient.storage.from(WALKIN_SLIP_BUCKET).remove([uploadedPath]);
+    alert('Upload failed / อัปโหลดไม่สำเร็จ: ' + ((e && e.message) || e));
+  }
+}
+
+// 非公開の保存先の画像は、一時的な閲覧用URLを発行して表示する(1時間有効)。
+async function hydrateStorageSlip(imgEl, slipRef) {
+  if (!imgEl) return;
+  const { data, error } = await supabaseClient.storage.from(WALKIN_SLIP_BUCKET)
+    .createSignedUrl(slipRef.slice(WALKIN_SLIP_PREFIX.length), 3600);
+  if (error || !data) { imgEl.alt = '(slip unavailable)'; return; }
+  imgEl.src = data.signedUrl;
+  imgEl.onclick = () => openSlipModal(data.signedUrl);
+}
+
+async function setWalkinPayment(order, method) {
+  if (order.payment_method === method) return; // 既に同じ選択
+  // Completed済みの注文は、DBの権限設定上adminしか直接更新できない。Walk-inの支払い方法だけは、
+  // staff・adminの全員が押せるように、専用の関数(set_walkin_payment)経由で更新する。
+  const { error } = await supabaseClient.rpc('set_walkin_payment', { p_order_id: order.id, p_method: method });
+  if (error) { alert('Save failed / บันทึกไม่สำเร็จ: ' + error.message); return; }
+  loadOrders();
+}
+
 // Time列: シラチャ/パタヤタブでエリア名を含む表記を色分け表示するためのヘルパー
 // (シラチャ=オレンジ、パタヤ=水色。それ以外のテキストはそのまま)
 function formatTimeSlotCell(text, condoName, areaName) {
@@ -2485,7 +2616,10 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     : '';
 
   const slipThumbHtml = order.slip_image_url
-    ? `<img src="${driveImageUrl(order.slip_image_url)}" class="slip-thumb" onclick="openSlipModal('${driveImageUrl(order.slip_image_url, true)}')">`
+    ? (isStorageSlip(order.slip_image_url)
+        // 非公開の保存先(walkin-slips)の画像: srcは後でhydrateStorageSlipが一時URLを入れる
+        ? `<img class="slip-thumb slip-storage" alt="slip">`
+        : `<img src="${driveImageUrl(order.slip_image_url)}" class="slip-thumb" onclick="openSlipModal('${driveImageUrl(order.slip_image_url, true)}')">`)
     : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
 
   const paidStampHtml = isOrderPaid(order)
@@ -2540,6 +2674,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   `;
 
   const manageCol = tr.querySelector('.manage-col');
+
+  // 非公開の保存先に入っているスリップ画像は、一時的な閲覧用URLを取ってサムネイルに反映する
+  if (isStorageSlip(order.slip_image_url)) hydrateStorageSlip(tr.querySelector('.slip-storage'), order.slip_image_url);
 
   if (order.is_cancelled) {
     // キャンセル済み: 閲覧のみ(adminはDeleteも可能)、Edit/Complete/Cancelは出さない
@@ -2622,6 +2759,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       }
     }
   }
+
+  // Walk-inは、Completedでロックされているかどうかに関係なく、支払い方法(現金/QR)の選択欄を出す
+  if (order.order_type === 'walk_in') appendWalkinPayBox(manageCol, order);
 
   return tr;
 }
