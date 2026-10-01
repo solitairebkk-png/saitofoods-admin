@@ -294,6 +294,9 @@
       <div class="field">
         <label><span class="th">วันที่จัดส่ง</span>Delivery date</label>
         <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
+        <!-- パタヤのお客様の新規注文のみ: 設定済みのパタヤ配送日だけから選ぶ(普段は非表示) -->
+        <select id="pattaya-date-select" onchange="onPattayaDateChange()" style="display:none;"></select>
+        <div id="pattaya-date-hint" style="display:none;font-size:11px;color:var(--text-muted);margin-top:4px;">Pattaya: scheduled delivery days only. / พัทยา: เลือกได้เฉพาะวันที่จัดส่งที่กำหนดไว้</div>
         <div id="delivery-date-note" style="font-size:11px;color:var(--red-accent);margin-top:4px;"></div>
       </div>
       <div class="field" id="time-slot-field">
@@ -368,7 +371,12 @@
   <!-- Payment -->
   <div class="card" id="payment-card">
     <h2><span class="th">วิธีชำระเงิน</span><span class="en">Payment Method</span></h2>
-    <div class="payment-options">
+    <!-- 編集時、すでに支払い方法が決まっている注文は表示のみ(「変更する」を押した時だけ選択欄を出す) -->
+    <div id="payment-locked" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div id="payment-locked-text" style="font-size:14px;"></div>
+      <button type="button" class="btn secondary" onclick="setPaymentLocked(false)">เปลี่ยน / Change</button>
+    </div>
+    <div class="payment-options" id="payment-options">
       <label><input type="radio" name="payment" value="cash" checked><span>เงินสด / Cash</span></label>
       <label><input type="radio" name="payment" value="qr"><span>โอน QR / QR Transfer</span></label>
     </div>
@@ -509,6 +517,10 @@ let editingOrderIsSrPt = false;           // シラチャ/パタヤ注文か(時
 let editingOrderShippingWaived = false;   // 元々送料無料だった注文(商品削除で下回っても送料を足さない)
 let editingOrderOriginalPayment = null;   // 編集開始時の支払い方法(正規化後)。変更がなければ送らない
 let condoListCache = [];
+// 新規注文で、シラチャ/パタヤのお客様を選んだ時に使う(時間帯の代わりにコンドミニアムを選ぶ)
+let newOrderAreaType = null;      // 'sriracha' | 'pattaya' | null(null=通常。時間帯を選ぶ)
+let condoRowsCache = null;        // condominiums(有効なもの)。取得に成功した時だけ保持
+let pattayaDayRowsCache = null;   // pattaya_delivery_days。取得に成功した時だけ保持
 // 編集開始時点の「量り売り商品の確定状態・内容」を記録しておき、
 // 保存時に実際に変更が無ければ is_weight_confirmed を不必要にリセットしないようにする
 let editingOrderOriginalIsWeightConfirmed = false;
@@ -579,6 +591,8 @@ function toggleWalkin() {
   document.getElementById('delivery-date-card').style.display = isWalkin ? 'none' : 'block';
   document.getElementById('delivery-opts-card').style.display = isWalkin ? 'none' : 'block';
   selectedCustomer = null;
+  if (isWalkin) setPaymentLocked(false);
+  applyCustomerAreaMode();
   renderCart();
 }
 
@@ -592,6 +606,7 @@ async function searchCustomer() {
   notFoundEl.style.display = 'none';
   listEl.innerHTML = '';
   selectedCustomer = null;
+  applyCustomerAreaMode();
 
   if (!q) return;
 
@@ -645,6 +660,7 @@ function selectCustomerFromList(customer, el) {
   resultEl.style.display = 'block';
   resultEl.innerHTML = selectedCustomerHtml(customer, '');
   document.getElementById('customer-not-found').style.display = 'none';
+  applyCustomerAreaMode();
 }
 
 // ---------------- Delivery date/time control ----------------
@@ -686,6 +702,7 @@ function onDeliveryDateChange() {
   if (dayOfWeek === 0) {
     noteEl.textContent = 'วันอาทิตย์ปิดทำการ กรุณาเลือกวันอื่น / Closed on Sundays. Please choose another date.';
     populateTimeSlots([]);
+    fillNewOrderCondos();
     return;
   }
 
@@ -695,6 +712,7 @@ function onDeliveryDateChange() {
   } else {
     populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS));
   }
+  fillNewOrderCondos();
 }
 
 function populateTimeSlots(slots) {
@@ -713,6 +731,131 @@ function populateTimeSlots(slots) {
     opt.textContent = s.label;
     select.appendChild(opt);
   });
+}
+
+// ---------------- 新規注文: シラチャ/パタヤのお客様はコンドミニアムを選ぶ ----------------
+// お客様サイト(cart.html)と同じ考え方。時間帯は指定せず、配送日 + コンドミニアムで受け付ける。
+//  - シラチャ: 火曜 → sriracha_tuesday、木曜 → sriracha_thursday のコンド一覧に切り替える。
+//              火・木以外の日付なら注意を出して全件表示する。
+//  - パタヤ  : 設定済みのパタヤ配送日(pattaya_delivery_days)だけを日付として選べる。
+// 注文の編集モードは既存の処理(setupEditCondo)に任せるため、ここでは何もしない。
+function areaTypeOfCustomer(c) {
+  const n = String((c && c.areas && c.areas.name) || '').toLowerCase();
+  if (n.includes('pattaya')) return 'pattaya';
+  if (n.includes('sriracha')) return 'sriracha';
+  return null;
+}
+
+function localDateStr(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+async function loadCondoRows() {
+  if (condoRowsCache) return condoRowsCache;
+  try {
+    const { data, error } = await supabaseClient.from('condominiums').select('*')
+      .in('area_group', ['sriracha_tuesday', 'sriracha_thursday', 'pattaya']).eq('is_active', true).order('sort_order');
+    if (!error && data) condoRowsCache = data;
+    return data || [];
+  } catch (e) { return []; }
+}
+
+async function loadPattayaDayRows() {
+  if (pattayaDayRowsCache) return pattayaDayRowsCache;
+  try {
+    const { data, error } = await supabaseClient.from('pattaya_delivery_days').select('delivery_date')
+      .gte('delivery_date', localDateStr(new Date())).order('delivery_date', { ascending: true });
+    if (!error && data) pattayaDayRowsCache = data;
+    return data || [];
+  } catch (e) { return []; }
+}
+
+// お客様を選んだ(または選び直した・解除した)時に呼ぶ。エリアに応じて
+// 「時間帯のプルダウン」と「コンドミニアムのプルダウン」を切り替える。
+async function applyCustomerAreaMode() {
+  if (editingOrderId) return;
+  const customer = selectedCustomer;
+  const type = (customer && !document.getElementById('is-walkin').checked) ? areaTypeOfCustomer(customer) : null;
+  const timeField = document.getElementById('time-slot-field');
+  const condoRow = document.getElementById('condo-field-row');
+  const condoSel = document.getElementById('edit-condo-select');
+  const dateInput = document.getElementById('delivery-date');
+  const pattayaSel = document.getElementById('pattaya-date-select');
+  const wasPattaya = newOrderAreaType === 'pattaya';
+  newOrderAreaType = type;
+
+  // いったん通常の表示(日付入力 + 時間帯)に戻す
+  pattayaSel.style.display = 'none';
+  document.getElementById('pattaya-date-hint').style.display = 'none';
+  dateInput.style.display = '';
+  condoSel.innerHTML = '';
+  document.getElementById('edit-condo-other').value = '';
+  document.getElementById('edit-condo-note').textContent = '';
+
+  if (!type) {
+    timeField.style.display = '';
+    condoRow.style.display = 'none';
+    if (wasPattaya && !dateInput.value) dateInput.value = localDateStr(new Date());
+    onDeliveryDateChange();
+    return;
+  }
+
+  timeField.style.display = 'none';
+  condoRow.style.display = 'flex';
+  await loadCondoRows();
+  if (selectedCustomer !== customer) return; // 読み込み中にお客様が変わった
+
+  if (type === 'pattaya') {
+    const days = await loadPattayaDayRows();
+    if (selectedCustomer !== customer) return;
+    pattayaSel.innerHTML = days.length
+      ? days.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
+      : '<option value="">配送日が設定されていません / No date set yet</option>';
+    dateInput.style.display = 'none';
+    pattayaSel.style.display = '';
+    document.getElementById('pattaya-date-hint').style.display = 'block';
+    dateInput.value = pattayaSel.value; // 隠した日付欄にも同じ値を入れる(保存時はこの値を使う)
+  }
+  onDeliveryDateChange();
+  fillNewOrderCondos();
+}
+
+function onPattayaDateChange() {
+  document.getElementById('delivery-date').value = document.getElementById('pattaya-date-select').value;
+  onDeliveryDateChange();
+}
+
+// コンドミニアムのプルダウンを作り直す(配送日が変わるたびに呼ばれる)
+function fillNewOrderCondos() {
+  if (!newOrderAreaType || editingOrderId) return;
+  const sel = document.getElementById('edit-condo-select');
+  const prev = sel.value;
+  let groups = ['pattaya'];
+  let note = '';
+  if (newOrderAreaType === 'sriracha') {
+    const val = document.getElementById('delivery-date').value;
+    let dow = null;
+    if (val) { const [y, m, d] = val.split('-').map(Number); dow = new Date(y, m - 1, d).getDay(); }
+    if (dow === 2) groups = ['sriracha_tuesday'];
+    else if (dow === 4) groups = ['sriracha_thursday'];
+    else {
+      groups = ['sriracha_tuesday', 'sriracha_thursday'];
+      note = '⚠ Sriracha delivers on Tuesdays and Thursdays only — please check the date. / ศรีราชาจัดส่งเฉพาะวันอังคารและวันพฤหัสบดี กรุณาตรวจสอบวันที่';
+    }
+  }
+  // 同名のコンドが火曜/木曜に重複して出ないようにする
+  const seen = new Set();
+  const list = (condoRowsCache || []).filter(c => groups.includes(c.area_group))
+    .filter(c => { if (seen.has(c.name)) return false; seen.add(c.name); return true; });
+  const otherOpt = list.find(c => /other/i.test(c.name));
+  const normal = list.filter(c => c !== otherOpt);
+  sel.innerHTML = '<option value="">-- select / เลือก --</option>'
+    + normal.map(c => `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('')
+    + `<option value="__other__">${escapeHtml(otherOpt ? otherOpt.name : 'Other / อื่นๆ')}</option>`;
+  if (prev === '__other__' || normal.some(c => c.name === prev)) sel.value = prev; // 選択済みで有効なら維持
+  document.getElementById('edit-condo-note').textContent = note;
+  onEditCondoChange();
 }
 
 // ---------------- Category tabs & product grid ----------------
@@ -1175,6 +1318,8 @@ async function loadOrderForEdit(orderId) {
   });
   const payHead = document.querySelector('#payment-card h2 .en');
   if (payHead) payHead.textContent = 'Payment Method (optional when editing)';
+  // 支払い方法が決まっている配送注文は表示のみ。未設定・店頭(Walk-in)の注文は従来どおり選択欄を出す。
+  setPaymentLocked(!isWalkin && (editingOrderOriginalPayment === 'cash' || editingOrderOriginalPayment === 'qr'));
   document.getElementById('order-comment').value = order.comment || '';
   document.getElementById('opt-leave-no-contact').checked = !!order.delivery_leave_at_table && !!order.delivery_no_contact;
   document.getElementById('opt-leave-with-contact').checked = !!order.delivery_leave_at_table && !order.delivery_no_contact;
@@ -1219,6 +1364,24 @@ async function loadOrderForEdit(orderId) {
     quantity: item.quantity,
   }));
   renderCart();
+}
+
+// ---------------- Edit: 支払い方法の表示のみモード ----------------
+// すでに支払い方法が決まっている配送注文は、スタッフが選び直す必要がないため選択欄を隠して表示だけにする。
+// 変えたい時だけ「変更する」を押して選択欄を出す。保存時は元の値から変わった場合しか支払い方法を送らない。
+function setPaymentLocked(locked) {
+  const lockedEl = document.getElementById('payment-locked');
+  const optionsEl = document.getElementById('payment-options');
+  if (locked) {
+    const label = editingOrderOriginalPayment === 'qr' ? 'โอน QR / QR Transfer' : 'เงินสด / Cash';
+    document.getElementById('payment-locked-text').innerHTML =
+      `วิธีชำระเงินที่ระบุไว้แล้ว / Payment method already set: <b>${label}</b>`;
+    lockedEl.style.display = 'flex';
+    optionsEl.style.display = 'none';
+  } else {
+    lockedEl.style.display = 'none';
+    optionsEl.style.display = '';
+  }
 }
 
 // ---------------- Edit: condominium selection (Sriracha / Pattaya) ----------------
@@ -1385,7 +1548,30 @@ async function submitOrder() {
     return;
   }
 
-  if (!isWalkin && !(editingOrderId && editingOrderIsSrPt)) {
+  // シラチャ/パタヤのお客様の新規注文: 時間帯は無し。配送日(日曜以外)とコンドミニアムが必要。
+  if (!isWalkin && !editingOrderId && newOrderAreaType) {
+    const dateVal = document.getElementById('delivery-date').value;
+    if (!dateVal) {
+      msgEl.textContent = newOrderAreaType === 'pattaya'
+        ? 'ยังไม่มีวันจัดส่งพัทยาที่กำหนดไว้ / No Pattaya delivery date is set.'
+        : 'กรุณาเลือกวันที่จัดส่ง / Please choose a delivery date.';
+      msgEl.className = 'error';
+      return;
+    }
+    const [dy, dm, dd] = dateVal.split('-').map(Number);
+    if (new Date(dy, dm - 1, dd).getDay() === 0) {
+      msgEl.textContent = 'กรุณาเลือกวันที่จัดส่งที่ถูกต้อง (ไม่ใช่วันอาทิตย์) / Please choose a valid delivery date (not Sunday).';
+      msgEl.className = 'error';
+      return;
+    }
+    if (!document.getElementById('edit-condo-select').value) {
+      msgEl.textContent = 'กรุณาเลือกคอนโด / Please choose a condominium.';
+      msgEl.className = 'error';
+      return;
+    }
+  }
+
+  if (!isWalkin && !(editingOrderId && editingOrderIsSrPt) && !newOrderAreaType) {
     const timeSlot = document.getElementById('delivery-time-slot').value;
     if (!timeSlot) {
       msgEl.textContent = 'กรุณาเลือกวันที่จัดส่งที่ถูกต้อง (ไม่ใช่วันอาทิตย์) / Please choose a valid delivery date (not Sunday).';
@@ -1478,6 +1664,11 @@ async function submitOrder() {
   // 時間帯: シラチャ/パタヤの編集では触らない(元の値を維持)。それ以外は従来どおり。
   if (isWalkin) {
     orderPayload.delivery_time_slot = null;
+  } else if (!editingOrderId && newOrderAreaType) {
+    // お客様サイト(cart.html)と同じ値。シラチャ/パタヤは時間指定なし。
+    orderPayload.delivery_time_slot = newOrderAreaType === 'pattaya'
+      ? 'Pattaya Delivery (no time specified)'
+      : 'Sriracha Delivery (no time specified)';
   } else if (!(editingOrderId && editingOrderIsSrPt)) {
     orderPayload.delivery_time_slot = document.getElementById('delivery-time-slot').value;
   }
@@ -1497,6 +1688,13 @@ async function submitOrder() {
       condoVal = condoSel;
     }
     if (condoVal !== null) orderPayload.condo_name = condoVal; // 未選択なら現状維持
+  }
+  // コンドミニアム(シラチャ/パタヤのお客様の新規注文)
+  if (!editingOrderId && !isWalkin && newOrderAreaType) {
+    const condoSel = document.getElementById('edit-condo-select').value;
+    orderPayload.condo_name = condoSel === '__other__'
+      ? (document.getElementById('edit-condo-other').value.trim() || 'Other')
+      : condoSel;
   }
 
   // Walk-inには配送エリアの概念が無いため、新規・編集どちらでも常にクリアする
@@ -1692,6 +1890,8 @@ async function submitOrder() {
   document.getElementById('customer-not-found').style.display = 'none';
   document.getElementById('search-query').value = '';
   document.getElementById('customer-results-list').innerHTML = '';
+  selectedCustomer = null;
+  applyCustomerAreaMode(); // 次の注文のために、時間帯の表示へ戻す
 }
 </script>
 
