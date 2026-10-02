@@ -815,8 +815,10 @@ async function loadAreasForNewCustomer() {
   if (error || !data) return;
   newCustomerAreas = data;
   const sel = document.getElementById('new-area');
+  // エリア外(Other Provinces)は県外・海外のお客様もここに含まれるので、選択肢の表示に明記する
+  const areaLabel = n => n === 'Other Provinces' ? 'Other Provinces — エリア外(県外・海外) / นอกพื้นที่ (ต่างจังหวัด/ต่างประเทศ)' : n;
   sel.innerHTML = '<option value="">-- เลือก / select --</option>'
-    + data.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+    + data.map(a => `<option value="${a.id}">${escapeHtml(areaLabel(a.name))}</option>`).join('');
 }
 
 function onNewCustomerAreaChange() {
