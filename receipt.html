@@ -223,6 +223,9 @@
     .toolbar, .hint-text { display: none !important; }
     .page-shell { max-width: none; padding: 0; }
     .receipt-paper { box-shadow: none; border-radius: 0; padding: 6mm 7mm; }
+    /* モノクロレーザー印刷用: オレンジは中間グレーになり白抜き文字が読みにくいため、真っ黒+白抜き文字にする */
+    .due-stamp { background: #000 !important; color: #fff !important; border: 4px solid #000 !important; outline: 2px solid #fff; outline-offset: -8px; box-shadow: none; }
+    .due-stamp .amt { border-top: 2px solid #fff; }
     .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp, .cancelled-stamp, .due-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
   @media (max-width: 560px) {
