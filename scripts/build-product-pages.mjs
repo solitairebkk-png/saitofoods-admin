@@ -419,6 +419,49 @@ function buildSitemap(ids) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}${body2 ? '\n' + body2 : ''}\n</urlset>\n`;
 }
 
+// ---------------------------------------------------------------- Merchant Center用の商品データ(フィード)
+// Googleショッピング(無料枠)に商品を出すためのデータ。日本語版・英語版を feeds/ に作る。
+// 価格0円の商品・ギフトカード・フリーペーパーなど、ショッピングに出せないものは含めない。
+const FEED_BRAND = 'Saito Foods'; // 商品ごとのブランド情報がないため共通の名前を入れる
+const FEED_SKIP_CATS = ['ギフトカード', 'フリーペーパー'];
+const cut = (s, n) => { const a = Array.from(String(s || '')); return a.length > n ? a.slice(0, n - 1).join('') + '…' : a.join(''); };
+
+function buildFeed(targets, catsOf, lang) {
+  const items = [];
+  for (const p of targets) {
+    const cats = catsOf.get(p.id) || [];
+    if (p.is_free || !(Number(p.price) > 0)) continue;
+    if (cats.some((c) => FEED_SKIP_CATS.includes(c.name_ja))) continue;
+    const imgs = images(p);
+    if (!imgs.length) continue;
+    const id = p.legacy_product_id;
+    const url = lang === 'ja' ? `${SITE}/products/${id}.html` : `${SITE}/en/products/${id}.html`;
+    const name = lang === 'ja' ? p.name_ja : cleanEnName(p);
+    const hasEn = !!(p.description_en && p.description_en.trim());
+    const desc = oneLine(lang === 'en' && hasEn ? p.description_en : p.description_ja);
+    const eff = effectivePrice(p);
+    const first = cats[0];
+    const lines = [
+      `<g:id>${id}</g:id>`,
+      `<title>${esc(cut(name, 150))}</title>`,
+      `<description>${esc(cut(desc, 4900))}</description>`,
+      `<link>${url}</link>`,
+      `<g:image_link>${esc(imgs[0])}</g:image_link>`,
+      ...imgs.slice(1, 10).map((u) => `<g:additional_image_link>${esc(u)}</g:additional_image_link>`),
+      `<g:availability>${isAvailable(p) && !p.is_coming_soon ? 'in_stock' : 'out_of_stock'}</g:availability>`,
+      `<g:price>${money2(p.price)} THB</g:price>`,
+      ...(p.sale_type !== 'weight' && eff < Number(p.price) ? [`<g:sale_price>${money2(eff)} THB</g:sale_price>`] : []),
+      `<g:condition>new</g:condition>`,
+      `<g:brand>${esc(FEED_BRAND)}</g:brand>`,
+      `<g:identifier_exists>no</g:identifier_exists>`,
+      ...(first ? [`<g:product_type>${esc(lang === 'ja' ? first.name_ja : (first.name_en || first.name_ja))}</g:product_type>`] : []),
+    ];
+    items.push(`    <item>\n      ${lines.join('\n      ')}\n    </item>`);
+  }
+  const title = lang === 'ja' ? 'サイトウフーズ 商品データ' : 'Saito Foods products';
+  return { count: items.length, xml: `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">\n  <channel>\n    <title>${title}</title>\n    <link>${SITE}/</link>\n    <description>${title}</description>\n${items.join('\n')}\n  </channel>\n</rss>\n` };
+}
+
 // ---------------------------------------------------------------- 実行
 async function main() {
   const { products, categories, links } = await loadData();
@@ -453,6 +496,14 @@ async function main() {
     fs.writeFileSync(path.join(dirEn, `${p.legacy_product_id}.html`), buildPage(p, 'en', cats));
   }
   if (flag('--sitemap')) fs.writeFileSync(path.join(OUT, 'sitemap.xml'), buildSitemap(targets.map((p) => p.legacy_product_id)));
+  if (!ONLY) {
+    fs.mkdirSync(path.join(OUT, 'feeds'), { recursive: true });
+    for (const lang of ['ja', 'en']) {
+      const f = buildFeed(targets, catsOf, lang);
+      fs.writeFileSync(path.join(OUT, 'feeds', `merchant-${lang}.xml`), f.xml);
+      console.log(`Merchant Center用データ(${lang}): ${f.count} 件`);
+    }
+  }
   console.log(`商品ページを ${targets.length} 件(日本語・英語)作りました。説明文がなく除外: ${skippedNoDesc} 件`);
 }
 
