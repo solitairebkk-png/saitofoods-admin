@@ -233,16 +233,23 @@
         <div class="field" style="flex:0 0 auto; align-self:flex-end;">
           <button class="btn" onclick="searchCustomer()">ค้นหา / Search</button>
         </div>
+        <div class="field" style="flex:0 0 auto; align-self:flex-end;">
+          <button class="btn" type="button" id="btn-new-customer" onclick="showNewCustomerForm()">➕ ลูกค้าใหม่ / New customer</button>
+        </div>
       </div>
       <div id="customer-results-list"></div>
       <div id="customer-result"></div>
       <div id="customer-not-found">
-        <span class="th">ไม่พบลูกค้า จะสร้างลูกค้าใหม่</span><br>
-        <span style="color:var(--text-muted)">No customer found. New customer will be created with this info:</span>
+        <span class="th">ลูกค้าใหม่ — จะสร้างเมื่อบันทึกออเดอร์</span><br>
+        <span style="color:var(--text-muted)">New customer — will be created when the order is saved, with this info:</span>
         <div class="row" style="margin-top:10px;">
-          <div class="field"><label><span class="th">เบอร์โทร</span>Phone</label><input type="text" id="new-tel"></div>
+          <div class="field"><label><span class="th">เบอร์โทร</span>Phone *</label><input type="text" id="new-tel"></div>
           <div class="field"><label><span class="th">ชื่อ</span>First name</label><input type="text" id="new-first-name"></div>
           <div class="field"><label><span class="th">นามสกุล</span>Family name</label><input type="text" id="new-family-name"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label><span class="th">ที่อยู่ 1</span>Address 1</label><input type="text" id="new-address1"></div>
+          <div class="field"><label><span class="th">ที่อยู่ 2</span>Address 2</label><input type="text" id="new-address2"></div>
         </div>
         <div class="row">
           <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
@@ -638,6 +645,27 @@ async function searchCustomer() {
       document.getElementById('new-family-name').value = q;
     }
   }
+}
+
+// 「新規のお客様」ボタン: 検索結果の有無に関係なく、いつでも新規登録フォームを開く。
+// (これまでは検索して0件だった時にしかフォームが出なかった)
+function showNewCustomerForm() {
+  selectedCustomer = null;
+  document.querySelectorAll('.customer-result-item').forEach(item => item.classList.remove('selected'));
+  document.getElementById('customer-results-list').innerHTML = '';
+  document.getElementById('customer-result').style.display = 'none';
+  document.getElementById('customer-not-found').style.display = 'block';
+  // 検索欄に入力済みなら引き継ぐ(電話番号らしければ電話欄、それ以外は名前欄)
+  const q = document.getElementById('search-query').value.trim();
+  if (q) {
+    if (/^[0-9\-+ ]+$/.test(q)) {
+      if (!document.getElementById('new-tel').value) document.getElementById('new-tel').value = q;
+    } else if (!document.getElementById('new-family-name').value) {
+      document.getElementById('new-family-name').value = q;
+    }
+  }
+  applyCustomerAreaMode();
+  document.getElementById('new-tel').focus();
 }
 
 // 選択中のお客様表示。配送先住所を大きく目立たせる(ダミー住所 "-----" は「未登録」扱い)。
@@ -1593,7 +1621,7 @@ async function submitOrder() {
       // 新規顧客を作成(検索した電話番号を引き継ぐ)
       const tel = document.getElementById('new-tel').value.trim();
       if (!tel) {
-        msgEl.textContent = 'กรุณาค้นหาลูกค้าด้วยเบอร์โทรศัพท์ก่อน / Please search for a customer by phone first.';
+        msgEl.textContent = 'กรุณาเลือกลูกค้า หรือกด "ลูกค้าใหม่" แล้วใส่เบอร์โทร / Please select a customer, or click "New customer" and enter a phone number.';
         msgEl.className = 'error';
         return;
       }
@@ -1606,6 +1634,8 @@ async function submitOrder() {
           first_name: newFirstName,
           family_name: newFamilyName,
           email: document.getElementById('new-email').value.trim() || null,
+          address1: document.getElementById('new-address1').value.trim() || null,
+          address2: document.getElementById('new-address2').value.trim() || null,
         })
         .select('id').single();
 
@@ -1889,6 +1919,10 @@ async function submitOrder() {
   document.getElementById('customer-result').style.display = 'none';
   document.getElementById('customer-not-found').style.display = 'none';
   document.getElementById('search-query').value = '';
+  ['new-tel', 'new-first-name', 'new-family-name', 'new-email', 'new-address1', 'new-address2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   document.getElementById('customer-results-list').innerHTML = '';
   selectedCustomer = null;
   applyCustomerAreaMode(); // 次の注文のために、時間帯の表示へ戻す
