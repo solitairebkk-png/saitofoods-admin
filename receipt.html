@@ -81,9 +81,16 @@
     vertical-align: middle;
   }
   .qty-value.qty-multi {
+    /* 2個以上: 黒丸に白抜きの数字(2026-10-02 変更。以前は黒い角丸四角)。
+       1桁なら正円、2桁以上は横に伸びた丸みのある形になる。 */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     min-width: 34px;
-    padding: 3px 10px;
-    border-radius: 8px;
+    height: 34px;
+    padding: 0 7px;
+    border-radius: 999px;
     background: #000;
     color: #fff;
     border: 2px solid #000;
@@ -247,6 +254,8 @@
         <div class="addr-label">📍 Delivery address</div>
         <div class="addr-text" id="f-customer-address"></div>
         <div class="addr-condo" id="f-customer-condo" style="display:none;"></div>
+        <!-- 置き配の電話連絡の要否(要電話/電話不要)は配送先住所のすぐ下に表示する -->
+        <div class="call-flag" id="f-call-flag" style="display:none;"></div>
       </div>
 
       <table class="items-table">
@@ -265,7 +274,6 @@
       </div>
 
       <div class="weight-note" id="f-weight-note" style="display:none;"></div>
-      <div class="call-flag" id="f-call-flag" style="display:none;"></div>
       <div class="delivery-flags-note" id="f-delivery-flags-note" style="display:none;"></div>
       <div class="comment-note" id="f-comment-note" style="display:none;"><span class="k">Comment: </span><span id="f-comment-text"></span></div>
 
@@ -402,6 +410,8 @@ const VARIANT_KEYWORDS = [
   'サムンプライ味', '塩味',
   // 豆乳の味
   'オリジナル', 'プレーン 無糖',
+  // フレークの種類(サバ/鮭の取り違え対策 2026-10-02)。日本語・英語どちらの商品名にも対応
+  'サバフレーク', '鮭フレーク', 'サケフレーク', 'mackerel flake', 'salmon flake',
   // プリンのフレーバー
   '[[ミルク]]', '[[メロン]]', '[[抹茶]]',
   // サイズ違い
