@@ -194,12 +194,36 @@
   #state-error { color: var(--red); display: none; }
   #receipt-content { display: none; }
 
+  /* 未払い(現金回収が必要・未入金・一部入金)の注文に出す「回収」スタンプ。
+     PAIDスタンプ(赤い二重罫線・角丸・白抜き)と一目で見分けられるよう、
+     形(角ばった長方形)・色(オレンジ)・塗り(ベタ塗り+白抜き文字)をすべて変えている。
+     モノクロ印刷でも「黒っぽいベタ塗り=要回収」と分かる。タイ語のみ・大きく表示する。 */
+  .due-stamp {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-5deg);
+    background: #e8590c;
+    color: #fff;
+    border: 4px solid #7a2e00;
+    border-radius: 0;
+    padding: 8px 18px 9px;
+    text-align: center;
+    line-height: 1.2;
+    pointer-events: none;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .due-stamp .th { display: block; font-size: 26px; font-weight: 900; letter-spacing: 0.02em; white-space: nowrap; }
+  .due-stamp .amt { display: block; font-size: 24px; font-weight: 900; margin-top: 3px; border-top: 2px solid rgba(255,255,255,0.7); padding-top: 3px; white-space: nowrap; }
+  .pay-content-wrap.has-due-stamp { min-height: 130px; }
+
   @media print {
     body { background: #fff; font-size: 11.5px; }
     .toolbar, .hint-text { display: none !important; }
     .page-shell { max-width: none; padding: 0; }
     .receipt-paper { box-shadow: none; border-radius: 0; padding: 6mm 7mm; }
-    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp, .cancelled-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .status-pill, .weight-note, .points-box, .change-box, .area-banner, table.items-table th, .paid-stamp, .cancelled-stamp, .due-stamp { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
   @media (max-width: 560px) {
     .info-grid { grid-template-columns: 1fr; }
@@ -208,6 +232,8 @@
     .pay-content-wrap .pay-grid { max-width: none; }
     .paid-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
     .cancelled-stamp { position: static; transform: rotate(-6deg); margin: 0 auto 10px; display: inline-block; }
+    .due-stamp { position: static; transform: rotate(-3deg); margin: 0 auto 10px; display: inline-block; }
+    .pay-content-wrap.has-due-stamp { min-height: 0; }
   }
 </style>
 </head>
@@ -294,6 +320,10 @@
           <div class="cancelled-stamp" id="f-cancelled-stamp" style="display:none;">
             <span class="th">ยกเลิกแล้ว</span>
             <span class="en">CANCELLED</span>
+          </div>
+          <div class="due-stamp" id="f-due-stamp" style="display:none;">
+            <span class="th" id="f-due-stamp-text"></span>
+            <span class="amt" id="f-due-stamp-amt"></span>
           </div>
           <div class="pay-grid">
             <div class="pay-qr-box">
@@ -560,6 +590,29 @@ function renderStatusStamps(order) {
   const total = Number(order.total_amount) || 0;
   const paid = Number(order.paid_amount) || 0;
   const isPaid = (total > 0 && paid >= total) || order.manual_payment_confirmed || order.payment_status === 'paid';
+
+  // 未払いの注文には、PAIDとは形も色も違う「回収」スタンプをタイ語で大きく表示する。
+  // 「支払い済みだと思って集金せずに帰ってしまう」ミスを防ぐため。卸売りは別途集金なので対象外。
+  const dueEl = document.getElementById('f-due-stamp');
+  const payWrap = dueEl.closest('.pay-content-wrap');
+  if (!isPaid && !order.is_wholesale) {
+    const due = Math.max(total - paid, 0);
+    const isCash = order.payment_method === 'cash';
+    const isPartial = paid > 0;
+    document.getElementById('f-due-stamp-text').textContent =
+      isPartial ? 'ค้างชำระ' : (isCash ? 'เก็บเงินสด' : 'ยังไม่ชำระเงิน');
+    const amtEl = document.getElementById('f-due-stamp-amt');
+    amtEl.textContent = due > 0 ? '฿' + due.toLocaleString('en-US') : '';
+    amtEl.style.display = due > 0 ? 'block' : 'none';
+    dueEl.style.display = 'block';
+    dueEl.style.transform = `translateY(calc(-50% + ${randomTopJitter}px)) rotate(${(Math.random() * 6 - 8).toFixed(1)}deg)`;
+    dueEl.style.left = left;
+    payWrap.classList.add('has-due-stamp');
+  } else {
+    dueEl.style.display = 'none';
+    payWrap.classList.remove('has-due-stamp');
+  }
+
   if (!isPaid) { paidEl.style.display = 'none'; return; }
 
   paidEl.style.display = 'block';
