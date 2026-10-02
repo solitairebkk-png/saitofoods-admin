@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Kin no Tsubu Natto with Egg Soy Sauce 3-Pack","sku":"1175","url":"https://saitofoods.com/en/products/1175.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg"],"description":"ミツカン金の粒シリーズのたまご醤油たれ納豆 3パックセットです。付属のたれを使用すると生卵を混ぜたような出来上がりになります。タレに卵黄が入っております。","category":"Frozen Foods","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1175.html","priceCurrency":"THB","price":"60.00","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Kin no Tsubu Natto with Egg Soy Sauce 3-Pack","sku":"1175","url":"https://saitofoods.com/en/products/1175.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg"],"description":"ミツカン金の粒シリーズのたまご醤油たれ納豆 3パックセットです。付属のたれを使用すると生卵を混ぜたような出来上がりになります。タレに卵黄が入っております。","category":"Frozen Foods","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1175.html","priceCurrency":"THB","price":"60.00","availability":"https://schema.org/OutOfStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://saitofoods.com/"},{"@type":"ListItem","position":2,"name":"Products","item":"https://saitofoods.com/product_list.html"},{"@type":"ListItem","position":3,"name":"Kin no Tsubu Natto with Egg Soy Sauce 3-Pack","item":"https://saitofoods.com/en/products/1175.html"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -125,12 +125,12 @@
     <div class="subname">金の粒 たまご醤油たれ 納豆 3パックセット</div>
     <div class="price" id="price">฿60</div>
     
-    <div class="stock" id="stock">In stock</div>
+    <div class="stock out" id="stock">Out of stock</div>
     <div class="buy">
-      <div class="stepper" id="stepper">
+      <div class="stepper" id="stepper" style="display:none">
         <button type="button" onclick="chg(-1)" aria-label="-">−</button><span id="qty">1</span><button type="button" onclick="chg(1)" aria-label="+">+</button>
       </div>
-      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()">Add to cart</button>
+      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()" disabled>Out of stock</button>
     </div>
     <div class="added" id="added">Added to cart<a href="/cart.html">View cart ›</a></div>
     
@@ -170,7 +170,7 @@
 
 <script>
 (function () {
-  var P = {"id":"1bcf56c4-a1ff-428b-8683-323a1c7da4a9","lang":"en","max":1,"price":60,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg"],"t":{"inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","unavailable":"This item is currently unavailable."}};
+  var P = {"id":"1bcf56c4-a1ff-428b-8683-323a1c7da4a9","lang":"en","max":0,"price":60,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg"],"t":{"inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","unavailable":"This item is currently unavailable."}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   try { if (!localStorage.getItem('saitofoods_lang')) localStorage.setItem('saitofoods_lang', 'en'); } catch (e) {}
