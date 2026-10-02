@@ -252,6 +252,9 @@
           <div class="field"><label><span class="th">ที่อยู่ 2</span>Address 2</label><input type="text" id="new-address2"></div>
         </div>
         <div class="row">
+          <div class="field"><label><span class="th">โซน/พื้นที่</span>Area (区分) *</label>
+            <select id="new-area" onchange="onNewCustomerAreaChange()"><option value="">-- เลือก / select --</option></select>
+          </div>
           <div class="field"><label><span class="th">อีเมล</span>Email</label><input type="email" id="new-email"></div>
         </div>
       </div>
@@ -565,6 +568,7 @@ async function login() {
   initDeliveryDatePicker();
   loadCategories();
   loadShippingSettings();
+  loadAreasForNewCustomer();
   if (editOrderId) loadOrderForEdit(editOrderId);
 }
 
@@ -585,6 +589,7 @@ async function logout() {
       initDeliveryDatePicker();
       loadCategories();
       loadShippingSettings();
+      loadAreasForNewCustomer();
       if (editOrderId) loadOrderForEdit(editOrderId);
     }
   }
@@ -799,11 +804,40 @@ async function loadPattayaDayRows() {
   } catch (e) { return []; }
 }
 
+// ---------------- 新規お客様フォームのエリア(区分) ----------------
+// 新規のお客様は selectedCustomer が null のまま注文時に登録されるため、
+// フォームで選んだエリアを「仮のお客様」として扱い、Sriracha/Pattaya のコンド選択などを切り替える。
+let newCustomerAreas = [];      // areas テーブルの {id, name}
+let newCustAreaObj = null;      // 選択中エリアの仮お客様 {areas:{name}, _areaId}。選び直すたびに作り直す
+
+async function loadAreasForNewCustomer() {
+  const { data, error } = await supabaseClient.from('areas').select('id, name').order('name');
+  if (error || !data) return;
+  newCustomerAreas = data;
+  const sel = document.getElementById('new-area');
+  sel.innerHTML = '<option value="">-- เลือก / select --</option>'
+    + data.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+}
+
+function onNewCustomerAreaChange() {
+  const id = document.getElementById('new-area').value;
+  const area = newCustomerAreas.find(a => a.id === id);
+  newCustAreaObj = area ? { areas: { name: area.name }, _areaId: area.id } : null;
+  applyCustomerAreaMode();
+}
+
+// 今の注文に適用するお客様: 既存のお客様を選んでいればそれ、新規フォーム表示中ならエリアだけの仮お客様
+function effectiveCustomer() {
+  if (selectedCustomer) return selectedCustomer;
+  if (document.getElementById('customer-not-found').style.display === 'block') return newCustAreaObj;
+  return null;
+}
+
 // お客様を選んだ(または選び直した・解除した)時に呼ぶ。エリアに応じて
 // 「時間帯のプルダウン」と「コンドミニアムのプルダウン」を切り替える。
 async function applyCustomerAreaMode() {
   if (editingOrderId) return;
-  const customer = selectedCustomer;
+  const customer = effectiveCustomer();
   const type = (customer && !document.getElementById('is-walkin').checked) ? areaTypeOfCustomer(customer) : null;
   const timeField = document.getElementById('time-slot-field');
   const condoRow = document.getElementById('condo-field-row');
@@ -832,11 +866,11 @@ async function applyCustomerAreaMode() {
   timeField.style.display = 'none';
   condoRow.style.display = 'flex';
   await loadCondoRows();
-  if (selectedCustomer !== customer) return; // 読み込み中にお客様が変わった
+  if (effectiveCustomer() !== customer) return; // 読み込み中にお客様が変わった
 
   if (type === 'pattaya') {
     const days = await loadPattayaDayRows();
-    if (selectedCustomer !== customer) return;
+    if (effectiveCustomer() !== customer) return;
     pattayaSel.innerHTML = days.length
       ? days.map(d => `<option value="${d.delivery_date}">${d.delivery_date}</option>`).join('')
       : '<option value="">配送日が設定されていません / No date set yet</option>';
@@ -1627,12 +1661,19 @@ async function submitOrder() {
       }
       const newFirstName = document.getElementById('new-first-name').value.trim();
       const newFamilyName = document.getElementById('new-family-name').value.trim();
+      const newAreaId = document.getElementById('new-area').value;
+      if (!newAreaId) {
+        msgEl.textContent = 'กรุณาเลือกโซน/พื้นที่ของลูกค้าใหม่ / Please select the Area for the new customer.';
+        msgEl.className = 'error';
+        return;
+      }
       const { data: newCust, error: newCustErr } = await supabaseClient
         .from('customers')
         .insert({
           tel1: tel,
           first_name: newFirstName,
           family_name: newFamilyName,
+          area_id: newAreaId,
           email: document.getElementById('new-email').value.trim() || null,
           address1: document.getElementById('new-address1').value.trim() || null,
           address2: document.getElementById('new-address2').value.trim() || null,
@@ -1851,7 +1892,7 @@ async function submitOrder() {
   // 新規作成時のみ、注文したその時点の顧客エリアをスナップショットとして保存する。
   // (これにより、後で顧客がmypage等でエリアを変更しても、この注文のタブ振り分けは変わらない)
   if (!isWalkin) {
-    orderPayload.area_name = selectedCustomer?.areas?.name || null;
+    orderPayload.area_name = selectedCustomer?.areas?.name || (newCustAreaObj && newCustAreaObj.areas.name) || null;
   }
 
   const { data: orderRow, error: orderErr } = await supabaseClient
@@ -1919,10 +1960,11 @@ async function submitOrder() {
   document.getElementById('customer-result').style.display = 'none';
   document.getElementById('customer-not-found').style.display = 'none';
   document.getElementById('search-query').value = '';
-  ['new-tel', 'new-first-name', 'new-family-name', 'new-email', 'new-address1', 'new-address2'].forEach(id => {
+  ['new-tel', 'new-first-name', 'new-family-name', 'new-email', 'new-address1', 'new-address2', 'new-area'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  newCustAreaObj = null;
   document.getElementById('customer-results-list').innerHTML = '';
   selectedCustomer = null;
   applyCustomerAreaMode(); // 次の注文のために、時間帯の表示へ戻す
