@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サイトウフーズ | Saito Foods — トップページへ移動します</title>
+<meta name="robots" content="noindex">
+<!-- JavaScriptが使えない環境でも、数秒後にトップページへ移動する -->
+<meta http-equiv="refresh" content="4; url=https://saitofoods.com/">
+<style>
+  :root { --brand: #F5A93C; --brand-dark: #C97A1F; --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .box { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 28px 24px; max-width: 460px; width: 100%; text-align: center; line-height: 1.9; }
+  h1 { font-size: 18px; margin-bottom: 10px; }
+  p { font-size: 14px; color: #5a4a35; }
+  .en { font-size: 12.5px; color: #8a7a65; margin-top: 8px; }
+  a.btn { display: inline-block; margin-top: 18px; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 12px 22px; border-radius: 24px; border-bottom: 3px solid var(--brand-dark); }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1>サイトがリニューアルしました</h1>
+  <p>お探しのページは移動しました。まもなくトップページへ移動します。<br>お手数ですが、ブックマークの更新をお願いいたします。</p>
+  <p class="en">We have renewed our website. You will be redirected to the top page shortly. Please update your bookmark.</p>
+  <a class="btn" href="https://saitofoods.com/">トップページへ / Go to top page</a>
+</div>
+<script>
+// 旧サイト(EC-CUBE)のURL例: /bangkok/ja/products/list.php?category_id=7 , /bangkok/en/ , /sriracha/ja/ など。
+// 旧サイトで英語ページ(/en/)を見ていた人には、英語表示に設定してからトップページへ移動する。
+// 既にこのサイトで言語を選んだことがある人の設定は上書きしない。
+(function () {
+  try {
+    var isEn = /\/en(\/|$)/.test(location.pathname);
+    if (isEn && !localStorage.getItem('saitofoods_lang')) {
+      localStorage.setItem('saitofoods_lang', 'en');
+    }
+  } catch (e) { /* 言語設定を保存できなくても、移動は行う */ }
+  // 少しだけメッセージを見せてから移動する(location.replaceなので、戻るボタンで404に戻らない)
+  setTimeout(function () { location.replace('https://saitofoods.com/'); }, 1800);
+})();
+</script>
+</body>
+</html>
