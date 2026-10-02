@@ -125,6 +125,8 @@
     background: #000; color: #fff; font-size: 13px; font-weight: 900; line-height: 1; vertical-align: middle;
   }
   .variant-badge { display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 0 4px; margin: 0 1px; font-weight: 900; line-height: 1.4; }
+  /* お客様コメントは見落とし防止のため目立たせる(太字・黄色背景・太枠) */
+  .order-comment-box { margin-top: 6px; padding: 6px 10px; background: #fff8d6; border: 2px solid #d4a300; border-radius: 6px; font-size: 13.5px; font-weight: 800; line-height: 1.45; color: #000; white-space: pre-wrap; }
   .details-cell { position: relative; }
   /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタイル。
      一覧の背景色は「印刷済みかどうか」を一目で判断するために使うため、
@@ -356,7 +358,7 @@
   table.receipt-items td { padding: 4px 2px; border-bottom: 1px dotted var(--border); }
   .receipt-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 15px; padding-top: 6px; border-top: 2px solid var(--navy); margin-bottom: 8px; }
   .receipt-payment { font-size: 12px; margin-bottom: 6px; }
-  .receipt-comment { font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 6px; }
+  .receipt-comment { font-size: 13px; font-weight: 800; color: #000; background: #fff8d6; border: 2px solid #d4a300; border-radius: 6px; padding: 6px 8px; }
   .receipt-actions { display: flex; gap: 10px; padding: 0 24px 20px; }
   .receipt-actions button { flex: 1; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: none; }
   #receipt-print-btn { background: var(--navy); color: white; }
@@ -2667,6 +2669,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
         ${email ? `<div class="customer-address">✉️ ${email}</div>` : ''}
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
+      ${(order.comment && !order.is_wholesale) ? `<div class="order-comment-box">📝 ${escapeHtml(order.comment)}</div>` : ''}
       <div style="margin-top:6px;">${paidStampHtml}${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
     <td class="center">
