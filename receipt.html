@@ -199,24 +199,25 @@
      形(角ばった長方形)・色(オレンジ)・塗り(ベタ塗り+白抜き文字)をすべて変えている。
      モノクロ印刷でも「黒っぽいベタ塗り=要回収」と分かる。タイ語のみ・大きく表示する。 */
   .due-stamp {
-    position: absolute;
-    left: 6px;
-    top: 50%;
-    transform: translateY(-50%) rotate(-5deg);
+    /* PAIDスタンプと違い絶対配置にはしない。QRコード・口座欄と同じ横並びの1要素として置き、
+       どんな画面幅・印刷でもQRに重ならないようにする(QRが読めなくなるため)。 */
+    position: relative;
+    flex: 0 0 auto;
+    transform: rotate(-3deg);
     background: #e8590c;
     color: #fff;
     border: 4px solid #7a2e00;
     border-radius: 0;
-    padding: 8px 18px 9px;
+    padding: 6px 12px 7px;
     text-align: center;
     line-height: 1.2;
     pointer-events: none;
     box-shadow: 3px 3px 0 rgba(0,0,0,0.25);
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .due-stamp .th { display: block; font-size: 26px; font-weight: 900; letter-spacing: 0.02em; white-space: nowrap; }
-  .due-stamp .amt { display: block; font-size: 24px; font-weight: 900; margin-top: 3px; border-top: 2px solid rgba(255,255,255,0.7); padding-top: 3px; white-space: nowrap; }
-  .pay-content-wrap.has-due-stamp { min-height: 130px; }
+  .due-stamp .th { display: block; font-size: 22px; font-weight: 900; letter-spacing: 0.01em; white-space: nowrap; }
+  .due-stamp .amt { display: block; font-size: 22px; font-weight: 900; margin-top: 3px; border-top: 2px solid rgba(255,255,255,0.7); padding-top: 3px; white-space: nowrap; }
+  .pay-content-wrap.has-due-stamp { min-height: 0; }
 
   @media print {
     body { background: #fff; font-size: 11.5px; }
@@ -608,8 +609,7 @@ function renderStatusStamps(order) {
     amtEl.textContent = due > 0 ? '฿' + due.toLocaleString('en-US') : '';
     amtEl.style.display = due > 0 ? 'block' : 'none';
     dueEl.style.display = 'block';
-    dueEl.style.transform = `translateY(calc(-50% + ${randomTopJitter}px)) rotate(${(Math.random() * 6 - 8).toFixed(1)}deg)`;
-    dueEl.style.left = left;
+    dueEl.style.transform = `rotate(${(Math.random() * 4 - 5).toFixed(1)}deg)`;
     payWrap.classList.add('has-due-stamp');
   } else {
     dueEl.style.display = 'none';
