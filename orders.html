@@ -118,6 +118,13 @@
   .order-items { font-size: 12px; line-height: 1.5; }
   .order-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
   .order-items-grid .item-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 2個以上は黒丸に白抜きの数字、サバ/鮭フレークは黒枠で強調(納品書receipt.htmlと同じ見せ方) */
+  .qty-circle {
+    display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+    min-width: 22px; height: 22px; padding: 0 5px; border-radius: 999px;
+    background: #000; color: #fff; font-size: 13px; font-weight: 900; line-height: 1; vertical-align: middle;
+  }
+  .variant-badge { display: inline-block; border: 1.5px solid #000; border-radius: 4px; padding: 0 4px; margin: 0 1px; font-weight: 900; line-height: 1.4; }
   .details-cell { position: relative; }
   /* 支払い済み(手動確認 or 自動照合)の場合に表示する判子風スタイル。
      一覧の背景色は「印刷済みかどうか」を一目で判断するために使うため、
@@ -2586,9 +2593,11 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
             ? `${Math.round(item.quantity * parseGramsPerUnit(item.products?.unit_label))}g`
             : `<b style="color:#8a4b00;">${item.quantity} pack${Number(item.quantity) === 1 ? '' : 's'} / ${item.quantity} แพ็ค</b>`;
         } else {
-          qtyLabel = `(${item.quantity})`;
+          qtyLabel = Number(item.quantity) >= 2 ? `<span class="qty-circle">${item.quantity}</span>` : `(${item.quantity})`;
         }
-        return `<div class="item-cell">${escapeHtml(item.product_name_snapshot)}${enName} ${qtyLabel}</div>`;
+        const nameHtml = escapeHtml(item.product_name_snapshot || '')
+          .replace(/(サバフレーク|鮭フレーク|サケフレーク|mackerel flake|salmon flake)/gi, '<span class="variant-badge">$1</span>');
+        return `<div class="item-cell">${nameHtml}${enName} ${qtyLabel}</div>`;
       }).join('') + '</div>';
 
   const paymentBadges = [];
@@ -2636,7 +2645,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     { key: 'delivery_no_change', en: 'No change needed', th: 'ไม่ต้องทอนเงิน' },
   ];
   const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
-  const deliveryFlagsHtml = callFlagHtml + (activeDeliveryFlags.length
+  const deliveryFlagsHtml = (activeDeliveryFlags.length
     ? `<div class="delivery-flags-note">📦 ${activeDeliveryFlags.map(f => `${f.en} / ${f.th}`).join(' ・ ')}</div>`
     : '');
 
@@ -2654,6 +2663,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
           <div class="customer-tel">📞 ${tel || '-'}</div>
         </div>
         ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
+        ${callFlagHtml ? `<div style="margin-top:6px;">${callFlagHtml}</div>` : ''}
         ${email ? `<div class="customer-address">✉️ ${email}</div>` : ''}
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
