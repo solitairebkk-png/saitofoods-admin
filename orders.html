@@ -2413,9 +2413,36 @@ function compressImageToJpeg(file, maxSize, quality) {
   });
 }
 
+// 配送(Bangkok / Sriracha・Pattaya)・卸の注文の行にも、Walk-inと同じ「スリップを添付」ボタンを出す(2026-10-03追加)。
+// お客様がslip.saitofoods.shopから上げたスリップ(Google Driveのリンク)が既にある注文も多いので、
+// その場合は「差し替え」ボタンになり、押して画像を選んだ後に上書きの確認を出す。
+// Walk-inと違い、支払い方法(payment_method)は変更しない。
+function appendOrderSlipBox(manageCol, order) {
+  const box = document.createElement('div');
+  box.className = 'walkin-pay-box';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.style.display = 'none';
+  fileInput.onchange = () => { const f = fileInput.files && fileInput.files[0]; fileInput.value = ''; uploadWalkinSlip(order, f); };
+  const hasSlip = !!order.slip_image_url;
+  const slipBtn = makeButton(hasSlip ? '📎 เปลี่ยนสลิป / Replace slip' : '📎 แนบสลิป / Attach slip', () => fileInput.click(), 'btn-walkin-slip');
+  box.appendChild(slipBtn);
+  box.appendChild(fileInput);
+  manageCol.appendChild(box);
+}
+
+// Walk-in・配送・卸の全てで共通のスリップ保存処理(関数名は従来のまま)。
+// Walk-inは支払い方法をQRに確定してから set_walkin_slip で記録、
+// それ以外は支払い方法には触れず set_order_slip で記録する。
 async function uploadWalkinSlip(order, file) {
   if (!file) return;
   if (!/^image\//.test(file.type)) { alert('Please choose an image file. / กรุณาเลือกไฟล์รูปภาพ'); return; }
+  const isWalkin = order.order_type === 'walk_in';
+  // 既にお客様のスリップ(Google Drive)がある場合、上書きするとそのリンクはこの注文から外れるため確認する
+  if (order.slip_image_url && !isStorageSlip(order.slip_image_url)) {
+    if (!confirm('This order already has a slip uploaded by the customer. Replace it?\nออเดอร์นี้มีสลิปที่ลูกค้าอัปโหลดไว้แล้ว ต้องการแทนที่หรือไม่?')) return;
+  }
   let uploadedPath = null;
   try {
     const blob = await compressImageToJpeg(file, 1200, 0.7);
@@ -2424,12 +2451,12 @@ async function uploadWalkinSlip(order, file) {
       .upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '3600' });
     if (upErr) throw upErr;
     uploadedPath = path;
-    // スリップを添付するのはQR払いの場合なので、まだQRが選ばれていなければ同時にQRに確定する
-    if (order.payment_method !== 'qr') {
+    // Walk-inでスリップを添付するのはQR払いの場合なので、まだQRが選ばれていなければ同時にQRに確定する
+    if (isWalkin && order.payment_method !== 'qr') {
       const { error: pmErr } = await supabaseClient.rpc('set_walkin_payment', { p_order_id: order.id, p_method: 'qr' });
       if (pmErr) throw pmErr;
     }
-    const { error: slipErr } = await supabaseClient.rpc('set_walkin_slip', { p_order_id: order.id, p_slip: WALKIN_SLIP_PREFIX + path });
+    const { error: slipErr } = await supabaseClient.rpc(isWalkin ? 'set_walkin_slip' : 'set_order_slip', { p_order_id: order.id, p_slip: WALKIN_SLIP_PREFIX + path });
     if (slipErr) throw slipErr;
     // 差し替えの場合、古い画像は不要になるので消す(失敗しても本体の保存には影響しないため結果は見ない)
     if (isStorageSlip(order.slip_image_url)) {
@@ -2769,6 +2796,8 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
 
   // Walk-inは、Completedでロックされているかどうかに関係なく、支払い方法(現金/QR)の選択欄を出す
   if (order.order_type === 'walk_in') appendWalkinPayBox(manageCol, order);
+  // 配送・卸の注文にも、手動でスリップを添付できるボタンを出す(Completed済みでも可)
+  else appendOrderSlipBox(manageCol, order);
 
   return tr;
 }
