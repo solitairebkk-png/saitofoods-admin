@@ -221,11 +221,11 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
   .product { display:flex; gap:28px; padding:16px 20px 8px; align-items:flex-start; }
   .gallery { flex:0 0 46%; max-width:46%; }
   .main-img { width:100%; aspect-ratio:1/1; background:#fff; border:1px solid var(--line); border-radius:16px; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:64px; }
-  .main-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  .main-img img { width:100%; height:100%; object-fit:contain; display:block; }
   .thumbs { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .thumb { width:62px; height:62px; border:2px solid var(--line); border-radius:10px; overflow:hidden; background:#fff; cursor:pointer; padding:0; }
   .thumb.on { border-color:var(--brand); }
-  .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .thumb img { width:100%; height:100%; object-fit:contain; display:block; }
   .info { flex:1; min-width:0; }
   h1 { font-size:22px; line-height:1.5; font-weight:800; }
   .subname { font-size:13px; color:#8a7a65; margin-top:4px; word-break:break-word; }
