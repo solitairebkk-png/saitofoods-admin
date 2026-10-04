@@ -3410,7 +3410,7 @@ function buildEmailPreview(customerName, message) {
   const translateNote = emailWasTranslated
     ? '\n\n※このメールの一部は機械翻訳を使用しております。表現に至らない点がございましたら何卒ご容赦ください。'
     : '';
-  return `${customerName}様\n\n${msg}${translateNote}\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+  return `${customerName}様\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n${msg}${translateNote}\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
 }
 
 function refreshEmailPreview() {
