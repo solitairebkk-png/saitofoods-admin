@@ -348,6 +348,7 @@
         <div class="field">
           <label data-i18n="cart.srirachaDateLabel">配送日 / Delivery date(火曜日または木曜日)</label>
           <select id="sriracha-date-select" onchange="onSrirachaDateChange()"></select>
+          <div id="sriracha-date-hint" style="display:none;font-size:11.5px;color:#999;margin-top:4px;line-height:1.6;"></div>
         </div>
         <div class="field">
           <label data-i18n="cart.condoLabel">コンドミニアム / Condominium</label>
@@ -875,11 +876,35 @@ async function initSrirachaFlow() {
   onSrirachaDateChange();
 }
 
+// マイページに登録済みのコンドミニアムを配送している曜日(火=2/木=4)。未登録・一覧に無い場合はnull
+function srirachaRegisteredDow() {
+  const myCondo = currentCustomer && currentCustomer.condo_name;
+  const mine = myCondo ? allCondos.find(c => c.name === myCondo) : null;
+  if (!mine) return null;
+  return mine.area_group === 'sriracha_tuesday' ? 2 : (mine.area_group === 'sriracha_thursday' ? 4 : null);
+}
+
 // シラチャの配送日プルダウンを作る。締め切り(当日朝8:00、豆腐は前日15:00)を過ぎた日は出さない。
+// コンドミニアム登録済みのお客様には、そのコンドミニアムの配送曜日の日付だけを出す。
 function renderSrirachaDateOptions() {
   const select = document.getElementById('sriracha-date-select');
   const prev = select.value;
-  const dates = filterCutoffDates(srirachaDateRows);
+  const dowOf = ds => { const p = ds.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getDay(); };
+  let dates = filterCutoffDates(srirachaDateRows);
+  const regDow = srirachaRegisteredDow();
+  const hintEl = document.getElementById('sriracha-date-hint');
+  const onlyMine = regDow !== null ? dates.filter(d => dowOf(d.delivery_date) === regDow) : [];
+  if (onlyMine.length) {
+    dates = onlyMine;
+    const dayJa = regDow === 2 ? '火曜日' : '木曜日';
+    const dayEn = regDow === 2 ? 'Tuesdays' : 'Thursdays';
+    hintEl.textContent = i18nGetLang() === 'en'
+      ? `📌 Your registered condominium (${currentCustomer.condo_name}) is delivered on ${dayEn}. To change it, please update My Page.`
+      : `📌 ご登録のコンドミニアム(${currentCustomer.condo_name})は${dayJa}のお届けです。変更する場合はマイページで更新してください。`;
+    hintEl.style.display = 'block';
+  } else {
+    hintEl.style.display = 'none';
+  }
   select.innerHTML = dates.length
     ? dates.map(d => {
         // ローカルのタイムゾーンずれで曜日が1日ずれないよう、日付文字列から直接曜日を計算する
