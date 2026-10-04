@@ -389,20 +389,10 @@
           <input type="radio" name="payment" value="qr" checked onchange="onPaymentChange()">
           <div><div class="pay-label" data-i18n="cart.payQrLabel">📱 PromptPay QR</div><div class="pay-sub" data-i18n="cart.payQrSub">QRコードを読み取って送金</div></div>
         </label>
-        <label class="pay-option" id="pay-option-transfer">
-          <input type="radio" name="payment" value="transfer" onchange="onPaymentChange()">
-          <div><div class="pay-label" data-i18n="cart.payTransferLabel">🏦 銀行振込 / Bank transfer</div><div class="pay-sub" data-i18n="cart.payTransferSub">SCB口座へお振込み</div></div>
-        </label>
         <label class="pay-option" id="pay-option-cod">
           <input type="radio" name="payment" value="cash" onchange="onPaymentChange()">
           <div><div class="pay-label" data-i18n="cart.payCodLabel">💵 代金引換 / Cash on delivery</div><div class="pay-sub" data-i18n="cart.payCodSub">配達員にお支払い</div></div>
         </label>
-      </div>
-      <div class="bank-info-box" id="bank-info-box" style="display:none;">
-        <b>SCB (Siam Commercial Bank)</b><br>
-        口座番号 / Account No.: <b>071-296992-2</b><br>
-        口座名義 / Account name: <b>SAITO FOODS CO.,LTD.</b><br>
-        <span data-i18n="cart.bankNote">※ ご注文確定後、スリップアップロード用リンクが表示されます</span>
       </div>
       <div class="cod-info-box" id="cod-info-box" style="display:none;">
         <span data-i18n="cart.codNote">配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。</span>
@@ -1533,10 +1523,8 @@ function onPaymentChange() {
   const method = document.querySelector('input[name=payment]:checked')?.value;
   document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
   if (method === 'qr') document.getElementById('pay-option-qr').classList.add('selected');
-  if (method === 'transfer') document.getElementById('pay-option-transfer').classList.add('selected');
   if (method === 'cash') document.getElementById('pay-option-cod').classList.add('selected');
 
-  document.getElementById('bank-info-box').style.display = method === 'transfer' ? 'block' : 'none';
   document.getElementById('cod-info-box').style.display = method === 'cash' ? 'block' : 'none';
 }
 
