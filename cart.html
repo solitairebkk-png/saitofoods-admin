@@ -341,7 +341,8 @@
             <select id="delivery-time-slot"></select>
           </div>
         </div>
-        <div style="font-size:11px;color:#999;" data-i18n="cart.closedNote">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
+        <div id="nichada-note" style="display:none;font-size:12px;line-height:1.7;color:var(--brand-dark);background:#FFF8E8;border:1px solid #F0DDA8;border-radius:8px;padding:8px 10px;margin-bottom:6px;">ニチャダタニエリアは、毎週水曜日 13:00-15:00 のお届けです(当日分は朝8:00までのご注文)。<br>Nichada Thani area: delivery every Wednesday, 13:00-15:00 (same-day orders accepted until 8:00 AM).</div>
+        <div id="bangkok-closed-note" style="font-size:11px;color:#999;" data-i18n="cart.closedNote">※ 日曜定休 / Closed Sundays　・　土曜は午前のみ / Saturdays: morning only</div>
       </div>
 
       <div id="delivery-fields-sriracha" style="display:none;">
@@ -573,6 +574,7 @@ let lastShippingJudgeSubtotal = 0; // 直近の送料無料判定用小計(バ�
 let appliedCoupon = null;
 let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
+let customerIsNichada = false; // ニチャダタニエリアのお客様(毎週水曜13:00-15:00のみ、当日朝8:00締切。注文のarea_nameはBangkokのまま保存する)
 let customerAreaName = 'Bangkok'; // areas.nameそのもの。注文時にorders.area_nameとして保存し、後でお客様がエリアを変更しても伝票の表示が変わらないようにする
 let addToOrderId = null; // マイページの「追加注文する」から来た場合、元の注文ID
 const ADDTO_STORAGE_KEY = 'saitofoods_addto_order'; // 商品一覧などへ移動しても追加注文モードを覚えておくためのキー
@@ -698,6 +700,7 @@ function renderAddToOriginalItems(order) {
 async function initDeliveryArea() {
   customerAreaType = 'bangkok';
   customerAreaName = 'Bangkok';
+  customerIsNichada = false;
 
   if (currentCustomer.area_id) {
     try {
@@ -705,7 +708,13 @@ async function initDeliveryArea() {
       if (areaRow) {
         customerAreaName = areaRow.name || customerAreaName;
         const text = Object.values(areaRow).filter(v => typeof v === 'string').join(' ').toLowerCase();
-        if (text.includes('pattaya')) customerAreaType = 'pattaya';
+        if (text.includes('nichada')) {
+          // ニチャダタニはバンコク扱い(配送フォーム・集計・タブはBangkokのまま)。日付と時間帯だけ制限する。
+          customerAreaType = 'bangkok';
+          customerAreaName = 'Bangkok';
+          customerIsNichada = true;
+        }
+        else if (text.includes('pattaya')) customerAreaType = 'pattaya';
         else if (text.includes('sriracha')) customerAreaType = 'sriracha';
         // バンコク・シラチャ・パタヤのいずれでもなければ「配送エリア外」として扱う
         // (Other Provinces等。外部配送業者の実費で送料が別途かかるため、
@@ -716,6 +725,8 @@ async function initDeliveryArea() {
   }
 
   document.getElementById('delivery-fields-bangkok').style.display = customerAreaType === 'bangkok' ? 'block' : 'none';
+  document.getElementById('nichada-note').style.display = customerIsNichada ? 'block' : 'none';
+  document.getElementById('bangkok-closed-note').style.display = customerIsNichada ? 'none' : 'block';
   document.getElementById('delivery-fields-sriracha').style.display = customerAreaType === 'sriracha' ? 'block' : 'none';
   document.getElementById('delivery-fields-pattaya').style.display = customerAreaType === 'pattaya' ? 'block' : 'none';
   document.getElementById('delivery-fields-other').style.display = customerAreaType === 'other' ? 'block' : 'none';
@@ -1419,12 +1430,19 @@ function slotsRemainingForDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dayOfWeek = new Date(y, m - 1, d).getDay();
   if (dayOfWeek === 0 || holidaySet.has(dateStr)) return false;
+  if (customerIsNichada) {
+    // ニチャダタニ: 水曜のみ。当日分は朝8:00で締め切り
+    if (dayOfWeek !== 3) return false;
+    if (dateStr === formatDateLocal(bangkokNow()) && isSameDayCutoffPassed()) return false;
+    return true;
+  }
   let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
   return filterPastSlots(slots, dateStr).length > 0;
 }
 
 // 選択日が「今日(バンコク時間)」の場合、すでに過ぎた時間帯を除外する
 function filterPastSlots(slots, dateStr) {
+  if (customerIsNichada) return slots; // ニチャダタニは締切(朝8:00)を日付側で判定済み
   const now = bangkokNow();
   const todayStr = formatDateLocal(now);
   if (dateStr !== todayStr) return slots;
@@ -1464,11 +1482,32 @@ async function initDeliveryDatePicker() {
   await onDeliveryDateChange();
 }
 
+// ニチャダタニ: 選ばれた日が水曜でない・締切後・休業日なら、直近の配送可能な水曜日に合わせる
+function nichadaSnapDate(val) {
+  const [y, m, d] = val.split('-').map(Number);
+  const c = new Date(y, m - 1, d);
+  for (let i = 0; i < 120; i++) {
+    const s = formatDateLocal(c);
+    if (c.getDay() === 3 && !holidaySet.has(s) && slotsRemainingForDate(s)) return s;
+    c.setDate(c.getDate() + 1);
+  }
+  return val;
+}
+
 async function onDeliveryDateChange() {
   const dateInput = document.getElementById('delivery-date');
   const noteEl = document.getElementById('delivery-date-note');
-  const val = dateInput.value;
+  let val = dateInput.value;
   if (!val) return;
+  let snapNote = '';
+  if (customerIsNichada) {
+    const snapped = nichadaSnapDate(val);
+    if (snapped !== val) {
+      dateInput.value = snapped;
+      val = snapped;
+      snapNote = 'ニチャダタニエリアは毎週水曜日 13:00-15:00 のみのお届けです。直近の水曜日に変更しました / Nichada Thani is delivered on Wednesdays 13:00-15:00 only. The date was changed to the next available Wednesday.';
+    }
+  }
 
   const [y, m, d] = val.split('-').map(Number);
   const dayOfWeek = new Date(y, m - 1, d).getDay();
@@ -1484,8 +1523,10 @@ async function onDeliveryDateChange() {
     return;
   }
 
-  noteEl.textContent = '';
-  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+  noteEl.textContent = snapNote;
+  let slots = customerIsNichada
+    ? [{ value: '13:00-15:00', label: '13:00-15:00' }]
+    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
 
   // その日だけ受付停止にされている時間帯を除外する(settings.htmlの「時間帯ブロック」設定)
   try {
@@ -1736,6 +1777,7 @@ async function submitOrder() {
     else if (raw.includes('COUPON_INVALID')) friendly = 'クーポンコードが無効です / This coupon code is invalid.';
     else if (raw.includes('PRODUCT_NOT_FOR_CONDO')) friendly = '申し訳ございません、お届け先のコンドミニアムにはお届けできない商品がカートに含まれています。カートをご確認ください / Sorry, your cart contains an item that cannot be delivered to your condominium. Please review your cart.';
     else if (raw.includes('PRODUCT_CUTOFF_PASSED')) friendly = '申し訳ございません、カート内の商品(' + (raw.split(':').slice(1).join(':').trim() || '') + ')は、配送日の前日の締め切りを過ぎたためご注文いただけません。ページを再読み込みして、別の配送日をお選びください / Sorry, the order deadline (the day before delivery) has passed for an item in your cart. Please reload the page and choose another delivery date.';
+    else if (raw.includes('NICHADA_RULE')) friendly = 'ニチャダタニエリアのお届けは、毎週水曜日の13:00-15:00のみです。ページを再読み込みして、水曜日をお選びください / Nichada Thani is delivered on Wednesdays 13:00-15:00 only. Please reload the page and choose a Wednesday.';
     else if (raw.includes('SAME_DAY_CUTOFF_PASSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日朝8:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for today closed at 8:00 AM. Please reload the page and choose another delivery date.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';

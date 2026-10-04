@@ -310,6 +310,7 @@ function isAreaMismatch(c) {
   const suggested = suggestedAreaFromProvince(c.province);
   if (!suggested) return false;
   const actual = areaName(c.area_id);
+  if (suggested === 'Bangkok' && /nichada/i.test(String(actual))) return false; // ニチャダタニはバンコク扱い
   return actual !== suggested;
 }
 

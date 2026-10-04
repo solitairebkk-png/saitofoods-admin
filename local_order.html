@@ -1894,7 +1894,9 @@ async function submitOrder() {
   // 新規作成時のみ、注文したその時点の顧客エリアをスナップショットとして保存する。
   // (これにより、後で顧客がmypage等でエリアを変更しても、この注文のタブ振り分けは変わらない)
   if (!isWalkin) {
-    orderPayload.area_name = selectedCustomer?.areas?.name || (newCustAreaObj && newCustAreaObj.areas.name) || null;
+    const _custAreaName = selectedCustomer?.areas?.name || (newCustAreaObj && newCustAreaObj.areas.name) || null;
+    // Nichada Thani(毎週水曜13:00-15:00のみのエリア)は、集計・タブ振り分けのためBangkokとして保存する
+    orderPayload.area_name = (_custAreaName && /nichada/i.test(_custAreaName)) ? 'Bangkok' : _custAreaName;
   }
 
   const { data: orderRow, error: orderErr } = await supabaseClient

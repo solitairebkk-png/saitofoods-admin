@@ -534,6 +534,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let currentCustomer = null;
 let allOrders = [];
 let originalAreaId = null;
+let customerIsNichada = false; // 登録エリアがNichada Thaniのお客様(配送日時の変更は水曜13:00-15:00のみ)
 async function loadSidebarCategories() {
   const listEl = document.getElementById('sidebar-category-list');
   const { data, error } = await supabaseClient.from('categories').select('id,name_ja,name_en,sort_order').order('sort_order');
@@ -1140,6 +1141,23 @@ async function onScheduleDateChange(preselectTimeSlot) {
   noteEl.textContent = '';
   let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
 
+  if (customerIsNichada) {
+    // ニチャダタニ: 毎週水曜日の13:00-15:00のみ。当日分は朝8:00まで。
+    if (dayOfWeek !== 3) {
+      noteEl.textContent = 'ニチャダタニエリアのお届けは毎週水曜日(13:00-15:00)のみです。水曜日をお選びください / Nichada Thani is delivered on Wednesdays 13:00-15:00 only. Please choose a Wednesday.';
+      populateScheduleTimeSlots([]);
+      confirmBtn.disabled = true;
+      return;
+    }
+    if (val === formatDateLocal(bangkokNow()) && bangkokNow().getHours() >= 8) {
+      noteEl.textContent = '本日分のご注文受付は終了しました(当日朝8:00まで)。別の水曜日をお選びください / Today\'s orders closed at 8:00 AM. Please choose another Wednesday.';
+      populateScheduleTimeSlots([]);
+      confirmBtn.disabled = true;
+      return;
+    }
+    slots = [{ value: '13:00-15:00', label: '13:00-15:00' }];
+  }
+
   try {
     const { data: blockedRows } = await supabaseClient
       .from('blocked_time_slots').select('time_slot').eq('blocked_date', val);
@@ -1148,7 +1166,7 @@ async function onScheduleDateChange(preselectTimeSlot) {
   } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }
 
   const beforeCount = slots.length;
-  slots = filterPastSlots(slots, val);
+  if (!customerIsNichada) slots = filterPastSlots(slots, val);
   if (slots.length === 0) {
     noteEl.textContent = beforeCount > 0
       ? '本日の受付は終了しました。翌日以降の日付をお選びください / Same-day ordering has closed. Please choose a later date.'
@@ -1251,6 +1269,7 @@ async function loadAreaOptions(currentAreaId) {
     const label = area.name || area.name_ja || area.name_en ||
       Object.values(area).find(v => typeof v === 'string') || `(ID: ${area.id})`;
     const selected = area.id === currentAreaId ? 'selected' : '';
+    if (selected) customerIsNichada = /nichada/i.test(String(label));
     return `<option value="${area.id}" ${selected}>${label}</option>`;
   }).join('');
   onProfileAreaChange();
@@ -1320,6 +1339,7 @@ async function saveProfile() {
   if (condoError) { showProfileMsg('コンドミニアムの保存に失敗しました: ' + condoError.message, true); return; }
   if (currentCustomer) currentCustomer.condo_name = condoValue;
   originalAreaId = areaId;
+  customerIsNichada = /nichada/i.test(savedAreaLabel);
   if (currentCustomer) {
     if (familyName) currentCustomer.family_name = familyName;
     if (firstName) currentCustomer.first_name = firstName;
