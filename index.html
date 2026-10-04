@@ -751,6 +751,18 @@ async function loadPromotions() {
 
     if (!products.length) { scrollEl.innerHTML = '<div class="empty-note">現在プロモーション中の商品はありません / No promotions right now</div>'; return; }
 
+    // 累計販売個数(キャンセル除く)。取得できなければ個数なしで表示
+    const sold = {};
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_product_sales_counts`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_ids: products.map(p => p.id) }),
+      });
+      if (res.ok) (await res.json()).forEach(r => { sold[r.product_id] = Number(r.total_qty) || 0; });
+    } catch (e) { /* 個数なし */ }
+    const enLang = i18nGetLang() === 'en';
+
     scrollEl.innerHTML = products.map(p => {
       const img = p.image_url ? `<img src="${p.image_url}" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
       const hasDiscount = p.promotion_price !== null && p.promotion_price !== undefined && p.promotion_price < p.price;
@@ -758,12 +770,15 @@ async function loadPromotions() {
         ? `<div><span class="promo-price-original">฿${p.price}</span><span class="promo-price">฿${p.promotion_price}</span></div><div class="promo-discount-badge">-฿${(p.price - p.promotion_price).toFixed(0)}</div>`
         : `<div class="promo-price">฿${p.price}</div>`;
       const commentHtml = p.promotion_comment ? `<div class="promo-comment">${p.promotion_comment}</div>` : '';
+      const soldN = sold[p.id] || 0;
+      const soldHtml = soldN > 0 ? `<div class="promo-sold">${enLang ? 'Sold: ' + soldN.toLocaleString() + ' pcs so far' : '累計 ' + soldN.toLocaleString() + '個 販売'}</div>` : '';
       return `
         <a class="promo-card" href="product_list.html?view=${p.id}">
           <div class="promo-img-wrap">${img}</div>
           <div class="promo-body">
             <div class="promo-name">${i18nGetLang() === 'en' && p.name_en ? p.name_en : p.name_ja}</div>
             ${priceHtml}
+            ${soldHtml}
             ${commentHtml}
           </div>
         </a>
