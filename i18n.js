@@ -52,6 +52,7 @@
     'calendar.legendSat': { ja: '土曜午前のみ / Saturday morning only', en: 'Saturday morning only' },
     'calendar.legendSriracha': { ja: 'シラチャ配送日 / Sriracha delivery day', en: 'Sriracha delivery day' },
     'calendar.legendPattaya': { ja: 'パタヤ配送日 / Pattaya delivery day', en: 'Pattaya delivery day' },
+    'calendar.legendNichada': { ja: 'ニチャダタニ配送日(13:00-15:00) / Nichada Thani delivery day (13:00-15:00)', en: 'Nichada Thani delivery day (13:00-15:00)' },
 
     // ---- section titles ----
     'section.announcements': { ja: 'お知らせ / Announcements', en: 'Announcements' },

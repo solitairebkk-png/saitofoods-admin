@@ -253,6 +253,7 @@
   .area-dot { position: absolute; width: 12px; height: 12px; border-radius: 3px; bottom: 1px; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; line-height: 1; color: #fff; box-shadow: 0 0 0 1px #fff; }
   .area-dot.sriracha { left: 2px; background: #3A5FB0; }
   .area-dot.pattaya { right: 2px; background: #B03A9E; }
+  .area-dot.nichada { left: 50%; transform: translateX(-50%); background: #D9661F; }
   /* 配送カレンダーを大きく表示(営業時間カードより広く・文字も大きく) */
   .top-info-col.calendar-col { flex: 1 1 400px; max-width: 480px; }
   .calendar-col .calendar-card { max-width: 100%; padding: 14px 14px 12px; }
@@ -265,18 +266,23 @@
   .calendar-col .area-dot { width: 16px; height: 16px; border-radius: 4px; font-size: 11px; bottom: 2px; }
   .calendar-col .area-dot.sriracha { left: 3px; }
   .calendar-col .area-dot.pattaya { right: 3px; }
+  .calendar-col .area-dot.nichada { left: 50%; }
   .calendar-col .calendar-legend { gap: 8px 14px; margin-top: 12px; font-size: 12px; }
   .calendar-col .calendar-legend span { gap: 6px; }
   .calendar-col .calendar-dot-small { width: 14px; height: 14px; }
-  .calendar-col .calendar-dot-small.sriracha, .calendar-col .calendar-dot-small.pattaya { width: 17px; height: 17px; font-size: 11px; }
+  .calendar-col .calendar-dot-small.sriracha, .calendar-col .calendar-dot-small.pattaya, .calendar-col .calendar-dot-small.nichada { width: 17px; height: 17px; font-size: 11px; }
   @media (max-width: 760px) {
     .top-info-col.calendar-col { flex: 1 1 auto; max-width: 100%; }
     .calendar-col .calendar-card { padding: 12px 10px 10px; }
+    .calendar-col .area-dot { width: 13px; height: 13px; font-size: 9.5px; }
+    .calendar-col .area-dot.sriracha { left: 2px; }
+    .calendar-col .area-dot.pattaya { right: 2px; }
   }
   .calendar-dot-small { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .calendar-dot-small.sriracha, .calendar-dot-small.pattaya { width: 13px; height: 13px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; font-style: normal; line-height: 1; color: #fff; }
+  .calendar-dot-small.sriracha, .calendar-dot-small.pattaya, .calendar-dot-small.nichada { width: 13px; height: 13px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; font-style: normal; line-height: 1; color: #fff; }
   .calendar-dot-small.sriracha { background: #3A5FB0; }
   .calendar-dot-small.pattaya { background: #B03A9E; }
+  .calendar-dot-small.nichada { background: #D9661F; }
   .calendar-cell.pattaya { background: #E0E9FB; color: #3A5FB0; font-weight: 700; }
 
   @keyframes skeleton-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
@@ -464,6 +470,7 @@ function closeMigrationGuideModal() {
             <span><i class="calendar-dot-small" style="background:#FFF3D9;border:1px solid #8A6300;"></i><span data-i18n="calendar.legendSat">土曜午前のみ / Saturday morning only</span></span>
             <span><i class="calendar-dot-small sriracha">S</i><span data-i18n="calendar.legendSriracha">シラチャ配送日 / Sriracha delivery day</span></span>
             <span><i class="calendar-dot-small pattaya">P</i><span data-i18n="calendar.legendPattaya">パタヤ配送日 / Pattaya delivery day</span></span>
+            <span><i class="calendar-dot-small nichada">N</i><span data-i18n="calendar.legendNichada">ニチャダタニ配送日(13:00-15:00) / Nichada Thani delivery day (13:00-15:00)</span></span>
           </div>
         </div>
       </div>
@@ -843,6 +850,7 @@ function renderCalendar() {
     let dots = '';
     const isDeliveryDay = !(dayOfWeek === 0 || isHoliday); // 休業日(日曜・祝日/定休日)には配送自体が無いので、シラチャ・パタヤの印も出さない
     if (isDeliveryDay && isSrirachaDay) dots += '<span class="area-dot sriracha" title="シラチャ配送日 / Sriracha delivery">S</span>';
+    if (isDeliveryDay && dayOfWeek === 3) dots += '<span class="area-dot nichada" title="ニチャダタニ配送日(13:00-15:00) / Nichada Thani delivery (13:00-15:00)">N</span>'; // 毎週水曜日
     if (isDeliveryDay && isPattayaDay) dots += '<span class="area-dot pattaya" title="パタヤ配送日 / Pattaya delivery">P</span>';
 
     html += `<div class="${cls}">${d}${dots}</div>`;
