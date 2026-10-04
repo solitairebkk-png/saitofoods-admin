@@ -14,11 +14,12 @@
     ja: {
       link: 'お問い合わせ', title: 'お問い合わせ',
       lead: 'ご質問・ご要望などをお送りください。担当者がメールでご返信します。',
-      name: 'お名前', subject: '件名', email: 'メールアドレス', emailNote: 'ご返信先です。',
+      name: 'お名前', phone: '電話番号', subject: '件名', email: 'メールアドレス', emailNote: 'ご返信先です。',
       message: 'お問い合わせ内容', messagePh: 'こちらにご記入ください',
       send: '送信する', sending: '送信中…', close: '閉じる',
       done: '送信しました。ありがとうございます。担当者からのご返信をお待ちください。',
       errName: 'お名前を入力してください。',
+      errPhone: '電話番号を正しく入力してください。',
       errSubject: '件名を入力してください。',
       errEmail: 'メールアドレスを正しく入力してください。',
       errMessage: 'お問い合わせ内容を入力してください。',
@@ -29,11 +30,12 @@
     en: {
       link: 'Contact us', title: 'Contact us',
       lead: 'Send us your questions or requests. We will reply by email.',
-      name: 'Name', subject: 'Subject', email: 'Email address', emailNote: 'We will reply to this address.',
+      name: 'Name', phone: 'Phone number', subject: 'Subject', email: 'Email address', emailNote: 'We will reply to this address.',
       message: 'Message', messagePh: 'Please write your message here',
       send: 'Send', sending: 'Sending…', close: 'Close',
       done: 'Sent. Thank you. We will reply by email.',
       errName: 'Please enter your name.',
+      errPhone: 'Please enter a valid phone number.',
       errSubject: 'Please enter a subject.',
       errEmail: 'Please enter a valid email address.',
       errMessage: 'Please enter your message.',
@@ -68,17 +70,17 @@
       return (s && s.user && s.access_token) ? s : null;
     } catch (e) { return null; }
   }
-  function fetchLoggedInName() {
+  function fetchLoggedInProfile() {
     var sess = loggedInSession();
-    if (!sess) return Promise.resolve('');
-    return fetch(SUPABASE_URL + '/rest/v1/customers?auth_user_id=eq.' + encodeURIComponent(sess.user.id) + '&select=family_name,first_name&limit=1', {
+    if (!sess) return Promise.resolve({ name: '', phone: '' });
+    return fetch(SUPABASE_URL + '/rest/v1/customers?auth_user_id=eq.' + encodeURIComponent(sess.user.id) + '&select=family_name,first_name,tel1&limit=1', {
       headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + sess.access_token }
     }).then(function (r) { return r.ok ? r.json() : []; })
       .then(function (rows) {
         var c = rows && rows[0];
-        return c ? ((c.family_name || '') + ' ' + (c.first_name || '')).trim() : '';
+        return c ? { name: ((c.family_name || '') + ' ' + (c.first_name || '')).trim(), phone: String(c.tel1 || '').trim() } : { name: '', phone: '' };
       })
-      .catch(function () { return ''; });
+      .catch(function () { return { name: '', phone: '' }; });
   }
 
   var css = [
@@ -92,7 +94,7 @@
     '.ct-lead { font-size:13px; margin:0 0 14px; color:#5a4a35; }',
     '.ct-box label { display:block; font-size:13px; font-weight:700; margin:12px 0 4px; }',
     '.ct-note { font-size:11px; font-weight:400; color:#8a7a65; margin-left:6px; }',
-    '.ct-box input[type=text], .ct-box input[type=email], .ct-box textarea { width:100%; font:inherit; font-size:16px; padding:10px 12px; border:1.5px solid #F0DFB8; border-radius:10px; background:#FFFDF7; color:#3A2E1F; }',
+    '.ct-box input[type=text], .ct-box input[type=email], .ct-box input[type=tel], .ct-box textarea { width:100%; font:inherit; font-size:16px; padding:10px 12px; border:1.5px solid #F0DFB8; border-radius:10px; background:#FFFDF7; color:#3A2E1F; }',
     '.ct-box textarea { min-height:140px; resize:vertical; }',
     '.ct-box input:focus, .ct-box textarea:focus { outline:2px solid #F5A93C; outline-offset:1px; }',
     '.ct-hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }',
@@ -119,6 +121,8 @@
           '<input type="text" id="ct-name" maxlength="100" autocomplete="name" required>' +
           '<label for="ct-email"><span id="ct-email-l"></span><span class="ct-note" id="ct-email-n"></span></label>' +
           '<input type="email" id="ct-email" maxlength="254" autocomplete="email" required>' +
+          '<label for="ct-phone" id="ct-phone-l"></label>' +
+          '<input type="tel" id="ct-phone" maxlength="30" autocomplete="tel" inputmode="tel" required>' +
           '<label for="ct-subject" id="ct-subject-l"></label>' +
           '<input type="text" id="ct-subject" maxlength="100" required>' +
           '<label for="ct-message" id="ct-message-l"></label>' +
@@ -143,6 +147,7 @@
     document.getElementById('ct-name-l').textContent = t('name');
     document.getElementById('ct-email-l').textContent = t('email');
     document.getElementById('ct-email-n').textContent = t('emailNote');
+    document.getElementById('ct-phone-l').textContent = t('phone');
     document.getElementById('ct-subject-l').textContent = t('subject');
     document.getElementById('ct-message-l').textContent = t('message');
     document.getElementById('ct-message').placeholder = t('messagePh');
@@ -166,8 +171,12 @@
     var known = loggedInEmail();
     if (known && !emailInput.value) emailInput.value = known; // ログイン中は最初から入れる
     var nameInput = document.getElementById('ct-name');
-    if (known && !nameInput.value) {
-      fetchLoggedInName().then(function (n) { if (n && !nameInput.value) nameInput.value = n; }); // 登録名も入れる
+    var phoneInput = document.getElementById('ct-phone');
+    if (known && (!nameInput.value || !phoneInput.value)) {
+      fetchLoggedInProfile().then(function (pr) { // 登録されているお名前・電話番号も入れる
+        if (pr.name && !nameInput.value) nameInput.value = pr.name;
+        if (pr.phone && !phoneInput.value) phoneInput.value = pr.phone;
+      });
     }
     setMsg('');
     document.getElementById('ct-send').disabled = false;
@@ -181,16 +190,19 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  var PHONE_RE = /^[0-9+\-\s()\uFF08\uFF09\uFF0D\uFF10-\uFF19.]{6,30}$/; // 数字・+・-・空白・括弧(全角も可)
   var EMAIL_RE = /^[^\s@<>",;:]+@[^\s@<>",;:]+\.[^\s@<>",;:]{2,}$/;
 
   function onSubmit(e) {
     e.preventDefault();
     var name = document.getElementById('ct-name').value.trim();
     var email = document.getElementById('ct-email').value.trim();
+    var phone = document.getElementById('ct-phone').value.trim();
     var subject = document.getElementById('ct-subject').value.trim();
     var message = document.getElementById('ct-message').value.trim();
     if (!name) { setMsg(t('errName'), 'err'); document.getElementById('ct-name').focus(); return; }
     if (!EMAIL_RE.test(email)) { setMsg(t('errEmail'), 'err'); document.getElementById('ct-email').focus(); return; }
+    if (!PHONE_RE.test(phone) || phone.replace(/\D/g, '').length < 6) { setMsg(t('errPhone'), 'err'); document.getElementById('ct-phone').focus(); return; }
     if (!subject) { setMsg(t('errSubject'), 'err'); document.getElementById('ct-subject').focus(); return; }
     if (!message) { setMsg(t('errMessage'), 'err'); document.getElementById('ct-message').focus(); return; }
 
@@ -208,6 +220,7 @@
       action: 'sendContact',
       name: name,
       email: email,
+      phone: phone,
       subject: subject,
       message: message,
       lang: lang(),
@@ -231,6 +244,7 @@
         btn.disabled = false;
         var code = json && json.code;
         if (code === 'bad_email') setMsg(t('errEmail'), 'err');
+        else if (code === 'bad_phone') setMsg(t('errPhone'), 'err');
         else if (code === 'empty_message') setMsg(t('errMessage'), 'err');
         else if (code === 'too_fast' || code === 'limit') setMsg(t('errCooldown'), 'err');
         else setMsg(t('errSend'), 'err');
