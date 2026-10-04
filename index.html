@@ -237,6 +237,13 @@
   .promo-price { font-size: 12.5px; color: var(--brand-dark); font-weight: 800; margin-top: 4px; }
   .promo-price-original { font-size: 11px; color: #999; text-decoration: line-through; font-weight: 600; margin-right: 5px; }
   .promo-discount-badge { display: inline-block; font-size: 10px; font-weight: 800; color: #fff; background: var(--red); padding: 1px 6px; border-radius: 8px; margin-top: 3px; }
+  /* お買い得商品: 販売個数ランキング */
+  .promo-img-wrap { position: relative; }
+  .rank-badge { position: absolute; top: 8px; left: 8px; z-index: 2; min-width: 34px; height: 34px; padding: 0 8px; border-radius: 17px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; background: #8A7A5E; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  .rank-badge.r1 { background: linear-gradient(135deg,#F6C945,#D49A10); }
+  .rank-badge.r2 { background: linear-gradient(135deg,#C9CED6,#8D95A1); }
+  .rank-badge.r3 { background: linear-gradient(135deg,#D9996B,#A8602F); }
+  .promo-sold { font-size: 12px; font-weight: 800; color: #C2410C; margin-top: 4px; }
   .promo-comment { font-size: 11px; color: #8A6B1E; font-weight: 700; margin-top: 5px; line-height: 1.4; }
 
   /* announcements */
@@ -769,18 +776,38 @@ async function loadBargainProducts() {
     if (!ids.length) { scrollEl.innerHTML = '<div class="empty-note">現在お買い得商品はありません / No sale items right now</div>'; return; }
 
     const idsParam = ids.map(id => `"${id}"`).join(',');
-    const products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url&limit=12`);
+    let products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url&limit=50`);
 
     if (!products.length) { scrollEl.innerHTML = '<div class="empty-note">現在お買い得商品はありません / No sale items right now</div>'; return; }
 
-    scrollEl.innerHTML = products.map(p => {
+    // 累計販売個数(キャンセル除く)を取得し、多い順に並べる。取得できなくても商品表示は続ける
+    const sold = {};
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_product_sales_counts`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_ids: products.map(p => p.id) }),
+      });
+      if (res.ok) (await res.json()).forEach(r => { sold[r.product_id] = Number(r.total_qty) || 0; });
+    } catch (e) { /* 個数なしで表示 */ }
+    products.forEach(p => { p._sold = sold[p.id] || 0; });
+    products.sort((a, b) => b._sold - a._sold);
+    products = products.slice(0, 12);
+    const en = i18nGetLang() === 'en';
+
+    scrollEl.innerHTML = products.map((p, i) => {
       const img = p.image_url ? `<img src="${p.image_url}" onerror="this.parentElement.innerHTML='🍱'">` : '🍱';
+      const rank = p._sold > 0 ? `<div class="rank-badge ${i < 3 ? 'r' + (i + 1) : ''}">${i + 1}${en ? '' : '位'}</div>` : '';
+      const soldHtml = p._sold > 0
+        ? `<div class="promo-sold">${en ? 'Sold: ' + p._sold.toLocaleString() + ' pcs so far' : '累計 ' + p._sold.toLocaleString() + '個 販売'}</div>`
+        : '';
       return `
         <a class="promo-card" href="product_list.html?view=${p.id}">
-          <div class="promo-img-wrap">${img}</div>
+          <div class="promo-img-wrap">${rank}${img}</div>
           <div class="promo-body">
-            <div class="promo-name">${i18nGetLang() === 'en' && p.name_en ? p.name_en : p.name_ja}</div>
+            <div class="promo-name">${en && p.name_en ? p.name_en : p.name_ja}</div>
             <div class="promo-price">฿${p.price}</div>
+            ${soldHtml}
           </div>
         </a>
       `;
