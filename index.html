@@ -253,6 +253,26 @@
   .area-dot { position: absolute; width: 12px; height: 12px; border-radius: 3px; bottom: 1px; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; line-height: 1; color: #fff; box-shadow: 0 0 0 1px #fff; }
   .area-dot.sriracha { left: 2px; background: #3A5FB0; }
   .area-dot.pattaya { right: 2px; background: #B03A9E; }
+  /* 配送カレンダーを大きく表示(営業時間カードより広く・文字も大きく) */
+  .top-info-col.calendar-col { flex: 1 1 400px; max-width: 480px; }
+  .calendar-col .calendar-card { max-width: 100%; padding: 14px 14px 12px; }
+  .calendar-col .calendar-header { margin-bottom: 10px; }
+  .calendar-col .calendar-nav-btn { width: 32px; height: 32px; font-size: 17px; }
+  .calendar-col .calendar-month-label { font-size: 16px; }
+  .calendar-col .calendar-weekdays { font-size: 12px; margin-bottom: 5px; }
+  .calendar-col .calendar-grid { gap: 3px; }
+  .calendar-col .calendar-cell { font-size: 14px; border-radius: 8px; }
+  .calendar-col .area-dot { width: 16px; height: 16px; border-radius: 4px; font-size: 11px; bottom: 2px; }
+  .calendar-col .area-dot.sriracha { left: 3px; }
+  .calendar-col .area-dot.pattaya { right: 3px; }
+  .calendar-col .calendar-legend { gap: 8px 14px; margin-top: 12px; font-size: 12px; }
+  .calendar-col .calendar-legend span { gap: 6px; }
+  .calendar-col .calendar-dot-small { width: 14px; height: 14px; }
+  .calendar-col .calendar-dot-small.sriracha, .calendar-col .calendar-dot-small.pattaya { width: 17px; height: 17px; font-size: 11px; }
+  @media (max-width: 760px) {
+    .top-info-col.calendar-col { flex: 1 1 auto; max-width: 100%; }
+    .calendar-col .calendar-card { padding: 12px 10px 10px; }
+  }
   .calendar-dot-small { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .calendar-dot-small.sriracha, .calendar-dot-small.pattaya { width: 13px; height: 13px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; font-style: normal; line-height: 1; color: #fff; }
   .calendar-dot-small.sriracha { background: #3A5FB0; }
@@ -427,7 +447,7 @@ function closeMigrationGuideModal() {
           </div>
         </div>
       </div>
-      <div class="top-info-col">
+      <div class="top-info-col calendar-col">
         <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg> <span data-i18n="calendar.title">配送カレンダー / Delivery Calendar</span></div>
         <div class="calendar-card" id="calendar-card">
           <div class="calendar-header">
