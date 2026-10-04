@@ -695,16 +695,28 @@ async function loadCategoryNav() {
 async function loadTop3() {
   const listEl = document.getElementById('top3-list');
   try {
-    const popData = await supabase('GET', 'popular_products?select=product_id,order_count&order=order_count.desc&limit=3');
+    const popData = await supabase('GET', 'popular_products?select=product_id,order_count&order=order_count.desc&limit=10');
     if (!popData.length) { listEl.innerHTML = '<div class="empty-note">まだ十分な注文実績がありません / Not enough order history yet</div>'; return; }
 
     const ids = popData.map(p => p.product_id);
     const idsParam = ids.map(id => `"${id}"`).join(',');
     const products = await supabase('GET', `products?id=in.(${idsParam})&is_published=eq.true&select=id,name_ja,name_en,price,image_url`);
 
+    // 販売個数(お買い得商品ランキングと同じ集計)で順位を決める。取得できなければ注文回数順
     const orderMap = {};
     popData.forEach(p => { orderMap[p.product_id] = p.order_count; });
-    const sorted = products.slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
+    const soldMap = {};
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_product_sales_counts`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_ids: ids }),
+      });
+      if (res.ok) (await res.json()).forEach(r => { soldMap[r.product_id] = Number(r.total_qty) || 0; });
+    } catch (e) { /* 注文回数順で表示 */ }
+    const hasSold = Object.keys(soldMap).length > 0;
+    const score = id => hasSold ? (soldMap[id] || 0) : (orderMap[id] || 0);
+    const sorted = products.slice().sort((a, b) => score(b.id) - score(a.id)).slice(0, 3);
 
     if (!sorted.length) { listEl.innerHTML = '<div class="empty-note">まだ十分な注文実績がありません / Not enough order history yet</div>'; return; }
 
@@ -719,7 +731,7 @@ async function loadTop3() {
           <div class="top3-info">
             <div class="top3-name">${i18nGetLang() === 'en' && p.name_en ? p.name_en : p.name_ja}</div>
             <div class="top3-price">฿${p.price}</div>
-            <div class="top3-count">⭐ ${orderMap[p.id] || 0}回注文されています</div>
+            <div class="top3-count">⭐ ${hasSold ? (i18nGetLang() === 'en' ? 'Sold: ' + (soldMap[p.id] || 0).toLocaleString() + ' pcs so far' : '累計 ' + (soldMap[p.id] || 0).toLocaleString() + '個 販売') : (orderMap[p.id] || 0) + '回注文されています'}</div>
           </div>
         </a>
       `;
