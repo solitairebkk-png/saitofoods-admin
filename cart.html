@@ -1065,8 +1065,8 @@ function renderShippingBanner(judgeSubtotal) {
     bannerEl.classList.add('notfree');
     const diff = shippingFreeThreshold - amount;
     bannerEl.innerHTML = lang === 'en'
-      ? `🚚 <b>฿${diff} more</b> for free shipping!<br>Currently, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
-      : `🚚 あと <b>฿${diff}</b> で配送料無料！<br>現在、配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
+      ? `🚚 <b>฿${diff} more</b> for free shipping!<br>If the total is under ฿${shippingFreeThreshold}, a shipping fee of <b>฿${shippingFeeAmount}</b> applies.`
+      : `🚚 あと <b>฿${diff}</b> で配送料無料！<br>合計金額 ฿${shippingFreeThreshold} に満たない場合は配送料 <b>฿${shippingFeeAmount}</b> がかかります。`;
   }
 }
 
