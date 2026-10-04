@@ -14,10 +14,12 @@
     ja: {
       link: 'お問い合わせ', title: 'お問い合わせ',
       lead: 'ご質問・ご要望などをお送りください。担当者がメールでご返信します。',
-      name: 'お名前(任意)', email: 'メールアドレス', emailNote: 'ご返信先です。',
+      name: 'お名前', subject: '件名', email: 'メールアドレス', emailNote: 'ご返信先です。',
       message: 'お問い合わせ内容', messagePh: 'こちらにご記入ください',
       send: '送信する', sending: '送信中…', close: '閉じる',
       done: '送信しました。ありがとうございます。担当者からのご返信をお待ちください。',
+      errName: 'お名前を入力してください。',
+      errSubject: '件名を入力してください。',
       errEmail: 'メールアドレスを正しく入力してください。',
       errMessage: 'お問い合わせ内容を入力してください。',
       errCooldown: '続けて送信できません。少し時間を空けてお試しください。',
@@ -27,10 +29,12 @@
     en: {
       link: 'Contact us', title: 'Contact us',
       lead: 'Send us your questions or requests. We will reply by email.',
-      name: 'Name (optional)', email: 'Email address', emailNote: 'We will reply to this address.',
+      name: 'Name', subject: 'Subject', email: 'Email address', emailNote: 'We will reply to this address.',
       message: 'Message', messagePh: 'Please write your message here',
       send: 'Send', sending: 'Sending…', close: 'Close',
       done: 'Sent. Thank you. We will reply by email.',
+      errName: 'Please enter your name.',
+      errSubject: 'Please enter a subject.',
       errEmail: 'Please enter a valid email address.',
       errMessage: 'Please enter your message.',
       errCooldown: 'Please wait a moment before sending again.',
@@ -53,6 +57,28 @@
       var user = s && (s.user || (s.currentSession && s.currentSession.user));
       return (user && typeof user.email === 'string') ? user.email : '';
     } catch (e) { return ''; }
+  }
+
+  // ログイン中のお客様の登録名(姓 名)を取得する。取得できなければ空文字(その場合は自分で入力してもらう)
+  var SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk'; // 公開用キー(各ページにも書いてあるもの)
+  function loggedInSession() {
+    try {
+      var s = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+      return (s && s.user && s.access_token) ? s : null;
+    } catch (e) { return null; }
+  }
+  function fetchLoggedInName() {
+    var sess = loggedInSession();
+    if (!sess) return Promise.resolve('');
+    return fetch(SUPABASE_URL + '/rest/v1/customers?auth_user_id=eq.' + encodeURIComponent(sess.user.id) + '&select=family_name,first_name&limit=1', {
+      headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + sess.access_token }
+    }).then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        var c = rows && rows[0];
+        return c ? ((c.family_name || '') + ' ' + (c.first_name || '')).trim() : '';
+      })
+      .catch(function () { return ''; });
   }
 
   var css = [
@@ -90,9 +116,11 @@
         '<h2 id="ct-title"></h2><p class="ct-lead" id="ct-lead"></p>' +
         '<form id="ct-form" novalidate>' +
           '<label for="ct-name" id="ct-name-l"></label>' +
-          '<input type="text" id="ct-name" maxlength="100" autocomplete="name">' +
+          '<input type="text" id="ct-name" maxlength="100" autocomplete="name" required>' +
           '<label for="ct-email"><span id="ct-email-l"></span><span class="ct-note" id="ct-email-n"></span></label>' +
           '<input type="email" id="ct-email" maxlength="254" autocomplete="email" required>' +
+          '<label for="ct-subject" id="ct-subject-l"></label>' +
+          '<input type="text" id="ct-subject" maxlength="100" required>' +
           '<label for="ct-message" id="ct-message-l"></label>' +
           '<textarea id="ct-message" maxlength="2000" required></textarea>' +
           '<div class="ct-hp" aria-hidden="true"><label>Website<input type="text" id="ct-hp" tabindex="-1" autocomplete="off"></label></div>' +
@@ -115,6 +143,7 @@
     document.getElementById('ct-name-l').textContent = t('name');
     document.getElementById('ct-email-l').textContent = t('email');
     document.getElementById('ct-email-n').textContent = t('emailNote');
+    document.getElementById('ct-subject-l').textContent = t('subject');
     document.getElementById('ct-message-l').textContent = t('message');
     document.getElementById('ct-message').placeholder = t('messagePh');
     document.getElementById('ct-send').textContent = t('send');
@@ -136,10 +165,14 @@
     var emailInput = document.getElementById('ct-email');
     var known = loggedInEmail();
     if (known && !emailInput.value) emailInput.value = known; // ログイン中は最初から入れる
+    var nameInput = document.getElementById('ct-name');
+    if (known && !nameInput.value) {
+      fetchLoggedInName().then(function (n) { if (n && !nameInput.value) nameInput.value = n; }); // 登録名も入れる
+    }
     setMsg('');
     document.getElementById('ct-send').disabled = false;
     overlay.hidden = false;
-    document.getElementById(emailInput.value ? 'ct-message' : 'ct-email').focus();
+    document.getElementById(emailInput.value ? 'ct-subject' : 'ct-name').focus();
   }
 
   function closeModal() {
@@ -152,9 +185,13 @@
 
   function onSubmit(e) {
     e.preventDefault();
+    var name = document.getElementById('ct-name').value.trim();
     var email = document.getElementById('ct-email').value.trim();
+    var subject = document.getElementById('ct-subject').value.trim();
     var message = document.getElementById('ct-message').value.trim();
+    if (!name) { setMsg(t('errName'), 'err'); document.getElementById('ct-name').focus(); return; }
     if (!EMAIL_RE.test(email)) { setMsg(t('errEmail'), 'err'); document.getElementById('ct-email').focus(); return; }
+    if (!subject) { setMsg(t('errSubject'), 'err'); document.getElementById('ct-subject').focus(); return; }
     if (!message) { setMsg(t('errMessage'), 'err'); document.getElementById('ct-message').focus(); return; }
 
     try {
@@ -169,8 +206,9 @@
 
     var payload = {
       action: 'sendContact',
-      name: document.getElementById('ct-name').value.trim(),
+      name: name,
       email: email,
+      subject: subject,
       message: message,
       lang: lang(),
       page: location.pathname,
@@ -184,6 +222,7 @@
         btn.textContent = t('send');
         if (json && json.status === 'ok') {
           try { localStorage.setItem('saitofoods_contact_last', String(Date.now())); } catch (err) {}
+          document.getElementById('ct-subject').value = '';
           document.getElementById('ct-message').value = '';
           setMsg(t('done'), 'ok');
           btn.disabled = true; // 送信済み。続けて送れないように、閉じて開き直すまで押せなくする
