@@ -39,9 +39,15 @@
   .site-nav a.active { opacity:1; text-decoration:underline; }
   .site-cart-btn { background:#fff; color:var(--brand-dark); font-weight:700; border-radius:24px; padding:8px 16px; font-size:13px; text-decoration:none; display:flex; align-items:center; gap:6px; flex-shrink:0; }
   .site-lang-btn { background:#fff; color:var(--brand-dark); font-weight:800; border:none; border-radius:20px; padding:7px 14px; font-size:12px; text-decoration:none; flex-shrink:0; }
+  .site-sns { display: flex; gap: 6px; flex-shrink: 0; }
+  .site-sns a { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+  .site-sns a.sns-x { background: #000; }
+  .site-sns a.sns-ig { background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+  .site-sns a.sns-fb { background: #1877F2; }
+  .site-sns svg { width: 16px; height: 16px; }
   @media (max-width:760px) {
     .site-header-inner { flex-wrap:wrap; gap:10px; padding:10px 16px; }
-    .site-lang-btn { order:2; } .site-cart-btn { order:2; margin-left:auto; }
+    .site-lang-btn { order:2; } .site-sns { order:2; } .site-cart-btn { order:2; margin-left:auto; }
     .site-nav { order:3; flex:1 1 100%; overflow-x:auto; white-space:nowrap; gap:14px; scrollbar-width:none; }
     .site-nav::-webkit-scrollbar { display:none; }
   }
@@ -107,6 +113,11 @@
       <a href="/product_list.html" class="active">Products</a>
       <a href="/mypage.html">My Page</a>
     </nav>
+    <div class="site-sns">
+      <a href="https://x.com/SaitoFoods" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" class="sns-x"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+      <a href="https://www.instagram.com/saito_foods/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="sns-ig"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
+      <a href="https://www.facebook.com/SaitoFoodsThailand" target="_blank" rel="noopener noreferrer" aria-label="Facebook" class="sns-fb"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+    </div>
     <a class="site-lang-btn" href="https://saitofoods.com/products/565.html" hreflang="ja" onclick="try{localStorage.setItem('saitofoods_lang','ja')}catch(e){}">日本語</a>
     <a class="site-cart-btn" href="/cart.html">🛒 <span id="header-cart-count">0</span></a>
   </div>

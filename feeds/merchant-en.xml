@@ -55,7 +55,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Non Preservative Products</g:product_type>
+      <g:product_type>Rice,Agricultual Products</g:product_type>
     </item>
     <item>
       <g:id>744</g:id>
@@ -68,7 +68,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
+      <g:product_type>Rice,Agricultual Products</g:product_type>
     </item>
     <item>
       <g:id>1085</g:id>
@@ -81,7 +81,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
+      <g:product_type>Rice,Agricultual Products</g:product_type>
     </item>
     <item>
       <g:id>344</g:id>
@@ -94,7 +94,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Rice,Agricultual Products</g:product_type>
     </item>
     <item>
       <g:id>23</g:id>
@@ -107,7 +107,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1115</g:id>
@@ -133,7 +133,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>161</g:id>
@@ -146,7 +146,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1371</g:id>
@@ -276,7 +276,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>734</g:id>
@@ -289,7 +289,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
       <g:id>1159</g:id>
@@ -302,7 +302,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>926</g:id>
@@ -324,7 +324,7 @@
       <link>https://saitofoods.com/en/products/1185.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485691117_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05141105_6824167e7a189.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>48.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -343,7 +343,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>New Products</g:product_type>
     </item>
     <item>
       <g:id>174</g:id>
@@ -382,7 +382,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>224</g:id>
@@ -395,7 +395,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>955</g:id>
@@ -408,7 +408,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
       <g:id>990</g:id>
@@ -435,7 +435,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>1281</g:id>
@@ -449,7 +449,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>1205</g:id>
@@ -502,7 +502,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>1253</g:id>
@@ -528,7 +528,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>On Promotion</g:product_type>
     </item>
     <item>
       <g:id>788</g:id>
@@ -541,7 +541,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>1270</g:id>
@@ -554,7 +554,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>859</g:id>
@@ -685,7 +685,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>1084</g:id>
@@ -724,7 +724,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>369</g:id>
@@ -750,7 +750,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
       <g:id>934</g:id>
@@ -789,7 +789,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1302</g:id>
@@ -802,7 +802,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1394</g:id>
@@ -854,7 +854,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1112</g:id>
@@ -867,7 +867,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>1110</g:id>
@@ -880,7 +880,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>985</g:id>
@@ -893,7 +893,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1053</g:id>
@@ -906,7 +906,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
       <g:id>1397</g:id>
@@ -932,7 +932,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen Meat</g:product_type>
     </item>
     <item>
       <g:id>1231</g:id>
@@ -945,7 +945,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1315</g:id>
@@ -958,7 +958,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen Meat</g:product_type>
     </item>
     <item>
       <g:id>1023</g:id>
@@ -971,7 +971,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1071</g:id>
@@ -1010,7 +1010,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>566</g:id>
@@ -1023,7 +1023,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Seasonings</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>567</g:id>
@@ -1036,7 +1036,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Seasonings</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1009</g:id>
@@ -1122,7 +1122,7 @@
       <description>キッコーマンの空気に触れないタイプの美味しいお醤油です。 常温で保存できて、なおかつ常に薫り高いお醤油をお楽しみ頂け ます。是非お試しください。全く違います。200ml</description>
       <link>https://saitofoods.com/en/products/476.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888984256_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>145.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1153,7 +1153,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1326</g:id>
@@ -1166,7 +1166,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1324</g:id>
@@ -1179,7 +1179,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>561</g:id>
@@ -1206,7 +1206,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Seasonings</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>252</g:id>
@@ -1297,7 +1297,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Good selling</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>479</g:id>
@@ -1310,7 +1310,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>1176</g:id>
@@ -1336,7 +1336,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1175</g:id>
@@ -1349,7 +1349,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1358</g:id>
@@ -1357,12 +1357,12 @@
       <description>使用大豆:アメリカ産 有機小粒大豆、契約栽培大豆を100%使用。 有機栽培大豆とは… ①畑は、2年以上有機肥料で土作りをします ②農薬や化学肥料に頼らないことを基本としています ③遺伝子組換え技術を使用しません 大豆の栽培から納豆の製造まで有機認証を受けた納豆です。 有機しょうゆ使用たれとからし付。 40g * 3パック</description>
       <link>https://saitofoods.com/en/products/1358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201401_6a0d5c592fe48.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>309</g:id>
@@ -1375,7 +1375,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Kibun Products</g:product_type>
     </item>
     <item>
       <g:id>760</g:id>
@@ -1388,7 +1388,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>277</g:id>
@@ -1427,7 +1427,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Kibun Products</g:product_type>
     </item>
     <item>
       <g:id>1328</g:id>
@@ -1466,7 +1466,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>49</g:id>
@@ -1518,7 +1518,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>513</g:id>
@@ -1557,7 +1557,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>For lunch box</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>728</g:id>
@@ -1687,7 +1687,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>For lunch box</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1319</g:id>
@@ -1926,7 +1926,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>959</g:id>
@@ -1965,7 +1965,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
       <g:id>995</g:id>
@@ -1978,7 +1978,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>994</g:id>
@@ -2148,7 +2148,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>79</g:id>
@@ -2213,7 +2213,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>sun dried food</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>1232</g:id>
@@ -2252,7 +2252,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>1179</g:id>
@@ -2260,12 +2260,12 @@
       <description>鹿児島県産のブリのカマ部分です。 照り焼きに如何ですか? ずっしり食べ応えのある可食部をお楽しみください。 この商品は量り売りです。100baht/100g お届の際の合計金額は自動返信メールの金額と異なりますので予めご了承くださいませ。</description>
       <link>https://saitofoods.com/en/products/1179.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555365802_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>270.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>1095</g:id>
@@ -2278,7 +2278,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1303</g:id>
@@ -2291,7 +2291,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen fish</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1304</g:id>
@@ -2304,7 +2304,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen fish</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>971</g:id>
@@ -2317,7 +2317,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>1128</g:id>
@@ -2331,7 +2331,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
+      <g:product_type>Rice,Agricultual Products</g:product_type>
     </item>
     <item>
       <g:id>1370</g:id>
@@ -2383,7 +2383,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>599</g:id>
@@ -2566,7 +2566,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>For lunch box</g:product_type>
+      <g:product_type>sweets</g:product_type>
     </item>
     <item>
       <g:id>1279</g:id>
@@ -2579,7 +2579,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1329</g:id>
@@ -2592,7 +2592,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1330</g:id>
@@ -2605,7 +2605,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1378</g:id>
@@ -2620,7 +2620,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1338</g:id>
@@ -2646,7 +2646,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1256</g:id>
@@ -2659,7 +2659,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1396</g:id>
@@ -2673,7 +2673,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1395</g:id>
@@ -2687,7 +2687,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1360</g:id>
@@ -2700,7 +2700,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>New Products</g:product_type>
     </item>
     <item>
       <g:id>1363</g:id>
@@ -2713,7 +2713,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>New Products</g:product_type>
     </item>
     <item>
       <g:id>1207</g:id>
@@ -2726,7 +2726,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Foods</g:product_type>
+      <g:product_type>sweets</g:product_type>
     </item>
     <item>
       <g:id>764</g:id>
@@ -2773,7 +2773,7 @@
       <description>言わずと知れた、安心して飲める無糖のむぎ茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/en/products/767.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486283135_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>720.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2882,7 +2882,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
+      <g:product_type>Saraya Brand</g:product_type>
     </item>
     <item>
       <g:id>549</g:id>
@@ -2960,7 +2960,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Mae Kanom</g:product_type>
+      <g:product_type>local products</g:product_type>
     </item>
   </channel>
 </rss>
