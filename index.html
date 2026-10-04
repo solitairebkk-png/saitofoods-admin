@@ -168,10 +168,10 @@
   .hero-bubble .bubble-sub { display: block; font-size: 12px; font-weight: 700; color: #8A7A5E; margin-top: 3px; }
   /* カオポン君の右側のお知らせ文(太字) */
   .hero-note { position: absolute; left: calc(100% + 16px); top: 50%; transform: translateY(-50%); width: 260px; text-align: left; line-height: 1.6; }
-  .hero-note .note-main { display: block; font-size: 16px; font-weight: 800; color: var(--brand-dark); }
-  .hero-note .note-sub { display: block; font-size: 13px; font-weight: 800; color: var(--brand-dark); margin-top: 4px; }
-  .hero-note .note-sub a { color: var(--brand-dark); text-decoration: underline; text-underline-offset: 3px; }
-  .hero-note .note-sub a:hover { color: var(--brand); }
+  .hero-note .note-main { display: block; font-size: 16px; font-weight: 800; color: #000; }
+  .hero-note .note-sub { display: block; font-size: 13px; font-weight: 800; color: #000; margin-top: 4px; }
+  .hero-note .note-sub a { color: #000; text-decoration: underline; text-underline-offset: 3px; }
+  .hero-note .note-sub a:hover { color: var(--brand-dark); }
   html { scroll-behavior: smooth; }
   @media (max-width: 640px) {
     /* スマホ: カオポン君(左)+お知らせ文(右)を横に並べる */
@@ -187,6 +187,10 @@
     .hero-note .note-main { font-size: 11.5px; line-height: 1.5; }
     .hero-note .note-sub { font-size: 9.5px; line-height: 1.5; }
   }
+  /* 右下のフローティングボタン(ページ上へ/下へ) */
+  .float-nav { position: fixed; right: 14px; bottom: 18px; z-index: 900; display: flex; flex-direction: column; gap: 10px; }
+  .float-nav button { width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--brand); color: #fff; font-size: 20px; font-weight: 800; line-height: 1; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.28); opacity: 0.92; -webkit-tap-highlight-color: transparent; }
+  .float-nav button:active { transform: scale(0.94); }
   .hero h1 { font-size: 18px; font-weight: 800; color: var(--brand-dark); line-height: 1.6; margin-bottom: 10px; max-width: 560px; margin-left: auto; margin-right: auto; text-wrap: balance; }
   .hero p { font-size: 13px; color: #8A7A5E; line-height: 1.9; margin-bottom: 18px; max-width: 560px; margin-left: auto; margin-right: auto; text-wrap: balance; }
   .hero-cta { display: inline-block; background: var(--brand); color: #fff; font-weight: 700; font-size: 14.5px; padding: 13px 32px; border-radius: 26px; text-decoration: none; box-shadow: 0 6px 16px rgba(201,122,31,0.28); transition: transform 0.15s ease, box-shadow 0.15s ease; }
@@ -944,5 +948,9 @@ function initFooterMap() {
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNH0d4VA9S0ocLKb5TiGghubIL8MigOTA&callback=initFooterMap" async defer></script>
 
+<div class="float-nav" aria-label="Page scroll">
+  <button type="button" id="floatTop" aria-label="ページの先頭へ / Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
+  <button type="button" id="floatBottom" aria-label="ページの末尾へ / Go to bottom" onclick="window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'})">&#9660;</button>
+</div>
 </body>
 </html>
