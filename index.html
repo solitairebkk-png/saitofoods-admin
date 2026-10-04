@@ -262,7 +262,8 @@
   .calendar-col .calendar-header { margin-bottom: 10px; }
   .calendar-col .calendar-nav-btn { width: 32px; height: 32px; font-size: 17px; }
   .calendar-col .calendar-month-label { font-size: 16px; }
-  .calendar-col .calendar-weekdays { font-size: 12px; margin-bottom: 5px; }
+  .calendar-col .calendar-weekdays { font-size: 13px; color: #333; font-weight: 800; letter-spacing: 0.3px; margin-bottom: 6px; }
+  .calendar-weekdays .wd-sun { color: #D32F2F; }
   .calendar-col .calendar-grid { gap: 3px; }
   .calendar-col .calendar-cell { font-size: 14px; border-radius: 8px; }
   .calendar-col .calendar-cell.closed-day { padding-bottom: 14px; }
@@ -278,6 +279,7 @@
   @media (max-width: 760px) {
     .top-info-col.calendar-col { flex: 1 1 auto; max-width: 100%; }
     .calendar-col .calendar-card { padding: 12px 10px 10px; }
+    .calendar-col .calendar-weekdays { font-size: 11px; letter-spacing: 0; }
     .calendar-col .calendar-cell.closed-day { padding-bottom: 11px; }
     .calendar-col .calendar-cell.closed-day::after { font-size: 8.5px; bottom: 3px; }
     .calendar-col .area-dot { width: 13px; height: 13px; font-size: 9.5px; }
@@ -468,7 +470,7 @@ function closeMigrationGuideModal() {
             <button class="calendar-nav-btn" onclick="changeCalendarMonth(1)">›</button>
           </div>
           <div class="calendar-weekdays">
-            <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+            <span class="wd-sun">SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
           <div class="calendar-legend">
