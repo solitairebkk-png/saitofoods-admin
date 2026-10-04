@@ -184,13 +184,12 @@
 
   .loading { text-align: center; padding: 40px; color: #AAA; font-size: 14px; grid-column: 1/-1; }
 
-  .scroll-fab-group { position: fixed; right: 20px; bottom: 100px; z-index: 60; display: flex; flex-direction: column; gap: 10px; }
-  .scroll-fab { width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer; background: #fff; color: var(--ink); font-size: 18px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.15s; }
-  .scroll-fab:hover { transform: translateY(-2px); border-color: var(--brand); }
+  .scroll-fab-group { position: fixed; right: 14px; bottom: 18px; z-index: 900; display: flex; flex-direction: column; gap: 10px; }
+  .scroll-fab { width: 46px; height: 46px; border-radius: 50%; border: none; background: var(--brand); color: #fff; font-size: 20px; font-weight: 800; line-height: 1; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.28); opacity: 0.92; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.15s; -webkit-tap-highlight-color: transparent; }
+  .scroll-fab:active { transform: scale(0.94); }
   .scroll-fab.hidden { opacity: 0; pointer-events: none; }
-  .scroll-fab.top { background: var(--brand); color: #fff; border-color: var(--brand); }
 
-  .cart-fab { position: fixed; right: 20px; bottom: 220px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
+  .cart-fab { position: fixed; right: 9px; bottom: 136px; z-index: 61; width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; background: var(--brand-dark); color: #fff; font-size: 24px; box-shadow: 0 6px 18px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.15s; }
   .cart-fab:hover { transform: translateY(-2px); }
   .cart-fab-badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--red); color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
 
@@ -456,8 +455,8 @@
 <a class="cart-fab" href="cart.html">🛒<span class="cart-fab-badge" id="cart-fab-badge">0</span></a>
 
 <div class="scroll-fab-group">
-  <button class="scroll-fab down" id="scroll-down-btn" onclick="scrollByViewport(1)">↓</button>
-  <button class="scroll-fab top hidden" id="scroll-top-btn" onclick="scrollToTop()">↑</button>
+  <button class="scroll-fab top hidden" id="scroll-top-btn" onclick="scrollToTop()" aria-label="Back to top">&#9650;</button>
+  <button class="scroll-fab down" id="scroll-down-btn" onclick="scrollByViewport(1)" aria-label="Scroll down">&#9660;</button>
 </div>
 
 <div class="toast" id="toast"></div>
