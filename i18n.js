@@ -30,6 +30,7 @@
     // ---- index.html hero ----
     'hero.h1': { ja: 'サイトウフーズの願い、それはおいしい生活@タイランド！', en: "Saito Foods' wish: a delicious life in Thailand!" },
     'hero.p': { ja: '「おいしいね」ってみんなが笑顔になれる幸せは万国共通。<br>おいしいものを囲んでホッとできるひとときを、少しでもお手伝いできたら。<br>今日も皆様の食卓に、美味しさと笑顔をお届けします。', en: 'That happy feeling when everyone says \'delicious!\' is universal. We hope to help create cozy moments around good food, even just a little. Today too, we deliver taste and smiles to your table.' },
+    'hero.shipBubble': { ja: '<span class="bubble-main">600バーツ未満での配送を<br>開始しました！</span><span class="bubble-sub">〈※ 配送料金100バーツ〉</span>', en: '<span class="bubble-main">Delivery for orders under<br>฿600 has started!</span><span class="bubble-sub">(※ Delivery fee: ฿100)</span>' },
     'hero.searchPlaceholder': { ja: '🔍 商品を検索 / Search product', en: '🔍 Search products' },
     'hero.searchBtn': { ja: '検索 / Search', en: 'Search' },
     'hero.cta': { ja: '商品一覧を見る / Shop Now →', en: 'View products / Shop Now →' },
