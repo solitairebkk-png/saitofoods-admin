@@ -148,6 +148,8 @@
     'my.address1Label': { ja: '住所1', en: 'Address line 1' },
     'my.address2Label': { ja: '住所2', en: 'Address line 2' },
     'my.areaLabel': { ja: 'エリア / Area', en: 'Area' },
+    'my.condoLabel': { ja: 'お住まいのコンドミニアム / Your condominium', en: 'Your condominium' },
+    'my.condoHint': { ja: '選んでおくと、ご注文時にコンドミニアムと配送日が自動で選ばれます。一覧にない場合は「選択しない」のままで、ご注文時に「その他」を選んで入力してください。', en: 'Once set, your condominium and delivery day are pre-selected when you order. If yours is not listed, leave this as "Not selected" and choose "Other" when ordering.' },
     'my.areaHint': { ja: '引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。', en: 'If you have moved, please update this too. It is used to determine delivery days and methods.' },
     'my.otherProvinceWarning': { ja: '登録のエリアがOther Provincesのお客様は、他の配送業者の配送料金実費をご請求させて頂きます。予めご了承ください。', en: 'Customers registered under "Other Provinces" will be charged the actual delivery fee from our courier partner. Thank you for your understanding.' },
     'my.saveProfileBtn': { ja: 'お名前・住所・電話番号を保存する', en: 'Save name, address & phone number' },

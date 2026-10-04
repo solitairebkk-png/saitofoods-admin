@@ -425,6 +425,11 @@
             <div class="form-hint" data-i18n="my.areaHint">引っ越しされた場合は、こちらも変更してください。配送日・配送方法の判定に使われます。</div>
             <div id="area-other-warning" style="display:none;background:var(--red-dim);color:var(--red);border:1px solid var(--red);border-radius:8px;padding:8px 10px;font-size:12px;margin-top:6px;line-height:1.6;" data-i18n="my.otherProvinceWarning">登録のエリアがOther Provincesのお客様は、他の配送業者の配送料金実費をご請求させて頂きます。予めご了承ください。</div>
           </div>
+          <div class="form-group" id="profile-condo-group" style="display:none;">
+            <label data-i18n="my.condoLabel">お住まいのコンドミニアム / Your condominium</label>
+            <select class="form-input" id="profile-condo"></select>
+            <div class="form-hint" data-i18n="my.condoHint">選んでおくと、ご注文時にコンドミニアムと配送日が自動で選ばれます。一覧にない場合は「選択しない」のままで、ご注文時に「その他」を選んで入力してください。</div>
+          </div>
           <button class="submit-btn" onclick="saveProfile()" data-i18n="my.saveProfileBtn">お名前・住所・電話番号を保存する</button>
           <div class="profile-msg" id="profile-msg"></div>
         </div>
@@ -710,7 +715,7 @@ async function loadMyPage(user) {
   await supabaseClient.rpc('sync_own_email');
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
+    .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id, condo_name')
     .eq('auth_user_id', user.id)
     .single();
   if ((error || !customerRow) && user.email) {
@@ -744,7 +749,7 @@ async function loadMyPage(user) {
       if (attempt > 0) await sleep(500 * attempt);
       const retry = await supabaseClient
         .from('customers')
-        .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id')
+        .select('id, family_name, first_name, point_balance, email, tel1, address1, address2, area_id, condo_name')
         .eq('auth_user_id', user.id)
         .single();
       customerRow = retry.data;
@@ -793,6 +798,7 @@ async function loadMyPage(user) {
   document.getElementById('profile-address1').value = customerRow.address1 || '';
   document.getElementById('profile-address2').value = customerRow.address2 || '';
   originalAreaId = customerRow.area_id || null;
+  await loadCondoOptions(customerRow.condo_name);
   await loadAreaOptions(customerRow.area_id);
   await loadOrderHistory(customerRow.id);
   await loadFavorites(customerRow.id);
@@ -1257,6 +1263,29 @@ function onProfileAreaChange() {
   const selectedLabel = select.options[select.selectedIndex]?.textContent || '';
   const isOtherProvince = /other\s*provinces?/i.test(selectedLabel);
   warningEl.style.display = isOtherProvince ? 'block' : 'none';
+  // シラチャのお客様だけ、お住まいのコンドミニアムの選択欄を出す
+  const condoGroup = document.getElementById('profile-condo-group');
+  if (condoGroup) condoGroup.style.display = /sriracha/i.test(selectedLabel) ? 'block' : 'none';
+}
+
+// シラチャのコンドミニアム一覧(火曜・木曜グループ共通)を読み込み、登録済みの値を選択状態にする
+async function loadCondoOptions(currentCondo) {
+  const select = document.getElementById('profile-condo');
+  const notSelected = '<option value="">選択しない / Not selected</option>';
+  try {
+    const { data, error } = await supabaseClient.from('condominiums').select('name')
+      .in('area_group', ['sriracha_tuesday', 'sriracha_thursday']).eq('is_active', true);
+    if (error) throw error;
+    const names = Array.from(new Set((data || []).map(c => c.name)))
+      .filter(n => n && !/other|その他/i.test(n))
+      .sort((a, b) => a.localeCompare(b, 'en'));
+    // 登録済みの名前が一覧に無くなっていても、保存時に消えないよう選択肢に残す
+    if (currentCondo && !names.includes(currentCondo)) names.push(currentCondo);
+    select.innerHTML = notSelected + names.map(n => `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`).join('');
+    select.value = currentCondo || '';
+  } catch (e) {
+    select.innerHTML = notSelected;
+  }
 }
 async function saveProfile() {
   const familyName = document.getElementById('profile-family-name').value.trim();
@@ -1284,6 +1313,12 @@ async function saveProfile() {
     new_first_name: firstName || null,
   });
   if (error) { showProfileMsg('保存に失敗しました: ' + error.message, true); return; }
+  // お住まいのコンドミニアム(シラチャ以外のエリアに変えた場合は空にする)
+  const savedAreaLabel = areaSelect.options[areaSelect.selectedIndex]?.textContent || '';
+  const condoValue = /sriracha/i.test(savedAreaLabel) ? (document.getElementById('profile-condo').value || null) : null;
+  const { error: condoError } = await supabaseClient.rpc('update_own_condo', { new_condo_name: condoValue });
+  if (condoError) { showProfileMsg('コンドミニアムの保存に失敗しました: ' + condoError.message, true); return; }
+  if (currentCustomer) currentCustomer.condo_name = condoValue;
   originalAreaId = areaId;
   if (currentCustomer) {
     if (familyName) currentCustomer.family_name = familyName;

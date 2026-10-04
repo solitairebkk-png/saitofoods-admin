@@ -607,7 +607,7 @@ async function login() {
 async function loadCustomerAndInit(userId) {
   const { data: rows, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance')
+    .select('id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance, condo_name')
     .eq('auth_user_id', userId);
 
   if (error || !rows || rows.length === 0) {
@@ -861,6 +861,17 @@ async function initSrirachaFlow() {
     select.innerHTML = '<option value="">読み込みに失敗しました</option>';
   }
 
+  // マイページでコンドミニアムを登録済みなら、そのコンドミニアムを配送している曜日の日付を先に選んでおく
+  const myCondo = currentCustomer && currentCustomer.condo_name;
+  if (myCondo) {
+    const mine = allCondos.find(c => c.name === myCondo);
+    const wantDow = mine ? (mine.area_group === 'sriracha_tuesday' ? 2 : (mine.area_group === 'sriracha_thursday' ? 4 : null)) : null;
+    if (wantDow !== null) {
+      const opt = Array.from(select.options).find(o => parseInt(o.dataset.dow, 10) === wantDow);
+      if (opt) select.value = opt.value;
+    }
+  }
+
   onSrirachaDateChange();
 }
 
@@ -892,6 +903,9 @@ function onSrirachaDateChange() {
   condoSelect.innerHTML = list.length
     ? list.map(c => `<option value="${c.name}">${c.name}</option>`).join('')
     : '<option value="">コンドミニアムがありません</option>';
+  // マイページで登録済みのコンドミニアムが、この曜日の一覧にあれば最初から選んでおく
+  const myCondo = currentCustomer && currentCustomer.condo_name;
+  if (myCondo && list.some(c => c.name === myCondo)) condoSelect.value = myCondo;
   onCondoSelectChange('sriracha');
 }
 
