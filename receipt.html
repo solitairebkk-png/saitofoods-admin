@@ -7,9 +7,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  tr.storage-row td, .order-items-grid .storage-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  tr.storage-row td { background: #e3eefb; color: #1c3557; font-weight: 800; font-size: 12px; padding: 4px 8px; border: 1px solid #9db7d6; }
-  tr.storage-row.ambient td { background: #ffd9a8; color: #7a3d00; border-color: #e08a1e; }
+  /* 白黒印刷でも区別できるよう、色ではなく「黒ベタ+白抜き」と「枠線+薄いグレー」で見分けられるようにする */
+  tr.storage-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #e6e6e6; color: #000; font-weight: 800; font-size: 12px; padding: 4px 8px; border: 1px solid #000; letter-spacing: 0.03em; }
+  tr.storage-row.ambient td { background: #000; color: #fff; font-size: 13px; padding: 6px 8px; border: 2px solid #000; }
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
     --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
@@ -706,8 +706,8 @@ function renderReceipt(order) {
       const _prev = _idx > 0 ? _sorted[_idx - 1] : null;
       if (_idx === 0 || _isAmb(_prev) !== _isAmb(item)) {
         _head = _isAmb(item)
-          ? '<tr class="storage-row ambient"><td colspan="5">📦 常温 / Room temperature</td></tr>'
-          : '<tr class="storage-row"><td colspan="5">❄️ 冷凍・冷蔵 / Frozen &amp; Chilled</td></tr>';
+          ? '<tr class="storage-row ambient"><td colspan="5">■ 常温 / Room temperature ■</td></tr>'
+          : '<tr class="storage-row"><td colspan="5">冷凍・冷蔵 / Frozen &amp; Chilled</td></tr>';
       }
     }
     const isWeight = item.sale_type === 'weight';
