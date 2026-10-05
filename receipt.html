@@ -7,8 +7,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  /* 冷凍・冷蔵と常温の境目に太線を引くだけ(見出しは出さない=縦幅を使わない)。常温は必ず冷凍・冷蔵の下に並ぶ */
-  tr.storage-split > td { border-top: 3px solid #000 !important; }
+  /* 常温品(冷凍・冷蔵以外)は薄い罫線で囲むだけ(見出しなし=縦幅を使わない)。常温は必ず冷凍・冷蔵の下に並ぶ */
+  tr.amb-row > td:first-child { border-left: 1px solid #777 !important; }
+  tr.amb-row > td:last-child { border-right: 1px solid #777 !important; }
+  tr.amb-first > td { border-top: 1px solid #777 !important; }
+  tr.amb-last > td { border-bottom: 1px solid #777 !important; }
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
     --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
@@ -718,7 +721,9 @@ function renderReceipt(order) {
     // Mgr列(使っていなかった)を廃止し、その位置をQty専用列として使う(2026-09-28)。
     const qtyClass = 'qty-value' + (isMultiQty ? ' qty-multi' : '');
     const nameSnapshotHighlighted = decorateProductName(item.product_name_snapshot || '');
-    return `<tr${_split ? ' class="storage-split"' : ''}>
+    const _isLastAmb = _both && _isAmb(item) && _idx === _sorted.length - 1;
+    const _cls = (_both && _isAmb(item)) ? ('amb-row' + (_split ? ' amb-first' : '') + (_isLastAmb ? ' amb-last' : '')) : '';
+    return `<tr${_cls ? ' class="' + _cls + '"' : ''}>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
       <td class="item-name">${nameSnapshotHighlighted}${nameEn}${weightTag}</td>
