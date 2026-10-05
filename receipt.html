@@ -513,7 +513,7 @@ async function loadReceipt() {
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, point_balance, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, point_balance, last_purchase_date, areas ( name ) ),
       order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .eq('id', orderId)
@@ -521,7 +521,7 @@ async function loadReceipt() {
 
   if (error || !order) { showError(); return; }
   renderReceipt(order);
-  loadPointsExpiry(order.customer_id, order.created_at);
+  loadPointsExpiry(order.customer_id, order.created_at, order.customers && order.customers.last_purchase_date, order.customers && order.customers.point_balance);
   loadOrderPoints(order);
 }
 
@@ -805,42 +805,39 @@ function renderReceipt(order) {
   document.getElementById('receipt-content').style.display = 'block';
 }
 
-async function loadPointsExpiry(customerId, baseDateStr) {
+async function loadPointsExpiry(customerId, baseDateStr, lastPurchaseDate, balance) {
   if (!customerId) return;
   const expiryEl = document.getElementById('f-points-expiry');
-
-  // まず全体設定(settings.point_expiry_days)を取得し、この注文日を起点にした具体的な失効日を表示する。
-  // 個別のポイント失効日(points_ledger)が取得できればそちらの具体的な日付で上書きする。
-  let expiryDays = null;
+  // ルール: 最後の購入日から60日間ご利用がないと、ポイントはすべて失効。購入のたびに60日に延長される。
+  // 基準日は顧客の最後の購入日(取れなければこの注文日)。サービス延長などで明細の期限の方が遅ければそちらを表示。
+  let expiryDays = 60;
   try {
     const { data } = await supabaseClient
       .from('settings').select('value').eq('key', 'point_expiry_days').single();
-    if (data) expiryDays = parseInt(data.value, 10);
+    if (data && parseInt(data.value, 10) > 0) expiryDays = parseInt(data.value, 10);
   } catch (e) { }
 
-  if (expiryDays && baseDateStr) {
-    const baseDate = new Date(baseDateStr);
-    if (!isNaN(baseDate.getTime())) {
-      const expiryDate = new Date(baseDate.getTime() + expiryDays * 24 * 3600000);
-      const expiryDateStr = expiryDate.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
-      expiryEl.textContent = `(expires on ${expiryDateStr} unless a new order is placed)`;
-    }
-  }
+  const base = lastPurchaseDate ? new Date(lastPurchaseDate + 'T00:00:00') : new Date(baseDateStr);
+  let expiry = isNaN(base.getTime()) ? null : new Date(base.getTime() + expiryDays * 24 * 3600000);
 
-  const today = new Date().toISOString().slice(0, 10);
   try {
     const { data } = await supabaseClient
       .from('points_ledger')
       .select('expires_at')
       .eq('customer_id', customerId)
-      .eq('change_type', 'earn')
-      .gte('expires_at', today)
-      .order('expires_at', { ascending: true })
+      .eq('is_expired', false)
+      .not('expires_at', 'is', null)
+      .order('expires_at', { ascending: false })
       .limit(1);
-    if (data && data.length > 0) {
-      expiryEl.textContent = `(next expiry: ${data[0].expires_at})`;
+    if (data && data.length > 0 && data[0].expires_at) {
+      const le = new Date(data[0].expires_at + 'T00:00:00');
+      if (!expiry || le > expiry) expiry = le;
     }
   } catch (e) { }
+
+  if (!expiry || !(balance > 0)) { expiryEl.textContent = ''; return; }
+  const str = expiry.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  expiryEl.textContent = `(valid until ${str}. All points expire if no purchase is made within ${expiryDays} days of your last purchase; each purchase extends it by another ${expiryDays} days)`;
 }
 
 async function loadOrderPoints(order) {
