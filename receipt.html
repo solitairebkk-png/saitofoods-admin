@@ -7,9 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  /* 白黒印刷でも区別できるよう、色ではなく「黒ベタ+白抜き」と「枠線+薄いグレー」で見分けられるようにする */
-  tr.storage-row td { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: #e6e6e6; color: #000; font-weight: 800; font-size: 12px; padding: 4px 8px; border: 1px solid #000; letter-spacing: 0.03em; }
-  tr.storage-row.ambient td { background: #000; color: #fff; font-size: 13px; padding: 6px 8px; border: 2px solid #000; }
+  /* 冷凍・冷蔵と常温の境目に太線を引くだけ(見出しは出さない=縦幅を使わない)。常温は必ず冷凍・冷蔵の下に並ぶ */
+  tr.storage-split > td { border-top: 3px solid #000 !important; }
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
     --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
@@ -701,15 +700,8 @@ function renderReceipt(order) {
   const _sorted = _all.filter(i => !_isAmb(i)).concat(_all.filter(_isAmb));
   const _both = _all.some(_isAmb) && _all.some(i => !_isAmb(i));
   itemsBody.innerHTML = _sorted.map((item, _idx) => {
-    let _head = '';
-    if (_both) {
-      const _prev = _idx > 0 ? _sorted[_idx - 1] : null;
-      if (_idx === 0 || _isAmb(_prev) !== _isAmb(item)) {
-        _head = _isAmb(item)
-          ? '<tr class="storage-row ambient"><td colspan="5">■ 常温 / Room temperature ■</td></tr>'
-          : '<tr class="storage-row"><td colspan="5">冷凍・冷蔵 / Frozen &amp; Chilled</td></tr>';
-      }
-    }
+    // 冷凍・冷蔵と常温が両方ある注文だけ、常温の最初の行の上に太線を引く(見出し行は出さない)
+    const _split = _both && _isAmb(item) && (_idx === 0 || !_isAmb(_sorted[_idx - 1]));
     const isWeight = item.sale_type === 'weight';
     const isMultiQty = !isWeight && Number(item.quantity) >= 2;
     const qtyLabel = isWeight
@@ -726,7 +718,7 @@ function renderReceipt(order) {
     // Mgr列(使っていなかった)を廃止し、その位置をQty専用列として使う(2026-09-28)。
     const qtyClass = 'qty-value' + (isMultiQty ? ' qty-multi' : '');
     const nameSnapshotHighlighted = decorateProductName(item.product_name_snapshot || '');
-    return `${_head}<tr>
+    return `<tr${_split ? ' class="storage-split"' : ''}>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
       <td class="item-name">${nameSnapshotHighlighted}${nameEn}${weightTag}</td>
