@@ -180,6 +180,12 @@
   .btn-walkin-cash { background: #8a7a5a; }
   .btn-walkin-qr { background: #2d6fa8; }
   .btn-walkin-slip { background: #6a4fb0; }
+  /* PC表示ではボタンを2列に並べて注文1件あたりの縦幅を減らす(ボタン以外の欄は2列ぶち抜き) */
+  @media (min-width: 761px) {
+    .manage-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-width: 190px; }
+    .manage-col > :not(button) { grid-column: 1 / -1; }
+    .manage-col button { padding: 4px 4px; font-size: 10.5px; }
+  }
   .manage-col button.walkin-selected { outline: 2px solid #23272f; outline-offset: 1px; font-weight: 700; }
 
   .badge-cancelled { background: #e2e2e2; color: #4a5568; }
@@ -706,7 +712,7 @@
         <th style="width:110px;">วันที่จัดส่ง<span class="en">Delivery-Date</span></th>
         <th style="width:90px;">เวลา<span class="en">Time</span></th>
         <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
-        <th style="width:110px;">จัดการ<span class="en">Manage</span></th>
+        <th style="width:200px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
         <th style="width:250px;">ออกเดินทาง / สลิป<span class="en">Dispatch / Slip</span></th>
       </tr>
