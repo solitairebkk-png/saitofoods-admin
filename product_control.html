@@ -113,6 +113,7 @@
   .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
   .tag.special { background: #e6dcf5; color: #5a3d8a; }
   .tag.weight { background: #d9e8f5; color: #1c3557; }
+  .tag.ambient { background: #ffe3c2; color: #8a4b00; font-weight: 700; }
   .tag.noprice { background: var(--red-accent); color: white; }
   .tag.free { background: #d7ecdd; color: var(--green); }
   .tag.unpub { background: #dcdcdc; color: #444; }
@@ -512,6 +513,7 @@ function renderProductRow(p) {
   const tags = [
     p.is_local_special ? '<span class="tag special">Local Special</span>' : '',
     p.sale_type === 'weight' ? '<span class="tag weight">Weight</span>' : '',
+    p.storage_type === 'ambient' ? '<span class="tag ambient">📦 常温 / Room temp</span>' : '',
     p.is_published === false ? '<span class="tag unpub">非公開</span>' : '',
     exclAreas.length ? `<span class="tag unpub">🚫 ${exclAreas.join('・')}では販売不可</span>` : '',
     (p.excluded_condos || []).length ? `<span class="tag unpub">🚫 ${p.excluded_condos.join('・')}宛は販売不可</span>` : '',
@@ -593,6 +595,12 @@ function toggleEdit(productId) {
         <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
         <label>在庫数 / Stock Qty<input type="number" class="e-stock" min="0" step="1" value="${p.stock_qty ?? ''}" ${p.is_unlimited_stock ? 'disabled' : ''}></label>
         <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
+        <label>保管 / Storage <span style="font-weight:400;color:var(--text-muted);font-size:10px;">※伝票で「冷凍・冷蔵」と「常温」を分けて表示します</span>
+          <select class="e-storage">
+            <option value="cold" ${(p.storage_type || 'cold') === 'cold' ? 'selected' : ''}>❄️ 冷凍・冷蔵 / Frozen & Chilled</option>
+            <option value="ambient" ${p.storage_type === 'ambient' ? 'selected' : ''}>📦 常温 / Room temperature</option>
+          </select>
+        </label>
         <label class="checkbox-field"><input type="checkbox" class="e-unlimited" onchange="toggleStockField(this)" ${p.is_unlimited_stock ? 'checked' : ''}> 在庫無制限 / Unlimited</label>
         <label class="checkbox-field"><input type="checkbox" class="e-special" ${p.is_local_special ? 'checked' : ''}> Local Special</label>
         <label class="checkbox-field"><input type="checkbox" class="e-free" onchange="toggleFreeField(this)" ${p.is_free ? 'checked' : ''}> 無料配布 / Free item</label>
@@ -1036,6 +1044,7 @@ async function saveProduct(productId) {
     image_url_6: g('.e-image-6').value.trim() || null,
     image_url_7: g('.e-image-7').value.trim() || null,
     image_url_8: g('.e-image-8').value.trim() || null,
+    storage_type: g('.e-storage').value === 'ambient' ? 'ambient' : 'cold',
     is_local_special: g('.e-special').checked,
     is_free: g('.e-free').checked,
     is_published: g('.e-published').checked,
@@ -1140,7 +1149,7 @@ function addNewProduct() {
   const blank = {
     id: newId, name_ja: '', name_en: '', name_th: '', group_type: 'A', sale_type: 'package',
     price: 0, unit_price: null, unit_label: '', point_rate_percent: 1, is_unlimited_stock: false,
-    stock_qty: 0, sort_order: null, is_local_special: false, is_free: false, is_published: true, is_available_en: true,
+    stock_qty: 0, sort_order: null, storage_type: 'cold', is_local_special: false, is_free: false, is_published: true, is_available_en: true,
     image_url: null, image_url_2: null, image_url_3: null,
     image_url_4: null, image_url_5: null, image_url_6: null, image_url_7: null, image_url_8: null,
     instagram_url: null, youtube_url: null, search_keywords: null,

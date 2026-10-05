@@ -7,6 +7,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
+  tr.storage-row td, .order-items-grid .storage-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.storage-row td { background: #e3eefb; color: #1c3557; font-weight: 800; font-size: 12px; padding: 4px 8px; border: 1px solid #9db7d6; }
+  tr.storage-row.ambient td { background: #ffd9a8; color: #7a3d00; border-color: #e08a1e; }
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
     --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
@@ -514,7 +517,7 @@ async function loadReceipt() {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, point_balance, last_purchase_date, areas ( name ) ),
-      order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
+      order_items ( product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( name_en, name_th, unit_label, storage_type ) )
     `)
     .eq('id', orderId)
     .single();
@@ -692,7 +695,21 @@ function renderReceipt(order) {
       <td class="num">${baht(order.total_amount)}</td>
     </tr>`;
   } else {
-  itemsBody.innerHTML = (order.order_items || []).map(item => {
+  // 保管区分(冷凍・冷蔵 / 常温)ごとにまとめて表示(2026-10-05)。片方しかない注文では見出しを出さない。
+  const _isAmb = i => i && i.products && i.products.storage_type === 'ambient';
+  const _all = order.order_items || [];
+  const _sorted = _all.filter(i => !_isAmb(i)).concat(_all.filter(_isAmb));
+  const _both = _all.some(_isAmb) && _all.some(i => !_isAmb(i));
+  itemsBody.innerHTML = _sorted.map((item, _idx) => {
+    let _head = '';
+    if (_both) {
+      const _prev = _idx > 0 ? _sorted[_idx - 1] : null;
+      if (_idx === 0 || _isAmb(_prev) !== _isAmb(item)) {
+        _head = _isAmb(item)
+          ? '<tr class="storage-row ambient"><td colspan="5">📦 常温 / Room temperature</td></tr>'
+          : '<tr class="storage-row"><td colspan="5">❄️ 冷凍・冷蔵 / Frozen &amp; Chilled</td></tr>';
+      }
+    }
     const isWeight = item.sale_type === 'weight';
     const isMultiQty = !isWeight && Number(item.quantity) >= 2;
     const qtyLabel = isWeight
@@ -709,7 +726,7 @@ function renderReceipt(order) {
     // Mgr列(使っていなかった)を廃止し、その位置をQty専用列として使う(2026-09-28)。
     const qtyClass = 'qty-value' + (isMultiQty ? ' qty-multi' : '');
     const nameSnapshotHighlighted = decorateProductName(item.product_name_snapshot || '');
-    return `<tr>
+    return `${_head}<tr>
       <td class="chk-col"><span class="chk-box"></span></td>
       <td class="qty-col"><span class="${qtyClass}">${qtyLabel}</span></td>
       <td class="item-name">${nameSnapshotHighlighted}${nameEn}${weightTag}</td>
