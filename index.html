@@ -142,6 +142,17 @@
     .sidebar-category-item { flex: 0 0 auto; border: 1.5px solid var(--line); border-bottom: 1.5px solid var(--line); border-radius: 20px; background: #fff; white-space: nowrap; }
     .sidebar-categories-title { padding: 0 16px 8px; }
 
+    /* スマホのトップ(2026-10-05): アイコン行とカテゴリ一覧は隠し、
+       「ご利用ガイド」「お問い合わせ」だけを小さなボタン1行にしてスクロールを減らす。
+       商品一覧・カテゴリへはヘッダーの「商品一覧」とヒーローのボタンから行ける。PC表示は変更なし。 */
+    .sidebar-categories { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px; }
+    .sidebar-quicklinks { border-bottom: none; margin: 0; padding: 0; }
+    .sidebar-quicklink { padding: 8px 16px; gap: 0; border: 1.5px solid var(--line); border-radius: 20px; background: #fff; }
+    .sidebar-quicklink-icon, .sidebar-quicklink-sub { display: none; }
+    .sidebar-quicklink.quicklink-products { display: none; }
+    .sidebar-categories-title, .sidebar-category-list { display: none; }
+    .sidebar-categories .sidebar-contact { margin: 0; }
+
     .promo-scroll { max-width: 100%; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
     .top3-list { flex-direction: column; }
     .top3-item { width: 100%; max-width: 100%; }
@@ -459,7 +470,7 @@ function closeMigrationGuideModal() {
         <img class="sidebar-quicklink-icon" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/guide.png" alt="ご利用ガイド">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.guideTitle">ご利用ガイド</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.guideSub">USER GUIDE</span></span>
       </a>
-      <a href="product_list.html" class="sidebar-quicklink">
+      <a href="product_list.html" class="sidebar-quicklink quicklink-products">
         <img class="sidebar-quicklink-icon square" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/menu.png" alt="商品一覧">
         <span><span class="sidebar-quicklink-title" data-i18n="sidebar.productsTitle">商品一覧</span><span class="sidebar-quicklink-sub" data-i18n="sidebar.productsSub">PRODUCTS</span></span>
       </a>
