@@ -153,7 +153,7 @@
     document.getElementById('ct-message').placeholder = t('messagePh');
     document.getElementById('ct-send').textContent = t('send');
     document.getElementById('ct-close').textContent = t('close');
-    if (linkEl) linkEl.textContent = t('link');
+    applyLinkText();
   }
 
   function setMsg(text, kind) {
@@ -264,10 +264,37 @@
     document.head.appendChild(style);
     linkEl = document.createElement('a');
     linkEl.href = '#contact';
-    linkEl.className = 'sidebar-contact';
-    linkEl.textContent = t('link');
     linkEl.addEventListener('click', openModal);
-    aside.appendChild(linkEl); // カテゴリ一覧(JSが後から書き換える部分)の外に置く。左メニューの一番下
+    // 左メニュー上部のクイックリンク(ご利用ガイド・商品一覧など)と同じ見た目で、
+    // 「ご利用ガイド」のすぐ下に置く(2026-10-05。以前は一番下にあり見つけにくかった)。
+    // クイックリンク欄が無いページでは、従来どおり左メニューの一番下に文字リンクとして置く。
+    var quick = aside.querySelector('.sidebar-quicklinks');
+    if (quick) {
+      linkEl.className = 'sidebar-quicklink sidebar-contact-quick';
+      linkEl.innerHTML = '<span class="sidebar-quicklink-icon" style="font-size:22px;">\u2709\uFE0F</span>' +
+        '<span><span class="sidebar-quicklink-title" id="ct-link-title"></span>' +
+        '<span class="sidebar-quicklink-sub" id="ct-link-sub"></span></span>';
+      var guide = quick.querySelector('a[href="user_guide.html"]');
+      if (guide && guide.nextSibling) quick.insertBefore(linkEl, guide.nextSibling);
+      else quick.appendChild(linkEl);
+    } else {
+      linkEl.className = 'sidebar-contact';
+      aside.appendChild(linkEl); // カテゴリ一覧(JSが後から書き換える部分)の外に置く
+    }
+    applyLinkText();
+  }
+
+  // リンクの文言(日本語/英語)。クイックリンク型のときはタイトル+小見出しの2段、文字リンク型は1段。
+  function applyLinkText() {
+    if (!linkEl) return;
+    var titleEl = document.getElementById('ct-link-title');
+    var subEl = document.getElementById('ct-link-sub');
+    if (titleEl) {
+      titleEl.textContent = t('link');
+      if (subEl) subEl.textContent = 'CONTACT US';
+    } else {
+      linkEl.textContent = t('link');
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
