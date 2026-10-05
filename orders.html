@@ -338,6 +338,13 @@
   #email-modal-send-btn { background: var(--navy); color: white; }
   #email-modal-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   #email-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+  #email-attach-btn { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-family: inherit; }
+  #email-attach-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #email-attach-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .email-attach-item { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #f8f7f4; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
+  .email-attach-item .email-attach-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .email-attach-item .email-attach-size { color: var(--text-muted); flex: none; }
+  .email-attach-item button { flex: none; border: none; background: none; cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-muted); padding: 0 2px; }
   .btn-email-customer { background: #7c5cbf; }
 
   /* 帳票(伝票)表示 + 印刷モーダル */
@@ -818,6 +825,15 @@
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
         If you write in Japanese already, there's no need to translate — it will be sent as-is. / หากเขียนเป็นภาษาญี่ปุ่นอยู่แล้ว ไม่ต้องแปล ระบบจะส่งตามที่เขียนไว้เลย
+      </div>
+    </div>
+    <div class="email-field">
+      <label>Attachments / ไฟล์แนบ (optional / ไม่บังคับ)</label>
+      <input type="file" id="email-modal-files" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none;">
+      <button type="button" id="email-attach-btn" onclick="document.getElementById('email-modal-files').click()">📎 Attach files / แนบไฟล์</button>
+      <div id="email-attach-list"></div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+        Up to 5 files, 10MB total (images, PDF, Word, Excel). / สูงสุด 5 ไฟล์ รวมไม่เกิน 10MB (รูปภาพ, PDF, Word, Excel)
       </div>
     </div>
     <div class="email-field">
@@ -3406,6 +3422,69 @@ let emailMessageBeforeTranslate = null;
 let emailWasTranslated = false; // 翻訳ボタンを使った場合のみ、本文末尾に機械翻訳の注記を付ける
 const STAFF_EMAIL_FIXED_SUBJECT = 'From Saitofoods Co.,Ltd.'; // 件名は固定
 
+// 添付ファイル(任意)。GASのPOST本文にbase64で載せて送る。
+// 上限はGmail(25MB)・GASのPOST上限に対して余裕を見た値。変更する場合はここだけ直せばよい。
+const EMAIL_ATTACH_MAX_FILES = 5;
+const EMAIL_ATTACH_MAX_TOTAL_BYTES = 10 * 1024 * 1024; // 合計10MB
+let emailAttachments = []; // File オブジェクトの配列
+
+function formatFileSize(bytes) {
+  if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
+function renderEmailAttachments() {
+  const list = document.getElementById('email-attach-list');
+  list.innerHTML = '';
+  emailAttachments.forEach((file, idx) => {
+    const row = document.createElement('div');
+    row.className = 'email-attach-item';
+    const name = document.createElement('span');
+    name.className = 'email-attach-name';
+    name.textContent = '📎 ' + file.name;
+    const size = document.createElement('span');
+    size.className = 'email-attach-size';
+    size.textContent = formatFileSize(file.size);
+    const rm = document.createElement('button');
+    rm.type = 'button';
+    rm.textContent = '×';
+    rm.title = 'Remove / ลบ';
+    rm.onclick = () => { emailAttachments.splice(idx, 1); renderEmailAttachments(); };
+    row.append(name, size, rm);
+    list.appendChild(row);
+  });
+}
+
+function onEmailFilesSelected(ev) {
+  const picked = Array.from(ev.target.files || []);
+  ev.target.value = ''; // 同じファイルを選び直せるようにリセット
+  for (const file of picked) {
+    if (emailAttachments.length >= EMAIL_ATTACH_MAX_FILES) {
+      alert(`You can attach up to ${EMAIL_ATTACH_MAX_FILES} files. / แนบได้สูงสุด ${EMAIL_ATTACH_MAX_FILES} ไฟล์`);
+      break;
+    }
+    const total = emailAttachments.reduce((s, f) => s + f.size, 0) + file.size;
+    if (total > EMAIL_ATTACH_MAX_TOTAL_BYTES) {
+      alert(`"${file.name}" was not added: total size would exceed 10MB. / ไม่ได้เพิ่ม "${file.name}" เพราะขนาดรวมเกิน 10MB`);
+      continue;
+    }
+    emailAttachments.push(file);
+  }
+  renderEmailAttachments();
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve(result.slice(result.indexOf(',') + 1)); // "data:...;base64," の接頭辞を除去
+    };
+    reader.onerror = () => reject(reader.error || new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
 function buildEmailPreview(customerName, message) {
   const msg = message || '(メッセージをここに入力 / message goes here)';
   const translateNote = emailWasTranslated
@@ -3425,6 +3504,9 @@ function openEmailModal(order) {
   emailModalCustomerName = `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim();
   emailMessageBeforeTranslate = null;
   emailWasTranslated = false;
+  emailAttachments = [];
+  renderEmailAttachments();
+  document.getElementById('email-modal-files').onchange = onEmailFilesSelected;
 
   document.getElementById('email-modal-to').value = order.customers.email;
   document.getElementById('email-modal-subject').value = STAFF_EMAIL_FIXED_SUBJECT;
@@ -3442,6 +3524,8 @@ function openEmailModal(order) {
 function closeEmailModal() {
   document.getElementById('email-modal').classList.remove('open');
   emailModalOrderId = null;
+  emailAttachments = [];
+  renderEmailAttachments();
 }
 
 // cart.htmlの備考欄翻訳(日本語→タイ語)と同じGoogle翻訳の無料エンドポイントを、
@@ -3505,9 +3589,19 @@ async function sendCustomEmail() {
   btn.textContent = 'Sending... / กำลังส่ง...';
 
   try {
+    // 添付ファイルをbase64化(ファイル名・MIMEタイプ・本体)。添付なしなら空配列。
+    const attachments = [];
+    for (const file of emailAttachments) {
+      attachments.push({
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        data: await readFileAsBase64(file),
+      });
+    }
+
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'sendStaffEmail', order_id: emailModalOrderId, subject, body }),
+      body: JSON.stringify({ action: 'sendStaffEmail', order_id: emailModalOrderId, subject, body, attachments }),
     });
     const json = await res.json();
     if (json.status !== 'ok') {
