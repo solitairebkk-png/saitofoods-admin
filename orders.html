@@ -1335,7 +1335,13 @@ function renderTunaTofuSummary(rows) {
 
   const activeOrders = (rows || []).filter(o => !o.is_cancelled);
   const byDate = new Map();
-  const emptyBucket = () => Object.fromEntries(categories.map(c => [c.key, 0]));
+  // 各セルは3種類を別々に集計する(2026-10-05修正):
+  //  qty   : 通常商品(豆腐など)の個数
+  //  grams : 量り売り商品で重量確定済みのグラム数
+  //  packs : 量り売り商品で重量未確定の注文パック数(まだ重さが決まっていない)
+  // 量り売りの quantity は、確定後は「unit_label(例:100g)を1とした倍数」(2.6 = 260g)、
+  // 確定前は「注文パック数」で保存されているため、そのまま足すと 2.6 のような誤表示になっていた。
+  const emptyBucket = () => Object.fromEntries(categories.map(c => [c.key, { qty: 0, grams: 0, packs: 0 }]));
 
   activeOrders.forEach(order => {
     const date = order.delivery_date || '(No date / ไม่มีวันที่)';
@@ -1344,7 +1350,16 @@ function renderTunaTofuSummary(rows) {
       const cat = getTunaTofuCategory(item);
       if (cat && categories.some(c => c.key === cat)) {
         if (!byDate.has(date)) byDate.set(date, emptyBucket());
-        byDate.get(date)[cat] += qty;
+        const cell = byDate.get(date)[cat];
+        if (item.sale_type === 'weight') {
+          if (order.is_weight_confirmed) {
+            cell.grams += qty * parseGramsPerUnit(item.products?.unit_label);
+          } else {
+            cell.packs += qty;
+          }
+        } else {
+          cell.qty += qty;
+        }
       }
     });
   });
@@ -1357,6 +1372,15 @@ function renderTunaTofuSummary(rows) {
     return;
   }
 
+  // セル表示: 個数 / 確定済みグラム(例: 260g) / 未確定パック数(例: 2 packs TBC) を、ある分だけ " + " でつなぐ
+  const formatCell = (c) => {
+    const parts = [];
+    if (c.qty > 0) parts.push(String(c.qty));
+    if (c.grams > 0) parts.push(`${Math.round(c.grams)}g`);
+    if (c.packs > 0) parts.push(`${c.packs} pack${c.packs === 1 ? '' : 's'} (TBC)`);
+    return parts.length ? parts.join(' + ') : '-';
+  };
+
   const dates = [...byDate.keys()].sort();
   const totals = emptyBucket();
 
@@ -1368,14 +1392,19 @@ function renderTunaTofuSummary(rows) {
     const bucket = byDate.get(date);
     html += `<tr><td>${escapeHtml(date)}</td>`
       + categories.map(c => {
-        totals[c.key] += bucket[c.key];
-        return `<td class="num">${bucket[c.key] > 0 ? bucket[c.key] : '-'}</td>`;
+        totals[c.key].qty += bucket[c.key].qty;
+        totals[c.key].grams += bucket[c.key].grams;
+        totals[c.key].packs += bucket[c.key].packs;
+        return `<td class="num">${formatCell(bucket[c.key])}</td>`;
       }).join('')
       + '</tr>';
   });
 
   html += '<tr class="rice-summary-total-row"><td>Total / รวม</td>'
-    + categories.map(c => `<td class="num">${totals[c.key]}</td>`).join('')
+    + categories.map(c => {
+      const t = totals[c.key];
+      return `<td class="num">${(t.qty + t.grams + t.packs) > 0 ? formatCell(t) : '0'}</td>`;
+    }).join('')
     + '</tr></tbody>';
 
   table.innerHTML = html;
