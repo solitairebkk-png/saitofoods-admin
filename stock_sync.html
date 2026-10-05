@@ -256,7 +256,7 @@ function applyFilters() {
       if (!hay.includes(q)) return false;
     }
     if (zeroOnly && !isZeroStock(p)) return false;
-    if (unpublishedOnly && p.is_published === false) return false;
+    if (unpublishedOnly && p.is_published !== false) return false;
     if (soonOnly && !p.is_coming_soon) return false;
     return true;
   });
