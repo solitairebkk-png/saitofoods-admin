@@ -90,6 +90,7 @@
     #products-table td.col-image { order: 2; flex: 0 0 auto; }
     #products-table td.col-name { order: 3; flex: 1 1 140px; min-width: 140px; font-size: 13px; }
     #products-table td.col-cat,
+    #products-table td.col-storage,
     #products-table td.col-group,
     #products-table td.col-type,
     #products-table td.col-price,
@@ -100,6 +101,7 @@
     }
     #products-table td.col-cat { flex-basis: 100%; }
     #products-table td.col-cat::before,
+    #products-table td.col-storage::before,
     #products-table td.col-group::before,
     #products-table td.col-type::before,
     #products-table td.col-price::before,
@@ -113,6 +115,9 @@
   .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-right: 4px; }
   .tag.special { background: #e6dcf5; color: #5a3d8a; }
   .tag.weight { background: #d9e8f5; color: #1c3557; }
+  .storage-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .storage-check input { width: 22px; height: 22px; cursor: pointer; accent-color: #d9661f; }
+  td.col-storage { text-align: center; }
   .tag.ambient { background: #ffe3c2; color: #8a4b00; font-weight: 700; }
   .tag.noprice { background: var(--red-accent); color: white; }
   .tag.free { background: #d7ecdd; color: var(--green); }
@@ -190,6 +195,13 @@
         <option value="">All / ทั้งหมด</option>
       </select>
     </label>
+    <label>保管 / Storage
+      <select id="filter-storage" onchange="applyFilters()">
+        <option value="">All / ทั้งหมด</option>
+        <option value="ambient">📦 常温のみ / Room temp</option>
+        <option value="cold">❄️ 冷凍・冷蔵のみ / Frozen & Chilled</option>
+      </select>
+    </label>
     <label>ประเภท / Type
       <select id="filter-saletype" onchange="applyFilters()">
         <option value="">All / ทั้งหมด</option>
@@ -219,6 +231,7 @@
         <th></th>
         <th>画像 / Image</th>
         <th>商品名 / Name</th>
+        <th title="チェックすると常温品。伝票で冷凍・冷蔵と分けて表示されます">常温<br>Room temp</th>
         <th>価格 / Price</th>
         <th>在庫 / Stock</th>
         <th>カテゴリ / Category</th>
@@ -228,7 +241,7 @@
       </tr>
     </thead>
     <tbody id="products-tbody">
-      <tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>
+      <tr><td colspan="10" class="loading">กำลังโหลด... / Loading...</td></tr>
     </tbody>
   </table>
 
@@ -326,7 +339,7 @@ async function fetchAllRows(table, selectCols) {
 
 async function loadProducts(anchorProductId, fallbackAnchorIds) {
   const tbody = document.getElementById('products-tbody');
-  tbody.innerHTML = '<tr><td colspan="9" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="10" class="loading">กำลังโหลด... / Loading...</td></tr>';
 
   const [{ data: products, error: prodErr }, { data: pcRows, error: pcErr }] = await Promise.all([
     supabaseClient.from('products').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('name_ja'),
@@ -334,7 +347,7 @@ async function loadProducts(anchorProductId, fallbackAnchorIds) {
   ]);
 
   if (prodErr || pcErr) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Error: ' + (prodErr?.message || pcErr?.message) + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Error: ' + (prodErr?.message || pcErr?.message) + '</td></tr>';
     return;
   }
 
@@ -421,6 +434,7 @@ function clearFilters() {
   document.getElementById('filter-search').value = '';
   document.getElementById('filter-category').value = '';
   document.getElementById('filter-saletype').value = '';
+  document.getElementById('filter-storage').value = '';
   document.getElementById('filter-noprice').checked = false;
   document.getElementById('filter-outofstock').checked = false;
   document.getElementById('filter-noimage').checked = false;
@@ -444,6 +458,7 @@ function applyFilters() {
   const q = document.getElementById('filter-search').value.trim().toLowerCase();
   const catId = document.getElementById('filter-category').value;
   const saleType = document.getElementById('filter-saletype').value;
+  const storageFilter = document.getElementById('filter-storage').value;
   const noPriceOnly = document.getElementById('filter-noprice').checked;
   const outOfStockOnly = document.getElementById('filter-outofstock').checked;
   const noImageOnly = document.getElementById('filter-noimage').checked;
@@ -463,6 +478,7 @@ function applyFilters() {
       if (!cats.includes(catId)) return false;
     }
     if (saleType && p.sale_type !== saleType) return false;
+    if (storageFilter && (p.storage_type === 'ambient' ? 'ambient' : 'cold') !== storageFilter) return false;
     if (noPriceOnly && !isMissingPrice(p)) return false;
     if (outOfStockOnly && !isOutOfStock(p)) return false;
     if (noImageOnly && p.image_url) return false;
@@ -484,7 +500,7 @@ function applyFilters() {
 
 function renderTable(products) {
   const tbody = document.getElementById('products-tbody');
-  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
+  if (products.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ไม่พบสินค้า / No products found</td></tr>'; return; }
 
   tbody.innerHTML = '';
   products.forEach(p => tbody.appendChild(renderProductRow(p)));
@@ -493,6 +509,41 @@ function renderTable(products) {
 function categoryNames(productId) {
   const ids = productCategoryMap[productId] || [];
   return ids.map(id => allCategories.find(c => c.id === id)?.name_ja).filter(Boolean).join(', ') || '-';
+}
+
+// 常温/冷凍のチェックボックス: チェックを入れる/外すたびにすぐ保存する(伝票での冷凍・冷蔵/常温の分け表示に使う)
+async function setStorageType(productId, checkbox) {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  const newType = checkbox.checked ? 'ambient' : 'cold';
+  const prev = p.storage_type === 'ambient' ? 'ambient' : 'cold';
+  checkbox.disabled = true;
+  try {
+    if (!p._isNew) {
+      const { error } = await supabaseClient.from('products').update({ storage_type: newType }).eq('id', productId);
+      if (error) throw error;
+    }
+    p.storage_type = newType;
+    // 一覧のタグ表示を更新(編集中の行を壊さないよう、その行のタグだけ差し替える)
+    const row = checkbox.closest('tr');
+    const nameCell = row && row.querySelector('.col-name');
+    if (nameCell) {
+      const old = nameCell.querySelector('.tag.ambient');
+      if (newType === 'ambient' && !old) {
+        const t = document.createElement('span');
+        t.className = 'tag ambient';
+        t.textContent = '📦 常温 / Room temp';
+        nameCell.appendChild(t);
+      } else if (newType !== 'ambient' && old) {
+        old.remove();
+      }
+    }
+  } catch (e) {
+    checkbox.checked = prev === 'ambient';
+    alert('保存できませんでした / Save failed: ' + (e.message || e));
+  } finally {
+    checkbox.disabled = false;
+  }
 }
 
 function renderProductRow(p) {
@@ -528,6 +579,7 @@ function renderProductRow(p) {
     <td class="col-edit"><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
     <td class="col-image">${imgCell}</td>
     <td class="col-name">${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
+    <td class="col-storage" data-label="常温品 / Room temp"><label class="storage-check"><input type="checkbox" ${p.storage_type === 'ambient' ? 'checked' : ''} onchange="setStorageType('${p.id}', this)"><span>常温</span></label></td>
     <td class="col-price" data-label="価格 / Price">${priceLabel}</td>
     <td class="col-stock" data-label="在庫 / Stock">${p.is_unlimited_stock ? 'Unlimited' : (p.stock_qty ?? '-')}</td>
     <td class="col-cat" data-label="カテゴリ / Category" style="font-size:12px;">${categoryNames(p.id)}</td>
@@ -572,7 +624,7 @@ function toggleEdit(productId) {
   }).join('');
 
   editRow.innerHTML = `
-    <td colspan="9">
+    <td colspan="10">
       <div class="edit-grid">
         <label>
           <span style="display:flex;align-items:center;justify-content:space-between;gap:8px;">名前(日) / Name (JA) <button type="button" class="btn small ghost e-translate-all-btn" onclick="translateAllFields(this)" style="font-size:11px;padding:3px 9px;">🌐 まとめて翻訳 / Translate all</button></span>
