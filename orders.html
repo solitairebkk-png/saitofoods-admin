@@ -828,6 +828,13 @@
       </div>
     </div>
     <div class="email-field">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+        <input type="checkbox" id="email-modal-slip-check" style="width:auto;margin:0;" onchange="onEmailSlipCheckChange()">
+        <span>💳 Include payment slip link / แนบลิงก์อัปโหลดสลิป</span>
+      </label>
+      <div id="email-modal-slip-info" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;line-height:1.6;"></div>
+    </div>
+    <div class="email-field">
       <label>Attachments / ไฟล์แนบ (optional / ไม่บังคับ)</label>
       <input type="file" id="email-modal-files" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none;">
       <button type="button" id="email-attach-btn" onclick="document.getElementById('email-modal-files').click()">📎 Attach files / แนบไฟล์</button>
@@ -3423,6 +3430,8 @@ async function sendWeightEmailManually(order) {
 // 宛名(●●様)・挨拶文・署名は固定テンプレートとして自動的に前後へ付加する(スタッフは編集不可)。
 let emailModalOrderId = null;
 let emailModalCustomerName = '';
+let emailModalSlipLink = '';      // この注文用のスリップリンク(金額確定前の量り売り注文は空)
+let emailModalTotalAmount = 0;
 let emailMessageBeforeTranslate = null;
 let emailWasTranslated = false; // 翻訳ボタンを使った場合のみ、本文末尾に機械翻訳の注記を付ける
 const STAFF_EMAIL_FIXED_SUBJECT = 'From Saitofoods Co.,Ltd.'; // 件名は固定
@@ -3490,12 +3499,37 @@ function readFileAsBase64(file) {
   });
 }
 
+// スリップアップロード用リンク(合計金額・お名前・注文IDが入ったもの)を作る。
+// mypage.html の「支払う」ボタンと同じ形式(amount=total_amount, name, ref=注文ID, email)。
+function buildSlipLinkForOrder(order) {
+  const customerName = `${order.customers?.family_name || ''} ${order.customers?.first_name || ''}`.trim();
+  const params = new URLSearchParams({
+    amount: Number(order.total_amount) || 0,
+    name: customerName,
+    ref: order.id,
+    email: order.customers?.email || '',
+  });
+  return SLIP_UPLOAD_BASE_URL + '?' + params.toString();
+}
+
+// 「スリップリンクを含める」にチェックが入っている時だけ、本文にお支払い案内+リンクを追加する。
+// リンクは本文入力欄(翻訳ボタンの対象)には入れず、ここで後から足すため、翻訳でURLが壊れない。
+function buildSlipLinkBlock() {
+  const checkEl = document.getElementById('email-modal-slip-check');
+  if (!checkEl || !checkEl.checked || !emailModalSlipLink) return '';
+  return `\n\n【お支払いのご案内】\n合計金額: ${emailModalTotalAmount} THB\nお支払い後、下記のリンクからスリップ(振込明細)の写真をお送りください。お名前と金額は入力済みです。\n${emailModalSlipLink}`;
+}
+
+function onEmailSlipCheckChange() {
+  refreshEmailPreview();
+}
+
 function buildEmailPreview(customerName, message) {
   const msg = message || '(メッセージをここに入力 / message goes here)';
   const translateNote = emailWasTranslated
     ? '\n\n※このメールの一部は機械翻訳を使用しております。表現に至らない点がございましたら何卒ご容赦ください。'
     : '';
-  return `${customerName}様\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n${msg}${translateNote}\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+  return `${customerName}様\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n${msg}${buildSlipLinkBlock()}${translateNote}\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
 }
 
 function refreshEmailPreview() {
@@ -3512,6 +3546,26 @@ function openEmailModal(order) {
   emailAttachments = [];
   renderEmailAttachments();
   document.getElementById('email-modal-files').onchange = onEmailFilesSelected;
+
+  // スリップリンク。量り売り注文で重量未確定の場合は金額が決まっていないのでリンクを作らない。
+  const slipCheckEl = document.getElementById('email-modal-slip-check');
+  const slipInfoEl = document.getElementById('email-modal-slip-info');
+  const amountPending = order.has_weight_items && !order.is_weight_confirmed;
+  const total = Number(order.total_amount) || 0;
+  slipCheckEl.checked = false;
+  if (amountPending || total <= 0) {
+    emailModalSlipLink = '';
+    emailModalTotalAmount = 0;
+    slipCheckEl.disabled = true;
+    slipInfoEl.textContent = amountPending
+      ? 'Not available: the weight/amount is not finalized yet. / ใช้ไม่ได้: ยังไม่ยืนยันน้ำหนัก/ยอดเงิน'
+      : 'Not available: this order has no amount. / ใช้ไม่ได้: คำสั่งซื้อนี้ไม่มียอดเงิน';
+  } else {
+    emailModalSlipLink = buildSlipLinkForOrder(order);
+    emailModalTotalAmount = total;
+    slipCheckEl.disabled = false;
+    slipInfoEl.textContent = `Adds the total (${total} THB), the customer's name and a slip upload link to the email. / เพิ่มยอดรวม (${total} THB) ชื่อลูกค้า และลิงก์อัปโหลดสลิปลงในอีเมล`;
+  }
 
   document.getElementById('email-modal-to').value = order.customers.email;
   document.getElementById('email-modal-subject').value = STAFF_EMAIL_FIXED_SUBJECT;
