@@ -131,6 +131,7 @@
     'my.signupFamilyNameLabel': { ja: 'お名前(姓) / Family Name', en: 'Family Name' },
     'my.signupFirstNameLabel': { ja: 'お名前(名) / First Name', en: 'First Name' },
     'my.signupBtn': { ja: 'パスワードを設定する', en: 'Set password' },
+    'my.pointExpiry': { ja: '⏳ ポイントの有効期限: <b>{date}</b><br>最後のお買い物から60日間ご利用がないと、ポイントはすべて失効します。期限内にお買い物をすると、その日からまた60日に延長されます。', en: '⏳ Points valid until: <b>{date}</b><br>If you do not shop for 60 days after your last purchase, all points expire. Each purchase before then extends the period by another 60 days.' },
     'my.pointsLabel': { ja: '保有ポイント / Points Balance', en: 'Points Balance' },
     'my.orderHistoryTitle': { ja: 'ご注文履歴 / Order History', en: 'Order History' },
     'my.loading': { ja: '読み込み中...', en: 'Loading...' },
