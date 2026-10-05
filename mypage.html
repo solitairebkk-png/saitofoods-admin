@@ -758,15 +758,22 @@ function paintPointExpiry() {
   el.innerHTML = i18nText('my.pointExpiry').replace('{date}', formatPointExpiry(_pointExpiryDate));
   if (window.fillPointDays) window.fillPointDays();
 }
-async function renderPointExpiry(customerRow) {
+async function renderPointExpiry(customerRow, authUser) {
   _pointExpiryDate = null;
   try {
     if ((customerRow.point_balance || 0) > 0) {
       let best = null;
-      if (customerRow.last_purchase_date) {
-        const lp = new Date(customerRow.last_purchase_date + 'T00:00:00');
-        lp.setDate(lp.getDate() + 60);
-        best = lp;
+      // 基準日=最後の購入日。ただし新サイトへの登録(移行)日より前にはならない(登録日から数え始める)
+      let baseDay = customerRow.last_purchase_date ? new Date(customerRow.last_purchase_date + 'T00:00:00') : null;
+      if (authUser && authUser.created_at) {
+        const reg = new Date(authUser.created_at);
+        const regDay = new Date(reg.getFullYear(), reg.getMonth(), reg.getDate());
+        if (!baseDay || regDay > baseDay) baseDay = regDay;
+      }
+      if (baseDay) {
+        const e = new Date(baseDay.getTime());
+        e.setDate(e.getDate() + (window.getPointExpiryDays ? (window.getPointExpiryDays() || 60) : 60));
+        best = e;
       }
       try {
         const { data } = await supabaseClient.from('points_ledger').select('expires_at')
@@ -863,7 +870,7 @@ async function loadMyPage(user) {
   const name = `${customerRow.family_name || ''} ${customerRow.first_name || ''}`.trim();
   document.getElementById('welcome-name').innerHTML = `${name} ${i18nText('my.welcomeSuffix')}`;
   document.getElementById('point-balance').textContent = customerRow.point_balance ?? 0;
-  await renderPointExpiry(customerRow);
+  await renderPointExpiry(customerRow, user);
   document.getElementById('current-email-display').textContent = customerRow.email || user.email || '-';
   document.getElementById('profile-family-name').value = customerRow.family_name || '';
   document.getElementById('profile-first-name').value = customerRow.first_name || '';
