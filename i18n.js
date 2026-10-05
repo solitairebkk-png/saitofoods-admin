@@ -103,7 +103,7 @@
     'guide.item5': { ja: '県外への配送も可能です。Nim Express様のクール便を利用配送料はNim Express様の実費を頂いております。海外へ持ち出される場合は別途発泡スチロール箱やドライアイスの手配も別料金にて可能です。', en: 'Delivery to other provinces is also possible using Nim Express cold-chain courier, charged at their actual cost. If you plan to take items abroad, styrofoam boxes and dry ice can be arranged for an additional fee.' },
     'guide.item6': { ja: '配送の混み具合により早期に当日の配送受付を締め切る場合が御座います。', en: 'Same-day delivery orders may close earlier than usual depending on how busy we are.' },
     'guide.item7': { ja: 'webサイトからご購入の場合はご購入金額の約1%のポイントが取得でき次回のお買い物の際に1ポイント＝1bahtとしてご利用いただけます。', en: 'Purchases made on the website earn approximately 1% in points, redeemable as 1 point = 1 baht on your next order.' },
-    'guide.item7sub': { ja: '最後にご利用いただいてからご利用がないまま伝票記載の有効期限を超過しますとポイントは失効となりますのでご注意くださいませ。また、ポイントの換金は致しかねます。', en: 'Points expire if unused past the expiry date shown on your receipt. Points cannot be exchanged for cash.' },
+    'guide.item7sub': { ja: 'ポイントの有効期限は、<b>最後にお買い物をされた日から<span class="js-point-days">60</span>日間</b>です。<span class="js-point-days">60</span>日間ご利用がない場合、保有しているポイントはすべて失効となります。期限内にお買い物をされると、その日からまた<span class="js-point-days">60</span>日間に延長されます。有効期限はマイページおよび伝票でご確認いただけます。また、ポイントの換金は致しかねます。', en: 'Points are valid for <b><span class="js-point-days">60</span> days from your last purchase</b>. If you do not shop for <span class="js-point-days">60</span> days, all of your points expire. Each purchase made before then extends the period by another <span class="js-point-days">60</span> days. You can check your expiry date on My Page and on your receipt. Points cannot be exchanged for cash.' },
     'guide.item8': { ja: 'タイの国民の祝日及び毎週日曜日、隔週土曜日を定休日とさせて頂いておりますが休日の並びにより変更になる場合がございますので、カレンダーにてご確認くださいませ。', en: 'We are closed on Thai national holidays, every Sunday, and every other Saturday, though this may shift depending on how holidays fall — please check the calendar for details.' },
 
     // ---- mypage.html ----
@@ -131,7 +131,7 @@
     'my.signupFamilyNameLabel': { ja: 'お名前(姓) / Family Name', en: 'Family Name' },
     'my.signupFirstNameLabel': { ja: 'お名前(名) / First Name', en: 'First Name' },
     'my.signupBtn': { ja: 'パスワードを設定する', en: 'Set password' },
-    'my.pointExpiry': { ja: '⏳ ポイントの有効期限: <b>{date}</b><br>最後のお買い物から60日間ご利用がないと、ポイントはすべて失効します。期限内にお買い物をすると、その日からまた60日に延長されます。', en: '⏳ Points valid until: <b>{date}</b><br>If you do not shop for 60 days after your last purchase, all points expire. Each purchase before then extends the period by another 60 days.' },
+    'my.pointExpiry': { ja: '⏳ ポイントの有効期限: <b>{date}</b><br>最後のお買い物から<span class="js-point-days">60</span>日間ご利用がないと、ポイントはすべて失効します。期限内にお買い物をすると、その日からまた<span class="js-point-days">60</span>日に延長されます。', en: '⏳ Points valid until: <b>{date}</b><br>If you do not shop for <span class="js-point-days">60</span> days after your last purchase, all points expire. Each purchase before then extends the period by another <span class="js-point-days">60</span> days.' },
     'my.pointsLabel': { ja: '保有ポイント / Points Balance', en: 'Points Balance' },
     'my.orderHistoryTitle': { ja: 'ご注文履歴 / Order History', en: 'Order History' },
     'my.loading': { ja: '読み込み中...', en: 'Loading...' },

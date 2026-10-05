@@ -216,7 +216,8 @@
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
-<script src="i18n.js?v=20261005b"></script>
+<script src="i18n.js?v=20261005c"></script>
+<script src="point-days.js?v=1"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -755,6 +756,7 @@ function paintPointExpiry() {
   if (!_pointExpiryDate) { el.style.display = 'none'; return; }
   el.style.display = 'block';
   el.innerHTML = i18nText('my.pointExpiry').replace('{date}', formatPointExpiry(_pointExpiryDate));
+  if (window.fillPointDays) window.fillPointDays();
 }
 async function renderPointExpiry(customerRow) {
   _pointExpiryDate = null;
