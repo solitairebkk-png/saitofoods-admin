@@ -120,7 +120,7 @@
   .submit-btn { width: 100%; background: var(--yellow); color: var(--brown); border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(200,160,0,0.3); }
   .submit-btn:hover { background: var(--yellow-dark); }
   .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .auth-msg { margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: 8px; display: none; }
+  .auth-msg { white-space: pre-line; margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: 8px; display: none; }
   .auth-msg.error { display: block; background: var(--red-dim); color: var(--red); }
   .auth-msg.success { display: block; background: #e6fff5; color: var(--ok); }
   #mypage-main { display: none; }
@@ -214,7 +214,7 @@
   .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
   .footer-copyright { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 </style>
-<script src="i18n.js?v=20261004b"></script>
+<script src="i18n.js?v=20261005a"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -332,7 +332,8 @@
             </div>
             <div class="form-group">
               <label data-i18n="my.signupEmailLabel">ご登録のメールアドレス</label>
-              <input type="email" class="form-input" id="signup-email" placeholder="taro@example.com">
+              <input type="email" class="form-input" id="signup-email" placeholder="taro@example.com" oninput="checkIcloudNotice()">
+              <div id="icloud-notice" data-i18n-html="my.icloudNotice" style="display:none;margin-top:8px;padding:10px 12px;border-radius:8px;background:#FFF4D6;border:1px solid #E8C468;color:#6B4E10;font-size:12.5px;line-height:1.6;"></div>
             </div>
             <div class="form-group">
               <label data-i18n="my.signupFamilyNameLabel">お名前(姓) / Family Name</label>
@@ -605,6 +606,14 @@ async function login() {
   if (error) { showAuthMsg('ログインに失敗しました: ' + error.message, true); return; }
   await loadMyPage(data.user);
 }
+function isIcloudAddress(email) {
+  return /@(icloud\.com|me\.com|mac\.com)$/i.test((email || '').trim());
+}
+function checkIcloudNotice() {
+  const box = document.getElementById('icloud-notice');
+  if (!box) return;
+  box.style.display = isIcloudAddress(document.getElementById('signup-email').value) ? 'block' : 'none';
+}
 async function signup() {
   const email = document.getElementById('signup-email').value.trim();
   const familyName = document.getElementById('signup-family-name').value.trim();
@@ -632,7 +641,7 @@ async function signup() {
   btn.disabled = false;
   if (error) { showAuthMsg('登録に失敗しました: ' + error.message, true); return; }
   if (!data.session) {
-    showAuthMsg('確認メールをお送りしました。メール内のリンクをクリックした後、改めて「ログイン」タブからログインしてください。');
+    showAuthMsg('確認メールをお送りしました。メール内のリンクをクリックした後、改めて「ログイン」タブからログインしてください。' + (isIcloudAddress(email) ? '\n\n※iCloudのメールアドレスは確認メールが届かない場合があります。届かない場合は orders@saitofoods.com までご連絡ください。' : ''));
     return;
   }
   await claimCustomerRecord(email, data.user.id);

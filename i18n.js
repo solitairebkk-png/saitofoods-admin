@@ -126,6 +126,7 @@
     'my.passwordConfirmLabel': { ja: 'パスワード(確認)', en: 'Confirm password' },
     'my.resetBtn': { ja: 'パスワードを更新する', en: 'Update password' },
     'my.signupHint': { ja: 'ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。これまでのご注文履歴・ポイント残高がそのまま引き継がれます。', en: 'Please set a password for your first login using your registered email address. Your order history and point balance will carry over as-is.' },
+    'my.icloudNotice': { ja: '⚠️ iCloud(@icloud.com / @me.com)のメールアドレスは、確認メールが届かない場合があります。届かないときは、Gmailなど別のメールアドレスで登録するか、<b>orders@saitofoods.com</b> までご連絡ください。こちらで確認いたします。', en: '⚠️ Confirmation emails may not reach iCloud addresses (@icloud.com / @me.com). If yours does not arrive, please register with a different email address such as Gmail, or contact us at <b>orders@saitofoods.com</b> and we will confirm your account.' },
     'my.signupEmailLabel': { ja: 'ご登録のメールアドレス', en: 'Registered email address' },
     'my.signupFamilyNameLabel': { ja: 'お名前(姓) / Family Name', en: 'Family Name' },
     'my.signupFirstNameLabel': { ja: 'お名前(名) / First Name', en: 'First Name' },
