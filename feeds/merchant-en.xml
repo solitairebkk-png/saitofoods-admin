@@ -206,7 +206,7 @@
       <description>Handmade-style tsukune (chicken meatballs) with cartilage. Heat in a microwave before serving. Mild soy sauce flavor.</description>
       <link>https://saitofoods.com/en/products/1407.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790421570423_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>118.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -219,7 +219,7 @@
       <description>冷凍のつくねボールがリニューアルして戻ってまいりました。 工場が変更になり、味付けはより日本テイストに。 ***今回の製品から炭火ではなくなりました。10本入り</description>
       <link>https://saitofoods.com/en/products/1352.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/04030828_69cf17bab016e.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>220.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -324,7 +324,7 @@
       <link>https://saitofoods.com/en/products/1185.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485691117_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05141105_6824167e7a189.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>48.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1122,7 +1122,7 @@
       <description>キッコーマンの空気に触れないタイプの美味しいお醤油です。 常温で保存できて、なおかつ常に薫り高いお醤油をお楽しみ頂け ます。是非お試しください。全く違います。200ml</description>
       <link>https://saitofoods.com/en/products/476.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888984256_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>145.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1396,7 +1396,7 @@
       <description>簡単におでんが作れるセットです。 おでんスープもついて、煮るだけでお召し上がり頂けます。 なると、ちくわ、揚げボール、はんぺん、だし汁等がセットになっています。440g入・冷凍品です。</description>
       <link>https://saitofoods.com/en/products/277.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483627236_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>145.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1461,7 +1461,7 @@
       <description>日本製造のコシの強い冷凍うどんです。 125g*5玉入りです。</description>
       <link>https://saitofoods.com/en/products/485.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889500007_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>142.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1762,7 +1762,7 @@
       <description>北海道産のスルメイカでイカキムチを作ってみました! 熱いご飯にのせて!もしくはお酒のアテに。 100g入り</description>
       <link>https://saitofoods.com/en/products/1181.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483377477_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>180.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1788,7 +1788,7 @@
       <description>日本食研様の照り焼きソースを使用して作った照り焼きチキンです。 鳥モモ肉を一つづつパック致しました。 お弁当などにどうぞ! 120g</description>
       <link>https://saitofoods.com/en/products/723.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784869230863_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>66.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
