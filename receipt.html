@@ -8,10 +8,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
   /* 常温品(冷凍・冷蔵以外)は薄い罫線で囲むだけ(見出しなし=縦幅を使わない)。常温は必ず冷凍・冷蔵の下に並ぶ */
+  /* 常温品は角丸の細い枠で囲む(border-collapseだと角丸が効かないのでseparate) */
+  table.items-table { border-collapse: separate !important; border-spacing: 0; }
+  tr.amb-row > td { border-bottom: 1px solid #777 !important; }
+  tr.amb-row:not(.amb-last) > td { border-bottom: 1px solid var(--line) !important; }
   tr.amb-row > td:first-child { border-left: 1px solid #777 !important; }
   tr.amb-row > td:last-child { border-right: 1px solid #777 !important; }
   tr.amb-first > td { border-top: 1px solid #777 !important; }
-  tr.amb-last > td { border-bottom: 1px solid #777 !important; }
+  tr.amb-first > td:first-child { border-top-left-radius: 8px; }
+  tr.amb-first > td:last-child { border-top-right-radius: 8px; }
+  tr.amb-last > td:first-child { border-bottom-left-radius: 8px; }
+  tr.amb-last > td:last-child { border-bottom-right-radius: 8px; }
   :root {
     --brand: #F5A93C; --brand-dark: #C97A1F; --accent: #FFD166;
     --cream: #FFF9EC; --ink: #3A2E1F; --line: #F0DFB8; --line-soft: #FBF1DC; --red: #C5533F;
