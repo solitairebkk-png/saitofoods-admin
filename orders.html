@@ -404,6 +404,7 @@
   .sns-item-time { color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
   .sns-item-platform { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-right: 4px; font-weight: 700; }
   .sns-item-platform.facebook { background: #dbe8f8; color: #1c4c8f; }
+  .sns-item-platform.instagram { background: #fbe3ee; color: #a3205b; }
   .sns-item-text { line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
   .sns-item-actions { margin-top: 6px; display: flex; gap: 8px; }
   .sns-item-actions button, .sns-item-actions a {
@@ -3610,7 +3611,7 @@ async function loadInboxList() {
       <div class="sns-item ${item.is_read ? '' : 'unread'}">
         <div class="sns-item-top">
           <span>
-            <span class="sns-item-platform facebook">FB</span>
+            <span class="sns-item-platform ${item.platform === 'instagram' ? 'instagram' : 'facebook'}">${item.platform === 'instagram' ? 'IG' : 'FB'}</span>
             <span class="sns-item-sender">${escapeHtml(item.sender_name || '(unknown)')}</span>
             <span style="color:var(--text-muted);font-size:10.5px;"> ・ ${typeLabel}</span>
           </span>
