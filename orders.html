@@ -1852,8 +1852,13 @@ async function loadOrders() {
   // 都度参照していた旧実装は、後から顧客がエリアを変更すると過去の注文の表示まで
   // 遡って変わってしまう不具合があったため廃止(2026-08-15)。
   const KNOWN_AREAS = ['Bangkok', 'Sriracha', 'Pattaya'];
+  // バッジは「未処理」の注文だけを数える。伝票が印刷済み(is_slip_printed)または
+  // 完了済み(is_completed)になった注文は処理が終わっているため件数から除く(2026-10-05)。
+  // 一覧(タブの中身)には引き続き表示される。
   const outOfAreaCount = (data || []).filter(o =>
-    o.order_type !== 'walk_in' && !o.is_cancelled && !KNOWN_AREAS.includes(o.area_name)
+    o.order_type !== 'walk_in' && !o.is_cancelled &&
+    !o.is_slip_printed && !o.is_completed &&
+    !KNOWN_AREAS.includes(o.area_name)
   ).length;
   const badgeEl = document.getElementById('outofarea-badge');
   if (outOfAreaCount > 0) {
