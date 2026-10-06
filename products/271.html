@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"冷凍　牛丼の具　130gサイズ","sku":"271","url":"https://saitofoods.com/products/271.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg"],"description":"牛丼が美味しくバージョンアップしました! 内容量を130gにアップし、使用している牛肉はUSビーフ に変更、玉ねぎも増量しました。なのに価格は据え置き! この商品は加熱調理済みの商品です。 お好みの暖かさに加熱してお召し上がりくださいませ。","category":"サイトウフーズオリジナル商品","offers":{"@type":"Offer","url":"https://saitofoods.com/products/271.html","priceCurrency":"THB","price":"110.00","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"冷凍　牛丼の具　130gサイズ","sku":"271","url":"https://saitofoods.com/products/271.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg"],"description":"牛丼が美味しくバージョンアップしました! 内容量を130gにアップし、使用している牛肉はUSビーフ に変更、玉ねぎも増量しました。なのに価格は据え置き! この商品は加熱調理済みの商品です。 お好みの暖かさに加熱してお召し上がりくださいませ。","category":"サイトウフーズオリジナル商品","offers":{"@type":"Offer","url":"https://saitofoods.com/products/271.html","priceCurrency":"THB","price":"110.00","availability":"https://schema.org/OutOfStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://saitofoods.com/"},{"@type":"ListItem","position":2,"name":"商品一覧","item":"https://saitofoods.com/product_list.html"},{"@type":"ListItem","position":3,"name":"冷凍　牛丼の具　130gサイズ","item":"https://saitofoods.com/products/271.html"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -141,12 +141,12 @@
     <div class="subname">Frozen Gyudon Beef Topping 130g</div>
     <div class="price" id="price">฿110</div>
     
-    <div class="stock" id="stock">在庫あり</div>
+    <div class="stock out" id="stock">在庫なし</div>
     <div class="buy">
-      <div class="stepper" id="stepper">
+      <div class="stepper" id="stepper" style="display:none">
         <button type="button" onclick="chg(-1)" aria-label="-">−</button><span id="qty">1</span><button type="button" onclick="chg(1)" aria-label="+">+</button>
       </div>
-      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()">カートに入れる</button>
+      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()" disabled>在庫なし</button>
     </div>
     <div class="added" id="added">カートに入れました<a href="/cart.html">カートを見る ›</a></div>
     
@@ -195,7 +195,7 @@
 
 <script>
 (function () {
-  var P = {"id":"e465698b-f4d7-4037-86a3-a0847d7d91e4","lang":"ja","max":1,"price":110,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg"],"t":{"inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","unavailable":"この商品は現在お取り扱いしておりません。"}};
+  var P = {"id":"e465698b-f4d7-4037-86a3-a0847d7d91e4","lang":"ja","max":0,"price":110,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg"],"t":{"inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","unavailable":"この商品は現在お取り扱いしておりません。"}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   
