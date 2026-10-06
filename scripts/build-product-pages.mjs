@@ -95,7 +95,7 @@ const T = {
     companyTitle: '会社情報・直売店のご案内', addressNote: '※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。',
     terms: '利用規約', titleSuffix: 'サイトウフーズ Saito Foods — バンコクの日本食通販',
     tag: 'サイトウフーズ(バンコク)の日本食通販・宅配',
-    share: '🔗 この商品を共有', shareCopied: 'リンクをコピーしました ✓', shareCopyManual: 'このリンクをコピーしてください',
+    share: '🔗 この商品を共有', shareCopied: 'リンクをコピーしました ✓', shareIgCopied: 'リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください', shareCopyManual: 'このリンクをコピーしてください',
   },
   en: {
     htmlLang: 'en', home: 'Home', products: 'Products', mypage: 'My Page', langLabel: '日本語',
@@ -109,7 +109,7 @@ const T = {
     companyTitle: 'Company & Store', addressNote: '* Our store is at the same address. You can also buy in person.',
     terms: 'Terms of Service', titleSuffix: 'Saito Foods — Japanese food delivery in Bangkok',
     tag: 'Japanese food delivery in Bangkok by Saito Foods',
-    share: '🔗 Share this item', shareCopied: 'Link copied ✓', shareCopyManual: 'Copy this link',
+    share: '🔗 Share this item', shareCopied: 'Link copied ✓', shareIgCopied: 'Link copied. Paste it into your Instagram Story or DM.', shareCopyManual: 'Copy this link',
   },
 };
 
@@ -168,7 +168,7 @@ function buildPage(p, lang, cats) {
   const clientCfg = {
     id: p.id, lang, max: maxQty(p), price: Number(p.price), unitPrice: p.unit_price === null ? null : Number(p.unit_price),
     unitLabel: p.unit_label || '', weight: isWeight, images: imgs,
-    url, title: name, t: { copyManual: t.shareCopyManual, inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, unavailable: t.unavailable },
+    url, title: name, t: { copyManual: t.shareCopyManual, igCopied: t.shareIgCopied, copied: t.shareCopied, inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, unavailable: t.unavailable },
   };
 
   return `<!DOCTYPE html>
@@ -252,6 +252,13 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
   .note { font-size:12px; color:#7a6a55; margin-top:10px; line-height:1.7; }
   .share-btn { margin-top:14px; height:40px; padding:0 18px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
   .share-btn:hover { border-color:var(--brand); }
+  .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
+  .share-row .share-btn { margin-top:0; }
+  .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
+  .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
+  .share-x { background:#000; }
+  .share-ig { background:radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+  .share-line { background:#06C755; }
   .share-msg { display:none; margin-left:10px; font-size:13px; font-weight:700; color:#2E6B2A; }
   .share-msg.show { display:inline; }
   .added { display:none; margin-top:12px; font-size:13.5px; font-weight:700; color:#2E6B2A; }
@@ -328,7 +335,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     ${isWeight ? `<div class="note">${t.weightNote}</div>` : ''}
     ${showExcluded ? `<div class="note">${t.excludedNote}</div>` : ''}
     <div class="note">${t.delivery}</div>
-    <div><button type="button" class="share-btn" onclick="shareItem()">${t.share}</button><span class="share-msg" id="share-msg">${t.shareCopied}</span></div>
+    <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">${t.share}</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">${t.shareCopied}</span></div>
   </div>
 </section>
 
@@ -379,6 +386,16 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     if (el && P.images[i]) el.src = P.images[i];
     var ts = document.querySelectorAll('.thumb');
     for (var j = 0; j < ts.length; j++) ts[j].classList.toggle('on', j === i);
+  };
+  window.shareTo = function (kind) {
+    var u = encodeURIComponent(P.url);
+    if (kind === 'x') { window.open('https://x.com/intent/post?text=' + encodeURIComponent(P.title) + '&url=' + u, '_blank', 'noopener'); return; }
+    if (kind === 'line') { window.open('https://social-plugins.line.me/lineit/share?url=' + u, '_blank', 'noopener'); return; }
+    // Instagramにはリンク付き投稿の共有URLが無いので、リンクをコピーして貼り付けてもらう
+    var m = document.getElementById('share-msg');
+    var ok = function () { m.textContent = P.t.igCopied; m.classList.add('show'); setTimeout(function () { m.classList.remove('show'); m.textContent = P.t.copied; }, 4000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(P.url).then(ok, function () { window.prompt(P.t.copyManual, P.url); });
+    else window.prompt(P.t.copyManual, P.url);
   };
   window.shareItem = function () {
     var done = function () {

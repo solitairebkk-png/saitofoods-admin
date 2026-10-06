@@ -91,6 +91,7 @@
     'plist.addedToCart': { ja: 'カートに追加しました ✓', en: 'Added to cart ✓' },
     'plist.shareBtn': { ja: '🔗 この商品を共有 / Share', en: '🔗 Share this item' },
     'plist.shareCopied': { ja: 'リンクをコピーしました ✓', en: 'Link copied ✓' },
+    'plist.shareIgCopied': { ja: 'リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください', en: 'Link copied. Paste it into your Instagram Story or DM.' },
     'plist.shareCopyManual': { ja: 'このリンクをコピーしてください', en: 'Copy this link' },
     'plist.backBtn': { ja: '← 戻る / Back', en: '← Back' },
     'plist.favAddLabel': { ja: '← お気に入りに追加 / Add to favorite', en: '← Add to favorite' },
