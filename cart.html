@@ -1796,6 +1796,7 @@ async function submitOrder() {
     else if (raw.includes('PRODUCT_CUTOFF_PASSED')) friendly = '申し訳ございません、カート内の商品(' + (raw.split(':').slice(1).join(':').trim() || '') + ')は、配送日の前日の締め切りを過ぎたためご注文いただけません。ページを再読み込みして、別の配送日をお選びください / Sorry, the order deadline (the day before delivery) has passed for an item in your cart. Please reload the page and choose another delivery date.';
     else if (raw.includes('NICHADA_RULE')) friendly = 'ニチャダタニエリアのお届けは、毎週水曜日の13:00-15:00のみです。ページを再読み込みして、水曜日をお選びください / Nichada Thani is delivered on Wednesdays 13:00-15:00 only. Please reload the page and choose a Wednesday.';
     else if (raw.includes('SAME_DAY_CUTOFF_PASSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日朝8:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for today closed at 8:00 AM. Please reload the page and choose another delivery date.';
+    else if (raw.includes('BANGKOK_SAME_DAY_CLOSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日17:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for same-day delivery closed at 5:00 PM. Please reload the page and choose another delivery date.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
     else if (raw) friendly += ': ' + raw;

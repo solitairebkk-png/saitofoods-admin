@@ -1281,7 +1281,14 @@ async function confirmScheduleChange() {
       p_time_slot: timeVal,
     });
     if (error) {
-      noteEl.textContent = '変更できませんでした / Could not update: ' + error.message;
+      const rawErr = error.message || '';
+      if (rawErr.includes('BANGKOK_SAME_DAY_CLOSED')) {
+        noteEl.textContent = '申し訳ございません、本日分の受付は終了しました(当日17:00まで)。別の日をお選びください / Sorry, same-day delivery closed at 5:00 PM. Please choose another date.';
+      } else if (rawErr.includes('SAME_DAY_CUTOFF_PASSED')) {
+        noteEl.textContent = '申し訳ございません、本日分の受付は終了しました(当日朝8:00まで)。別の日をお選びください / Sorry, orders for today closed at 8:00 AM. Please choose another date.';
+      } else {
+        noteEl.textContent = '変更できませんでした / Could not update: ' + rawErr;
+      }
       confirmBtn.disabled = false;
       confirmBtn.textContent = i18nText('my.scheduleModalConfirm');
       return;
