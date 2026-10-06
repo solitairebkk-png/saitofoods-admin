@@ -1165,7 +1165,9 @@ async function sharePModalTo(kind) {
   if (kind === 'x') {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent(title) + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
   } else if (kind === 'line') {
-    window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank', 'noopener');
+    // スマホはLINEアプリを直接開く(ブラウザの共有ページだとログイン画面が出てしまう)。PCは共有ページ。
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) location.href = 'https://line.me/R/share?text=' + encodeURIComponent(title + ' ' + url);
+    else window.open('https://social-plugins.line.me/lineit/share?url=' + encodeURIComponent(url), '_blank', 'noopener');
   } else {
     try { await navigator.clipboard.writeText(url); } catch (e) { window.prompt(i18nText('plist.shareCopyManual'), url); return; }
     showToast(i18nText('plist.shareIgCopied'));
