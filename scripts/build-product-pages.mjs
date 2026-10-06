@@ -95,6 +95,7 @@ const T = {
     companyTitle: '会社情報・直売店のご案内', addressNote: '※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。',
     terms: '利用規約', titleSuffix: 'サイトウフーズ Saito Foods — バンコクの日本食通販',
     tag: 'サイトウフーズ(バンコク)の日本食通販・宅配',
+    share: '🔗 この商品を共有', shareCopied: 'リンクをコピーしました ✓', shareCopyManual: 'このリンクをコピーしてください',
   },
   en: {
     htmlLang: 'en', home: 'Home', products: 'Products', mypage: 'My Page', langLabel: '日本語',
@@ -108,6 +109,7 @@ const T = {
     companyTitle: 'Company & Store', addressNote: '* Our store is at the same address. You can also buy in person.',
     terms: 'Terms of Service', titleSuffix: 'Saito Foods — Japanese food delivery in Bangkok',
     tag: 'Japanese food delivery in Bangkok by Saito Foods',
+    share: '🔗 Share this item', shareCopied: 'Link copied ✓', shareCopyManual: 'Copy this link',
   },
 };
 
@@ -166,7 +168,7 @@ function buildPage(p, lang, cats) {
   const clientCfg = {
     id: p.id, lang, max: maxQty(p), price: Number(p.price), unitPrice: p.unit_price === null ? null : Number(p.unit_price),
     unitLabel: p.unit_label || '', weight: isWeight, images: imgs,
-    t: { inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, unavailable: t.unavailable },
+    url, title: name, t: { copyManual: t.shareCopyManual, inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, unavailable: t.unavailable },
   };
 
   return `<!DOCTYPE html>
@@ -248,6 +250,10 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
   .add-btn { flex:1; min-width:180px; height:46px; border:none; border-radius:24px; background:var(--brand); color:#fff; font-size:15px; font-weight:800; cursor:pointer; border-bottom:3px solid var(--brand-dark); font-family:inherit; }
   .add-btn:disabled { background:#cfc6b8; border-bottom-color:#b8ae9f; cursor:not-allowed; }
   .note { font-size:12px; color:#7a6a55; margin-top:10px; line-height:1.7; }
+  .share-btn { margin-top:14px; height:40px; padding:0 18px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .share-btn:hover { border-color:var(--brand); }
+  .share-msg { display:none; margin-left:10px; font-size:13px; font-weight:700; color:#2E6B2A; }
+  .share-msg.show { display:inline; }
   .added { display:none; margin-top:12px; font-size:13.5px; font-weight:700; color:#2E6B2A; }
   .added.show { display:block; }
   .added a { color:var(--brand-dark); margin-left:8px; }
@@ -322,6 +328,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     ${isWeight ? `<div class="note">${t.weightNote}</div>` : ''}
     ${showExcluded ? `<div class="note">${t.excludedNote}</div>` : ''}
     <div class="note">${t.delivery}</div>
+    <div><button type="button" class="share-btn" onclick="shareItem()">${t.share}</button><span class="share-msg" id="share-msg">${t.shareCopied}</span></div>
   </div>
 </section>
 
@@ -372,6 +379,24 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     if (el && P.images[i]) el.src = P.images[i];
     var ts = document.querySelectorAll('.thumb');
     for (var j = 0; j < ts.length; j++) ts[j].classList.toggle('on', j === i);
+  };
+  window.shareItem = function () {
+    var done = function () {
+      var m = document.getElementById('share-msg'); m.classList.add('show');
+      setTimeout(function () { m.classList.remove('show'); }, 2500);
+    };
+    if (navigator.share) {
+      navigator.share({ title: P.title, url: P.url }).catch(function (e) {
+        if (!e || e.name !== 'AbortError') copy();
+      });
+      return;
+    }
+    copy();
+    function copy() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(P.url).then(done, function () { window.prompt(P.t.copyManual, P.url); });
+      } else { window.prompt(P.t.copyManual, P.url); }
+    }
   };
   window.chg = function (d) {
     qty = Math.max(1, Math.min(P.max || 1, qty + d));

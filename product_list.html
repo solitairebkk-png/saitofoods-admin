@@ -230,6 +230,8 @@
   .pmodal-sns-row { display: flex; gap: 8px; margin-top: 12px; }
   .pmodal-sns-link { display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--brand-dark); border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 10px; text-decoration: none; }
   .pmodal-sns-link:hover { border-color: var(--brand); }
+  .pmodal-share-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 10px; padding: 10px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; color: var(--brand-dark); font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+  .pmodal-share-btn:hover { border-color: var(--brand); }
 
   .pmodal-suggest { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
   .pmodal-suggest h4 { font-size: 11.5px; font-weight: 800; color: var(--brand-dark); letter-spacing: 0.03em; margin-bottom: 8px; }
@@ -283,7 +285,7 @@
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="i18n.js?v=20261005c"></script>
+<script src="i18n.js?v=20261006a"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -459,6 +461,7 @@
           <button class="pmodal-qty-btn" onclick="pmodalChangeQty(1)">+</button>
         </div>
         <button class="pmodal-addcart-btn" id="pmodal-addcart-btn" onclick="pmodalAddToCart()" data-i18n="plist.addToCart">カートに入れる / Add to cart</button>
+        <button type="button" class="pmodal-share-btn" id="pmodal-share-btn" onclick="sharePModalProduct()" data-i18n="plist.shareBtn">🔗 この商品を共有 / Share</button>
         <div class="pmodal-sns-row" id="pmodal-sns-row" style="display:none;"></div>
         <div class="pmodal-suggest" id="pmodal-suggest" style="display:none;">
           <h4 data-i18n="plist.frequentlyBought">一緒に購入されている商品 / Frequently bought together</h4>
@@ -1130,6 +1133,35 @@ function openPModal(productId, fromBack) {
   document.getElementById('pmodal-overlay').classList.add('open');
 }
 
+// この商品を人に紹介するためのリンクを作る。
+// 商品ページ(products/商品番号.html)があればそれを使う(LINEやFacebookに貼ると写真と商品名が出る)。
+// 商品ページがまだ無い商品は、この一覧で商品を開くリンク(?view=)にする。
+function productShareUrl(p, lang) {
+  const base = location.origin;
+  const hasPage = Number.isInteger(p.legacy_product_id) && p.description_ja && String(p.description_ja).trim();
+  if (hasPage) return `${base}${lang === 'en' ? '/en' : ''}/products/${p.legacy_product_id}.html`;
+  return `${base}/product_list.html?view=${encodeURIComponent(p.id)}`;
+}
+
+async function sharePModalProduct() {
+  const productId = document.getElementById('pmodal-fav-btn').dataset.pid;
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  const lang = i18nGetLang();
+  const url = productShareUrl(p, lang);
+  const title = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
+  if (navigator.share) {
+    try { await navigator.share({ title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch (e) {
+    window.prompt(i18nText('plist.shareCopyManual'), url);
+    return;
+  }
+  showToast(i18nText('plist.shareCopied'));
+}
+
 async function loadPModalSuggestions(productId) {
   const wrap = document.getElementById('pmodal-suggest');
   const row = document.getElementById('pmodal-suggest-row');
@@ -1234,4 +1266,4 @@ function initFooterMap() {
 </div>
 <script src="contact.js?v=20261005a"></script>
 </body>
-</html>
+</html>

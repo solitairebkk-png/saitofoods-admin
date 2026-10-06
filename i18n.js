@@ -89,6 +89,9 @@
     'plist.frequentlyBought': { ja: '一緒に購入されている商品 / Frequently bought together', en: 'Frequently bought together' },
     'plist.favLoginConfirm': { ja: 'お気に入り登録にはログインが必要です。マイページへ移動しますか？ / Please log in to save favorites. Go to My Page?', en: 'Please log in to save favorites. Go to My Page?' },
     'plist.addedToCart': { ja: 'カートに追加しました ✓', en: 'Added to cart ✓' },
+    'plist.shareBtn': { ja: '🔗 この商品を共有 / Share', en: '🔗 Share this item' },
+    'plist.shareCopied': { ja: 'リンクをコピーしました ✓', en: 'Link copied ✓' },
+    'plist.shareCopyManual': { ja: 'このリンクをコピーしてください', en: 'Copy this link' },
     'plist.backBtn': { ja: '← 戻る / Back', en: '← Back' },
     'plist.favAddLabel': { ja: '← お気に入りに追加 / Add to favorite', en: '← Add to favorite' },
 

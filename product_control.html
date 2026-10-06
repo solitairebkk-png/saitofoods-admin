@@ -62,6 +62,7 @@
   table.products tr.no-price td { background: #fdf3d0; }
   table.products tr.unpublished td { opacity: 0.5; }
   table.products td.col-edit { white-space: nowrap; }
+  .link-btns { display: flex; gap: 4px; margin-top: 4px; }
 
   .product-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; display: block; }
   .product-thumb-empty { border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 9px; cursor: default; }
@@ -576,7 +577,8 @@ function renderProductRow(p) {
     : `<div class="product-thumb product-thumb-empty">No Image</div>`;
 
   tr.innerHTML = `
-    <td class="col-edit"><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button></td>
+    <td class="col-edit"><button class="btn ghost small" onclick="toggleEdit('${p.id}')">編集 / Edit</button>
+      <div class="link-btns"><button class="btn ghost small" title="日本語の商品リンクをコピー" onclick="copyProductLink('${p.id}','ja',this)">🔗 JA</button><button class="btn ghost small" title="English product link" onclick="copyProductLink('${p.id}','en',this)">🔗 EN</button></div></td>
     <td class="col-image">${imgCell}</td>
     <td class="col-name">${p.name_ja || '(no name)'}<br><span style="color:var(--text-muted);font-size:11px;">${p.name_en || ''} ${p.name_th ? '/ ' + p.name_th : ''}</span><br>${tags}</td>
     <td class="col-storage" data-label="常温品 / Room temp"><label class="storage-check"><input type="checkbox" ${p.storage_type === 'ambient' ? 'checked' : ''} onchange="setStorageType('${p.id}', this)"><span>常温</span></label></td>
@@ -588,6 +590,30 @@ function renderProductRow(p) {
     <td class="col-type" data-label="Type">${p.sale_type || '-'}</td>
   `;
   return tr;
+}
+
+// 商品紹介用のリンクをコピーする(LINE・Facebook投稿などに貼る用)。
+// 商品ページ(商品番号あり・公開中・日本語の説明文あり)があればそのURL、
+// まだ無い商品は商品一覧で開くリンク(?view=)をコピーする。非公開の商品はお客様に見えないため警告する。
+function productLinkFor(p, lang) {
+  const base = 'https://saitofoods.com';
+  const hasPage = p.is_published !== false && Number.isInteger(p.legacy_product_id) && p.description_ja && String(p.description_ja).trim();
+  if (hasPage) return base + (lang === 'en' ? '/en' : '') + '/products/' + p.legacy_product_id + '.html';
+  return base + '/product_list.html?view=' + encodeURIComponent(p.id);
+}
+async function copyProductLink(productId, lang, btn) {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  if (p.is_published === false) { alert('この商品は非公開のため、お客様にはリンクが開けません。公開してからコピーしてください。\nThis product is unpublished.'); return; }
+  const url = productLinkFor(p, lang);
+  const orig = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = '✓ Copied';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  } catch (e) {
+    window.prompt('このリンクをコピーしてください / Copy this link', url);
+  }
 }
 
 // 保存されていない新規商品(_isNew)を一覧から取り除く。excludeIdは今まさに開こうとしている行(あれば残す)
