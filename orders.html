@@ -358,6 +358,29 @@
   .email-attach-item button { flex: none; border: none; background: none; cursor: pointer; font-size: 16px; line-height: 1; color: var(--text-muted); padding: 0 2px; }
   .btn-email-customer { background: #7c5cbf; }
 
+  /* 伝票へのお客様宛メッセージ(電話に出ない・メールをすぐ見ないお客様向け)モーダル */
+  .btn-staff-message { background: #c2571a; }
+  #msg-modal {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  #msg-modal.open { display: flex; }
+  #msg-modal .msg-modal-box {
+    background: var(--panel); border-radius: 8px; padding: 24px; max-width: 520px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+  }
+  #msg-modal h3 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  #msg-modal .msg-modal-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  #msg-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  #msg-modal-actions button {
+    flex: 1; padding: 12px; border-radius: 6px; border: none; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  #msg-modal-save-btn { background: var(--navy); color: white; }
+  #msg-modal-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #msg-modal-cancel-btn { background: white; color: var(--navy); border: 1px solid var(--navy) !important; }
+  .order-staff-message-box { margin-top: 6px; padding: 6px 10px; background: #fff1e6; border: 1px solid #c2571a; border-radius: 6px; font-size: 12.5px; font-weight: 700; line-height: 1.5; white-space: pre-wrap; }
+
   /* 帳票(伝票)表示 + 印刷モーダル */
   #receipt-modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 997;
@@ -864,7 +887,32 @@
     </div>
   </div>
 </div>
-
+<!-- 伝票へのお客様宛メッセージモーダル -->
+<div id="msg-modal">
+  <div class="msg-modal-box">
+    <h3>Message to customer on slip <span style="font-size:11px;color:var(--text-muted);">(ข้อความถึงลูกค้าบนใบส่งของ)</span></h3>
+    <div class="msg-modal-sub">
+      For customers who don't answer the phone or check email quickly. The message is printed on the slip under "お客様へ".<br>
+      สำหรับลูกค้าที่ไม่รับโทรศัพท์หรือไม่เช็คอีเมลทันที ข้อความจะแสดงบนใบส่งของในช่อง "お客様へ"
+    </div>
+    <div class="email-field">
+      <label id="msg-modal-order-label"></label>
+      <textarea id="msg-modal-message" placeholder="เขียนข้อความที่นี่ (ไทยหรือญี่ปุ่นก็ได้) แล้วกดปุ่มแปล / Write here (Thai or Japanese), then press Translate" style="min-height:120px;"></textarea>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:6px;">
+        <button type="button" onclick="translateStaffMessageToJapanese()" id="msg-translate-btn" style="flex:none;padding:8px 14px;font-size:13px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;">🇯🇵 Translate to Japanese / แปลเป็นภาษาญี่ปุ่น</button>
+        <span id="msg-translate-status" style="font-size:11.5px;color:var(--text-muted);"></span>
+        <a href="#" id="msg-translate-undo" style="display:none;font-size:11.5px;text-decoration:underline;" onclick="event.preventDefault(); undoTranslateStaffMessage();">Undo / เลิกทำ</a>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+        If you write in Japanese already, no need to translate. Leave empty and save to remove the message. / ถ้าเขียนเป็นภาษาญี่ปุ่นแล้วไม่ต้องแปล ถ้าต้องการลบข้อความให้เว้นว่างแล้วกดบันทึก
+      </div>
+    </div>
+    <div id="msg-modal-actions">
+      <button id="msg-modal-cancel-btn" onclick="closeStaffMessageModal()">Cancel / ยกเลิก</button>
+      <button id="msg-modal-save-btn" onclick="saveStaffMessage()">Save / บันทึก</button>
+    </div>
+  </div>
+</div>
 
 <!-- 帳票(伝票)表示 + 印刷モーダル -->
 <div id="receipt-modal">
@@ -1862,7 +1910,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, weight_email_sent, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
-      total_amount, shipping_cost, comment, slip_image_url, paid_amount,
+      total_amount, shipping_cost, comment, staff_message_ja, staff_message_th, slip_image_url, paid_amount,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
@@ -2798,6 +2846,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
       ${(order.comment && !order.is_wholesale) ? `<div class="order-comment-box">📝 ${escapeHtml(order.comment)}</div>` : ''}
+      ${order.staff_message_ja ? `<div class="order-staff-message-box">✉️ お客様へ(伝票に記載): ${escapeHtml(order.staff_message_ja)}</div>` : ''}
       <div style="margin-top:6px;">${paidStampHtml}${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
     <td class="center">
@@ -2858,6 +2907,13 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
         manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
       }
     }
+    // 電話に出ない・メールをすぐ見ないお客様向けに、伝票へ直接「お客様へ」メッセージを書く(2026-10-06)。
+    // メールの有無に関係なく、キャンセルされていない全注文に出す。
+    manageCol.appendChild(makeButton(
+      order.staff_message_ja ? '📝 Edit Message / แก้ไขข้อความ' : '📝 Message to Customer / ข้อความถึงลูกค้า',
+      () => openStaffMessageModal(order),
+      'btn-staff-message'
+    ));
     // 配送時に電話が繋がらないお客様向けの、自由文面メール送信。Walk-in等メール未登録の顧客には出さない。
     // 上の「📧 Send Email」(重量確定後の自動金額連絡)とは目的も見た目の色も分けて、
     // 一覧の中で見間違えないようにしている(2026-08-20、紛らわしいとの指摘で位置・色を変更)。
@@ -3246,6 +3302,7 @@ function openReceiptModal(order) {
     ${order.shipping_cost ? `<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">(รวมค่าจัดส่ง / incl. delivery fee ${order.shipping_cost} THB)</div>` : ''}
     <div class="receipt-payment">💳 ${paymentLabel}</div>
     ${order.comment ? `<div class="receipt-comment">📝 ${escapeHtml(order.comment)}</div>` : ''}
+    ${order.staff_message_ja ? `<div class="receipt-comment" style="margin-top:6px;border-color:#000;">✉️ お客様へ / ถึงลูกค้า<br>${escapeHtml(order.staff_message_ja)}</div>` : ''}
   `;
 
   document.getElementById('receipt-modal').classList.add('open');
@@ -3674,6 +3731,115 @@ function undoTranslateEmailMessage() {
   emailMessageBeforeTranslate = null;
   emailWasTranslated = false;
   refreshEmailPreview();
+}
+
+// ===== 伝票へのお客様宛メッセージ(2026-10-06) =====
+// staff_message_ja = 伝票に印刷する日本語、staff_message_th = スタッフが書いたタイ語の原文(翻訳した時のみ保存)
+let staffMsgOrderId = null;
+let staffMsgBeforeTranslate = null; // 翻訳前のタイ語原文(Undo用)
+let staffMsgOriginalTh = null;      // 保存するタイ語原文(翻訳済みの場合のみ値あり)
+
+function openStaffMessageModal(order) {
+  staffMsgOrderId = order.id;
+  staffMsgBeforeTranslate = null;
+  staffMsgOriginalTh = order.staff_message_th || null;
+  const customerName = `${order.customers?.family_name || ''} ${order.customers?.first_name || ''}`.trim();
+  document.getElementById('msg-modal-order-label').textContent = `Order ${order.id.slice(0, 8)} — ${customerName}`;
+  document.getElementById('msg-modal-message').value = order.staff_message_ja || '';
+  document.getElementById('msg-translate-status').textContent = '';
+  document.getElementById('msg-translate-undo').style.display = 'none';
+  // 既に翻訳して保存済みなら、タイ語原文に戻せるようUndoを出す
+  if (staffMsgOriginalTh) {
+    staffMsgBeforeTranslate = staffMsgOriginalTh;
+    document.getElementById('msg-translate-undo').style.display = 'inline';
+  }
+  const saveBtn = document.getElementById('msg-modal-save-btn');
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save / บันทึก';
+  document.getElementById('msg-modal').classList.add('open');
+}
+
+function closeStaffMessageModal() {
+  document.getElementById('msg-modal').classList.remove('open');
+  staffMsgOrderId = null;
+}
+
+// メール文面と同じGoogle翻訳の無料エンドポイントを使い、タイ語→日本語(sl=th&tl=ja)に翻訳する。
+async function translateStaffMessageToJapanese() {
+  const textarea = document.getElementById('msg-modal-message');
+  const statusEl = document.getElementById('msg-translate-status');
+  const undoLink = document.getElementById('msg-translate-undo');
+  const btn = document.getElementById('msg-translate-btn');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  btn.disabled = true;
+  undoLink.style.display = 'none';
+  statusEl.style.color = 'var(--text-muted)';
+  statusEl.textContent = 'Translating... / กำลังแปล...';
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=th&tl=ja&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('translation service unreachable');
+    const data = await res.json();
+    const translated = (data[0] || []).map(seg => seg[0]).join('');
+    if (!translated) throw new Error('no translation result');
+    staffMsgBeforeTranslate = text;
+    staffMsgOriginalTh = text;
+    textarea.value = translated;
+    statusEl.style.color = '#1c5279';
+    statusEl.textContent = '✓ Translated to Japanese / แปลเป็นภาษาญี่ปุ่นแล้ว';
+    undoLink.style.display = 'inline';
+  } catch (e) {
+    statusEl.style.color = 'var(--red-accent)';
+    statusEl.textContent = 'Translation failed. Please try again. / แปลไม่สำเร็จ กรุณาลองใหม่';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function undoTranslateStaffMessage() {
+  if (staffMsgBeforeTranslate === null) return;
+  document.getElementById('msg-modal-message').value = staffMsgBeforeTranslate;
+  document.getElementById('msg-translate-status').textContent = '';
+  document.getElementById('msg-translate-undo').style.display = 'none';
+  staffMsgBeforeTranslate = null;
+  staffMsgOriginalTh = null;
+}
+
+async function saveStaffMessage() {
+  if (!staffMsgOrderId) return;
+  const orderId = staffMsgOrderId;
+  const message = document.getElementById('msg-modal-message').value.trim();
+
+  // タイ語のまま保存しようとしている場合は、日本人のお客様が読めないので確認する
+  if (message && /[฀-๿]/.test(message)) {
+    const ok = confirm('ข้อความยังมีภาษาไทยอยู่ ลูกค้าชาวญี่ปุ่นอาจอ่านไม่ออก ต้องการบันทึกต่อหรือไม่?\nThe message still contains Thai, which Japanese customers may not be able to read. Save anyway?');
+    if (!ok) return;
+  }
+
+  const btn = document.getElementById('msg-modal-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving... / กำลังบันทึก...';
+
+  const { error } = await supabaseClient
+    .from('orders')
+    .update({
+      staff_message_ja: message || null,
+      staff_message_th: message ? (staffMsgOriginalTh || null) : null,
+    })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('staff_message保存エラー:', error);
+    alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message);
+    btn.disabled = false;
+    btn.textContent = 'Save / บันทึก';
+    return;
+  }
+  closeStaffMessageModal();
+  loadOrders();
 }
 
 // 宛先は画面には表示するが、実際に送信する際はGAS側がorder_idから毎回取得し直す

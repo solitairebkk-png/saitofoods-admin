@@ -182,6 +182,11 @@
      太字・大きめの文字・太い黒枠。白黒印刷でも目立つよう色に頼らない。 */
   .comment-note { margin-top: 8px; padding: 8px 12px; background: #fff8d6; border: 2.5px solid #000; border-radius: 8px; font-size: 15px; font-weight: 800; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .comment-note .k { color: #000; font-weight: 900; font-size: 12px; display: block; }
+  /* スタッフから「お客様へ」のメッセージ(電話に出ない・メールをすぐ見ないお客様向け、2026-10-06)。
+     お客様コメントより更に目立つよう、二重の太枠・大きめの文字にする。白黒印刷でも目立つよう色に頼らない。 */
+  .staff-message-note { margin-top: 8px; padding: 10px 14px; background: #fff; border: 4px double #000; border-radius: 8px; font-size: 17px; font-weight: 800; line-height: 1.55; white-space: pre-wrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .staff-message-note .k { color: #000; font-weight: 900; font-size: 13px; display: block; margin-bottom: 2px; }
+  .staff-message-note .mt { display: block; margin-top: 4px; font-size: 10px; font-weight: 600; color: #444; }
 
   .points-box { margin-top: 8px; padding: 6px 10px; background: var(--line-soft); border-radius: 8px; font-size: 11px; line-height: 1.5; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 14px; }
   .points-box b { color: var(--brand-dark); font-size: 12.5px; }
@@ -320,6 +325,7 @@
       <div class="weight-note" id="f-weight-note" style="display:none;"></div>
       <div class="delivery-flags-note" id="f-delivery-flags-note" style="display:none;"></div>
       <div class="comment-note" id="f-comment-note" style="display:none;"><span class="k">📝 Customer comment / ความเห็นจากลูกค้า</span><span id="f-comment-text"></span></div>
+      <div class="staff-message-note" id="f-staff-message-note" style="display:none;"><span class="k">✉️ お客様へ / ถึงลูกค้า</span><span id="f-staff-message-text"></span><span class="mt" id="f-staff-message-mt" style="display:none;">※自動翻訳を使用しています。表現に至らない点がございましたらご容赦ください。</span></div>
 
       <div class="points-box" id="f-points-box" style="display:none;">
         <div>Points balance: <b id="f-points-balance"></b> pt <span id="f-points-expiry" style="color:var(--brand-dark);font-weight:600;"></span></div>
@@ -522,7 +528,7 @@ async function loadReceipt() {
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount,
-      subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, created_at, area_name,
+      subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, staff_message_ja, staff_message_th, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, point_balance, last_purchase_date, areas ( name ) ),
@@ -791,6 +797,13 @@ function renderReceipt(order) {
   if (order.comment && !isWholesale) {
     document.getElementById('f-comment-note').style.display = 'block';
     document.getElementById('f-comment-text').textContent = order.comment;
+  }
+
+  if (order.staff_message_ja && !isWholesale) {
+    document.getElementById('f-staff-message-note').style.display = 'block';
+    document.getElementById('f-staff-message-text').textContent = order.staff_message_ja;
+    // タイ語原文がある=機械翻訳を使った文面なので、お客様に分かるよう注記を付ける
+    if (order.staff_message_th) document.getElementById('f-staff-message-mt').style.display = 'block';
   }
 
   if (!isWholesale && c.point_balance !== undefined && c.point_balance !== null) {
