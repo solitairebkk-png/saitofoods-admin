@@ -743,9 +743,9 @@ function onDeliveryDateChange() {
 
   noteEl.textContent = '';
   if (dayOfWeek === 6) {
-    populateTimeSlots(MORNING_SLOTS.concat([ANYTIME_SLOT]));
+    populateTimeSlots([ANYTIME_SLOT].concat(MORNING_SLOTS));
   } else {
-    populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS).concat([ANYTIME_SLOT]));
+    populateTimeSlots([ANYTIME_SLOT].concat(MORNING_SLOTS, AFTERNOON_SLOTS));
   }
   fillNewOrderCondos();
 }

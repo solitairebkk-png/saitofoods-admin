@@ -1455,7 +1455,7 @@ function slotsRemainingForDate(dateStr) {
     if (dateStr === formatDateLocal(bangkokNow()) && isSameDayCutoffPassed()) return false;
     return true;
   }
-  let slots = (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS)).concat([ANYTIME_SLOT]);
+  let slots = [ANYTIME_SLOT].concat(dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
   return filterPastSlots(slots, dateStr).length > 0;
 }
 
@@ -1548,7 +1548,7 @@ async function onDeliveryDateChange() {
   noteEl.textContent = snapNote;
   let slots = customerIsNichada
     ? [{ value: '13:00-15:00', label: '13:00-15:00' }]
-    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS)).concat([ANYTIME_SLOT]);
+    : [ANYTIME_SLOT].concat(dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
 
   // その日だけ受付停止にされている時間帯を除外する(settings.htmlの「時間帯ブロック」設定)
   try {
