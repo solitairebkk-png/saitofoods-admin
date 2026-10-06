@@ -715,6 +715,10 @@
         <div class="label">Afternoon / ช่วงบ่าย</div>
         <div class="value" id="today-count-pm">0</div>
       </div>
+      <div class="today-count-box">
+        <div class="label">Anytime / เวลาไหนก็ได้</div>
+        <div class="value" id="today-count-any">0</div>
+      </div>
       <div class="today-count-box total">
         <div class="label">Total / รวม</div>
         <div class="value" id="today-count-total">0</div>
@@ -1859,15 +1863,18 @@ function renderTodayOrderCount(rows) {
     !o.is_cancelled && o.order_type !== 'walk_in' && o.delivery_date === today
   );
 
-  let amCount = 0, pmCount = 0;
+  let amCount = 0, pmCount = 0, anyCount = 0;
   todayOrders.forEach(o => {
-    if (deliveryTimeSlotRank(o) < 12 * 60) amCount++;
+    // 「何時でも可」は午前にも午後にも数えず、別枠で数える(2026-10-06)
+    if (/ไม่ระบุเวลา|anytime/i.test(o.delivery_time_slot || '')) anyCount++;
+    else if (deliveryTimeSlotRank(o) < 12 * 60) amCount++;
     else pmCount++;
   });
 
   document.getElementById('today-count-date-label').textContent = `(${today})`;
   document.getElementById('today-count-am').textContent = amCount;
   document.getElementById('today-count-pm').textContent = pmCount;
+  document.getElementById('today-count-any').textContent = anyCount;
   document.getElementById('today-count-total').textContent = todayOrders.length;
   panel.style.display = 'block';
 }

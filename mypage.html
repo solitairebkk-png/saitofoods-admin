@@ -1103,6 +1103,8 @@ const AFTERNOON_SLOTS = [
   { value: '16:00-18:00', label: '16:00-18:00' },
   { value: '17:00-18:00', label: '17:00-18:00' },
 ];
+// 「何時でも可」(2026-10-06 復活)。時刻指定なし。他に選べる時間帯が残っている日だけ表示する。
+const ANYTIME_SLOT = { value: 'ไม่ระบุเวลา / Anytime', label: '何時でも可 / Anytime', anytime: true };
 let scheduleHolidaySet = null; // 初回モーダルオープン時に読み込み、以降は使い回す
 let scheduleOrderId = null;
 let scheduleOriginalTimeSlot = null;
@@ -1118,11 +1120,13 @@ function filterPastSlots(slots, dateStr) {
   const todayStr = formatDateLocal(now);
   if (dateStr !== todayStr) return slots;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return slots.filter(s => {
+  const kept = slots.filter(s => {
+    if (s.anytime) return true; // 下で、他の枠が残っているかを見て判定する
     const m = s.value.match(/^(\d{1,2}):(\d{2})/);
     if (m) return nowMinutes < parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
     return nowMinutes < 12 * 60;
   });
+  return kept.some(s => !s.anytime) ? kept : [];
 }
 async function openScheduleModal(orderId, currentDate, currentTimeSlot) {
   scheduleOrderId = orderId;
@@ -1218,7 +1222,7 @@ async function onScheduleDateChange(preselectTimeSlot) {
   }
 
   noteEl.textContent = '';
-  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+  let slots = (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS)).concat([ANYTIME_SLOT]);
 
   if (customerIsNichada) {
     // ニチャダタニ: 毎週水曜日の13:00-15:00のみ。当日分は朝8:00まで。
@@ -1241,7 +1245,10 @@ async function onScheduleDateChange(preselectTimeSlot) {
     const { data: blockedRows } = await supabaseClient
       .from('blocked_time_slots').select('time_slot').eq('blocked_date', val);
     const blockedValues = new Set((blockedRows || []).map(r => r.time_slot));
-    if (blockedValues.size > 0) slots = slots.filter(s => !blockedValues.has(s.value));
+    if (blockedValues.size > 0) {
+      slots = slots.filter(s => !blockedValues.has(s.value));
+      if (!slots.some(s => !s.anytime)) slots = []; // 通常の枠が全て停止なら「何時でも可」も出さない
+    }
   } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }
 
   const beforeCount = slots.length;

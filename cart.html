@@ -582,6 +582,8 @@ const AFTERNOON_SLOTS = [
   { value: '16:00-18:00', label: '16:00-18:00' },
   { value: '17:00-18:00', label: '17:00-18:00' },
 ];
+// 「何時でも可」(2026-10-06 復活)。時刻指定なし。他に選べる時間帯が残っている日だけ表示する。
+const ANYTIME_SLOT = { value: 'ไม่ระบุเวลา / Anytime', label: '何時でも可 / Anytime', anytime: true };
 
 let currentCustomer = null; // customersテーブルの行(ログイン中のお客様)
 let cart = [];              // { product_id, name, sale_type, price, unit_price, unit_label, quantity, image_url }
@@ -1453,7 +1455,7 @@ function slotsRemainingForDate(dateStr) {
     if (dateStr === formatDateLocal(bangkokNow()) && isSameDayCutoffPassed()) return false;
     return true;
   }
-  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+  let slots = (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS)).concat([ANYTIME_SLOT]);
   return filterPastSlots(slots, dateStr).length > 0;
 }
 
@@ -1464,7 +1466,8 @@ function filterPastSlots(slots, dateStr) {
   const todayStr = formatDateLocal(now);
   if (dateStr !== todayStr) return slots;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  return slots.filter(s => {
+  const kept = slots.filter(s => {
+    if (s.anytime) return true; // 「何時でも可」は下で、他の枠が残っているかを見て判定する
     const m = s.value.match(/^(\d{1,2}):(\d{2})/);
     if (m) {
       // 午後の枠: 開始時刻を過ぎていたら非表示
@@ -1473,6 +1476,8 @@ function filterPastSlots(slots, dateStr) {
     // 午前の枠: 正午を過ぎていたら非表示
     return nowMinutes < 12 * 60;
   });
+  // 通常の枠が1つも残っていなければ「何時でも可」も出さない(受付終了扱い)
+  return kept.some(s => !s.anytime) ? kept : [];
 }
 
 async function initDeliveryDatePicker() {
@@ -1543,7 +1548,7 @@ async function onDeliveryDateChange() {
   noteEl.textContent = snapNote;
   let slots = customerIsNichada
     ? [{ value: '13:00-15:00', label: '13:00-15:00' }]
-    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS));
+    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(AFTERNOON_SLOTS)).concat([ANYTIME_SLOT]);
 
   // その日だけ受付停止にされている時間帯を除外する(settings.htmlの「時間帯ブロック」設定)
   try {
@@ -1552,6 +1557,7 @@ async function onDeliveryDateChange() {
     const blockedValues = new Set((blockedRows || []).map(r => r.time_slot));
     if (blockedValues.size > 0) {
       slots = slots.filter(s => !blockedValues.has(s.value));
+      if (!slots.some(s => !s.anytime)) slots = []; // 通常の枠が全て停止なら「何時でも可」も出さない
       if (slots.length === 0) noteEl.textContent = 'この日はご注文が集中しているため、選択可能な時間帯がありません / All time slots are full for this date.';
     }
   } catch (e) { /* 取得失敗時は通常の時間帯一覧のまま続行 */ }

@@ -712,6 +712,8 @@ const AFTERNOON_SLOTS = [
   { value: '16:00-18:00', label: '16:00-18:00' },
   { value: '17:00-18:00', label: '17:00-18:00' },
 ];
+// 「何時でも可」(2026-10-06 復活)。お客様が時間を指定しない注文用。
+const ANYTIME_SLOT = { value: 'ไม่ระบุเวลา / Anytime', label: 'ไม่ระบุเวลา / Anytime (何時でも可)' };
 
 function initDeliveryDatePicker() {
   const dateInput = document.getElementById('delivery-date');
@@ -741,9 +743,9 @@ function onDeliveryDateChange() {
 
   noteEl.textContent = '';
   if (dayOfWeek === 6) {
-    populateTimeSlots(MORNING_SLOTS);
+    populateTimeSlots(MORNING_SLOTS.concat([ANYTIME_SLOT]));
   } else {
-    populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS));
+    populateTimeSlots(MORNING_SLOTS.concat(AFTERNOON_SLOTS).concat([ANYTIME_SLOT]));
   }
   fillNewOrderCondos();
 }
