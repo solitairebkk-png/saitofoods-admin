@@ -80,6 +80,13 @@
   .note { font-size:12px; color:#7a6a55; margin-top:10px; line-height:1.7; }
   .share-btn { margin-top:14px; height:40px; padding:0 18px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
   .share-btn:hover { border-color:var(--brand); }
+  .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
+  .share-row .share-btn { margin-top:0; }
+  .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
+  .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
+  .share-x { background:#000; }
+  .share-ig { background:radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+  .share-line { background:#06C755; }
   .share-msg { display:none; margin-left:10px; font-size:13px; font-weight:700; color:#2E6B2A; }
   .share-msg.show { display:inline; }
   .added { display:none; margin-top:12px; font-size:13.5px; font-weight:700; color:#2E6B2A; }
@@ -156,7 +163,7 @@
     <div class="note">※ 量り売りの商品です。ご注文後に重さを量って、金額を確定します。</div>
     
     <div class="note">バンコク・シラチャ・パタヤへお届けします。</div>
-    <div><button type="button" class="share-btn" onclick="shareItem()">🔗 この商品を共有</button><span class="share-msg" id="share-msg">リンクをコピーしました ✓</span></div>
+    <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 この商品を共有</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">リンクをコピーしました ✓</span></div>
   </div>
 </section>
 
@@ -200,7 +207,7 @@
 
 <script>
 (function () {
-  var P = {"id":"3eca884d-51c8-4a20-b5e5-fd6a51b3b6b9","lang":"ja","max":999,"price":140,"unitPrice":60,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555820539_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08280932_64ec07592286c.jpg"],"url":"https://saitofoods.com/products/1128.html","title":"北海道 長芋 約200g","t":{"copyManual":"このリンクをコピーしてください","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","unavailable":"この商品は現在お取り扱いしておりません。"}};
+  var P = {"id":"3eca884d-51c8-4a20-b5e5-fd6a51b3b6b9","lang":"ja","max":999,"price":140,"unitPrice":60,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555820539_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08280932_64ec07592286c.jpg"],"url":"https://saitofoods.com/products/1128.html","title":"北海道 長芋 約200g","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","unavailable":"この商品は現在お取り扱いしておりません。"}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   
@@ -215,6 +222,16 @@
     if (el && P.images[i]) el.src = P.images[i];
     var ts = document.querySelectorAll('.thumb');
     for (var j = 0; j < ts.length; j++) ts[j].classList.toggle('on', j === i);
+  };
+  window.shareTo = function (kind) {
+    var u = encodeURIComponent(P.url);
+    if (kind === 'x') { window.open('https://x.com/intent/post?text=' + encodeURIComponent(P.title) + '&url=' + u, '_blank', 'noopener'); return; }
+    if (kind === 'line') { window.open('https://social-plugins.line.me/lineit/share?url=' + u, '_blank', 'noopener'); return; }
+    // Instagramにはリンク付き投稿の共有URLが無いので、リンクをコピーして貼り付けてもらう
+    var m = document.getElementById('share-msg');
+    var ok = function () { m.textContent = P.t.igCopied; m.classList.add('show'); setTimeout(function () { m.classList.remove('show'); m.textContent = P.t.copied; }, 4000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(P.url).then(ok, function () { window.prompt(P.t.copyManual, P.url); });
+    else window.prompt(P.t.copyManual, P.url);
   };
   window.shareItem = function () {
     var done = function () {

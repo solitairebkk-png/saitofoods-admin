@@ -80,6 +80,13 @@
   .note { font-size:12px; color:#7a6a55; margin-top:10px; line-height:1.7; }
   .share-btn { margin-top:14px; height:40px; padding:0 18px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; cursor:pointer; font-family:inherit; }
   .share-btn:hover { border-color:var(--brand); }
+  .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
+  .share-row .share-btn { margin-top:0; }
+  .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
+  .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
+  .share-x { background:#000; }
+  .share-ig { background:radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); }
+  .share-line { background:#06C755; }
   .share-msg { display:none; margin-left:10px; font-size:13px; font-weight:700; color:#2E6B2A; }
   .share-msg.show { display:inline; }
   .added { display:none; margin-top:12px; font-size:13.5px; font-weight:700; color:#2E6B2A; }
@@ -156,7 +163,7 @@
     
     
     <div class="note">We deliver to Bangkok, Sriracha and Pattaya.</div>
-    <div><button type="button" class="share-btn" onclick="shareItem()">🔗 Share this item</button><span class="share-msg" id="share-msg">Link copied ✓</span></div>
+    <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 Share this item</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">Link copied ✓</span></div>
   </div>
 </section>
 
@@ -196,7 +203,7 @@
 
 <script>
 (function () {
-  var P = {"id":"ad61a4df-d738-42a8-bacc-03479f6b46d4","lang":"en","max":15,"price":38,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882696924_slot1.jpg"],"url":"https://saitofoods.com/en/products/1188.html","title":"Japanese Black Konjac 250g (Chilled)","t":{"copyManual":"Copy this link","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","unavailable":"This item is currently unavailable."}};
+  var P = {"id":"ad61a4df-d738-42a8-bacc-03479f6b46d4","lang":"en","max":15,"price":38,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882696924_slot1.jpg"],"url":"https://saitofoods.com/en/products/1188.html","title":"Japanese Black Konjac 250g (Chilled)","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","unavailable":"This item is currently unavailable."}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   try { if (!localStorage.getItem('saitofoods_lang')) localStorage.setItem('saitofoods_lang', 'en'); } catch (e) {}
@@ -211,6 +218,16 @@
     if (el && P.images[i]) el.src = P.images[i];
     var ts = document.querySelectorAll('.thumb');
     for (var j = 0; j < ts.length; j++) ts[j].classList.toggle('on', j === i);
+  };
+  window.shareTo = function (kind) {
+    var u = encodeURIComponent(P.url);
+    if (kind === 'x') { window.open('https://x.com/intent/post?text=' + encodeURIComponent(P.title) + '&url=' + u, '_blank', 'noopener'); return; }
+    if (kind === 'line') { window.open('https://social-plugins.line.me/lineit/share?url=' + u, '_blank', 'noopener'); return; }
+    // Instagramにはリンク付き投稿の共有URLが無いので、リンクをコピーして貼り付けてもらう
+    var m = document.getElementById('share-msg');
+    var ok = function () { m.textContent = P.t.igCopied; m.classList.add('show'); setTimeout(function () { m.classList.remove('show'); m.textContent = P.t.copied; }, 4000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(P.url).then(ok, function () { window.prompt(P.t.copyManual, P.url); });
+    else window.prompt(P.t.copyManual, P.url);
   };
   window.shareItem = function () {
     var done = function () {
