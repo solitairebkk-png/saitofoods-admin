@@ -228,7 +228,12 @@ https://www.instagram.com/p/DFCps9_PMoc/?utm_source=ig_web_copy_link&amp;igsh=Mz
   window.shareTo = function (kind) {
     var u = encodeURIComponent(P.url);
     if (kind === 'x') { window.open('https://x.com/intent/post?text=' + encodeURIComponent(P.title) + '&url=' + u, '_blank', 'noopener'); return; }
-    if (kind === 'line') { window.open('https://social-plugins.line.me/lineit/share?url=' + u, '_blank', 'noopener'); return; }
+    if (kind === 'line') {
+      // スマホはLINEアプリを直接開く(ブラウザの共有ページだとログイン画面が出てしまう)。PCは共有ページ。
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) location.href = 'https://line.me/R/share?text=' + encodeURIComponent(P.title + ' ' + P.url);
+      else window.open('https://social-plugins.line.me/lineit/share?url=' + u, '_blank', 'noopener');
+      return;
+    }
     // Instagramにはリンク付き投稿の共有URLが無いので、リンクをコピーして貼り付けてもらう
     var m = document.getElementById('share-msg');
     var ok = function () { m.textContent = P.t.igCopied; m.classList.add('show'); setTimeout(function () { m.classList.remove('show'); m.textContent = P.t.copied; }, 4000); };
