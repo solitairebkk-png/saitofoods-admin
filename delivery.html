@@ -165,10 +165,10 @@ function show(view) {
 }
 
 // ---------------- 認証 ----------------
-async function checkStaffRole(userId) {
-  const { data, error } = await supabaseClient
-    .from('customers').select('id, role').eq('auth_user_id', userId).single();
-  return !error && data && ['staff', 'admin'].includes(data.role);
+// 配送スタッフ専用(driver)・スタッフ・管理者のアカウントだけが使える(判定はDB側の delivery_app_allowed)
+async function checkStaffRole() {
+  const { data, error } = await supabaseClient.rpc('delivery_app_allowed');
+  return !error && data === true;
 }
 
 async function login() {
@@ -193,8 +193,7 @@ async function logout() {
 }
 
 async function loadStaffRows() {
-  const { data, error } = await supabaseClient
-    .from('staff').select('id, name, is_active').eq('is_active', true).order('name');
+  const { data, error } = await supabaseClient.rpc('delivery_app_staff_list');
   if (error) throw error;
   staffRows = data || [];
 }
@@ -231,14 +230,6 @@ function openMenu() {
 }
 
 // ---------------- 注文の読み込み ----------------
-const ORDER_COLS = `
-  id, legacy_order_no, delivery_date, delivery_time_slot, delivery_no_contact, delivery_leave_at_table,
-  payment_method, payment_status, delivery_handed_over,
-  condo_name, area_name, comment, departed_at, delivered_at, delivery_photo_paths, delivery_photo_email_sent_at,
-  is_wholesale, wholesale_restaurant_name,
-  customers!customer_id ( family_name, first_name, email, tel1, tel2, condo_name, address1, address2 )
-`;
-
 function startOfTodayBangkokIso() {
   // バンコク(UTC+7)の今日0:00をISOにする
   const now = new Date();
@@ -252,21 +243,13 @@ async function loadOrders() {
   loading = true;
   $('main-error').textContent = '';
   try {
-    const sinceDepart = startOfTodayBangkokIso();
-    const base = () => supabaseClient.from('orders').select(ORDER_COLS)
-      .eq('assigned_staff_id', currentStaff.id)
-      .eq('order_type', 'delivery')
-      .eq('is_cancelled', false);
-
-    const [todoRes, doneRes] = await Promise.all([
-      base().not('departed_at', 'is', null).gte('departed_at', sinceDepart).is('delivered_at', null)
-        .order('departed_at', { ascending: false }),
-      base().gte('delivered_at', startOfTodayBangkokIso()).order('delivered_at', { ascending: false }),
-    ]);
-    if (todoRes.error) throw todoRes.error;
-    if (doneRes.error) throw doneRes.error;
-    renderTodo(todoRes.data || []);
-    renderDone(doneRes.data || []);
+    const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
+    if (error) throw error;
+    const all = data || [];
+    renderTodo(all.filter(o => !o.delivered_at)
+      .sort((a, b) => new Date(b.departed_at) - new Date(a.departed_at)));
+    renderDone(all.filter(o => o.delivered_at)
+      .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
   } catch (e) {
     $('main-error').textContent = 'โหลดไม่สำเร็จ / Load failed: ' + (e.message || e);
   } finally {
@@ -314,7 +297,7 @@ function renderTodo(list) {
   }
   el.innerHTML = list.map(o => {
     const photos = staged[o.id] || [];
-    const hasEmail = !!(o.customers && o.customers.email);
+    const hasEmail = !!o.has_email;
     const isBusy = !!busy[o.id];
     return `
     <div class="card ${o.delivery_no_contact ? 'nocall' : 'call'}" data-id="${escapeHtml(o.id)}">
@@ -355,7 +338,7 @@ function renderDone(list) {
   const el = $('done-list');
   if (!list.length) { el.innerHTML = '<div class="empty">—</div>'; return; }
   el.innerHTML = list.map(o => {
-    const hasEmail = !!(o.customers && o.customers.email);
+    const hasEmail = !!o.has_email;
     let mail;
     if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว / Handed over</span>';
     else if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
@@ -433,7 +416,7 @@ function blobToBase64(blob) {
 
 // ---------------- 送信 ----------------
 async function fetchOrder(orderId) {
-  const { data, error } = await supabaseClient.from('orders').select(ORDER_COLS).eq('id', orderId).single();
+  const { data, error } = await supabaseClient.rpc('delivery_app_order', { p_order_id: orderId });
   if (error) throw error;
   return data;
 }
@@ -532,11 +515,9 @@ async function markHandedOver(orderId) {
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
-    const { data, error } = await supabaseClient.from('orders')
-      .update({ delivered_at: new Date().toISOString(), delivery_handed_over: true })
-      .eq('id', orderId).is('delivered_at', null).select('id');
-    if (error) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + error.message);
-    if (!data || !data.length) throw new Error('บันทึกไม่ได้ (ออเดอร์อาจปิดแล้วหรือบันทึกไปแล้ว) / Could not save (already completed?).');
+    const { error } = await supabaseClient.rpc('delivery_app_complete',
+      { p_order_id: orderId, p_paths: null, p_handed_over: true });
+    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว) / Save failed (already completed?): ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
   } finally {
@@ -555,7 +536,7 @@ async function submitDelivery(orderId) {
   try {
     const order = await fetchOrder(orderId);
     if (order.delivered_at) throw new Error('ส่งรูปของออเดอร์นี้ไปแล้ว / This order already has a delivery photo.');
-    const deliveredIso = new Date().toISOString();
+    let deliveredIso = new Date().toISOString();
 
     // 1) 写真を保管庫へ(これが証拠になる)
     for (let i = 0; i < photos.length; i++) {
@@ -567,18 +548,17 @@ async function submitDelivery(orderId) {
     }
 
     // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
-    const { data: upd, error: updErr } = await supabaseClient.from('orders')
-      .update({ delivered_at: deliveredIso, delivery_photo_paths: uploadedPaths })
-      .eq('id', orderId).select('id');
-    if (updErr) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + updErr.message);
-    if (!upd || !upd.length) throw new Error('บันทึกไม่ได้ (ออเดอร์อาจปิดแล้ว) / Could not save (the order may already be completed). กรุณาแจ้งแคชเชียร์ / Please tell the cashier.');
+    const { data: doneAt, error: updErr } = await supabaseClient.rpc('delivery_app_complete',
+      { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false });
+    if (updErr) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์ / Please tell the cashier.');
+    if (doneAt) deliveredIso = new Date(doneAt).toISOString();
 
     // 3) お客様へ写真つきメール(メールアドレスがある場合のみ)
     let mailMsg = '';
-    if (order.customers && order.customers.email) {
+    if (order.has_email) {
       try {
         await sendDeliveryEmail(order, deliveredIso, photos.map(p => p.blob));
-        await supabaseClient.from('orders').update({ delivery_photo_email_sent_at: new Date().toISOString() }).eq('id', orderId);
+        await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
       } catch (e) {
         mailMsg = 'บันทึกรูปแล้ว แต่ส่งอีเมลไม่สำเร็จ กดส่งอีกครั้งในรายการ "ส่งแล้ววันนี้"\nPhoto saved, but the email failed. Use "Resend email" in the Done list.\n(' + (e.message || e) + ')';
       }
@@ -618,7 +598,7 @@ async function resendEmail(orderId) {
       blobs.push(data);
     }
     await sendDeliveryEmail(order, order.delivered_at, blobs);
-    await supabaseClient.from('orders').update({ delivery_photo_email_sent_at: new Date().toISOString() }).eq('id', orderId);
+    await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
   } catch (e) {
     $('main-error').textContent = 'ส่งอีเมลไม่สำเร็จ / Email failed: ' + (e.message || e);
   } finally {
