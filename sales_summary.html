@@ -385,12 +385,24 @@ function renderSummary(orders, plaaTapianRows) {
     (order.order_items || []).forEach(item => {
       const key = item.product_id || item.product_name_snapshot;
       const name = item.products?.name_en || item.products?.name_th || item.product_name_snapshot || '(unknown)';
-      const unit = item.products?.unit_label || (item.sale_type === 'weight' ? 'kg' : 'pcs');
-      if (!productMap.has(key)) productMap.set(key, { name, unit, qty: { bkk: 0, sp: 0, walk: 0 }, revenue: { bkk: 0, sp: 0, walk: 0 } });
+      // 量り売り商品は、quantityが「unit_label(例: 100g)を1とした倍数」で保存されている(例: 2.46 = 246g)。
+      // そのまま集計すると「2.46 100g」のように読みづらいため、重量確定済みの注文はグラム(g)に換算して集計する。
+      // 重量未確定の注文のquantityは「パック数」なので、グラムには混ぜず、別に「未確定パック数」として数える。
+      const isWeight = item.sale_type === 'weight';
+      const unit = isWeight ? 'g' : (item.products?.unit_label || 'pcs');
+      if (!productMap.has(key)) productMap.set(key, { name, unit, isWeight, qty: { bkk: 0, sp: 0, walk: 0 }, sortQty: { bkk: 0, sp: 0, walk: 0 }, pending: { bkk: 0, sp: 0, walk: 0 }, revenue: { bkk: 0, sp: 0, walk: 0 } });
       const p = productMap.get(key);
       // エリア別の個数: 店頭 / シラチャ+パタヤ / バンコク(エリア外・未設定を含む、上のカードと同じ振り分け)
       const grp = bucketKey === 'walk_in' ? 'walk' : (bucketKey === 'Bangkok' ? 'bkk' : 'sp');
-      p.qty[grp] += Number(item.quantity) || 0;
+      const rawQty = Number(item.quantity) || 0;
+      if (isWeight && !order.is_weight_confirmed) {
+        p.pending[grp] += rawQty;
+      } else if (isWeight) {
+        p.qty[grp] += Math.round(rawQty * parseGramsPerUnit(item.products?.unit_label));
+      } else {
+        p.qty[grp] += rawQty;
+      }
+      p.sortQty[grp] += rawQty; // 並び順用(従来どおり、換算前の数量で並べる)
       p.revenue[grp] += Number(item.total_price) || 0;
     });
   });
@@ -463,8 +475,10 @@ function renderSummary(orders, plaaTapianRows) {
 
   const prodTbody = document.getElementById('prod-tbody');
   const totalQty = p => p.qty.bkk + p.qty.sp + p.qty.walk;
+  const totalSort = p => p.sortQty.bkk + p.sortQty.sp + p.sortQty.walk;
+  const totalPending = p => p.pending.bkk + p.pending.sp + p.pending.walk;
   const totalRev = p => p.revenue.bkk + p.revenue.sp + p.revenue.walk;
-  const products = [...productMap.values()].sort((a, b) => totalQty(b) - totalQty(a) || totalRev(b) - totalRev(a));
+  const products = [...productMap.values()].sort((a, b) => totalSort(b) - totalSort(a) || totalRev(b) - totalRev(a));
   // CSV出力用に、表示中の集計結果を保持しておく
   lastItemsRows = products;
   lastItemsDate = document.getElementById('filter-date').value;
@@ -473,14 +487,17 @@ function renderSummary(orders, plaaTapianRows) {
     prodTbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
     return;
   }
-  const cell = q => q > 0 ? `<td class="num">${formatQty(q)}</td>` : '<td class="num zero">-</td>';
+  // 量り売りで重量未確定の注文があるときは、そのパック数を、確定済みのグラムとは別に添える
+  const cell = (q, pend) => (q > 0 || pend > 0)
+    ? `<td class="num">${q > 0 ? formatQty(q) : ''}${pend > 0 ? `<div style="color:var(--text-muted);font-size:11px;font-weight:400;">+${formatQty(pend)} pack (unconfirmed)</div>` : ''}</td>`
+    : '<td class="num zero">-</td>';
   prodTbody.innerHTML = products.map(p => `
     <tr>
       <td class="name">${escapeHtmlSS(p.name)}</td>
-      ${cell(p.qty.bkk)}
-      ${cell(p.qty.sp)}
-      ${cell(p.qty.walk)}
-      <td class="num total">${formatQty(totalQty(p))} ${escapeHtmlSS(p.unit)}</td>
+      ${cell(p.qty.bkk, p.pending.bkk)}
+      ${cell(p.qty.sp, p.pending.sp)}
+      ${cell(p.qty.walk, p.pending.walk)}
+      <td class="num total">${formatQty(totalQty(p))} ${escapeHtmlSS(p.unit)}${totalPending(p) > 0 ? `<div style="color:var(--text-muted);font-size:11px;font-weight:400;">+${formatQty(totalPending(p))} pack (unconfirmed)</div>` : ''}</td>
       <td class="num">${Math.round(totalRev(p)).toLocaleString()}</td>
     </tr>
   `).join('');
@@ -517,6 +534,19 @@ function formatQty(qty) {
   return Number.isInteger(qty) ? qty : qty.toFixed(2);
 }
 
+// products.unit_label(例: "100g" "1kg" "kg")から、「quantity=1が何グラムか」を読み取る。
+// orders.htmlの重量確定画面と同じルール(読み取れない場合は100g単位と仮定)。
+function parseGramsPerUnit(unitLabel) {
+  const str = String(unitLabel || '').trim();
+  const m = str.match(/([\d.]+)\s*(kg|g)/i);
+  if (m) {
+    const num = parseFloat(m[1]);
+    return m[2].toLowerCase() === 'kg' ? num * 1000 : num;
+  }
+  if (/kg/i.test(str)) return 1000;
+  return 100;
+}
+
 // ---------------- CSV出力(商品別の表) ----------------
 // 選んだ範囲(全エリア / バンコク / シラチャ・パタヤ / 店頭)の商品別の表をCSVで保存する。
 // Excel・Googleスプレッドシートで文字化けしないよう、UTF-8(BOM付き)で出力する。
@@ -539,18 +569,19 @@ function exportItemsCsv() {
   let header, rows;
 
   if (scope === 'all') {
-    header = ['Date / วันที่', 'Product / สินค้า', 'Bangkok / กรุงเทพฯ', 'Sriracha & Pattaya / ศรีราชา & พัทยา', 'Walk-in / หน้าร้าน', 'Total / รวม', 'Unit / หน่วย', 'Sales (THB) / ยอดขาย (บาท)'];
+    // 量り売り商品は、重量確定済みの分をグラム(Unit=g)で出す。重量未確定の注文のパック数は、別の列に出す。
+    header = ['Date / วันที่', 'Product / สินค้า', 'Bangkok / กรุงเทพฯ', 'Sriracha & Pattaya / ศรีราชา & พัทยา', 'Walk-in / หน้าร้าน', 'Total / รวม', 'Unit / หน่วย', 'Unconfirmed packs / รอชั่ง (แพ็ค)', 'Sales (THB) / ยอดขาย (บาท)'];
     rows = lastItemsRows.map(p => [
       lastItemsDate, p.name, p.qty.bkk || '', p.qty.sp || '', p.qty.walk || '',
-      p.qty.bkk + p.qty.sp + p.qty.walk, p.unit, r(p.revenue.bkk + p.revenue.sp + p.revenue.walk),
+      p.qty.bkk + p.qty.sp + p.qty.walk, p.unit, (p.pending.bkk + p.pending.sp + p.pending.walk) || '', r(p.revenue.bkk + p.revenue.sp + p.revenue.walk),
     ]);
   } else {
     // 1エリアだけ: そのエリアで売れた商品だけを、そのエリアの個数順に並べる
-    header = ['Date / วันที่', 'Product / สินค้า', 'Qty / จำนวน', 'Unit / หน่วย', 'Sales (THB) / ยอดขาย (บาท)'];
+    header = ['Date / วันที่', 'Product / สินค้า', 'Qty / จำนวน', 'Unit / หน่วย', 'Unconfirmed packs / รอชั่ง (แพ็ค)', 'Sales (THB) / ยอดขาย (บาท)'];
     rows = lastItemsRows
-      .filter(p => p.qty[scope] > 0)
-      .sort((a, b) => b.qty[scope] - a.qty[scope] || b.revenue[scope] - a.revenue[scope])
-      .map(p => [lastItemsDate, p.name, p.qty[scope], p.unit, r(p.revenue[scope])]);
+      .filter(p => p.qty[scope] > 0 || p.pending[scope] > 0)
+      .sort((a, b) => b.sortQty[scope] - a.sortQty[scope] || b.revenue[scope] - a.revenue[scope])
+      .map(p => [lastItemsDate, p.name, p.qty[scope], p.unit, p.pending[scope] || '', r(p.revenue[scope])]);
     if (!rows.length) { alert(`No sales in this area on ${lastItemsDate}. / ไม่มียอดขายในพื้นที่นี้ของวันที่ ${lastItemsDate}`); return; }
   }
 
