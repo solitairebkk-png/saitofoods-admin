@@ -145,9 +145,7 @@ const PHOTO_BUCKET = 'delivery-photos';
 const MAX_PHOTOS = 3;
 const MAX_EDGE = 1280;      // 写真の長辺の最大px(縮小して容量とメール添付サイズを抑える)
 const JPEG_QUALITY = 0.8;
-// アプリ公開前に出発した注文(すでに配達済みで写真が不要なもの)を「写真待ち」に出さないための下限(2026-10-07 11:00 バンコク時間)。
-// それ以降に出発した注文のうち、今日(バンコク時間)出発した分だけを表示する。
-const GO_LIVE_ISO = '2026-10-07T04:00:00Z';
+// 一覧に出すのは、そのスタッフが今日(バンコク時間)出発した配送の注文すべて。翌日以降は出ない。
 
 let currentStaff = null;    // { id, name }
 let staffRows = [];
@@ -253,8 +251,7 @@ async function loadOrders() {
   loading = true;
   $('main-error').textContent = '';
   try {
-    const todayStart = startOfTodayBangkokIso();
-    const sinceDepart = todayStart > GO_LIVE_ISO ? todayStart : GO_LIVE_ISO;
+    const sinceDepart = startOfTodayBangkokIso();
     const base = () => supabaseClient.from('orders').select(ORDER_COLS)
       .eq('assigned_staff_id', currentStaff.id)
       .eq('order_type', 'delivery')
