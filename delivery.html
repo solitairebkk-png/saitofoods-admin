@@ -60,6 +60,9 @@
   button.slip-btn:disabled { opacity: .5; }
   .slip-ok { font-size: 14px; color: #166534; font-weight: 700; }
   .rice-box { margin-top: 10px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 10px 12px; font-size: 20px; font-weight: 800; color: #78350f; }
+  @keyframes deli-spin { to { transform: rotate(360deg); } }
+  #refresh-btn.spin { animation: deli-spin .8s linear infinite; }
+  #last-upd { font-size: 12px; color: var(--gray); text-align: right; margin: -4px 4px 4px; min-height: 16px; }
   .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
   .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
@@ -141,6 +144,7 @@
     <button id="menu-btn">⋯</button>
   </header>
   <main>
+    <div id="last-upd"></div>
     <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
     <div id="todo-list"></div>
     <div class="section-title">ส่งแล้ววันนี้ (<span id="done-count">0</span>)</div>
@@ -260,6 +264,8 @@ function startOfTodayBangkokIso() {
 async function loadOrders() {
   if (!currentStaff || loading) return;
   loading = true;
+  const t0 = Date.now();
+  $('refresh-btn').classList.add('spin');
   $('main-error').textContent = '';
   try {
     const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
@@ -273,6 +279,12 @@ async function loadOrders() {
     $('main-error').textContent = 'โหลดไม่สำเร็จ: ' + (e.message || e);
   } finally {
     loading = false;
+    // 更新が一瞬で終わって「何も起きていない」ように見えないよう、最低0.7秒は回して、更新時刻を出す
+    const wait = Math.max(0, 700 - (Date.now() - t0));
+    setTimeout(() => {
+      $('refresh-btn').classList.remove('spin');
+      $('last-upd').textContent = 'อัปเดตล่าสุด ' + fmtTimeBkk(new Date().toISOString());
+    }, wait);
   }
 }
 
