@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Delivery">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1f6f43">
+<title>Delivery Photo | Saito Foods</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --green: #1f6f43;
+    --green-light: #e6f4ec;
+    --red: #b71c1c;
+    --red-light: #fdecea;
+    --gray: #6b7280;
+    --line: #e5e7eb;
+    --bg: #f4f5f7;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans Thai", "Noto Sans JP", sans-serif;
+    font-size: 16px; line-height: 1.45;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--green); color: #fff;
+    padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  header h1 { font-size: 17px; margin: 0; flex: 1; }
+  header .who { font-size: 13px; opacity: .9; }
+  header button {
+    background: rgba(255,255,255,.2); color: #fff; border: 0; border-radius: 8px;
+    padding: 8px 12px; font-size: 14px;
+  }
+  main { padding: 12px; max-width: 640px; margin: 0 auto; }
+  .panel { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .panel h2 { font-size: 16px; margin: 0 0 10px; }
+  label { display: block; font-size: 14px; color: var(--gray); margin: 10px 0 4px; }
+  input[type=email], input[type=password], select {
+    width: 100%; font-size: 17px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff;
+  }
+  .btn {
+    display: block; width: 100%; border: 0; border-radius: 12px; padding: 14px;
+    font-size: 17px; font-weight: 700; color: #fff; background: var(--green); margin-top: 12px;
+  }
+  .btn.secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
+  .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
+  .btn:disabled { opacity: .5; }
+  .err { color: var(--red); font-size: 14px; margin-top: 8px; min-height: 18px; white-space: pre-wrap; }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--gray); margin: 18px 4px 8px; }
+  .empty { text-align: center; color: var(--gray); padding: 28px 8px; }
+
+  .card { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 6px solid var(--green); }
+  .card.nocall { border-left-color: #6b7280; }
+  .card.call { border-left-color: var(--red); }
+  .card.done { border-left-color: #94a3b8; background: #fafafa; }
+  .card .name { font-size: 18px; font-weight: 700; }
+  .card .addr { font-size: 15px; margin-top: 2px; }
+  .card .meta { font-size: 13px; color: var(--gray); margin-top: 4px; }
+  .badge { display: inline-block; font-size: 13px; font-weight: 700; padding: 4px 9px; border-radius: 999px; margin-top: 8px; }
+  .badge.nocall { background: #eef0f3; color: #374151; }
+  .badge.call { background: var(--red-light); color: var(--red); }
+  .badge.ok { background: var(--green-light); color: var(--green); }
+  .badge.warn { background: #fff4d6; color: #8a5a00; }
+  .note { margin-top: 8px; padding: 8px 10px; background: #fff8e1; border-radius: 8px; font-size: 14px; white-space: pre-wrap; }
+  .thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .thumbs .th { position: relative; width: 84px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumbs .rm {
+    position: absolute; top: 2px; right: 2px; width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(0,0,0,.65); color: #fff; border: 0; font-size: 16px; line-height: 1; padding: 0;
+  }
+  .hint { font-size: 13px; color: var(--gray); margin-top: 6px; }
+  .hidden { display: none !important; }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ログイン -->
+<div id="login-view" class="hidden">
+  <main>
+    <div class="panel" style="margin-top:40px;">
+      <h2>🚴 Delivery Photo / ถ่ายรูปส่งของ</h2>
+      <label for="login-email">Email</label>
+      <input id="login-email" type="email" autocomplete="username" inputmode="email">
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" autocomplete="current-password">
+      <button class="btn" id="login-btn">เข้าสู่ระบบ / Log in</button>
+      <div id="login-error" class="err"></div>
+    </div>
+  </main>
+</div>
+
+<!-- スタッフ選択 -->
+<div id="staff-view" class="hidden">
+  <main>
+    <div class="panel" style="margin-top:40px;">
+      <h2>คุณคือใคร? / Who are you?</h2>
+      <label for="staff-select">พนักงาน / Staff</label>
+      <select id="staff-select"></select>
+      <button class="btn" id="staff-ok-btn">ตกลง / OK</button>
+      <div id="staff-error" class="err"></div>
+    </div>
+  </main>
+</div>
+
+<!-- メイン -->
+<div id="main-view" class="hidden">
+  <header>
+    <h1>📷 Delivery Photo</h1>
+    <span class="who" id="who-label"></span>
+    <button id="refresh-btn" aria-label="refresh">↻</button>
+    <button id="menu-btn">⋯</button>
+  </header>
+  <main>
+    <div class="section-title">รอส่งรูป / To upload (<span id="todo-count">0</span>)</div>
+    <div id="todo-list"></div>
+    <div class="section-title">ส่งแล้ววันนี้ / Done today (<span id="done-count">0</span>)</div>
+    <div id="done-list"></div>
+    <div id="main-error" class="err"></div>
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+// orders.html(注文管理)と同じログインセッションを使う(同じブラウザ内なら再ログイン不要)
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
+// 既存のメール送信GAS(orders.htmlの「個別メール送信」と同じ sendStaffEmail を使う。宛先はGAS側が注文IDから取得する)
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
+
+const STAFF_KEY = 'delivery-staff-id';
+const PHOTO_BUCKET = 'delivery-photos';
+const MAX_PHOTOS = 3;
+const MAX_EDGE = 1280;      // 写真の長辺の最大px(縮小して容量とメール添付サイズを抑える)
+const JPEG_QUALITY = 0.8;
+const LOOKBACK_DAYS = 3;    // 出発から何日前までの未提出を表示するか
+
+let currentStaff = null;    // { id, name }
+let staffRows = [];
+const staged = {};          // orderId -> [{ blob, url }] 送信前の写真
+const busy = {};            // orderId -> true(送信処理中)
+let loading = false;
+
+function escapeHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+const $ = (id) => document.getElementById(id);
+function show(view) {
+  ['login-view', 'staff-view', 'main-view'].forEach(v => $(v).classList.toggle('hidden', v !== view));
+}
+
+// ---------------- 認証 ----------------
+async function checkStaffRole(userId) {
+  const { data, error } = await supabaseClient
+    .from('customers').select('id, role').eq('auth_user_id', userId).single();
+  return !error && data && ['staff', 'admin'].includes(data.role);
+}
+
+async function login() {
+  $('login-error').textContent = '';
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { $('login-error').textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message; return; }
+  if (!(await checkStaffRole(data.user.id))) {
+    $('login-error').textContent = 'บัญชีนี้ไม่มีสิทธิ์ / This account has no access.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  await afterLogin();
+}
+
+async function logout() {
+  if (!confirm('ออกจากระบบหรือไม่? / Log out?')) return;
+  localStorage.removeItem(STAFF_KEY);
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+async function loadStaffRows() {
+  const { data, error } = await supabaseClient
+    .from('staff').select('id, name, is_active').eq('is_active', true).order('name');
+  if (error) throw error;
+  staffRows = data || [];
+}
+
+async function afterLogin() {
+  await loadStaffRows();
+  const savedId = localStorage.getItem(STAFF_KEY);
+  const saved = staffRows.find(s => s.id === savedId);
+  if (saved) { currentStaff = saved; enterMain(); return; }
+  $('staff-select').innerHTML = '<option value="">-- เลือกชื่อ / Select --</option>' +
+    staffRows.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  show('staff-view');
+}
+
+function chooseStaff() {
+  const id = $('staff-select').value;
+  const row = staffRows.find(s => s.id === id);
+  if (!row) { $('staff-error').textContent = 'กรุณาเลือกชื่อ / Please select your name.'; return; }
+  localStorage.setItem(STAFF_KEY, row.id);
+  currentStaff = row;
+  enterMain();
+}
+
+function changeStaff() {
+  localStorage.removeItem(STAFF_KEY);
+  currentStaff = null;
+  afterLogin();
+}
+
+function openMenu() {
+  const act = prompt('1 = เปลี่ยนชื่อพนักงาน / Change staff\n2 = ออกจากระบบ / Log out\n(พิมพ์ 1 หรือ 2 / type 1 or 2)');
+  if (act === '1') changeStaff();
+  else if (act === '2') logout();
+}
+
+// ---------------- 注文の読み込み ----------------
+const ORDER_COLS = `
+  id, legacy_order_no, delivery_date, delivery_time_slot, delivery_no_contact, delivery_leave_at_table,
+  condo_name, area_name, comment, departed_at, delivered_at, delivery_photo_paths, delivery_photo_email_sent_at,
+  is_wholesale, wholesale_restaurant_name,
+  customers ( family_name, first_name, email, tel1, tel2, condo_name, address1, address2 )
+`;
+
+function startOfTodayBangkokIso() {
+  // バンコク(UTC+7)の今日0:00をISOにする
+  const now = new Date();
+  const bkk = new Date(now.getTime() + 7 * 3600 * 1000);
+  const y = bkk.getUTCFullYear(), m = bkk.getUTCMonth(), d = bkk.getUTCDate();
+  return new Date(Date.UTC(y, m, d) - 7 * 3600 * 1000).toISOString();
+}
+
+async function loadOrders() {
+  if (!currentStaff || loading) return;
+  loading = true;
+  $('main-error').textContent = '';
+  try {
+    const sinceDepart = new Date(Date.now() - LOOKBACK_DAYS * 86400000).toISOString();
+    const base = () => supabaseClient.from('orders').select(ORDER_COLS)
+      .eq('assigned_staff_id', currentStaff.id)
+      .eq('order_type', 'delivery')
+      .eq('delivery_leave_at_table', true)
+      .eq('is_cancelled', false);
+
+    const [todoRes, doneRes] = await Promise.all([
+      base().not('departed_at', 'is', null).gte('departed_at', sinceDepart).is('delivered_at', null)
+        .order('departed_at', { ascending: false }),
+      base().gte('delivered_at', startOfTodayBangkokIso()).order('delivered_at', { ascending: false }),
+    ]);
+    if (todoRes.error) throw todoRes.error;
+    if (doneRes.error) throw doneRes.error;
+    renderTodo(todoRes.data || []);
+    renderDone(doneRes.data || []);
+  } catch (e) {
+    $('main-error').textContent = 'โหลดไม่สำเร็จ / Load failed: ' + (e.message || e);
+  } finally {
+    loading = false;
+  }
+}
+
+// ---------------- 表示 ----------------
+function customerLabel(o) {
+  if (o.is_wholesale) return '🏢 ' + (o.wholesale_restaurant_name || 'Wholesale');
+  const c = o.customers;
+  return c ? `${c.family_name || ''} ${c.first_name || ''}`.trim() : '—';
+}
+function addressLabel(o) {
+  const c = o.customers || {};
+  const condo = o.condo_name || c.condo_name || '';
+  const addr = [c.address1, c.address2].filter(Boolean).join(' ');
+  return [condo ? '🏢 ' + condo : '', addr].filter(Boolean).join(' / ');
+}
+function fmtTimeBkk(iso) {
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+}
+
+function callBadge(o) {
+  return o.delivery_no_contact
+    ? '<span class="badge nocall">🔕 ไม่ต้องโทร / No call</span>'
+    : '<span class="badge call">📞 โทรแจ้งเมื่อถึง / Call on arrival</span>';
+}
+
+function renderTodo(list) {
+  $('todo-count').textContent = list.length;
+  const el = $('todo-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">ไม่มีรายการ / Nothing to upload 🎉</div>';
+    return;
+  }
+  el.innerHTML = list.map(o => {
+    const photos = staged[o.id] || [];
+    const hasEmail = !!(o.customers && o.customers.email);
+    const isBusy = !!busy[o.id];
+    return `
+    <div class="card ${o.delivery_no_contact ? 'nocall' : 'call'}" data-id="${escapeHtml(o.id)}">
+      <div class="name">${escapeHtml(customerLabel(o))}</div>
+      <div class="addr">${escapeHtml(addressLabel(o))}</div>
+      <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
+      ${callBadge(o)}
+      ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล / No email (บันทึกรูปอย่างเดียว / photo saved only)</span>'}
+      ${o.comment ? `<div class="note">${escapeHtml(o.comment)}</div>` : ''}
+      <div class="thumbs">
+        ${photos.map((p, i) => `
+          <div class="th"><img src="${p.url}" alt="">
+            <button class="rm" onclick="removePhoto('${escapeHtml(o.id)}', ${i})" ${isBusy ? 'disabled' : ''}>×</button>
+          </div>`).join('')}
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
+             onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
+      ${photos.length < MAX_PHOTOS ? `
+        <button class="btn ${photos.length ? 'secondary' : ''}" ${isBusy ? 'disabled' : ''}
+          onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
+          📷 ${photos.length ? 'เพิ่มรูป / Add photo' : 'ถ่ายรูป / Take photo'}
+        </button>` : ''}
+      ${photos.length ? `
+        <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
+          ${isBusy ? 'กำลังส่ง... / Sending...' : '✅ ส่งของแล้ว / Delivered &amp; send'}
+        </button>
+        <div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที / The customer will be emailed the photo right away.' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น / No email on file: the photo will be saved only.'}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDone(list) {
+  $('done-count').textContent = list.length;
+  const el = $('done-list');
+  if (!list.length) { el.innerHTML = '<div class="empty">—</div>'; return; }
+  el.innerHTML = list.map(o => {
+    const hasEmail = !!(o.customers && o.customers.email);
+    let mail;
+    if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
+    else if (hasEmail) mail = '<span class="badge warn">✉️ ยังไม่ได้ส่งอีเมล / Email NOT sent</span>';
+    else mail = '<span class="badge warn">✉️ ไม่มีอีเมล / No email</span>';
+    const retry = (!o.delivery_photo_email_sent_at && hasEmail)
+      ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง / Resend email</button>` : '';
+    return `
+    <div class="card done">
+      <div class="name">${escapeHtml(customerLabel(o))}</div>
+      <div class="addr">${escapeHtml(addressLabel(o))}</div>
+      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))} · 📷 ${(o.delivery_photo_paths || []).length}</div>
+      ${mail}
+      <div>${retry}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---------------- 写真 ----------------
+// 端末のカメラ画像を長辺MAX_EDGEのJPEGに縮小する(iPhoneのHEIC/回転情報もここで吸収される)
+async function shrinkImage(file) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch (e) {
+    bitmap = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('cannot read image'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  const w = bitmap.width, h = bitmap.height;
+  const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  if (bitmap.close) bitmap.close();
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error('image encode failed')), 'image/jpeg', JPEG_QUALITY);
+  });
+}
+
+async function onPhotoPicked(orderId, input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  $('main-error').textContent = '';
+  try {
+    const blob = await shrinkImage(file);
+    (staged[orderId] = staged[orderId] || []).push({ blob, url: URL.createObjectURL(blob) });
+    await loadOrders();
+  } catch (e) {
+    $('main-error').textContent = 'อ่านรูปไม่ได้ / Could not read the photo: ' + (e.message || e);
+  }
+}
+
+function removePhoto(orderId, idx) {
+  const arr = staged[orderId] || [];
+  if (arr[idx]) URL.revokeObjectURL(arr[idx].url);
+  arr.splice(idx, 1);
+  loadOrders();
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result || ''); resolve(s.slice(s.indexOf(',') + 1)); };
+    r.onerror = () => reject(r.error || new Error('read failed'));
+    r.readAsDataURL(blob);
+  });
+}
+
+// ---------------- 送信 ----------------
+async function fetchOrder(orderId) {
+  const { data, error } = await supabaseClient.from('orders').select(ORDER_COLS).eq('id', orderId).single();
+  if (error) throw error;
+  return data;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmtDateTimeBkk(iso) {
+  const d = new Date(new Date(iso).getTime() + 7 * 3600 * 1000);
+  return `${d.getUTCFullYear()}/${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+
+function buildEmail(order, deliveredIso, photoCount) {
+  const name = customerLabel(order);
+  const when = fmtDateTimeBkk(deliveredIso);
+  const orderNo = order.legacy_order_no ? ` (${order.legacy_order_no})` : '';
+  const ja =
+`${name}様
+
+毎度当店をご利用いただきまして誠にありがとうございます。
+ご注文${orderNo}の商品を、ご指定のとおり「デリバリー用テーブル」に置き配いたしました。
+
+■ お届け日時: ${when} (バンコク時間)
+■ 置き場所: デリバリー用テーブル
+■ お届けの様子: 添付の写真${photoCount > 1 ? '(' + photoCount + '枚)' : ''}をご確認ください。
+
+お受け取りの際は、お早めに商品をお取りください。
+お届けの状況について、ご不明な点がございましたらお気軽にご連絡ください。`;
+  const en =
+`Dear ${name},
+
+Thank you for your order${orderNo}.
+As requested, we have left your items at the delivery table.
+
+- Delivered at: ${when} (Bangkok time)
+- Location: delivery table
+- Photo: please see the attached photo${photoCount > 1 ? 's (' + photoCount + ')' : ''} taken at the time of delivery.
+
+Please collect your items as soon as possible.
+If you have any questions about this delivery, please contact us anytime.`;
+  const sig =
+`サイトウフーズ株式会社 / Saito Foods Co., Ltd.
+23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36
+Klongton Klontoey Bangkok 10110
+orders@saitofoods.com
+02-258-9878,06-5618-9906`;
+  return {
+    subject: 'お届け完了のお知らせ / Delivery completed - Saito Foods',
+    body: `${ja}\n\n----------------------------------------\n\n${en}\n\n\n${sig}`,
+  };
+}
+
+async function sendDeliveryEmail(order, deliveredIso, blobs) {
+  const { subject, body } = buildEmail(order, deliveredIso, blobs.length);
+  const attachments = [];
+  for (let i = 0; i < blobs.length; i++) {
+    attachments.push({
+      name: `delivery_${deliveredIso.slice(0, 10)}_${i + 1}.jpg`,
+      mimeType: 'image/jpeg',
+      data: await blobToBase64(blobs[i]),
+    });
+  }
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'sendStaffEmail', order_id: order.id, subject, body, attachments }),
+  });
+  const json = await res.json();
+  if (json.status !== 'ok') throw new Error(json.message || 'mail failed');
+}
+
+async function submitDelivery(orderId) {
+  const photos = staged[orderId] || [];
+  if (!photos.length || busy[orderId]) return;
+  busy[orderId] = true;
+  $('main-error').textContent = '';
+  await loadOrders();
+  let uploadedPaths = [];
+  try {
+    const order = await fetchOrder(orderId);
+    if (order.delivered_at) throw new Error('ส่งรูปของออเดอร์นี้ไปแล้ว / This order already has a delivery photo.');
+    const deliveredIso = new Date().toISOString();
+
+    // 1) 写真を保管庫へ(これが証拠になる)
+    for (let i = 0; i < photos.length; i++) {
+      const path = `${orderId}/${deliveredIso.replace(/[:.]/g, '-')}_${i + 1}.jpg`;
+      const { error } = await supabaseClient.storage.from(PHOTO_BUCKET)
+        .upload(path, photos[i].blob, { contentType: 'image/jpeg', upsert: false });
+      if (error) throw new Error('อัปโหลดรูปไม่สำเร็จ / Photo upload failed: ' + error.message);
+      uploadedPaths.push(path);
+    }
+
+    // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
+    const { data: upd, error: updErr } = await supabaseClient.from('orders')
+      .update({ delivered_at: deliveredIso, delivery_photo_paths: uploadedPaths })
+      .eq('id', orderId).select('id');
+    if (updErr) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + updErr.message);
+    if (!upd || !upd.length) throw new Error('บันทึกไม่ได้ (ออเดอร์อาจปิดแล้ว) / Could not save (the order may already be completed). กรุณาแจ้งแคชเชียร์ / Please tell the cashier.');
+
+    // 3) お客様へ写真つきメール(メールアドレスがある場合のみ)
+    let mailMsg = '';
+    if (order.customers && order.customers.email) {
+      try {
+        await sendDeliveryEmail(order, deliveredIso, photos.map(p => p.blob));
+        await supabaseClient.from('orders').update({ delivery_photo_email_sent_at: new Date().toISOString() }).eq('id', orderId);
+      } catch (e) {
+        mailMsg = 'บันทึกรูปแล้ว แต่ส่งอีเมลไม่สำเร็จ กดส่งอีกครั้งในรายการ "ส่งแล้ววันนี้"\nPhoto saved, but the email failed. Use "Resend email" in the Done list.\n(' + (e.message || e) + ')';
+      }
+    }
+
+    photos.forEach(p => URL.revokeObjectURL(p.url));
+    delete staged[orderId];
+    if (mailMsg) $('main-error').textContent = mailMsg;
+  } catch (e) {
+    $('main-error').textContent = e.message || String(e);
+    // 途中で失敗した場合、アップロード済みの写真が注文に紐付いていなければ掃除する
+    if (uploadedPaths.length) {
+      try {
+        const o = await fetchOrder(orderId);
+        if (!o.delivered_at) await supabaseClient.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
+      } catch (_) { /* 掃除に失敗しても業務には影響しない */ }
+    }
+  } finally {
+    delete busy[orderId];
+    await loadOrders();
+  }
+}
+
+// 記録済み写真を保管庫から取り直してメールだけ再送する
+async function resendEmail(orderId) {
+  if (busy[orderId]) return;
+  busy[orderId] = true;
+  $('main-error').textContent = '';
+  await loadOrders();
+  try {
+    const order = await fetchOrder(orderId);
+    if (!order.delivered_at || !(order.delivery_photo_paths || []).length) throw new Error('ไม่พบรูป / No saved photo.');
+    const blobs = [];
+    for (const path of order.delivery_photo_paths) {
+      const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).download(path);
+      if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ / Photo download failed: ' + error.message);
+      blobs.push(data);
+    }
+    await sendDeliveryEmail(order, order.delivered_at, blobs);
+    await supabaseClient.from('orders').update({ delivery_photo_email_sent_at: new Date().toISOString() }).eq('id', orderId);
+  } catch (e) {
+    $('main-error').textContent = 'ส่งอีเมลไม่สำเร็จ / Email failed: ' + (e.message || e);
+  } finally {
+    delete busy[orderId];
+    await loadOrders();
+  }
+}
+
+// ---------------- 起動 ----------------
+function enterMain() {
+  $('who-label').textContent = currentStaff.name;
+  show('main-view');
+  loadOrders();
+}
+
+$('login-btn').addEventListener('click', login);
+$('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('staff-ok-btn').addEventListener('click', chooseStaff);
+$('refresh-btn').addEventListener('click', loadOrders);
+$('menu-btn').addEventListener('click', openMenu);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff) loadOrders(); });
+setInterval(() => { if (!document.hidden && currentStaff) loadOrders(); }, 60000);
+
+(async function init() {
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session && (await checkStaffRole(session.user.id))) { await afterLogin(); return; }
+  } catch (e) { /* ログイン画面へ */ }
+  show('login-view');
+})();
+</script>
+</body>
+</html>

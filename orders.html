@@ -1921,6 +1921,7 @@ async function loadOrders() {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
+      delivered_at, delivery_photo_paths, delivery_photo_email_sent_at,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ) ),
@@ -2672,11 +2673,30 @@ function renderDispatchBlock(order) {
     const timeStr = new Date(order.departed_at).toLocaleTimeString('en-GB', {
       hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
     });
+    // 置き配の注文は、配達完了の写真(スタッフ用アプリ delivery.html で提出)の状況も出発欄に表示する。
+    let deliveryProofHtml = '';
+    if (order.delivery_leave_at_table) {
+      if (order.delivered_at) {
+        const dTime = new Date(order.delivered_at).toLocaleTimeString('en-GB', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+        });
+        const mailLabel = order.delivery_photo_email_sent_at
+          ? '✉️ Email sent / ส่งอีเมลแล้ว'
+          : (order.customers?.email ? '⚠️ Email NOT sent / ยังไม่ส่งอีเมล' : 'No email / ไม่มีอีเมล');
+        deliveryProofHtml = `
+        <div style="margin-top:4px;color:#1f6f43;font-weight:700;">📷 Delivered ${dTime} / ส่งของแล้ว</div>
+        <div style="color:var(--text-muted);">${mailLabel}</div>
+        <button class="btn-undo-dispatch" onclick="viewDeliveryPhotos('${order.id}')">📷 View photo / ดูรูป</button>`;
+      } else {
+        deliveryProofHtml = `<div style="margin-top:4px;color:#b71c1c;font-weight:700;">📷 Photo pending / รอรูปส่งของ</div>`;
+      }
+    }
     return `
       <div class="dispatch-done">
         <div class="label">Departed / ออกเดินทางแล้ว</div>
         <div class="name">${staffName}</div>
         <div class="time">${timeStr}</div>
+        ${deliveryProofHtml}
         <button class="btn-undo-dispatch" onclick="resetDeparture('${order.id}')">Undo / ยกเลิก</button>
       </div>`;
   }
@@ -2735,6 +2755,32 @@ async function departOrder(orderId) {
     }
   }
   loadOrders();
+}
+
+// 置き配の配達完了写真を表示する(非公開バケットなので、短時間だけ有効な署名付きURLで見せる)。
+// 「届いていない」と言われた時の確認用。写真は delivery.html からスタッフが提出したもの。
+async function viewDeliveryPhotos(orderId) {
+  const { data: row, error } = await supabaseClient
+    .from('orders').select('delivered_at, delivery_photo_paths').eq('id', orderId).single();
+  if (error || !row || !(row.delivery_photo_paths || []).length) {
+    alert('No photo found. / ไม่พบรูป'); return;
+  }
+  const urls = [];
+  for (const path of row.delivery_photo_paths) {
+    const { data, error: sErr } = await supabaseClient.storage.from('delivery-photos').createSignedUrl(path, 600);
+    if (!sErr && data?.signedUrl) urls.push(data.signedUrl);
+  }
+  if (!urls.length) { alert('Could not load the photo. / โหลดรูปไม่สำเร็จ'); return; }
+  const when = new Date(row.delivered_at).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false });
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);overflow:auto;padding:16px;';
+  overlay.onclick = () => overlay.remove();
+  overlay.innerHTML = `
+    <div style="max-width:720px;margin:0 auto;color:#fff;">
+      <div style="font-weight:700;margin-bottom:8px;">📷 Delivered ${escapeHtml(when)} (Bangkok) — click anywhere to close / คลิกเพื่อปิด</div>
+      ${urls.map(u => `<img src="${escapeHtml(u)}" style="width:100%;border-radius:8px;margin-bottom:10px;display:block;" alt="">`).join('')}
+    </div>`;
+  document.body.appendChild(overlay);
 }
 
 // 出発記録の取消(選択ミスなどの訂正用)。selection_countは戻さない(実際の押下履歴として残す)。
