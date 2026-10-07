@@ -234,7 +234,7 @@ const ORDER_COLS = `
   id, legacy_order_no, delivery_date, delivery_time_slot, delivery_no_contact, delivery_leave_at_table,
   condo_name, area_name, comment, departed_at, delivered_at, delivery_photo_paths, delivery_photo_email_sent_at,
   is_wholesale, wholesale_restaurant_name,
-  customers ( family_name, first_name, email, tel1, tel2, condo_name, address1, address2 )
+  customers!customer_id ( family_name, first_name, email, tel1, tel2, condo_name, address1, address2 )
 `;
 
 function startOfTodayBangkokIso() {
