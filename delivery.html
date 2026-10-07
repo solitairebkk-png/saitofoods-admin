@@ -234,6 +234,7 @@ function openMenu() {
 // ---------------- 注文の読み込み ----------------
 const ORDER_COLS = `
   id, legacy_order_no, delivery_date, delivery_time_slot, delivery_no_contact, delivery_leave_at_table,
+  payment_method, payment_status, delivery_handed_over,
   condo_name, area_name, comment, departed_at, delivered_at, delivery_photo_paths, delivery_photo_email_sent_at,
   is_wholesale, wholesale_restaurant_name,
   customers!customer_id ( family_name, first_name, email, tel1, tel2, condo_name, address1, address2 )
@@ -257,7 +258,6 @@ async function loadOrders() {
     const base = () => supabaseClient.from('orders').select(ORDER_COLS)
       .eq('assigned_staff_id', currentStaff.id)
       .eq('order_type', 'delivery')
-      .eq('delivery_leave_at_table', true)
       .eq('is_cancelled', false);
 
     const [todoRes, doneRes] = await Promise.all([
@@ -293,9 +293,18 @@ function fmtTimeBkk(iso) {
 }
 
 function callBadge(o) {
-  return o.delivery_no_contact
-    ? '<span class="badge nocall">🔕 ไม่ต้องโทร / No call</span>'
-    : '<span class="badge call">📞 โทรแจ้งเมื่อถึง / Call on arrival</span>';
+  let main;
+  if (o.delivery_leave_at_table) {
+    main = o.delivery_no_contact
+      ? '<span class="badge nocall">🔕 วางไว้ ไม่ต้องโทร / Leave at table, no call</span>'
+      : '<span class="badge call">📞 วางไว้ + โทรแจ้ง / Leave at table + call</span>';
+  } else {
+    main = '<span class="badge nocall">🚪 ส่งให้ลูกค้าโดยตรง / Hand to customer</span>';
+  }
+  // 現金払い(未払い)は、不在で置いて帰った場合の確認のため目立たせる
+  const cash = (o.payment_method === 'cash' && o.payment_status !== 'paid')
+    ? ' <span class="badge warn">💵 เงินสด / Cash</span>' : '';
+  return main + cash;
 }
 
 function renderTodo(list) {
@@ -328,7 +337,11 @@ function renderTodo(list) {
       ${photos.length < MAX_PHOTOS ? `
         <button class="btn ${photos.length ? 'secondary' : ''}" ${isBusy ? 'disabled' : ''}
           onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-          📷 ${photos.length ? 'เพิ่มรูป / Add photo' : 'ถ่ายรูป / Take photo'}
+          📷 ${photos.length ? 'เพิ่มรูป / Add photo' : (o.delivery_leave_at_table ? 'ถ่ายรูป / Take photo' : 'ลูกค้าไม่อยู่ วางไว้ ถ่ายรูป / Not home — left it, take photo')}
+        </button>` : ''}
+      ${(!o.delivery_leave_at_table && !photos.length) ? `
+        <button class="btn secondary" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
+          🤝 ส่งมอบให้ลูกค้าแล้ว / Handed to customer
         </button>` : ''}
       ${photos.length ? `
         <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
@@ -346,16 +359,18 @@ function renderDone(list) {
   el.innerHTML = list.map(o => {
     const hasEmail = !!(o.customers && o.customers.email);
     let mail;
-    if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
+    if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว / Handed over</span>';
+    else if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
     else if (hasEmail) mail = '<span class="badge warn">✉️ ยังไม่ได้ส่งอีเมล / Email NOT sent</span>';
     else mail = '<span class="badge warn">✉️ ไม่มีอีเมล / No email</span>';
-    const retry = (!o.delivery_photo_email_sent_at && hasEmail)
+    const retry = (!o.delivery_handed_over && !o.delivery_photo_email_sent_at && hasEmail)
       ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง / Resend email</button>` : '';
     return `
     <div class="card done">
       <div class="name">${escapeHtml(customerLabel(o))}</div>
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
-      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))} · 📷 ${(o.delivery_photo_paths || []).length}</div>
+      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))}${o.delivery_handed_over ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
+      ${callBadge(o)}
       ${mail}
       <div>${retry}</div>
     </div>`;
@@ -435,27 +450,50 @@ function buildEmail(order, deliveredIso, photoCount) {
   const name = customerLabel(order);
   const when = fmtDateTimeBkk(deliveredIso);
   const orderNo = order.legacy_order_no ? ` (${order.legacy_order_no})` : '';
-  const ja =
-`${name}様
+  const atTable = !!order.delivery_leave_at_table;
+  const photoJa = `添付の写真${photoCount > 1 ? '(' + photoCount + '枚)' : ''}をご確認ください。`;
+  const photoEn = `please see the attached photo${photoCount > 1 ? 's (' + photoCount + ')' : ''} taken at the time of delivery.`;
+  const ja = atTable
+    ? `${name}様
 
 毎度当店をご利用いただきまして誠にありがとうございます。
 ご注文${orderNo}の商品を、ご指定のとおり「デリバリー用テーブル」に置き配いたしました。
 
 ■ お届け日時: ${when} (バンコク時間)
 ■ 置き場所: デリバリー用テーブル
-■ お届けの様子: 添付の写真${photoCount > 1 ? '(' + photoCount + '枚)' : ''}をご確認ください。
+■ お届けの様子: ${photoJa}
+
+お受け取りの際は、お早めに商品をお取りください。
+お届けの状況について、ご不明な点がございましたらお気軽にご連絡ください。`
+    : `${name}様
+
+毎度当店をご利用いただきまして誠にありがとうございます。
+ご注文${orderNo}の商品をお届けにお伺いしましたが、ご不在でしたため、お届け先に商品を置かせていただきました。
+
+■ お届け日時: ${when} (バンコク時間)
+■ お届けの様子: ${photoJa}
 
 お受け取りの際は、お早めに商品をお取りください。
 お届けの状況について、ご不明な点がございましたらお気軽にご連絡ください。`;
-  const en =
-`Dear ${name},
+  const en = atTable
+    ? `Dear ${name},
 
 Thank you for your order${orderNo}.
 As requested, we have left your items at the delivery table.
 
 - Delivered at: ${when} (Bangkok time)
 - Location: delivery table
-- Photo: please see the attached photo${photoCount > 1 ? 's (' + photoCount + ')' : ''} taken at the time of delivery.
+- Photo: ${photoEn}
+
+Please collect your items as soon as possible.
+If you have any questions about this delivery, please contact us anytime.`
+    : `Dear ${name},
+
+Thank you for your order${orderNo}.
+We visited to deliver your items, but you were not available, so we left them at your address.
+
+- Delivered at: ${when} (Bangkok time)
+- Photo: ${photoEn}
 
 Please collect your items as soon as possible.
 If you have any questions about this delivery, please contact us anytime.`;
@@ -487,6 +525,26 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
   });
   const json = await res.json();
   if (json.status !== 'ok') throw new Error(json.message || 'mail failed');
+}
+
+// 直接お客様に渡した注文: 写真もメールもなしで完了にする(一覧から「送信済み」欄へ移す)
+async function markHandedOver(orderId) {
+  if (busy[orderId]) return;
+  if (!confirm('ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?\nDid you hand it directly to the customer?')) return;
+  busy[orderId] = true;
+  $('main-error').textContent = '';
+  try {
+    const { data, error } = await supabaseClient.from('orders')
+      .update({ delivered_at: new Date().toISOString(), delivery_handed_over: true })
+      .eq('id', orderId).is('delivered_at', null).select('id');
+    if (error) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + error.message);
+    if (!data || !data.length) throw new Error('บันทึกไม่ได้ (ออเดอร์อาจปิดแล้วหรือบันทึกไปแล้ว) / Could not save (already completed?).');
+  } catch (e) {
+    $('main-error').textContent = e.message || String(e);
+  } finally {
+    delete busy[orderId];
+    await loadOrders();
+  }
 }
 
 async function submitDelivery(orderId) {
