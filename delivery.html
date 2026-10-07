@@ -137,7 +137,6 @@
   </header>
   <main>
     <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
-    <div id="rice-total"></div>
     <div id="todo-list"></div>
     <div class="section-title">ส่งแล้ววันนี้ (<span id="done-count">0</span>)</div>
     <div id="done-list"></div>
@@ -368,11 +367,6 @@ function callBadge(o) {
 
 function renderTodo(list) {
   $('todo-count').textContent = list.length;
-  // まだ配っていない注文のお米の合計(バイクの箱に残っているはずの数)
-  const tot = {};
-  list.forEach(o => RICE_LABELS.forEach(([k]) => { const n = Number((o.rice || {})[k]) || 0; if (n > 0) tot[k] = (tot[k] || 0) + n; }));
-  const parts = RICE_LABELS.filter(([k]) => tot[k] > 0).map(([k, label]) => `${label} × ${tot[k]}`);
-  $('rice-total').innerHTML = parts.length ? `<div class="rice-box">🍚 ข้าวที่ยังเหลือในกล่อง: ${escapeHtml(parts.join('  /  '))}</div>` : '';
   const el = $('todo-list');
   if (!list.length) {
     el.innerHTML = '<div class="empty">ไม่มีรายการ  🎉</div>';
