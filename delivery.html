@@ -133,9 +133,10 @@
 <script>
 const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
-// orders.html(注文管理)と同じログインセッションを使う(同じブラウザ内なら再ログイン不要)
+// 注文管理(orders.html)とはログインの保存場所を分ける。
+// 同じ保存場所を共有すると、このアプリでログアウトした時に注文管理側まで道連れでログアウトされるため。
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+  auth: { storageKey: 'sb-saitofoods-delivery-auth' }
 });
 // 既存のメール送信GAS(orders.htmlの「個別メール送信」と同じ sendStaffEmail を使う。宛先はGAS側が注文IDから取得する)
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2sc6KlFLhDUtckURVUNOUsuHZy76NZQF7LzKxRnOJ1gc/exec';
