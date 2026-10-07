@@ -93,12 +93,12 @@
 <div id="login-view" class="hidden">
   <main>
     <div class="panel" style="margin-top:40px;">
-      <h2>🚴 Delivery Photo / ถ่ายรูปส่งของ</h2>
+      <h2>🚴 ถ่ายรูปส่งของ</h2>
       <label for="login-email">Email</label>
       <input id="login-email" type="email" autocomplete="username" inputmode="email">
       <label for="login-password">Password</label>
       <input id="login-password" type="password" autocomplete="current-password">
-      <button class="btn" id="login-btn">เข้าสู่ระบบ / Log in</button>
+      <button class="btn" id="login-btn">เข้าสู่ระบบ</button>
       <div id="login-error" class="err"></div>
     </div>
   </main>
@@ -108,10 +108,10 @@
 <div id="staff-view" class="hidden">
   <main>
     <div class="panel" style="margin-top:40px;">
-      <h2>คุณคือใคร? / Who are you?</h2>
-      <label for="staff-select">พนักงาน / Staff</label>
+      <h2>คุณคือใคร?</h2>
+      <label for="staff-select">พนักงาน</label>
       <select id="staff-select"></select>
-      <button class="btn" id="staff-ok-btn">ตกลง / OK</button>
+      <button class="btn" id="staff-ok-btn">ตกลง</button>
       <div id="staff-error" class="err"></div>
     </div>
   </main>
@@ -120,15 +120,15 @@
 <!-- メイン -->
 <div id="main-view" class="hidden">
   <header>
-    <h1>📷 Delivery Photo</h1>
+    <h1>📷 ถ่ายรูปส่งของ</h1>
     <span class="who" id="who-label"></span>
     <button id="refresh-btn" aria-label="refresh">↻</button>
     <button id="menu-btn">⋯</button>
   </header>
   <main>
-    <div class="section-title">รอส่งรูป / To upload (<span id="todo-count">0</span>)</div>
+    <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
     <div id="todo-list"></div>
-    <div class="section-title">ส่งแล้ววันนี้ / Done today (<span id="done-count">0</span>)</div>
+    <div class="section-title">ส่งแล้ววันนี้ (<span id="done-count">0</span>)</div>
     <div id="done-list"></div>
     <div id="main-error" class="err"></div>
   </main>
@@ -180,9 +180,9 @@ async function login() {
   const email = $('login-email').value.trim();
   const password = $('login-password').value;
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) { $('login-error').textContent = 'เข้าสู่ระบบไม่สำเร็จ / Login failed: ' + error.message; return; }
+  if (error) { $('login-error').textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + error.message; return; }
   if (!(await checkStaffRole(data.user.id))) {
-    $('login-error').textContent = 'บัญชีนี้ไม่มีสิทธิ์ / This account has no access.';
+    $('login-error').textContent = 'บัญชีนี้ไม่มีสิทธิ์';
     await supabaseClient.auth.signOut();
     return;
   }
@@ -190,7 +190,7 @@ async function login() {
 }
 
 async function logout() {
-  if (!confirm('ออกจากระบบหรือไม่? / Log out?')) return;
+  if (!confirm('ออกจากระบบหรือไม่?')) return;
   localStorage.removeItem(STAFF_KEY);
   await supabaseClient.auth.signOut();
   location.reload();
@@ -207,7 +207,7 @@ async function afterLogin() {
   const savedId = localStorage.getItem(STAFF_KEY);
   const saved = staffRows.find(s => s.id === savedId);
   if (saved) { currentStaff = saved; enterMain(); return; }
-  $('staff-select').innerHTML = '<option value="">-- เลือกชื่อ / Select --</option>' +
+  $('staff-select').innerHTML = '<option value="">-- เลือกชื่อ --</option>' +
     staffRows.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
   show('staff-view');
 }
@@ -215,7 +215,7 @@ async function afterLogin() {
 function chooseStaff() {
   const id = $('staff-select').value;
   const row = staffRows.find(s => s.id === id);
-  if (!row) { $('staff-error').textContent = 'กรุณาเลือกชื่อ / Please select your name.'; return; }
+  if (!row) { $('staff-error').textContent = 'กรุณาเลือกชื่อ'; return; }
   localStorage.setItem(STAFF_KEY, row.id);
   currentStaff = row;
   enterMain();
@@ -228,7 +228,7 @@ function changeStaff() {
 }
 
 function openMenu() {
-  const act = prompt('1 = เปลี่ยนชื่อพนักงาน / Change staff\n2 = ออกจากระบบ / Log out\n(พิมพ์ 1 หรือ 2 / type 1 or 2)');
+  const act = prompt('1 = เปลี่ยนชื่อพนักงาน\n2 = ออกจากระบบ\n(พิมพ์ 1 หรือ 2)');
   if (act === '1') changeStaff();
   else if (act === '2') logout();
 }
@@ -255,7 +255,7 @@ async function loadOrders() {
     renderDone(all.filter(o => o.delivered_at)
       .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
   } catch (e) {
-    $('main-error').textContent = 'โหลดไม่สำเร็จ / Load failed: ' + (e.message || e);
+    $('main-error').textContent = 'โหลดไม่สำเร็จ: ' + (e.message || e);
   } finally {
     loading = false;
   }
@@ -281,14 +281,14 @@ function callBadge(o) {
   let main;
   if (o.delivery_leave_at_table) {
     main = o.delivery_no_contact
-      ? '<span class="badge nocall">🔕 วางไว้ ไม่ต้องโทร / Leave at table, no call</span>'
-      : '<span class="badge call">📞 วางไว้ + โทรแจ้ง / Leave at table + call</span>';
+      ? '<span class="badge nocall">🔕 วางไว้ ไม่ต้องโทร</span>'
+      : '<span class="badge call">📞 วางไว้ + โทรแจ้ง</span>';
   } else {
-    main = '<span class="badge nocall">🚪 ส่งให้ลูกค้าโดยตรง / Hand to customer</span>';
+    main = '<span class="badge nocall">🚪 ส่งให้ลูกค้าโดยตรง</span>';
   }
   // 現金払い(未払い)は、不在で置いて帰った場合の確認のため目立たせる
   const cash = (o.payment_method === 'cash' && o.payment_status !== 'paid')
-    ? ' <span class="badge warn">💵 เงินสด / Cash</span>' : '';
+    ? ' <span class="badge warn">💵 เงินสด</span>' : '';
   return main + cash;
 }
 
@@ -296,7 +296,7 @@ function renderTodo(list) {
   $('todo-count').textContent = list.length;
   const el = $('todo-list');
   if (!list.length) {
-    el.innerHTML = '<div class="empty">ไม่มีรายการ / Nothing to upload 🎉</div>';
+    el.innerHTML = '<div class="empty">ไม่มีรายการ  🎉</div>';
     return;
   }
   el.innerHTML = list.map(o => {
@@ -309,7 +309,7 @@ function renderTodo(list) {
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
-      ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล / No email (บันทึกรูปอย่างเดียว / photo saved only)</span>'}
+      ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}</div>` : ''}
       <div class="thumbs">
         ${photos.map((p, i) => `
@@ -324,24 +324,24 @@ function renderTodo(list) {
           ${photos.length < MAX_PHOTOS ? `
           <button class="btn secondary" ${isBusy ? 'disabled' : ''}
             onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-            📷 เพิ่มรูป<br>Add photo
+            📷 เพิ่มรูป
           </button>` : '<span style="flex:1 1 0"></span>'}
           <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
-            ${isBusy ? 'กำลังส่ง...<br>Sending...' : '✅ ส่งของแล้ว<br>Delivered &amp; send'}
+            ${isBusy ? 'กำลังส่ง...' : '✅ ส่งของแล้ว'}
           </button>` : `
           ${o.delivery_leave_at_table ? `
           <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
-            ✔️ ส่งเสร็จแล้ว (ไม่มีรูป)<br>Completed — no photo
+            ✔️ ส่งเสร็จแล้ว (ไม่มีรูป)
           </button>` : `
           <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
-            🤝 ส่งมอบให้ลูกค้าแล้ว<br>Handed to customer
+            🤝 ส่งมอบให้ลูกค้าแล้ว
           </button>`}
           <button class="btn" ${isBusy ? 'disabled' : ''}
             onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-            📷 ${o.delivery_leave_at_table ? 'ถ่ายรูป<br>Take photo' : 'ไม่อยู่ วางไว้ ถ่ายรูป<br>Not home — take photo'}
+            📷 ${o.delivery_leave_at_table ? 'ถ่ายรูป' : 'ไม่อยู่ วางไว้ ถ่ายรูป'}
           </button>`}
       </div>
-      ${photos.length ? `<div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที / The customer will be emailed the photo right away.' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น / No email on file: the photo will be saved only.'}</div>` : ''}
+      ${photos.length ? `<div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น'}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -353,18 +353,18 @@ function renderDone(list) {
   el.innerHTML = list.map(o => {
     const hasEmail = !!o.has_email;
     let mail;
-    if (o.delivery_photo_skipped) mail = '<span class="badge warn">✔️ ปิดงานโดยไม่มีรูป / Completed without photo</span>';
-    else if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว / Handed over</span>';
-    else if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
-    else if (hasEmail) mail = '<span class="badge warn">✉️ ยังไม่ได้ส่งอีเมล / Email NOT sent</span>';
-    else mail = '<span class="badge warn">✉️ ไม่มีอีเมล / No email</span>';
+    if (o.delivery_photo_skipped) mail = '<span class="badge warn">✔️ ปิดงานโดยไม่มีรูป</span>';
+    else if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว</span>';
+    else if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว</span>';
+    else if (hasEmail) mail = '<span class="badge warn">✉️ ยังไม่ได้ส่งอีเมล</span>';
+    else mail = '<span class="badge warn">✉️ ไม่มีอีเมล</span>';
     const retry = (!o.delivery_handed_over && !o.delivery_photo_skipped && !o.delivery_photo_email_sent_at && hasEmail)
-      ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง / Resend email</button>` : '';
+      ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง</button>` : '';
     return `
     <div class="card done">
       <div class="name">${escapeHtml(customerLabel(o))}</div>
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
-      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))}${(o.delivery_handed_over || o.delivery_photo_skipped) ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
+      <div class="meta">ส่งของ ${escapeHtml(fmtTimeBkk(o.delivered_at))}${(o.delivery_handed_over || o.delivery_photo_skipped) ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
       ${callBadge(o)}
       ${mail}
       <div>${retry}</div>
@@ -408,7 +408,7 @@ async function onPhotoPicked(orderId, input) {
     (staged[orderId] = staged[orderId] || []).push({ blob, url: URL.createObjectURL(blob) });
     await loadOrders();
   } catch (e) {
-    $('main-error').textContent = 'อ่านรูปไม่ได้ / Could not read the photo: ' + (e.message || e);
+    $('main-error').textContent = 'อ่านรูปไม่ได้: ' + (e.message || e);
   }
 }
 
@@ -528,13 +528,13 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
 // 直接お客様に渡した注文: 写真もメールもなしで完了にする(一覧から「送信済み」欄へ移す)
 async function markHandedOver(orderId) {
   if (busy[orderId]) return;
-  if (!confirm('ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?\nDid you hand it directly to the customer?')) return;
+  if (!confirm('ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
     const { error } = await supabaseClient.rpc('delivery_app_complete',
       { p_order_id: orderId, p_paths: null, p_handed_over: true });
-    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว) / Save failed (already completed?): ' + error.message);
+    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว): ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
   } finally {
@@ -547,12 +547,12 @@ async function markHandedOver(orderId) {
 // 「送信済み」欄へ移し、バックエンドには「写真なしで完了」と記録する。お客様へのメールは送らない。
 async function skipPhoto(orderId) {
   if (busy[orderId]) return;
-  if (!confirm('ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”\n\nClose without a photo? No email will be sent to the customer, and it is recorded as “no photo”.')) return;
+  if (!confirm('ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
     const { error } = await supabaseClient.rpc('delivery_app_skip', { p_order_id: orderId });
-    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว) / Save failed (already completed?): ' + error.message);
+    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว): ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
   } finally {
@@ -570,7 +570,7 @@ async function submitDelivery(orderId) {
   let uploadedPaths = [];
   try {
     const order = await fetchOrder(orderId);
-    if (order.delivered_at) throw new Error('ส่งรูปของออเดอร์นี้ไปแล้ว / This order already has a delivery photo.');
+    if (order.delivered_at) throw new Error('ส่งรูปของออเดอร์นี้ไปแล้ว');
     let deliveredIso = new Date().toISOString();
 
     // 1) 写真を保管庫へ(これが証拠になる)
@@ -578,14 +578,14 @@ async function submitDelivery(orderId) {
       const path = `${orderId}/${deliveredIso.replace(/[:.]/g, '-')}_${i + 1}.jpg`;
       const { error } = await supabaseClient.storage.from(PHOTO_BUCKET)
         .upload(path, photos[i].blob, { contentType: 'image/jpeg', upsert: false });
-      if (error) throw new Error('อัปโหลดรูปไม่สำเร็จ / Photo upload failed: ' + error.message);
+      if (error) throw new Error('อัปโหลดรูปไม่สำเร็จ: ' + error.message);
       uploadedPaths.push(path);
     }
 
     // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
     const { data: doneAt, error: updErr } = await supabaseClient.rpc('delivery_app_complete',
       { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false });
-    if (updErr) throw new Error('บันทึกไม่สำเร็จ / Save failed: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์ / Please tell the cashier.');
+    if (updErr) throw new Error('บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
     if (doneAt) deliveredIso = new Date(doneAt).toISOString();
 
     // 3) お客様へ写真つきメール(メールアドレスがある場合のみ)
@@ -625,17 +625,17 @@ async function resendEmail(orderId) {
   await loadOrders();
   try {
     const order = await fetchOrder(orderId);
-    if (!order.delivered_at || !(order.delivery_photo_paths || []).length) throw new Error('ไม่พบรูป / No saved photo.');
+    if (!order.delivered_at || !(order.delivery_photo_paths || []).length) throw new Error('ไม่พบรูป');
     const blobs = [];
     for (const path of order.delivery_photo_paths) {
       const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).download(path);
-      if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ / Photo download failed: ' + error.message);
+      if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ: ' + error.message);
       blobs.push(data);
     }
     await sendDeliveryEmail(order, order.delivered_at, blobs);
     await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
   } catch (e) {
-    $('main-error').textContent = 'ส่งอีเมลไม่สำเร็จ / Email failed: ' + (e.message || e);
+    $('main-error').textContent = 'ส่งอีเมลไม่สำเร็จ: ' + (e.message || e);
   } finally {
     delete busy[orderId];
     await loadOrders();
