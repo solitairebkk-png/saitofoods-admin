@@ -3938,9 +3938,12 @@ async function sendCustomEmail() {
       });
     }
 
+    // ログイン中のスタッフの「通行証」(アクセストークン)を一緒に送る。GAS側でSupabaseに照会して本人確認する。
+    const { data: sess } = await supabaseClient.auth.getSession();
+    const access_token = sess && sess.session ? sess.session.access_token : '';
     const res = await fetch(GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'sendStaffEmail', order_id: emailModalOrderId, subject, body, attachments }),
+      body: JSON.stringify({ action: 'sendStaffEmail', access_token, order_id: emailModalOrderId, subject, body, attachments }),
     });
     const json = await res.json();
     if (json.status !== 'ok') {
