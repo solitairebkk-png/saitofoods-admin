@@ -2686,7 +2686,9 @@ function renderDispatchBlock(order) {
         deliveryProofHtml = `
         <div style="margin-top:4px;color:#1f6f43;font-weight:700;">📷 Delivered ${dTime} / ส่งของแล้ว</div>
         <div style="color:var(--text-muted);">${mailLabel}</div>
-        <button class="btn-undo-dispatch" onclick="viewDeliveryPhotos('${order.id}')">📷 View photo / ดูรูป</button>`;
+        ${(order.delivery_photo_paths || []).length
+          ? `<button class="btn-undo-dispatch" onclick="viewDeliveryPhotos('${order.id}')">📷 View photo / ดูรูป</button>`
+          : `<div style="color:var(--text-muted);">Photo deleted (3 months) / ลบรูปแล้ว</div>`}`;
       } else {
         deliveryProofHtml = `<div style="margin-top:4px;color:#b71c1c;font-weight:700;">📷 Photo pending / รอรูปส่งของ</div>`;
       }
