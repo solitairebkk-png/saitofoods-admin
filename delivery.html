@@ -53,6 +53,10 @@
   }
   .btn.secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
+  /* 片手操作用: 大きなボタンを左右に離して配置(押し間違い防止) */
+  .btn-row { display: flex; justify-content: space-between; gap: 40px; margin-top: 14px; }
+  .btn-row .btn { flex: 1 1 0; margin-top: 0; min-height: 92px; padding: 10px 8px; font-size: 16px; line-height: 1.3; }
+  .btn-row .btn.alt { background: #fff7ed; color: #9a3412; border: 2px solid #fb923c; }
   .btn:disabled { opacity: .5; }
   .err { color: var(--red); font-size: 14px; margin-top: 8px; min-height: 18px; white-space: pre-wrap; }
   .section-title { font-size: 14px; font-weight: 700; color: var(--gray); margin: 18px 4px 8px; }
@@ -315,24 +319,29 @@ function renderTodo(list) {
       </div>
       <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
              onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
-      ${photos.length < MAX_PHOTOS ? `
-        <button class="btn ${photos.length ? 'secondary' : ''}" ${isBusy ? 'disabled' : ''}
-          onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-          📷 ${photos.length ? 'เพิ่มรูป / Add photo' : (o.delivery_leave_at_table ? 'ถ่ายรูป / Take photo' : 'ลูกค้าไม่อยู่ วางไว้ ถ่ายรูป / Not home — left it, take photo')}
-        </button>` : ''}
-      ${(!o.delivery_leave_at_table && !photos.length) ? `
-        <button class="btn secondary" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
-          🤝 ส่งมอบให้ลูกค้าแล้ว / Handed to customer
-        </button>` : ''}
-      ${(o.delivery_leave_at_table && !photos.length) ? `
-        <button class="btn secondary" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
-          ✔️ ส่งเสร็จแล้ว (ไม่มีรูป) / Completed — no photo
-        </button>` : ''}
-      ${photos.length ? `
-        <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
-          ${isBusy ? 'กำลังส่ง... / Sending...' : '✅ ส่งของแล้ว / Delivered &amp; send'}
-        </button>
-        <div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที / The customer will be emailed the photo right away.' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น / No email on file: the photo will be saved only.'}</div>` : ''}
+      <div class="btn-row">
+        ${photos.length ? `
+          ${photos.length < MAX_PHOTOS ? `
+          <button class="btn secondary" ${isBusy ? 'disabled' : ''}
+            onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
+            📷 เพิ่มรูป<br>Add photo
+          </button>` : '<span style="flex:1 1 0"></span>'}
+          <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
+            ${isBusy ? 'กำลังส่ง...<br>Sending...' : '✅ ส่งของแล้ว<br>Delivered &amp; send'}
+          </button>` : `
+          ${o.delivery_leave_at_table ? `
+          <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
+            ✔️ ส่งเสร็จแล้ว (ไม่มีรูป)<br>Completed — no photo
+          </button>` : `
+          <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
+            🤝 ส่งมอบให้ลูกค้าแล้ว<br>Handed to customer
+          </button>`}
+          <button class="btn" ${isBusy ? 'disabled' : ''}
+            onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
+            📷 ${o.delivery_leave_at_table ? 'ถ่ายรูป<br>Take photo' : 'ไม่อยู่ วางไว้ ถ่ายรูป<br>Not home — take photo'}
+          </button>`}
+      </div>
+      ${photos.length ? `<div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที / The customer will be emailed the photo right away.' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น / No email on file: the photo will be saved only.'}</div>` : ''}
     </div>`;
   }).join('');
 }
