@@ -509,7 +509,7 @@
       <link>https://saitofoods.com/products/1281.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487211007_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07030940_6865ed882b69c.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>100.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -614,7 +614,7 @@
       <description>大きいサイズの冷凍ウナギ蒲焼きが入荷です!! 約220gの迫力サイズ! 中国産です。</description>
       <link>https://saitofoods.com/products/1170.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12041643_693157b176297.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>260.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -823,7 +823,7 @@
       <description>冷凍の炙りハラス端切れ500gです。 解凍後に生食可能です。 ハラス丼なんていかがでしょうか?</description>
       <link>https://saitofoods.com/products/954.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883668711_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>198.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1396,7 +1396,7 @@
       <description>お味噌に新ラインナップです。 大阪に本社を置く一久味噌の白味噌です。 味噌自体はタイで製造されております。 400g入り。</description>
       <link>https://saitofoods.com/products/257.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883306751_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>46.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1565,7 +1565,7 @@
       <description>いわゆる野菜が入ったさつま揚げです。 40gが3枚入りです。</description>
       <link>https://saitofoods.com/products/760.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489777572_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>45.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1864,7 +1864,7 @@
       <description>水洗いでそのまま使える黒こんにゃく250gです。 食べてみるとタイ産の物とは違って柔らかく弾力があります。 コチラの商品はチルド品です。</description>
       <link>https://saitofoods.com/products/1188.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882696924_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>38.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2441,7 +2441,7 @@
       <description>切り落としです。尾部と小さい切り身が入ってます。 日本から輸入しましたギンダラを当社独自のブレンドの白味噌で味噌漬けに致しました。 甘い味付けではありません。 無添加です。約250g入り</description>
       <link>https://saitofoods.com/products/1014.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486749594_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3218,7 +3218,7 @@
       <description>北海道のミルクを使用したもちもち食感のプリンです。 卵はミルク、メロン、抹茶どのもちもちプリンにも含まれておりません。但し、牛乳、生クリームといった乳脂肪分は含まれています為、乳アレルギーという観点では対象となります。</description>
       <link>https://saitofoods.com/products/1207.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784869001139_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>65.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3413,7 +3413,7 @@
       <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
       <link>https://saitofoods.com/products/548.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483940749_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>325.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3504,7 +3504,7 @@
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/products/562.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310708_630f08ec0ade2.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>53.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
