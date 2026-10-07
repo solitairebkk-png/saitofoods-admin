@@ -66,6 +66,11 @@
   /* 片手操作用: 大きなボタンを左右に離して配置(押し間違い防止) */
   .btn-row { display: flex; justify-content: space-between; gap: 40px; margin-top: 14px; }
   .btn-row .btn { flex: 1 1 0; margin-top: 0; min-height: 92px; padding: 10px 8px; font-size: 16px; line-height: 1.3; }
+  .btn-row .btn { display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+  .btn-row .btn.call { background: #2563eb; }
+  .btn-row .btn.slip { background: #7c3aed; }
+  .btn-row .btn.slip.again { background: #f5f3ff; color: #5b21b6; border: 2px solid #7c3aed; }
+  .btn-row .btn.slipok { background: #f0fdf4; color: #166534; border: 2px solid #86efac; }
   .btn-row .btn.alt { background: #fff7ed; color: #9a3412; border: 2px solid #fb923c; }
   .btn:disabled { opacity: .5; }
   .err { color: var(--red); font-size: 14px; margin-top: 8px; min-height: 18px; white-space: pre-wrap; }
@@ -335,6 +340,27 @@ function riceHtml(o) {
   if (!parts.length) return '';
   return `<div class="rice-box">🍚 ข้าว: ${escapeHtml(parts.join('  /  '))}</div>`;
 }
+// 1段目左: 電話(番号が無ければ空欄)。2つ目の番号がある場合は、1段目の下に小さく出す
+function callCell(o) {
+  const t = telLinks(o);
+  if (!t.length) return '<span style="flex:1 1 0"></span>';
+  return `<a class="btn call" href="${escapeHtml(t[0].href)}"><span>📞 โทร<br>${escapeHtml(t[0].raw)}</span></a>`;
+}
+function callExtra(o) {
+  const t = telLinks(o);
+  if (t.length < 2) return '';
+  return `<div class="call-row"><a class="call-btn" href="${escapeHtml(t[1].href)}">📞 โทร ${escapeHtml(t[1].raw)}</a></div>`;
+}
+// 2段目左: QR送金スリップ撮影(現金払いは空欄。お客様が既に上げている場合は表示のみ)
+function slipCell(o) {
+  if (o.payment_method === 'cash') return '<span style="flex:1 1 0"></span>';
+  const id = escapeHtml(o.id);
+  const dis = busy['slip-' + o.id] ? 'disabled' : '';
+  const input = `<input type="file" accept="image/*" capture="environment" id="slipfile-${id}" onchange="uploadSlip('${id}', this)">`;
+  if (o.slip_state === 'customer') return '<div class="btn slipok">✅ ลูกค้าส่งสลิปแล้ว</div>';
+  const label = o.slip_state === 'staff' ? '<span>✅ ถ่ายสลิปแล้ว<br>(ถ่ายใหม่)</span>' : '<span>📸 ถ่ายสลิป<br>โอนเงิน</span>';
+  return `${input}<button class="btn slip ${o.slip_state === 'staff' ? 'again' : ''}" ${dis} onclick="document.getElementById('slipfile-${id}').click()">${label}</button>`;
+}
 function telLinks(o) {
   const c = o.customers || {};
   return [c.tel1, c.tel2].map(t => String(t || '').trim()).filter(t => t)
@@ -383,39 +409,37 @@ function renderTodo(list) {
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
       ${riceHtml(o)}
-      ${callHtml(o)}
-      ${slipHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
-      ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
+      <div class="btn-row">
+        ${callCell(o)}
+        ${photos.length >= MAX_PHOTOS ? '<span style="flex:1 1 0"></span>' : `
+        <button class="btn" ${isBusy ? 'disabled' : ''}
+          onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
+          📷 ${photos.length ? 'เพิ่มรูป' : (o.delivery_leave_at_table ? 'ถ่ายรูป' : 'ไม่อยู่ วางไว้ ถ่ายรูป')}
+        </button>`}
+      </div>
+      ${callExtra(o)}
       <div class="thumbs">
         ${photos.map((p, i) => `
           <div class="th"><img src="${p.url}" alt="">
             <button class="rm" onclick="removePhoto('${escapeHtml(o.id)}', ${i})" ${isBusy ? 'disabled' : ''}>×</button>
           </div>`).join('')}
       </div>
+      ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
              onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
       <div class="btn-row">
+        ${slipCell(o)}
         ${photos.length ? `
-          ${photos.length < MAX_PHOTOS ? `
-          <button class="btn secondary" ${isBusy ? 'disabled' : ''}
-            onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-            📷 เพิ่มรูป
-          </button>` : '<span style="flex:1 1 0"></span>'}
-          <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
-            ${isBusy ? 'กำลังส่ง...' : '✅ ส่งของแล้ว'}
-          </button>` : `
-          ${o.delivery_leave_at_table ? `
-          <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
-            ✔️ ส่งเสร็จแล้ว (ไม่มีรูป)
-          </button>` : `
-          <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
-            🤝 ส่งมอบให้ลูกค้าแล้ว
-          </button>`}
-          <button class="btn" ${isBusy ? 'disabled' : ''}
-            onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-            📷 ${o.delivery_leave_at_table ? 'ถ่ายรูป' : 'ไม่อยู่ วางไว้ ถ่ายรูป'}
-          </button>`}
+        <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
+          ${isBusy ? 'กำลังส่ง...' : '✅ ส่งของแล้ว'}
+        </button>` : (o.delivery_leave_at_table ? `
+        <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
+          ✔️ ส่งเสร็จแล้ว (ไม่มีรูป)
+        </button>` : `
+        <button class="btn alt" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
+          🤝 ส่งมอบให้ลูกค้าแล้ว
+        </button>`)}
       </div>
       ${photos.length ? `<div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น'}</div>` : ''}
     </div>`;
