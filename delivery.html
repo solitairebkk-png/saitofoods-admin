@@ -54,6 +54,11 @@
   .btn.secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
   .call-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
   a.call-btn { display: inline-block; text-decoration: none; background: #2563eb; color: #fff; font-weight: 700; font-size: 17px; padding: 12px 18px; border-radius: 12px; }
+  a.call-btn.slip, button.slip-btn { background: #7c3aed; }
+  button.slip-btn { border: 0; color: #fff; font-weight: 700; font-size: 16px; padding: 12px 18px; border-radius: 12px; }
+  button.slip-btn.again { background: #fff; color: #7c3aed; border: 2px solid #7c3aed; font-size: 14px; padding: 8px 12px; }
+  button.slip-btn:disabled { opacity: .5; }
+  .slip-ok { font-size: 14px; color: #166534; font-weight: 700; }
   .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
   .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
@@ -285,6 +290,41 @@ function slotKey(o) {
   if (/morning|เช้า/i.test(s)) return 0;
   return 99999;
 }
+// QR送金画面(スリップ)の撮影。現金払いには出さない。お客様が既にスリップを上げている注文は撮影不要。
+function slipHtml(o) {
+  if (o.payment_method === 'cash') return '';
+  const id = escapeHtml(o.id);
+  const dis = busy['slip-' + o.id] ? 'disabled' : '';
+  const input = `<input type="file" accept="image/*" capture="environment" id="slipfile-${id}" onchange="uploadSlip('${id}', this)">`;
+  if (o.slip_state === 'customer') return '<div class="call-row"><span class="slip-ok">✅ ลูกค้าส่งสลิปแล้ว</span></div>';
+  if (o.slip_state === 'staff') return `<div class="call-row"><span class="slip-ok">✅ ถ่ายสลิปแล้ว</span>${input}<button class="slip-btn again" ${dis} onclick="document.getElementById('slipfile-${id}').click()">📸 ถ่ายใหม่</button></div>`;
+  return `<div class="call-row">${input}<button class="slip-btn" ${dis} onclick="document.getElementById('slipfile-${id}').click()">📸 ถ่ายสลิปโอนเงิน</button></div>`;
+}
+async function uploadSlip(orderId, input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || busy['slip-' + orderId]) return;
+  busy['slip-' + orderId] = true;
+  $('main-error').textContent = '';
+  let path = null;
+  try {
+    const blob = await shrinkImage(file);
+    path = orderId + '/' + Date.now() + '.jpg';
+    const up = await supabaseClient.storage.from('walkin-slips').upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '3600' });
+    if (up.error) throw up.error;
+    const { data: oldPath, error } = await supabaseClient.rpc('delivery_app_set_slip', { p_order_id: orderId, p_slip: 'storage:walkin-slips/' + path });
+    if (error) throw error;
+    if (oldPath) supabaseClient.storage.from('walkin-slips').remove([oldPath]);
+    alert('✅ บันทึกสลิปแล้ว');
+  } catch (e) {
+    if (path) supabaseClient.storage.from('walkin-slips').remove([path]);
+    const m = String((e && e.message) || e);
+    $('main-error').textContent = m.includes('CUSTOMER_SLIP_EXISTS') ? 'ลูกค้าส่งสลิปไว้แล้ว' : 'บันทึกสลิปไม่สำเร็จ: ' + m;
+  } finally {
+    delete busy['slip-' + orderId];
+    await loadOrders();
+  }
+}
 function telLinks(o) {
   const c = o.customers || {};
   return [c.tel1, c.tel2].map(t => String(t || '').trim()).filter(t => t)
@@ -333,6 +373,7 @@ function renderTodo(list) {
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
       ${callHtml(o)}
+      ${slipHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       <div class="thumbs">
@@ -418,6 +459,7 @@ function renderDone(list) {
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
       <div class="meta">ส่งของ ${escapeHtml(fmtTimeBkk(o.delivered_at))}${(o.delivery_handed_over || o.delivery_photo_skipped) ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
       ${callBadge(o)}
+      ${slipHtml(o)}
       ${mail}
       <div>${retry}</div>
     </div>`;
