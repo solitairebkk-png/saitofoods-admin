@@ -1925,7 +1925,7 @@ async function loadOrders() {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
-      delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over,
+      delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ) ),
@@ -2681,7 +2681,12 @@ function renderDispatchBlock(order) {
     // 置き配の注文は、完了前は「写真待ち」と表示する。置き配以外でも、不在で置いて帰った場合などに写真が提出される。
     let deliveryProofHtml = '';
     if (order.delivery_leave_at_table || order.delivered_at) {
-      if (order.delivered_at && order.delivery_handed_over) {
+      if (order.delivered_at && order.delivery_photo_skipped) {
+        const sTime = new Date(order.delivered_at).toLocaleTimeString('en-GB', {
+          hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+        });
+        deliveryProofHtml = `<div style="margin-top:4px;color:#b26a00;font-weight:700;">✔️ Completed ${sTime} — no photo / ปิดงานไม่มีรูป</div>`;
+      } else if (order.delivered_at && order.delivery_handed_over) {
         const hTime = new Date(order.delivered_at).toLocaleTimeString('en-GB', {
           hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
         });

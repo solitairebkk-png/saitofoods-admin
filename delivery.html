@@ -324,6 +324,10 @@ function renderTodo(list) {
         <button class="btn secondary" ${isBusy ? 'disabled' : ''} onclick="markHandedOver('${escapeHtml(o.id)}')">
           🤝 ส่งมอบให้ลูกค้าแล้ว / Handed to customer
         </button>` : ''}
+      ${(o.delivery_leave_at_table && !photos.length) ? `
+        <button class="btn secondary" ${isBusy ? 'disabled' : ''} onclick="skipPhoto('${escapeHtml(o.id)}')">
+          ✔️ ส่งเสร็จแล้ว (ไม่มีรูป) / Completed — no photo
+        </button>` : ''}
       ${photos.length ? `
         <button class="btn" ${isBusy ? 'disabled' : ''} onclick="submitDelivery('${escapeHtml(o.id)}')">
           ${isBusy ? 'กำลังส่ง... / Sending...' : '✅ ส่งของแล้ว / Delivered &amp; send'}
@@ -340,17 +344,18 @@ function renderDone(list) {
   el.innerHTML = list.map(o => {
     const hasEmail = !!o.has_email;
     let mail;
-    if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว / Handed over</span>';
+    if (o.delivery_photo_skipped) mail = '<span class="badge warn">✔️ ปิดงานโดยไม่มีรูป / Completed without photo</span>';
+    else if (o.delivery_handed_over) mail = '<span class="badge ok">🤝 ส่งมอบแล้ว / Handed over</span>';
     else if (o.delivery_photo_email_sent_at) mail = '<span class="badge ok">✉️ ส่งอีเมลแล้ว / Email sent</span>';
     else if (hasEmail) mail = '<span class="badge warn">✉️ ยังไม่ได้ส่งอีเมล / Email NOT sent</span>';
     else mail = '<span class="badge warn">✉️ ไม่มีอีเมล / No email</span>';
-    const retry = (!o.delivery_handed_over && !o.delivery_photo_email_sent_at && hasEmail)
+    const retry = (!o.delivery_handed_over && !o.delivery_photo_skipped && !o.delivery_photo_email_sent_at && hasEmail)
       ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง / Resend email</button>` : '';
     return `
     <div class="card done">
       <div class="name">${escapeHtml(customerLabel(o))}</div>
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
-      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))}${o.delivery_handed_over ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
+      <div class="meta">ส่งของ / Delivered ${escapeHtml(fmtTimeBkk(o.delivered_at))}${(o.delivery_handed_over || o.delivery_photo_skipped) ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
       ${callBadge(o)}
       ${mail}
       <div>${retry}</div>
@@ -517,6 +522,24 @@ async function markHandedOver(orderId) {
   try {
     const { error } = await supabaseClient.rpc('delivery_app_complete',
       { p_order_id: orderId, p_paths: null, p_handed_over: true });
+    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว) / Save failed (already completed?): ' + error.message);
+  } catch (e) {
+    $('main-error').textContent = e.message || String(e);
+  } finally {
+    delete busy[orderId];
+    await loadOrders();
+  }
+}
+
+// 写真なしで完了にする(朝の注文など、写真を撮れなかった/撮る必要がなくなったもの)。
+// 「送信済み」欄へ移し、バックエンドには「写真なしで完了」と記録する。お客様へのメールは送らない。
+async function skipPhoto(orderId) {
+  if (busy[orderId]) return;
+  if (!confirm('ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”\n\nClose without a photo? No email will be sent to the customer, and it is recorded as “no photo”.')) return;
+  busy[orderId] = true;
+  $('main-error').textContent = '';
+  try {
+    const { error } = await supabaseClient.rpc('delivery_app_skip', { p_order_id: orderId });
     if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว) / Save failed (already completed?): ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
