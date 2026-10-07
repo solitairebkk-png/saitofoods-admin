@@ -892,6 +892,7 @@ const ORDER_SELECT_FIELDS = `
       paid_amount, manual_payment_confirmed, has_weight_items, weight_email_sent,
       area_name, condo_name,
       departed_at, assigned_staff_id, staff:assigned_staff_id ( name ),
+      delivered_at, delivery_photo_paths, delivery_handed_over, delivery_photo_skipped,
       order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en ) )
     `;
 async function loadOrderHistory(customerId) {
@@ -972,6 +973,38 @@ function orderHistorySkeletonHtml() {
   `;
   return oneCard.repeat(3);
 }
+// お届け完了の写真を表示する(非公開の保管場所のため、本人の注文の写真だけを、短時間有効なURLで見せる)
+async function viewMyDeliveryPhotos(orderId) {
+  const { data: row, error } = await supabaseClient
+    .from('orders').select('delivered_at, delivery_photo_paths').eq('id', orderId).single();
+  if (error || !row || !(row.delivery_photo_paths || []).length) {
+    alert(i18nText('my.photoGone')); return;
+  }
+  const urls = [];
+  for (const path of row.delivery_photo_paths) {
+    const { data, error: sErr } = await supabaseClient.storage.from('delivery-photos').createSignedUrl(path, 600);
+    if (!sErr && data && data.signedUrl) urls.push(data.signedUrl);
+  }
+  if (!urls.length) { alert(i18nText('my.photoGone')); return; }
+  const when = new Date(row.delivered_at).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', hour12: false });
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);overflow:auto;padding:16px;';
+  overlay.onclick = () => overlay.remove();
+  const box = document.createElement('div');
+  box.style.cssText = 'max-width:720px;margin:0 auto;color:#fff;';
+  const head = document.createElement('div');
+  head.style.cssText = 'font-weight:700;margin-bottom:8px;';
+  head.textContent = '📷 ' + when + ' (Bangkok) — ' + i18nText('my.photoClose');
+  box.appendChild(head);
+  urls.forEach(u => {
+    const img = document.createElement('img');
+    img.src = u; img.alt = '';
+    img.style.cssText = 'width:100%;border-radius:8px;margin-bottom:10px;display:block;';
+    box.appendChild(img);
+  });
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
 function formatDepartedTime(departedAt) {
   try {
     return new Date(departedAt).toLocaleTimeString('ja-JP', {
@@ -1026,6 +1059,9 @@ function renderOrderCard(order, index, childOrderIdSet) {
     statusHtml = '<span class="status-badge status-cancelled">' + i18nText('my.statusCancelled') + '</span>';
   } else if (order.is_completed) {
     statusHtml = '<span class="status-badge status-completed">' + i18nText('my.statusCompleted') + '</span>';
+  } else if (order.delivered_at) {
+    // 配送アプリ(delivery.html)でスタッフが「お届け完了」にした注文
+    statusHtml = '<span class="status-badge status-completed">' + i18nText('my.statusDelivered') + '</span>';
   } else if (order.departed_at) {
     statusHtml = '<span class="status-badge status-departed">' + i18nText('my.statusDeparted') + '</span>';
   } else if (isPastDeliveryDateUnhandled) {
@@ -1044,6 +1080,14 @@ function renderOrderCard(order, index, childOrderIdSet) {
     const staffName = order.staff?.name || i18nText('my.staffFallback');
     departureHtml = `<div class="departure-info">🚴 ${i18nText('my.staffLabel')}: ${staffName}　${i18nText('my.departedAtLabel')}: ${formatDepartedTime(order.departed_at)}</div>`;
   }
+  // お届け完了の情報(時刻と、スタッフが撮った写真)。写真は3か月で自動削除されるため、消えた後は時刻だけ表示する。
+  let deliveredHtml = '';
+  if (order.delivered_at && !order.is_cancelled) {
+    const hasPhoto = !order.delivery_handed_over && !order.delivery_photo_skipped
+      && Array.isArray(order.delivery_photo_paths) && order.delivery_photo_paths.length > 0;
+    deliveredHtml = `<div class="departure-info" style="flex-wrap:wrap;">✅ ${i18nText('my.deliveredAtLabel')}: ${formatDepartedTime(order.delivered_at)}
+      ${hasPhoto ? `<button type="button" class="receipt-btn" style="margin-left:auto;" onclick="viewMyDeliveryPhotos('${order.id}')">📷 ${i18nText('my.viewPhotoBtn')}</button>` : ''}</div>`;
+  }
   const itemsHtml = (order.order_items || []).map(item => {
     const isEn = i18nGetLang() === 'en';
     const itemName = isEn && item.products?.name_en ? item.products.name_en : item.product_name_snapshot;
@@ -1059,6 +1103,7 @@ function renderOrderCard(order, index, childOrderIdSet) {
       ${statusHtml}${paidBadgeHtml}
     </div>
     ${departureHtml}
+    ${deliveredHtml}
     <div class="order-items-list">${itemsHtml || i18nText('my.noProductInfo')}</div>
     <div class="order-footer">
       <span style="font-size:12px;color:var(--muted);">${order.payment_method ? (order.payment_method === 'qr' ? i18nText('my.paymentQr') : i18nText('my.paymentCash')) : ''}</span>

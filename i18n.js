@@ -194,6 +194,11 @@
     'my.staffLabel': { ja: '担当', en: 'Staff' },
     'my.staffFallback': { ja: '担当者', en: 'Staff member' },
     'my.departedAtLabel': { ja: '出発時刻', en: 'Departed at' },
+    'my.statusDelivered': { ja: '✅ お届け完了', en: '✅ Delivered' },
+    'my.deliveredAtLabel': { ja: 'お届け時刻', en: 'Delivered at' },
+    'my.viewPhotoBtn': { ja: 'お届け写真を見る', en: 'View delivery photo' },
+    'my.photoGone': { ja: '写真が見つかりません(保管期間の3か月を過ぎた可能性があります)', en: 'The photo is not available (photos are kept for 3 months).' },
+    'my.photoClose': { ja: 'どこかをタップして閉じる', en: 'tap anywhere to close' },
 
     // ---- cart.html ----
     'cart.navCart': { ja: 'カート / Cart', en: 'Cart' },
