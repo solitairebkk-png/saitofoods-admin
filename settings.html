@@ -604,7 +604,9 @@ async function loadStaff() {
       <span class="staff-name">${s.name}</span>
       <span class="staff-count">選択回数 / Times used: ${s.selection_count ?? 0}</span>
       <input type="checkbox" ${s.is_active !== false ? 'checked' : ''} onchange="toggleStaffActive('${s.id}', this.checked)" title="有効/無効(無効にするとorders.htmlのプルダウンに出ません)">
-      <button class="btn-delete-row" onclick="deleteStaff('${s.id}')">削除</button>
+      ${s.is_route_account
+        ? '<span class="staff-count">シラチャ/パタヤ専用(出発時に自動割当) / auto-assigned</span>'
+        : `<button class="btn-delete-row" onclick="deleteStaff('${s.id}')">削除</button>`}
     </div>
   `).join('');
 }
