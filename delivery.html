@@ -59,6 +59,7 @@
   button.slip-btn.again { background: #fff; color: #7c3aed; border: 2px solid #7c3aed; font-size: 14px; padding: 8px 12px; }
   button.slip-btn:disabled { opacity: .5; }
   .slip-ok { font-size: 14px; color: #166534; font-weight: 700; }
+  .rice-box { margin-top: 10px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 10px 12px; font-size: 20px; font-weight: 800; color: #78350f; }
   .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
   .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
@@ -325,6 +326,15 @@ async function uploadSlip(orderId, input) {
     await loadOrders();
   }
 }
+// 別袋で持って行くお米の数量(お米の注文が無ければ何も出さない)
+const RICE_LABELS = [['1kg', '1 กก.'], ['2kg', '2 กก.'], ['5kg', '5 กก.'], ['niigata', 'Niigata'], ['nuka', 'Nuka']];
+function riceHtml(o) {
+  const r = o.rice;
+  if (!r) return '';
+  const parts = RICE_LABELS.filter(([k]) => Number(r[k]) > 0).map(([k, label]) => `${label} × ${Number(r[k])}`);
+  if (!parts.length) return '';
+  return `<div class="rice-box">🍚 ข้าว: ${escapeHtml(parts.join('  /  '))}</div>`;
+}
 function telLinks(o) {
   const c = o.customers || {};
   return [c.tel1, c.tel2].map(t => String(t || '').trim()).filter(t => t)
@@ -372,6 +382,7 @@ function renderTodo(list) {
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
+      ${riceHtml(o)}
       ${callHtml(o)}
       ${slipHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
