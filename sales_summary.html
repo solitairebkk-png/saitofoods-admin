@@ -239,7 +239,7 @@ const ORDER_SELECT = `
   is_cancelled, has_weight_items, is_weight_confirmed,
   payment_method, payment_status, slip_image_url, manual_payment_confirmed,
   assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
-  order_items ( product_id, product_name_snapshot, quantity, sale_type, total_price, products ( name_en, name_th, unit_label ) )
+  order_items ( product_id, product_name_snapshot, quantity, unit_price, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
 
 async function loadSummary() {
@@ -398,7 +398,11 @@ function renderSummary(orders, plaaTapianRows) {
       if (isWeight && !order.is_weight_confirmed) {
         p.pending[grp] += rawQty;
       } else if (isWeight) {
-        p.qty[grp] += Math.round(rawQty * parseGramsPerUnit(item.products?.unit_label));
+        // 旧形式の行(quantity=パック数、unit_price=1gあたり単価)は 数量×単価≠合計 になる。その場合は 合計÷1g単価 でグラムを逆算する。
+        const up = Number(item.unit_price) || 0, tp = Number(item.total_price) || 0;
+        const consistent = Math.abs(tp - rawQty * up) <= Math.max(1, tp * 0.02);
+        if (!consistent && up > 0 && tp > 0) p.qty[grp] += Math.round(tp / up);
+        else p.qty[grp] += Math.round(rawQty * parseGramsPerUnit(item.products?.unit_label));
       } else {
         p.qty[grp] += rawQty;
       }
