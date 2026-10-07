@@ -52,6 +52,8 @@
     font-size: 17px; font-weight: 700; color: #fff; background: var(--green); margin-top: 12px;
   }
   .btn.secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
+  .call-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  a.call-btn { display: inline-block; text-decoration: none; background: #2563eb; color: #fff; font-weight: 700; font-size: 17px; padding: 12px 18px; border-radius: 12px; }
   .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
   .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
@@ -275,6 +277,17 @@ function addressLabel(o) {
   const addr = [c.address1, c.address2].filter(Boolean).join(' ');
   return [condo ? '🏢 ' + condo : '', addr].filter(Boolean).join(' / ');
 }
+function telLinks(o) {
+  const c = o.customers || {};
+  return [c.tel1, c.tel2].map(t => String(t || '').trim()).filter(t => t)
+    .map(t => ({ raw: t, href: 'tel:' + t.replace(/[^0-9+]/g, '') }))
+    .filter(t => t.href.length > 7);
+}
+function callHtml(o) {
+  const tels = telLinks(o);
+  if (!tels.length) return '';
+  return '<div class="call-row">' + tels.map(t => `<a class="call-btn" href="${escapeHtml(t.href)}">📞 โทร ${escapeHtml(t.raw)}</a>`).join('') + '</div>';
+}
 function fmtTimeBkk(iso) {
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 }
@@ -311,6 +324,7 @@ function renderTodo(list) {
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
+      ${callHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       <div class="thumbs">
