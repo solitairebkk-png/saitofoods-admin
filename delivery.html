@@ -52,6 +52,8 @@
     font-size: 17px; font-weight: 700; color: #fff; background: var(--green); margin-top: 12px;
   }
   .btn.secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
+  .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
+  .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
   /* 片手操作用: 大きなボタンを左右に離して配置(押し間違い防止) */
   .btn-row { display: flex; justify-content: space-between; gap: 40px; margin-top: 14px; }
@@ -310,7 +312,7 @@ function renderTodo(list) {
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
-      ${o.comment ? `<div class="note">${escapeHtml(o.comment)}</div>` : ''}
+      ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       <div class="thumbs">
         ${photos.map((p, i) => `
           <div class="th"><img src="${p.url}" alt="">
@@ -344,6 +346,34 @@ function renderTodo(list) {
       ${photos.length ? `<div class="hint">${hasEmail ? 'ระบบจะส่งอีเมลพร้อมรูปให้ลูกค้าทันที' : 'ลูกค้ารายนี้ไม่มีอีเมล จะบันทึกรูปไว้เท่านั้น'}</div>` : ''}
     </div>`;
   }).join('');
+  translateNotes(list);
+}
+
+// お客様コメントのタイ語翻訳(タイ語を含まないものだけGASに送る。結果は端末に保存して再利用)
+const trCache = (() => { try { return JSON.parse(localStorage.getItem('deliTr') || '{}'); } catch (e) { return {}; } })();
+function saveTrCache() { try { const k = Object.keys(trCache); if (k.length > 300) k.slice(0, 100).forEach(x => delete trCache[x]); localStorage.setItem('deliTr', JSON.stringify(trCache)); } catch (e) {} }
+function showTr(orderId, th) {
+  document.querySelectorAll('[data-tr="' + orderId + '"]').forEach(el => { el.textContent = th ? '🇹🇭 ' + th : ''; });
+}
+async function translateNotes(list) {
+  const need = [];
+  list.forEach(o => {
+    const c = (o.comment || '').trim();
+    if (!c || /[ก-๙]/.test(c)) return;
+    if (trCache[c]) showTr(o.id, trCache[c]); else need.push({ id: o.id, c });
+  });
+  if (!need.length) return;
+  try {
+    const uniq = [...new Set(need.map(n => n.c))];
+    const { data: sess } = await supabaseClient.auth.getSession();
+    const access_token = sess && sess.session ? sess.session.access_token : '';
+    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'translateToThai', access_token, texts: uniq }) });
+    const json = await res.json();
+    if (json.status !== 'ok') return;
+    uniq.forEach((c, i) => { if (json.translations[i]) trCache[c] = json.translations[i]; });
+    saveTrCache();
+    need.forEach(n => showTr(n.id, trCache[n.c]));
+  } catch (e) { /* 翻訳に失敗しても原文は表示されているので何もしない */ }
 }
 
 function renderDone(list) {
