@@ -190,9 +190,11 @@ function show(view) {
 
 // ---------------- 認証 ----------------
 // 配送スタッフ専用(driver)・スタッフ・管理者のアカウントだけが使える(判定はDB側の delivery_app_allowed)
+// 戻り値: true=使える / false=権限なし / null=通信エラーなどで確認できなかった
 async function checkStaffRole() {
   const { data, error } = await supabaseClient.rpc('delivery_app_allowed');
-  return !error && data === true;
+  if (error) return null;
+  return data === true;
 }
 
 async function login() {
@@ -201,9 +203,9 @@ async function login() {
   const password = $('login-password').value;
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) { $('login-error').textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + error.message; return; }
-  if (!(await checkStaffRole(data.user.id))) {
+  if ((await checkStaffRole()) !== true) {
     $('login-error').textContent = 'บัญชีนี้ไม่มีสิทธิ์';
-    await supabaseClient.auth.signOut();
+    await supabaseClient.auth.signOut({ scope: 'local' });
     return;
   }
   await afterLogin();
@@ -212,7 +214,7 @@ async function login() {
 async function logout() {
   if (!confirm('ออกจากระบบหรือไม่?')) return;
   localStorage.removeItem(STAFF_KEY);
-  await supabaseClient.auth.signOut();
+  await supabaseClient.auth.signOut({ scope: 'local' });
   location.reload();
 }
 
@@ -802,7 +804,16 @@ setInterval(() => { if (!document.hidden && currentStaff) loadOrders(); }, 60000
 (async function init() {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session && (await checkStaffRole(session.user.id))) { await afterLogin(); return; }
+    if (session) {
+      // 電波が弱い朝などに一瞬失敗しても、ログイン画面に戻さない(最大3回やり直す)
+      let ok = null;
+      for (let i = 0; i < 3 && ok === null; i++) {
+        ok = await checkStaffRole();
+        if (ok === null) await new Promise(r => setTimeout(r, 1500));
+      }
+      if (ok === true) { await afterLogin(); return; }
+      if (ok === null) { show('login-view'); $('login-error').textContent = 'ไม่มีสัญญาณอินเทอร์เน็ต กรุณาเปิดแอปใหม่อีกครั้ง'; return; }
+    }
   } catch (e) { /* ログイン画面へ */ }
   show('login-view');
 })();
