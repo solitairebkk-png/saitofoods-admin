@@ -944,7 +944,10 @@ function onSrirachaDateChange() {
   const group = dow === 2 ? 'sriracha_tuesday' : (dow === 4 ? 'sriracha_thursday' : null);
 
   const condoSelect = document.getElementById('sriracha-condo-select');
-  const list = allCondos.filter(c => c.area_group === group);
+  // コンドミニアムはアルファベット順に並べ、「その他 / Other」だけを最後に置く(探しやすくするため)
+  const isOtherCondo = n => /その他|\bother\b/i.test(n || '');
+  const list = allCondos.filter(c => c.area_group === group)
+    .sort((a, b) => (isOtherCondo(a.name) - isOtherCondo(b.name)) || String(a.name).localeCompare(String(b.name), 'en'));
   condoSelect.innerHTML = list.length
     ? list.map(c => `<option value="${c.name}">${c.name}</option>`).join('')
     : '<option value="">コンドミニアムがありません</option>';
