@@ -34,6 +34,20 @@
     padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
     display: flex; align-items: center; gap: 10px;
   }
+  /* ---- ブランド表示(ログイン・名前選択の上部、メイン画面のヘッダー) ---- */
+  .brand { text-align: center; padding: calc(28px + env(safe-area-inset-top)) 20px 30px; color: #fff;
+    background: radial-gradient(120% 90% at 50% 0%, #4c8a5e 0%, var(--green) 55%, #1f4a30 100%);
+    border-radius: 0 0 28px 28px; box-shadow: 0 6px 18px rgba(31,74,48,.25); }
+  .brand .logo-card { display: inline-block; background: #fff; border-radius: 18px; padding: 10px 18px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .brand .logo-card img { display: block; height: 84px; width: auto; max-width: 78vw; }
+  .brand .b1 { margin-top: 18px; font-size: 26px; font-weight: 800; letter-spacing: .22em; padding-left: .22em; }
+  .brand .b2 { margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12px; font-weight: 700; letter-spacing: .38em; opacity: .92; }
+  .brand .b2::before, .brand .b2::after { content: ""; width: 34px; height: 1px; background: rgba(255,255,255,.7); }
+  header .logo-mini { background: #fff; border-radius: 8px; padding: 3px 7px; display: flex; flex-shrink: 0; }
+  header .logo-mini img { height: 28px; width: auto; display: block; }
+  header .ttl { flex: 1; line-height: 1.15; }
+  header .ttl b { display: block; font-size: 14px; letter-spacing: .14em; }
+  header .ttl span { font-size: 10px; letter-spacing: .3em; opacity: .85; }
   header h1 { font-size: 17px; margin: 0; flex: 1; }
   header .who { font-size: 13px; opacity: .9; }
   header button {
@@ -111,8 +125,13 @@
 
 <!-- ログイン -->
 <div id="login-view" class="hidden">
+  <div class="brand">
+    <div class="logo-card"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo4.png" alt="サイトウフーズ SAITO FOODS"></div>
+    <div class="b1">SAITO FOODS</div>
+    <div class="b2">DELIVERY SYSTEM</div>
+  </div>
   <main>
-    <div class="panel" style="margin-top:40px;">
+    <div class="panel" style="margin-top:22px;">
       <h2>🚴 ถ่ายรูปส่งของ</h2>
       <label for="login-email">Email</label>
       <input id="login-email" type="email" autocomplete="username" inputmode="email">
@@ -126,8 +145,13 @@
 
 <!-- スタッフ選択 -->
 <div id="staff-view" class="hidden">
+  <div class="brand">
+    <div class="logo-card"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo4.png" alt="サイトウフーズ SAITO FOODS"></div>
+    <div class="b1">SAITO FOODS</div>
+    <div class="b2">DELIVERY SYSTEM</div>
+  </div>
   <main>
-    <div class="panel" style="margin-top:40px;">
+    <div class="panel" style="margin-top:22px;">
       <h2>คุณคือใคร?</h2>
       <label for="staff-select">พนักงาน</label>
       <select id="staff-select"></select>
@@ -140,7 +164,8 @@
 <!-- メイン -->
 <div id="main-view" class="hidden">
   <header>
-    <h1>📷 ถ่ายรูปส่งของ</h1>
+    <span class="logo-mini"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo4.png" alt="SAITO FOODS"></span>
+    <div class="ttl"><b>SAITO FOODS</b><span>DELIVERY SYSTEM</span></div>
     <span class="who" id="who-label"></span>
     <button id="refresh-btn" aria-label="refresh">↻</button>
     <button id="menu-btn">⋯</button>
