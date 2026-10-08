@@ -274,6 +274,9 @@ async function loadOrders() {
     const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
     if (error) throw error;
     const all = data || [];
+    // 別の端末で完了された注文の、こちらに残っている撮影済み写真を捨てる
+    const liveIds = new Set(all.filter(o => !o.delivered_at).map(o => o.id));
+    Object.keys(staged).forEach(id => { if (!liveIds.has(id) && !busy[id]) { (staged[id] || []).forEach(p => URL.revokeObjectURL(p.url)); delete staged[id]; } });
     renderTodo(all.filter(o => !o.delivered_at)
       .sort((a, b) => (slotKey(a) - slotKey(b)) || (new Date(a.departed_at) - new Date(b.departed_at))));
     renderDone(all.filter(o => o.delivered_at)
@@ -322,6 +325,7 @@ function slipHtml(o) {
   return `<div class="call-row">${input}<button class="slip-btn" ${dis} onclick="document.getElementById('slipfile-${id}').click()">📸 ถ่ายสลิปโอนเงิน</button></div>`;
 }
 async function uploadSlip(orderId, input) {
+  pickerUntil = 0;
   const file = input.files && input.files[0];
   input.value = '';
   if (!file || busy['slip-' + orderId]) return;
@@ -543,6 +547,7 @@ async function shrinkImage(file) {
 }
 
 async function onPhotoPicked(orderId, input) {
+  pickerUntil = 0;
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
@@ -678,7 +683,7 @@ async function markHandedOver(orderId) {
   try {
     const { error } = await supabaseClient.rpc('delivery_app_complete',
       { p_order_id: orderId, p_paths: null, p_handed_over: true });
-    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว): ' + error.message);
+    if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
   } finally {
@@ -696,7 +701,7 @@ async function skipPhoto(orderId) {
   $('main-error').textContent = '';
   try {
     const { error } = await supabaseClient.rpc('delivery_app_skip', { p_order_id: orderId });
-    if (error) throw new Error('บันทึกไม่สำเร็จ (ออเดอร์อาจบันทึกไปแล้ว): ' + error.message);
+    if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
   } finally {
@@ -729,7 +734,7 @@ async function submitDelivery(orderId) {
     // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
     const { data: doneAt, error: updErr } = await supabaseClient.rpc('delivery_app_complete',
       { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false });
-    if (updErr) throw new Error('บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
+    if (updErr) throw new Error(String(updErr.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง) รูปที่ถ่ายไม่ได้ถูกบันทึก' : 'บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
     if (doneAt) deliveredIso = new Date(doneAt).toISOString();
 
     // 3) お客様へ写真つきメール(メールアドレスがある場合のみ)
@@ -799,7 +804,14 @@ $('staff-ok-btn').addEventListener('click', chooseStaff);
 $('refresh-btn').addEventListener('click', loadOrders);
 $('menu-btn').addEventListener('click', openMenu);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff) loadOrders(); });
-setInterval(() => { if (!document.hidden && currentStaff) loadOrders(); }, 60000);
+// 2台で1つの一覧を共有するので、相手の完了が早く反映されるよう15秒ごとに更新する。
+// ただしカメラ(写真選択)を開いている間は、画面を作り直すと撮った写真が消えることがあるので更新しない(最大90秒)。
+let pickerUntil = 0;
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('button');
+  if (b && /\.click\(\)/.test(b.getAttribute('onclick') || '')) pickerUntil = Date.now() + 90000;
+}, true);
+setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil) loadOrders(); }, 15000);
 
 (async function init() {
   try {
