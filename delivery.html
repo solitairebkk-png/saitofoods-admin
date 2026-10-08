@@ -177,7 +177,14 @@ let staffRows = [];
 const staged = {};          // orderId -> [{ blob, url }] 送信前の写真
 const busy = {};            // orderId -> true(送信処理中)
 let loading = false;
+const orderCache = {};      // orderId -> 直近に読み込んだ注文(確認ダイアログにお客様名を出すため)
 
+// 完了前の確認。「どのお客様か」を必ず画面に出して、反射的にOKを押しても気づけるようにする
+function confirmDone(orderId, question) {
+  const o = orderCache[orderId];
+  const who = o ? `${customerLabel(o)}\n${addressLabel(o)}` : '';
+  return confirm(`${who}\n\n${question}`);
+}
 function escapeHtml(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -274,6 +281,7 @@ async function loadOrders() {
     const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
     if (error) throw error;
     const all = data || [];
+    all.forEach(o => { orderCache[o.id] = o; });
     // 別の端末で完了された注文の、こちらに残っている撮影済み写真を捨てる
     const liveIds = new Set(all.filter(o => !o.delivered_at).map(o => o.id));
     Object.keys(staged).forEach(id => { if (!liveIds.has(id) && !busy[id]) { (staged[id] || []).forEach(p => URL.revokeObjectURL(p.url)); delete staged[id]; } });
@@ -677,7 +685,7 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
 // 直接お客様に渡した注文: 写真もメールもなしで完了にする(一覧から「送信済み」欄へ移す)
 async function markHandedOver(orderId) {
   if (busy[orderId]) return;
-  if (!confirm('ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?')) return;
+  if (!confirmDone(orderId, '🤝 ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
@@ -696,7 +704,7 @@ async function markHandedOver(orderId) {
 // 「送信済み」欄へ移し、バックエンドには「写真なしで完了」と記録する。お客様へのメールは送らない。
 async function skipPhoto(orderId) {
   if (busy[orderId]) return;
-  if (!confirm('ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”')) return;
+  if (!confirmDone(orderId, '✔️ ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
@@ -713,6 +721,7 @@ async function skipPhoto(orderId) {
 async function submitDelivery(orderId) {
   const photos = staged[orderId] || [];
   if (!photos.length || busy[orderId]) return;
+  if (!confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   await loadOrders();
