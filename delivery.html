@@ -63,6 +63,7 @@
   @keyframes deli-spin { to { transform: rotate(360deg); } }
   #refresh-btn.spin { animation: deli-spin .8s linear infinite; }
   #last-upd { font-size: 12px; color: var(--gray); text-align: right; margin: -4px 4px 4px; min-height: 16px; }
+  .btn.small.undo { background: #fff; color: #b91c1c; border: 2px solid #b91c1c; margin-left: 8px; }
   .note-th { font-size: 17px; font-weight: 700; color: #1f2937; margin-top: 6px; }
   .note-orig { font-size: 12px; color: var(--gray); margin-top: 2px; }
   .btn.small { width: auto; display: inline-block; padding: 10px 14px; font-size: 14px; margin-top: 8px; }
@@ -515,6 +516,9 @@ function renderDone(list) {
     else mail = '<span class="badge warn">✉️ ไม่มีอีเมล</span>';
     const retry = (!o.delivery_handed_over && !o.delivery_photo_skipped && !o.delivery_photo_email_sent_at && hasEmail)
       ? `<button class="btn small" ${busy[o.id] ? 'disabled' : ''} onclick="resendEmail('${escapeHtml(o.id)}')">🔁 ส่งอีเมลอีกครั้ง</button>` : '';
+    const undoable = (o.delivery_photo_skipped || o.delivery_handed_over) && (Date.now() - new Date(o.delivered_at).getTime()) < 10 * 60 * 1000;
+    const undo = undoable
+      ? `<button class="btn small undo" ${busy[o.id] ? 'disabled' : ''} onclick="undoDone('${escapeHtml(o.id)}')">↩️ ยกเลิกการปิดงาน (กดผิด)</button>` : '';
     return `
     <div class="card done">
       <div class="name">${escapeHtml(customerLabel(o))}</div>
@@ -523,7 +527,7 @@ function renderDone(list) {
       ${callBadge(o)}
       ${slipHtml(o)}
       ${mail}
-      <div>${retry}</div>
+      <div>${retry}${undo}</div>
     </div>`;
   }).join('');
 }
@@ -702,6 +706,22 @@ async function markHandedOver(orderId) {
 
 // 写真なしで完了にする(朝の注文など、写真を撮れなかった/撮る必要がなくなったもの)。
 // 「送信済み」欄へ移し、バックエンドには「写真なしで完了」と記録する。お客様へのメールは送らない。
+// 「写真なしで完了」「手渡し済み」を押し間違えたとき、完了から10分以内なら元に戻す(判定はDB側でも行う)
+async function undoDone(orderId) {
+  if (busy[orderId]) return;
+  if (!confirmDone(orderId, '↩️ ยกเลิกการปิดงานนี้ใช่หรือไม่?\nออเดอร์จะกลับไปอยู่ใน “รอส่งรูป”')) return;
+  busy[orderId] = true;
+  $('main-error').textContent = '';
+  try {
+    const { error } = await supabaseClient.rpc('delivery_app_undo', { p_order_id: orderId });
+    if (error) throw new Error(String(error.message).includes('UNDO_NOT_AVAILABLE') ? 'ยกเลิกไม่ได้แล้ว (เกิน 10 นาที หรือมีการส่งอีเมลแล้ว)' : 'ยกเลิกไม่สำเร็จ: ' + error.message);
+  } catch (e) {
+    $('main-error').textContent = e.message || String(e);
+  } finally {
+    delete busy[orderId];
+    await loadOrders();
+  }
+}
 async function skipPhoto(orderId) {
   if (busy[orderId]) return;
   if (!confirmDone(orderId, '✔️ ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”')) return;
