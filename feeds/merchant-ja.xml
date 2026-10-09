@@ -1440,7 +1440,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>無添加の商品</g:product_type>
+      <g:product_type>売れ筋商品</g:product_type>
     </item>
     <item>
       <g:id>1208</g:id>
@@ -1449,11 +1449,11 @@
       <link>https://saitofoods.com/products/1208.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483477612_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
-      <g:price>220.00 THB</g:price>
+      <g:price>225.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>日本へのお土産に!</g:product_type>
+      <g:product_type>売れ筋商品</g:product_type>
     </item>
     <item>
       <g:id>479</g:id>
@@ -1721,7 +1721,7 @@
       <description>まるちゃんの冷凍焼きそば麺、生めんタイプです。 粉末ソースもついてます。 スパゲティソースをかけても美味しくお召し上がりいただけます。 160g*3玉入り 解凍後の賞味期限はチルド5度の温度帯で3週間(解凍後)です。</description>
       <link>https://saitofoods.com/products/513.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889610185_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>113.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1931,7 +1931,7 @@
       <description>あの山口豆腐店のお豆腐が再登場! 使用する豆乳はプレミアム絹ごし豆腐と同様です。 絹ごし豆腐とは違った『にがり』を使用しています。 使用している『にがり』は、山口豆腐店が塩田から直接独自に取寄せた天然素材を原料として、自家製で生産しています。その『にがり』をふんだんに使用することで、マグネシウムを主とした天然のミネラルを豊富に含んだ商品になっています。風味も味わいもより濃厚で多くのミネラルを含んだ味も栄養も抜群なプレミアム豆腐です。 恐れ入りますが、ご注文後のキャンセルはご連絡いただくタイミングによっては既に仕入れが完了してしまっており、お断りさせて頂く場合がございます。予めご了承くださいませ。</description>
       <link>https://saitofoods.com/products/1320.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11071714_690dc68ea4890.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>107.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2428,7 +2428,7 @@
       <description>切り落としです。尾部と小さい切り身が入ってます。 日本から輸入しましたギンダラを当社独自のブレンドの白味噌で味噌漬けに致しました。 甘い味付けではありません。 無添加です。約250g入り</description>
       <link>https://saitofoods.com/products/1014.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486749594_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3348,7 +3348,7 @@
       <description>忙しい朝、移動の間、運動の前後に手軽に栄養を補給できる商品です。この商品は、人口甘味料と着色料を使用していません。アップル味。Lカルニチン125mg配合。脂肪燃焼に効果的!</description>
       <link>https://saitofoods.com/products/1247.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882606186_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>14.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
