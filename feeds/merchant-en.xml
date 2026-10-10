@@ -1213,7 +1213,7 @@
       <description>小麦使用</description>
       <link>https://saitofoods.com/en/products/104.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888924757_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>95.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1721,7 +1721,7 @@
       <description>まるちゃんの冷凍焼きそば麺、生めんタイプです。 粉末ソースもついてます。 スパゲティソースをかけても美味しくお召し上がりいただけます。 160g*3玉入り 解凍後の賞味期限はチルド5度の温度帯で3週間(解凍後)です。</description>
       <link>https://saitofoods.com/en/products/513.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889610185_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>113.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
