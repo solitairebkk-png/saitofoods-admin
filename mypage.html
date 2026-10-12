@@ -298,6 +298,9 @@
             <div style="text-align:center;margin-top:12px;">
               <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('forgot');return false;" data-i18n="my.forgotLink">パスワードをお忘れですか？</a>
             </div>
+            <div style="text-align:center;margin-top:8px;">
+              <a href="#" style="font-size:12px;color:#7A5C1E;font-weight:700;text-decoration:underline;" onclick="switchAuthTab('recover');return false;" data-i18n="my.recoverLink">iCloudメールで確認・再設定メールが届かない方はこちら</a>
+            </div>
           </div>
           <div class="auth-panel-inner" id="panel-forgot">
             <div style="background:#fff8ec;border:1px solid var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;line-height:1.8;color:var(--ink);">
@@ -329,6 +332,44 @@
             </div>
             <button class="submit-btn" id="reset-btn" onclick="submitNewPassword()" data-i18n="my.resetBtn">パスワードを更新する</button>
           </div>
+          <div class="auth-panel-inner" id="panel-recover">
+            <div class="form-hint" style="margin-bottom:14px;" data-i18n="my.recoverHint">iCloud(@icloud.com / @me.com / @mac.com)のメールアドレスは、確認メールやパスワード再設定メールが届かないことがあります。ご登録のメールアドレス・お名前・電話番号が当店の登録内容と一致すると、メールなしでお手続きできます。</div>
+            <div class="form-group">
+              <label data-i18n="my.signupEmailLabel">ご登録のメールアドレス</label>
+              <input type="email" class="form-input" id="recover-email" placeholder="taro@icloud.com">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.signupFamilyNameLabel">お名前(姓) / Family Name</label>
+              <input type="text" class="form-input" id="recover-family-name" placeholder="Sato">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.signupFirstNameLabel">お名前(名) / First Name</label>
+              <input type="text" class="form-input" id="recover-first-name" placeholder="Taro">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.telLabel">電話番号</label>
+              <input type="tel" class="form-input" id="recover-tel" placeholder="0812345678">
+            </div>
+            <div class="form-hint" style="margin-bottom:10px;" data-i18n="my.recoverPasswordHint">パスワードを忘れた方は、下に新しいパスワードを入力してください(確認だけの方は空欄のままで構いません)。</div>
+            <div class="form-group">
+              <label data-i18n="my.newPasswordLabel">新しいパスワード</label>
+              <div class="password-field">
+                <input type="password" class="form-input" id="recover-password" placeholder="6文字以上">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('recover-password', this)">👁</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.passwordConfirmLabel">パスワード(確認)</label>
+              <div class="password-field">
+                <input type="password" class="form-input" id="recover-password-confirm">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('recover-password-confirm', this)">👁</button>
+              </div>
+            </div>
+            <button class="submit-btn" id="recover-btn" onclick="recoverAccount()" data-i18n="my.recoverBtn">この内容で手続きする</button>
+            <div style="text-align:center;margin-top:12px;">
+              <a href="#" style="font-size:12px;color:var(--muted);text-decoration:underline;" onclick="switchAuthTab('login');return false;" data-i18n="my.backToLogin">ログインに戻る</a>
+            </div>
+          </div>
           <div class="auth-panel-inner" id="panel-signup">
             <div class="form-hint" style="margin-bottom:14px;" data-i18n="my.signupHint">
               ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。これまでのご注文履歴・ポイント残高がそのまま引き継がれます。
@@ -345,6 +386,10 @@
             <div class="form-group">
               <label data-i18n="my.signupFirstNameLabel">お名前(名) / First Name</label>
               <input type="text" class="form-input" id="signup-first-name" placeholder="Taro">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.signupTelLabel">電話番号(iCloudメールの方は必須)</label>
+              <input type="tel" class="form-input" id="signup-tel" placeholder="0812345678">
             </div>
             <div class="form-group">
               <label data-i18n="my.newPasswordLabel">新しいパスワード</label>
@@ -585,7 +630,8 @@ function switchAuthTab(tab) {
   document.getElementById('panel-signup').classList.toggle('active', tab === 'signup');
   document.getElementById('panel-forgot').classList.toggle('active', tab === 'forgot');
   document.getElementById('panel-reset').classList.toggle('active', tab === 'reset');
-  document.querySelector('.auth-tabs').style.display = (tab === 'forgot' || tab === 'reset') ? 'none' : 'flex';
+  document.getElementById('panel-recover').classList.toggle('active', tab === 'recover');
+  document.querySelector('.auth-tabs').style.display = (tab === 'forgot' || tab === 'reset' || tab === 'recover') ? 'none' : 'flex';
   hideAuthMsg();
 }
 function showAuthMsg(msg, isError) {
@@ -622,11 +668,14 @@ async function signup() {
   const email = document.getElementById('signup-email').value.trim();
   const familyName = document.getElementById('signup-family-name').value.trim();
   const firstName = document.getElementById('signup-first-name').value.trim();
+  const tel = document.getElementById('signup-tel').value.trim();
   const password = document.getElementById('signup-password').value;
   const confirm = document.getElementById('signup-password-confirm').value;
   hideAuthMsg();
   if (!email || !password) { showAuthMsg('メールアドレスとパスワードを入力してください。', true); return; }
   if (!familyName || !firstName) { showAuthMsg('お名前(姓・名)を入力してください。', true); return; }
+  // iCloud系はメールが届かず、メールなしの手続き(電話番号での照合)が必要になるため電話番号を必須にする。
+  if (isIcloudAddress(email) && tel.replace(/\D/g, '').length < 9) { showAuthMsg(i18nText('my.signupTelRequired'), true); return; }
   if (password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
   if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
   const btn = document.getElementById('signup-btn');
@@ -635,7 +684,7 @@ async function signup() {
   // このフォームの入力内容は失われてしまうため、入力した名前を一時的にlocalStorageへ退避しておき、
   // loadMyPage()側でお客様情報と連携できたタイミングで拾って反映する(2026-09-28)。
   try {
-    localStorage.setItem('pendingSignupName', JSON.stringify({ email, familyName, firstName }));
+    localStorage.setItem('pendingSignupName', JSON.stringify({ email, familyName, firstName, tel }));
   } catch (e) { /* localStorageが使えない場合は無視(同一セッション内の反映のみ) */ }
   const { data, error } = await supabaseClient.auth.signUp({
     email,
@@ -645,10 +694,65 @@ async function signup() {
   btn.disabled = false;
   if (error) { showAuthMsg('登録に失敗しました: ' + error.message, true); return; }
   if (!data.session) {
-    showAuthMsg('確認メールをお送りしました。メール内のリンクをクリックした後、改めて「ログイン」タブからログインしてください。' + (isIcloudAddress(email) ? '\n\n※iCloudのメールアドレスは確認メールが届かない場合があります。届かない場合は orders@saitofoods.com までご連絡ください。' : ''));
+    if (isIcloudAddress(email)) {
+      // iCloud系は確認メールが届かないことが多いので、入力内容を引き継いで、メールなしの手続きフォームへ案内する。
+      document.getElementById('recover-email').value = email;
+      document.getElementById('recover-family-name').value = familyName;
+      document.getElementById('recover-first-name').value = firstName;
+      document.getElementById('recover-tel').value = tel;
+      switchAuthTab('recover');
+      showAuthMsg(i18nText('my.signupIcloudNext'));
+      return;
+    }
+    showAuthMsg('確認メールをお送りしました。メール内のリンクをクリックした後、改めて「ログイン」タブからログインしてください。');
     return;
   }
   await claimCustomerRecord(email, data.user.id);
+}
+// iCloud系など、確認メール・再設定メールが届かない方向けの手続き。
+// メールアドレス・名前・電話番号が当店の登録内容と一致した場合のみ、サーバー側(Edge Function)で
+// メール確認済みにし、新しいパスワードが入力されていればパスワードも更新する。
+async function recoverAccount() {
+  const email = document.getElementById('recover-email').value.trim();
+  const familyName = document.getElementById('recover-family-name').value.trim();
+  const firstName = document.getElementById('recover-first-name').value.trim();
+  const tel = document.getElementById('recover-tel').value.trim();
+  const password = document.getElementById('recover-password').value;
+  const confirm = document.getElementById('recover-password-confirm').value;
+  hideAuthMsg();
+  if (!email || !familyName || !firstName || !tel) { showAuthMsg(i18nText('my.recoverNeedAll'), true); return; }
+  if (!isIcloudAddress(email)) { showAuthMsg(i18nText('my.recoverNotApple'), true); return; }
+  if (password && password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
+  if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
+  const btn = document.getElementById('recover-btn');
+  btn.disabled = true;
+  let result = null;
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('apple-account-recovery', {
+      body: { email, family_name: familyName, first_name: firstName, tel, new_password: password || undefined },
+    });
+    if (error) {
+      // 4xx応答でも本文(code)を読み取る
+      try { result = await error.context.json(); } catch (e) { result = { ok: false, code: 'error' }; }
+    } else {
+      result = data;
+    }
+  } catch (e) {
+    result = { ok: false, code: 'error' };
+  }
+  btn.disabled = false;
+  if (result && result.ok) {
+    document.getElementById('login-email').value = email;
+    switchAuthTab('login');
+    showAuthMsg(i18nText(result.password_changed ? 'my.recoverDonePassword' : 'my.recoverDone'));
+    return;
+  }
+  const code = result && result.code;
+  if (code === 'locked') { showAuthMsg(i18nText('my.recoverLocked'), true); return; }
+  if (code === 'weak_password') { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
+  if (code === 'not_supported') { showAuthMsg(i18nText('my.recoverNotApple'), true); return; }
+  if (code === 'manual_required') { showAuthMsg(i18nText('my.recoverManual'), true); return; }
+  showAuthMsg(i18nText('my.recoverError'), true);
 }
 async function claimCustomerRecord(email, userId) {
   let claimed = false;
@@ -842,23 +946,30 @@ async function loadMyPage(user) {
   }
   // 新規登録フォームで入力した名前が、旧データとの紐付けが見つからず
   // まだ反映されていない場合(=family_nameが空)、退避しておいた名前をここで反映する。
-  if (!customerRow.family_name && !customerRow.first_name) {
+  // 電話番号が未登録の場合も、新規登録フォームで入力した電話番号をここで反映する
+  // (今後のメールなし手続きでの本人照合に使うため)。
+  const needName = !customerRow.family_name && !customerRow.first_name;
+  const needTel = !customerRow.tel1;
+  if (needName || needTel) {
     try {
       const pending = JSON.parse(localStorage.getItem('pendingSignupName') || 'null');
-      if (pending && pending.email && user.email && pending.email.toLowerCase() === user.email.toLowerCase()
-          && pending.familyName && pending.firstName) {
-        const { error: nameErr } = await supabaseClient.rpc('update_own_profile', {
-          new_address1: customerRow.address1 || null,
-          new_address2: customerRow.address2 || null,
-          new_tel1: customerRow.tel1 || null,
-          new_area_id: customerRow.area_id || null,
-          new_family_name: pending.familyName,
-          new_first_name: pending.firstName,
-        });
-        if (!nameErr) {
-          customerRow.family_name = pending.familyName;
-          customerRow.first_name = pending.firstName;
-          localStorage.removeItem('pendingSignupName');
+      if (pending && pending.email && user.email && pending.email.toLowerCase() === user.email.toLowerCase()) {
+        const useName = needName && pending.familyName && pending.firstName;
+        const useTel = needTel && pending.tel;
+        if (useName || useTel) {
+          const { error: nameErr } = await supabaseClient.rpc('update_own_profile', {
+            new_address1: customerRow.address1 || null,
+            new_address2: customerRow.address2 || null,
+            new_tel1: useTel ? pending.tel : (customerRow.tel1 || null),
+            new_area_id: customerRow.area_id || null,
+            new_family_name: useName ? pending.familyName : (customerRow.family_name || null),
+            new_first_name: useName ? pending.firstName : (customerRow.first_name || null),
+          });
+          if (!nameErr) {
+            if (useName) { customerRow.family_name = pending.familyName; customerRow.first_name = pending.firstName; }
+            if (useTel) { customerRow.tel1 = pending.tel; }
+            localStorage.removeItem('pendingSignupName');
+          }
         }
       }
     } catch (e) { /* 反映できなくてもマイページ自体は表示を続ける */ }
