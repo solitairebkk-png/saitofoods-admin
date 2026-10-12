@@ -1096,7 +1096,7 @@
       <description>新しい工場のベーコン切り落とし200gです。従来の物と比べると半生状態なのでしっかり火を通してお召し上がりください。優しい塩味でカリッと仕上げてサラダにも!</description>
       <link>https://saitofoods.com/en/products/1301.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/09171515_68ca6e3ea1ff4.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>80.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1513,7 +1513,7 @@
       <description>ミツカン金の粒シリーズのたまご醤油たれ納豆 3パックセットです。付属のたれを使用すると生卵を混ぜたような出来上がりになります。タレに卵黄が入っております。</description>
       <link>https://saitofoods.com/en/products/1175.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
