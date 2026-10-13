@@ -1930,10 +1930,10 @@ async function loadOrders() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
-      delivery_staff_memo, delivery_staff_memo_by, delivery_staff_memo_at,
+      order_delivery_memos ( memo, memo_by, memo_at ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ), delivery_memo, delivery_memo_by, delivery_memo_at ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -2680,9 +2680,12 @@ function deliveryMemoHtml(order) {
   const row = (icon, label, memo, by, at, bg, border) => memo
     ? `<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:${bg};border:1px solid ${border};font-size:12px;white-space:pre-wrap;word-break:break-word;">${icon} <b>${label}</b>: ${escapeHtml(memo)}<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${by ? '✍️ ' + escapeHtml(by) : ''}${at ? ' · ' + fmt(at) : ''}</div></div>`
     : '';
-  const c = order.customers || {};
-  return row('📌', 'お客様メモ(配達)', c.delivery_memo, c.delivery_memo_by, c.delivery_memo_at, '#fff8e1', '#f5d98b')
-       + row('🚴', '配達メモ', order.delivery_staff_memo, order.delivery_staff_memo_by, order.delivery_staff_memo_at, '#eef4ff', '#c7d7fb');
+  // メモは「スタッフだけが読める別テーブル」から埋め込みで取る(1対1なのでオブジェクト。念のため配列でも動くようにする)
+  const one = (x) => Array.isArray(x) ? (x[0] || {}) : (x || {});
+  const cm = one((order.customers || {}).customer_delivery_memos);
+  const om = one(order.order_delivery_memos);
+  return row('📌', 'お客様メモ(配達)', cm.memo, cm.memo_by, cm.memo_at, '#fff8e1', '#f5d98b')
+       + row('🚴', '配達メモ', om.memo, om.memo_by, om.memo_at, '#eef4ff', '#c7d7fb');
 }
 function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
