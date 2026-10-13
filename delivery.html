@@ -34,6 +34,8 @@
   .office-call a { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 10px; font-weight: 700; line-height: 1.2; text-align: center; }
   .office-call a.main { flex: 2 1 0; background: #2563eb; color: #fff; font-size: 16px; padding: 11px 8px; }
   .office-call a.sub { flex: 1 1 0; background: #fff; color: #2563eb; border: 2px solid #2563eb; font-size: 13px; padding: 7px 4px; flex-direction: column; }
+  /* お客様の住所へのナビ起動(Googleマップ)。住所のすぐ下に小さく出す */
+  a.nav-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; text-decoration: none; background: #fff; color: #1f6f43; border: 2px solid #1f6f43; font-weight: 700; font-size: 14px; padding: 7px 12px; border-radius: 999px; }
   .office-call a.sub small { font-size: 10px; font-weight: 600; opacity: .8; }
   header {
     position: relative;
@@ -354,6 +356,14 @@ function addressLabel(o) {
   const addr = [c.address1, c.address2].filter(Boolean).join(' ');
   return [condo ? '🏢 ' + condo : '', addr].filter(Boolean).join(' / ');
 }
+// ナビ起動: マンション名+住所でGoogleマップを検索して開く(位置情報は持っていないため文字検索)。住所が空なら出さない
+function navHtml(o) {
+  const c = o.customers || {};
+  const q = [o.condo_name || c.condo_name, c.address1, c.address2].map(s => String(s || '').trim()).filter(Boolean).join(' ');
+  if (!q) return '';
+  const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+  return `<div><a class="nav-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">🧭 นำทาง</a></div>`;
+}
 // 配達時間帯の並び順: 朝(Morning/เช้า) → "13:00-15:00" など開始時刻の早い順 → 時間指定なし(最後)
 function slotKey(o) {
   const s = String(o.delivery_time_slot || '');
@@ -473,6 +483,7 @@ function renderTodo(list) {
     <div class="card ${o.delivery_no_contact ? 'nocall' : 'call'}" data-id="${escapeHtml(o.id)}">
       <div class="name">${escapeHtml(customerLabel(o))}</div>
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
+      ${navHtml(o)}
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
       ${riceHtml(o)}
