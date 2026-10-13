@@ -345,6 +345,7 @@
             <div class="form-group">
               <label data-i18n="my.signupFirstNameLabel">お名前(名) / First Name</label>
               <input type="text" class="form-input" id="recover-first-name" placeholder="Taro">
+              <div class="form-hint" style="margin-top:6px;" data-i18n-html="my.nameRomajiHint">お名前は<b>ローマ字</b>(例: Sato / Taro)で入力してください。漢字・ひらがな・カタカナだと、当店の登録内容と照合できません。</div>
             </div>
             <div class="form-group">
               <label data-i18n="my.telLabel">電話番号</label>
@@ -386,6 +387,7 @@
             <div class="form-group">
               <label data-i18n="my.signupFirstNameLabel">お名前(名) / First Name</label>
               <input type="text" class="form-input" id="signup-first-name" placeholder="Taro">
+              <div class="form-hint" style="margin-top:6px;" data-i18n-html="my.nameRomajiHint">お名前は<b>ローマ字</b>(例: Sato / Taro)で入力してください。漢字・ひらがな・カタカナだと、当店の登録内容と照合できません。</div>
             </div>
             <div class="form-group">
               <label data-i18n="my.signupTelLabel">電話番号(iCloudメールの方は必須)</label>
@@ -656,6 +658,10 @@ async function login() {
   if (error) { showAuthMsg('ログインに失敗しました: ' + error.message, true); return; }
   await loadMyPage(data.user);
 }
+// 漢字・ひらがな・カタカナ(半角カナ含む)が含まれるか。旧データの名前はローマ字のため、これらは照合できない。
+function hasJapaneseChars(s) {
+  return /[぀-ヿ㐀-鿿ｦ-ﾟ]/.test(s || '');
+}
 function isIcloudAddress(email) {
   return /@(icloud\.com|me\.com|mac\.com)$/i.test((email || '').trim());
 }
@@ -676,6 +682,7 @@ async function signup() {
   if (!familyName || !firstName) { showAuthMsg('お名前(姓・名)を入力してください。', true); return; }
   // iCloud系はメールが届かず、メールなしの手続き(電話番号での照合)が必要になるため電話番号を必須にする。
   if (isIcloudAddress(email) && tel.replace(/\D/g, '').length < 9) { showAuthMsg(i18nText('my.signupTelRequired'), true); return; }
+  if (isIcloudAddress(email) && (hasJapaneseChars(familyName) || hasJapaneseChars(firstName))) { showAuthMsg(i18nText('my.nameRomajiError'), true); return; }
   if (password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
   if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
   const btn = document.getElementById('signup-btn');
@@ -722,6 +729,7 @@ async function recoverAccount() {
   hideAuthMsg();
   if (!email || !familyName || !firstName || !tel) { showAuthMsg(i18nText('my.recoverNeedAll'), true); return; }
   if (!isIcloudAddress(email)) { showAuthMsg(i18nText('my.recoverNotApple'), true); return; }
+  if (hasJapaneseChars(familyName) || hasJapaneseChars(firstName)) { showAuthMsg(i18nText('my.nameRomajiError'), true); return; }
   if (password && password.length < 6) { showAuthMsg('パスワードは6文字以上にしてください。', true); return; }
   if (password !== confirm) { showAuthMsg('パスワードが一致しません。', true); return; }
   const btn = document.getElementById('recover-btn');

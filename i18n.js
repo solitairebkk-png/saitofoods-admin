@@ -131,6 +131,8 @@
     'my.resetBtn': { ja: 'パスワードを更新する', en: 'Update password' },
     'my.signupHint': { ja: 'ご登録済みのメールアドレスで、初めてログインするためのパスワードを設定してください。これまでのご注文履歴・ポイント残高がそのまま引き継がれます。', en: 'Please set a password for your first login using your registered email address. Your order history and point balance will carry over as-is.' },
     'my.icloudNotice': { ja: '⚠️ iCloud(@icloud.com / @me.com / @mac.com)のメールアドレスは、確認メールが届かない場合があります。登録後に表示される画面で、お名前と<b>電話番号</b>を使って、メールなしで手続きできます。', en: '⚠️ Confirmation emails may not reach iCloud addresses (@icloud.com / @me.com / @mac.com). After you sign up, you can finish the process without email by using your name and <b>phone number</b>.' },
+    'my.nameRomajiHint': { ja: 'お名前は<b>ローマ字</b>(例: Sato / Taro)で入力してください。漢字・ひらがな・カタカナだと、当店の登録内容と照合できません。', en: 'Please enter your name in <b>English letters</b> (e.g. Sato / Taro).' },
+    'my.nameRomajiError': { ja: 'お名前はローマ字(例: Sato / Taro)で入力してください。漢字・ひらがな・カタカナだと照合できません。', en: 'Please enter your name in English letters (e.g. Sato / Taro).' },
     'my.recoverLink': { ja: 'iCloudメールで確認・再設定メールが届かない方はこちら', en: 'Not receiving emails at your iCloud address? Click here' },
     'my.recoverHint': { ja: 'iCloud(@icloud.com / @me.com / @mac.com)のメールアドレスは、確認メールやパスワード再設定メールが届かないことがあります。ご登録のメールアドレス・お名前・電話番号が当店の登録内容と一致すると、メールなしでお手続きできます。', en: 'Emails may not reach iCloud addresses (@icloud.com / @me.com / @mac.com). If your email address, name and phone number match what we have on file, you can complete the process without email.' },
     'my.recoverPasswordHint': { ja: 'パスワードを忘れた方は、下に新しいパスワードを入力してください(確認だけの方は空欄のままで構いません)。', en: 'If you forgot your password, enter a new one below. If you only need your account confirmed, leave it blank.' },
