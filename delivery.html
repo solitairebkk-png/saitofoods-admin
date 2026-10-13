@@ -28,8 +28,15 @@
     font-size: 16px; line-height: 1.45;
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* ヘッダーと会社への電話ボタンをひとまとめにして、スクロールしても上に固定する */
+  .top-fixed { position: sticky; top: 0; z-index: 10; }
+  .office-call { display: flex; gap: 8px; padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .office-call a { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 10px; font-weight: 700; line-height: 1.2; text-align: center; }
+  .office-call a.main { flex: 2 1 0; background: #2563eb; color: #fff; font-size: 16px; padding: 11px 8px; }
+  .office-call a.sub { flex: 1 1 0; background: #fff; color: #2563eb; border: 2px solid #2563eb; font-size: 13px; padding: 7px 4px; flex-direction: column; }
+  .office-call a.sub small { font-size: 10px; font-weight: 600; opacity: .8; }
   header {
-    position: sticky; top: 0; z-index: 10;
+    position: relative;
     background: var(--green); color: #fff;
     padding: calc(10px + env(safe-area-inset-top)) 14px 10px;
     display: flex; align-items: center; gap: 10px;
@@ -163,6 +170,7 @@
 
 <!-- メイン -->
 <div id="main-view" class="hidden">
+  <div class="top-fixed">
   <header>
     <span class="logo-mini"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo4.png" alt="SAITO FOODS"></span>
     <div class="ttl"><b>SAITO FOODS</b><span>DELIVERY SYSTEM</span></div>
@@ -170,6 +178,12 @@
     <button id="refresh-btn" aria-label="refresh">↻</button>
     <button id="menu-btn">⋯</button>
   </header>
+  <!-- 会社への電話ボタン(02の番号を大きく目立たせ、06は予備として小さく) -->
+  <div class="office-call">
+    <a class="main" href="tel:022589878">📞 โทรบริษัท 02-258-9878</a>
+    <a class="sub" href="tel:0656189906"><span>06-5618-9906</span><small>สำรอง</small></a>
+  </div>
+  </div>
   <main>
     <div id="last-upd"></div>
     <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
