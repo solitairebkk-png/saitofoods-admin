@@ -36,6 +36,20 @@
   .office-call a.sub { flex: 1 1 0; background: #fff; color: #2563eb; border: 2px solid #2563eb; font-size: 13px; padding: 7px 4px; flex-direction: column; }
   /* お客様の住所へのナビ起動(Googleマップ)。住所のすぐ下に小さく出す */
   a.nav-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; text-decoration: none; background: #fff; color: #1f6f43; border: 2px solid #1f6f43; font-weight: 700; font-size: 14px; padding: 7px 12px; border-radius: 999px; }
+  /* メモ(お客様メモ=ずっと残る / 注文メモ=その1件だけ)。編集ボタンは行の左端 */
+  .memo { margin-top: 10px; padding: 8px 10px; border-radius: 10px; font-size: 14px; }
+  .memo.cust { background: #fff8e1; border: 1px solid #f5d98b; }
+  .memo.ord { background: #eef4ff; border: 1px solid #c7d7fb; }
+  .memo-title { font-size: 12px; font-weight: 700; color: #4b5563; margin-bottom: 4px; }
+  .memo-title small { font-weight: 500; opacity: .8; }
+  .memo-row { display: flex; align-items: flex-start; gap: 8px; }
+  .memo-edit { flex-shrink: 0; border: 1px solid #cbd5e1; background: #fff; color: #374151; border-radius: 8px; padding: 6px 10px; font-size: 13px; font-weight: 700; }
+  .memo-body { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; font-size: 15px; padding-top: 4px; }
+  .memo-empty { color: var(--gray); font-size: 13px; }
+  .memo-by { font-size: 11px; color: var(--gray); margin-top: 3px; }
+  .memo-ta { width: 100%; font-size: 16px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; resize: vertical; }
+  .memo-btns { display: flex; gap: 8px; }
+  .memo-btns .btn.small.cancel { background: #fff; color: #374151; border: 2px solid #cbd5e1; }
   .office-call a.sub small { font-size: 10px; font-weight: 600; opacity: .8; }
   header {
     position: relative;
@@ -323,6 +337,7 @@ async function loadOrders() {
     const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
     if (error) throw error;
     const all = data || [];
+    Object.keys(orderCache).forEach(k => delete orderCache[k]);   // 古い注文が残らないよう入れ替える(メモ編集時の再描画にも使うため)
     all.forEach(o => { orderCache[o.id] = o; });
     // 別の端末で完了された注文の、こちらに残っている撮影済み写真を捨てる
     const liveIds = new Set(all.filter(o => !o.delivered_at).map(o => o.id));
@@ -363,6 +378,83 @@ function navHtml(o) {
   if (!q) return '';
   const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
   return `<div><a class="nav-btn" href="${escapeHtml(url)}" target="_blank" rel="noopener">🧭 นำทาง</a></div>`;
+}
+// ---------------- メモ ----------------
+// 'c-<注文ID>'(お客様メモ) / 'o-<注文ID>'(注文メモ) が編集中。編集中は自動更新を止め、書きかけの文字は draft に残す
+const memoEditing = {};
+const memoDraft = {};
+function fmtDateTimeBkk(iso) {
+  return new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' }).replace(',', '');
+}
+function memoRow(o, kind) {
+  const isC = kind === 'c';
+  const c = o.customers || {};
+  const memo = isC ? c.delivery_memo : o.staff_memo;
+  const by = isC ? c.delivery_memo_by : o.staff_memo_by;
+  const at = isC ? c.delivery_memo_at : o.staff_memo_at;
+  const key = kind + '-' + o.id;
+  const id = escapeHtml(o.id);
+  const title = isC ? '📌 โน้ตของลูกค้า <small>(แสดงทุกครั้งที่ส่ง)</small>' : '📝 โน้ตออเดอร์นี้';
+  const cls = isC ? 'cust' : 'ord';
+  if (memoEditing[key]) {
+    const val = (key in memoDraft) ? memoDraft[key] : (memo || '');
+    const dis = busy['memo-' + key] ? 'disabled' : '';
+    return `<div class="memo ${cls}"><div class="memo-title">${title}</div>
+      <textarea class="memo-ta" data-key="${escapeHtml(key)}" maxlength="500" rows="3" oninput="memoDraft['${escapeHtml(key)}']=this.value">${escapeHtml(val)}</textarea>
+      <div class="memo-btns">
+        <button class="btn small" ${dis} onclick="saveMemo('${id}','${kind}')">💾 บันทึก</button>
+        <button class="btn small cancel" ${dis} onclick="cancelMemo('${id}','${kind}')">ยกเลิก</button>
+      </div></div>`;
+  }
+  const body = memo
+    ? `${escapeHtml(memo)}<div class="memo-by">${by ? 'โดย ' + escapeHtml(by) : ''}${at ? ' · ' + escapeHtml(fmtDateTimeBkk(at)) : ''}</div>`
+    : '<span class="memo-empty">ยังไม่มีโน้ต</span>';
+  return `<div class="memo ${cls}"><div class="memo-title">${title}</div>
+    <div class="memo-row"><button class="memo-edit" onclick="editMemo('${id}','${kind}')">✏️ แก้ไข</button><div class="memo-body">${body}</div></div></div>`;
+}
+function memoHtml(o) {
+  // お客様の登録が無い注文(customers が null)にはお客様メモは出さない
+  return (o.customers ? memoRow(o, 'c') : '') + memoRow(o, 'o');
+}
+function editMemo(orderId, kind) {
+  memoEditing[kind + '-' + orderId] = true;
+  rerenderFromCache();
+  const ta = document.querySelector('.memo-ta[data-key="' + kind + '-' + orderId + '"]');
+  if (ta) ta.focus();
+}
+function cancelMemo(orderId, kind) {
+  const key = kind + '-' + orderId;
+  delete memoEditing[key]; delete memoDraft[key];
+  rerenderFromCache();
+}
+async function saveMemo(orderId, kind) {
+  const key = kind + '-' + orderId;
+  if (busy['memo-' + key]) return;
+  const ta = document.querySelector('.memo-ta[data-key="' + key + '"]');
+  const val = ta ? ta.value : (memoDraft[key] || '');
+  busy['memo-' + key] = true;
+  $('main-error').textContent = '';
+  try {
+    const fn = kind === 'c' ? 'delivery_app_set_customer_memo' : 'delivery_app_set_order_memo';
+    const { error } = await supabaseClient.rpc(fn, { p_order_id: orderId, p_staff_id: currentStaff.id, p_memo: val });
+    if (error) throw error;
+    delete memoEditing[key]; delete memoDraft[key];
+  } catch (e) {
+    const m = String((e && e.message) || e);
+    $('main-error').textContent = 'บันทึกโน้ตไม่สำเร็จ: ' + (m.includes('MEMO_TOO_LONG') ? 'ยาวเกินไป (สูงสุด 500 ตัวอักษร)' : m);
+  } finally {
+    delete busy['memo-' + key];
+    await loadOrders();
+    rerenderFromCache();
+  }
+}
+// 通信せずに、直近に読み込んだ注文で画面だけ作り直す(メモの編集開始・キャンセル用)
+function rerenderFromCache() {
+  const all = Object.values(orderCache);
+  renderTodo(all.filter(o => !o.delivered_at)
+    .sort((a, b) => (slotKey(a) - slotKey(b)) || (new Date(a.departed_at) - new Date(b.departed_at))));
+  renderDone(all.filter(o => o.delivered_at)
+    .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
 }
 // 配達時間帯の並び順: 朝(Morning/เช้า) → "13:00-15:00" など開始時刻の早い順 → 時間指定なし(最後)
 function slotKey(o) {
@@ -504,6 +596,7 @@ function renderTodo(list) {
           </div>`).join('')}
       </div>
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
+      ${memoHtml(o)}
       <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
              onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
       <div class="btn-row row2">
@@ -575,6 +668,7 @@ function renderDone(list) {
       <div class="addr">${escapeHtml(addressLabel(o))}</div>
       <div class="meta">ส่งของ ${escapeHtml(fmtTimeBkk(o.delivered_at))}${(o.delivery_handed_over || o.delivery_photo_skipped) ? '' : ' · 📷 ' + (o.delivery_photo_paths || []).length}</div>
       ${callBadge(o)}
+      ${memoHtml(o)}
       ${slipHtml(o)}
       ${mail}
       <div>${retry}${undo}</div>
@@ -890,7 +984,8 @@ document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('button');
   if (b && /\.click\(\)/.test(b.getAttribute('onclick') || '')) pickerUntil = Date.now() + 90000;
 }, true);
-setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil) loadOrders(); }, 15000);
+// メモを書いている間も更新しない(書きかけの文字が消えないように)
+setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil && !Object.keys(memoEditing).length) loadOrders(); }, 15000);
 
 (async function init() {
   try {

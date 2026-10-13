@@ -1930,9 +1930,10 @@ async function loadOrders() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
+      delivery_staff_memo, delivery_staff_memo_by, delivery_staff_memo_at,
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ), delivery_memo, delivery_memo_by, delivery_memo_at ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -2673,6 +2674,16 @@ function formatTimeSlotCell(text, condoName, areaName) {
 // 配送(delivery)注文で、かつキャンセルされていないものだけ対象。walk_inには表示しない。
 // また、①量り売り商品の重量が未確定、②伝票が未印刷、のいずれかに該当する間は
 // 出発操作自体をできないようにする(現場で「印刷前に出発してしまう」事故を防ぐため)。
+// 配達スタッフが配達アプリに書いたメモ(お客様メモ=ずっと残る / 配達メモ=この注文だけ)。書いた人と日時つき
+function deliveryMemoHtml(order) {
+  const fmt = (iso) => iso ? new Date(iso).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' }).replace(',', '') : '';
+  const row = (icon, label, memo, by, at, bg, border) => memo
+    ? `<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:${bg};border:1px solid ${border};font-size:12px;white-space:pre-wrap;word-break:break-word;">${icon} <b>${label}</b>: ${escapeHtml(memo)}<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${by ? '✍️ ' + escapeHtml(by) : ''}${at ? ' · ' + fmt(at) : ''}</div></div>`
+    : '';
+  const c = order.customers || {};
+  return row('📌', 'お客様メモ(配達)', c.delivery_memo, c.delivery_memo_by, c.delivery_memo_at, '#fff8e1', '#f5d98b')
+       + row('🚴', '配達メモ', order.delivery_staff_memo, order.delivery_staff_memo_by, order.delivery_staff_memo_at, '#eef4ff', '#c7d7fb');
+}
 function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
 
@@ -2922,6 +2933,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       </div>
       <div class="order-items">${(order.order_items || []).length ? itemsHtml : '(ไม่มีรายการ)'}</div>
       ${(order.comment && !order.is_wholesale) ? `<div class="order-comment-box">📝 ${escapeHtml(order.comment)}</div>` : ''}
+      ${deliveryMemoHtml(order)}
       ${order.staff_message_ja ? `<div class="order-staff-message-box">✉️ お客様へ(伝票に記載): ${escapeHtml(order.staff_message_ja)}</div>` : ''}
       <div style="margin-top:6px;">${paidStampHtml}${paymentBadges.join('')}<span style="float:right;font-weight:700;">${order.total_amount || 0} THB${order.shipping_cost ? ` <span style=\"font-weight:400;font-size:11px;color:var(--text-muted);\">(+ค่าส่ง ${order.shipping_cost})</span>` : ''}</span></div>
     </td>
