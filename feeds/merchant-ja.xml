@@ -390,7 +390,7 @@
       <description>エビのすり身に青しそを載せて衣をつけて揚げた製品。お蕎麦に合います。</description>
       <link>https://saitofoods.com/products/28.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884363598_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>80.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1344,7 +1344,7 @@
       <link>https://saitofoods.com/products/561.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485838440_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01161021_587c3c20b188a.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1931,7 +1931,7 @@
       <description>あの山口豆腐店のお豆腐が再登場! 使用する豆乳はプレミアム絹ごし豆腐と同様です。 絹ごし豆腐とは違った『にがり』を使用しています。 使用している『にがり』は、山口豆腐店が塩田から直接独自に取寄せた天然素材を原料として、自家製で生産しています。その『にがり』をふんだんに使用することで、マグネシウムを主とした天然のミネラルを豊富に含んだ商品になっています。風味も味わいもより濃厚で多くのミネラルを含んだ味も栄養も抜群なプレミアム豆腐です。 恐れ入りますが、ご注文後のキャンセルはご連絡いただくタイミングによっては既に仕入れが完了してしまっており、お断りさせて頂く場合がございます。予めご了承くださいませ。</description>
       <link>https://saitofoods.com/products/1320.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11071714_690dc68ea4890.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>107.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2402,7 +2402,7 @@
       <description>日本から輸入(アメリカ産日本加工)しましたギンダラセンターカットを当社で切り身に致しました。 一枚が大体100g程度に切れてます。2枚入り。 銀鱈美味しいですね!!照り焼き、煮つけ、味噌漬け最高です。 こちらの商品は量り売りです。 表示されている価格は予定価格となります。 実際に配送された際の価格と異なります。 あらかじめご了承くださいませ。 100baht/100g</description>
       <link>https://saitofoods.com/products/1012.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483207149_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>200.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
