@@ -693,7 +693,7 @@
       <description>骨取りノルウェーサバをお味噌と少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 ご飯がすすみます。</description>
       <link>https://saitofoods.com/products/1367.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06151522_6a2fb63882be4.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -745,7 +745,7 @@
       <description>優しい甘醤油味 サバ照り焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1272.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884213892_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -953,7 +953,7 @@
       <description>タイ産の白豚のスライスです。 豚しゃぶ、豚しゃぶサラダなどにぴったりの厚みに スライスしてあります。200g入り</description>
       <link>https://saitofoods.com/products/1112.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489115964_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>133.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1944,7 +1944,7 @@
       <description>牛丼が美味しくバージョンアップしました! 内容量を130gにアップし、使用している牛肉はUSビーフ に変更、玉ねぎも増量しました。なのに価格は据え置き! この商品は加熱調理済みの商品です。 お好みの暖かさに加熱してお召し上がりくださいませ。</description>
       <link>https://saitofoods.com/products/271.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>110.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2062,7 +2062,7 @@
       <description>サイトウフーズオリジナル商品の冷凍ひじき煮です。</description>
       <link>https://saitofoods.com/products/965.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487736071_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2233,7 +2233,7 @@
       <description>骨なしのメダイを20g程度にダイスカットした物を西京みそに漬け込んだ商品です。 焼くだけ簡単。お弁当にも。骨なしなので安心。</description>
       <link>https://saitofoods.com/products/995.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555963929_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>90.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2850,7 +2850,7 @@
       <description>暑いご飯に乗せて、おにぎりの具に、サラダに、冷ややっこに。 色々と使える紫蘇昆布。懐かしい味。 120g</description>
       <link>https://saitofoods.com/products/1000.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882909871_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>97.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3257,7 +3257,7 @@
       <description>言わずと知れた、安心して飲める無糖のお茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/products/765.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484198912_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>720.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
