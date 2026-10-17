@@ -448,6 +448,14 @@
   .sns-item-platform { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-right: 4px; font-weight: 700; }
   .sns-item-platform.facebook { background: #dbe8f8; color: #1c4c8f; }
   .sns-item-platform.instagram { background: #fbe3ee; color: #a3205b; }
+  .sns-item-platform.email { background: #e1efe3; color: #1f6b34; }
+  #sns-modal .sns-modal-box { max-width: 760px; }
+  .sns-bilingual { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .sns-bilingual-col { background: #fff; border: 1px solid #ece9e1; border-radius: 6px; padding: 8px 10px; min-width: 0; }
+  .sns-bilingual-col.th { background: #f6faf6; }
+  .sns-bilingual-label { font-size: 9.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.3px; }
+  .sns-email-subject { font-weight: 700; margin-bottom: 4px; }
+  @media (max-width: 600px) { .sns-bilingual { grid-template-columns: 1fr; } }
   .sns-item-text { line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
   .sns-item-actions { margin-top: 6px; display: flex; gap: 8px; }
   .sns-item-actions button, .sns-item-actions a {
@@ -4029,7 +4037,7 @@ let snsModalMode = 'inbox'; // 'inbox' or 'autopost'
 function openSnsModal(mode) {
   snsModalMode = mode;
   document.getElementById('sns-modal-title').textContent =
-    mode === 'inbox' ? 'Messages & Comments / ข้อความและคอมเมนต์' : 'FB Auto-post History / ประวัติโพสต์อัตโนมัติ';
+    mode === 'inbox' ? 'Messages, Comments & Emails / ข้อความ คอมเมนต์ และอีเมล' :'FB Auto-post History / ประวัติโพสต์อัตโนมัติ';
   const actionsEl = document.getElementById('sns-modal-actions');
   actionsEl.innerHTML = mode === 'inbox'
     ? '<button onclick="markAllInboxRead()">Mark all as read / ทำเครื่องหมายว่าอ่านทั้งหมด</button>'
@@ -4056,9 +4064,29 @@ async function loadInboxList() {
     const timeStr = new Date(item.received_at).toLocaleString('en-GB', {
       month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
     });
-    const typeLabel = item.item_type === 'dm' ? 'DM' : 'Comment';
+    const isEmail = item.platform === 'email';
+    const typeLabel = isEmail ? 'Email' : (item.item_type === 'dm' ? 'DM' : 'Comment');
     const permalinkBtn = item.permalink
-      ? `<a href="${escapeHtml(item.permalink)}" target="_blank">Open post / เปิดโพสต์</a>` : '';
+      ? `<a href="${escapeHtml(item.permalink)}" target="_blank">${isEmail ? 'Open in Gmail / เปิดใน Gmail' : 'Open post / เปิดโพสต์'}</a>` : '';
+    // メール: 左に原文(日本語)、右にタイ語訳(GASが取り込み時に機械翻訳して保存)を並べる
+    const platformClass = isEmail ? 'email' : (item.platform === 'instagram' ? 'instagram' : 'facebook');
+    const platformLabel = isEmail ? 'MAIL' : (item.platform === 'instagram' ? 'IG' : 'FB');
+    const senderEmailHtml = (isEmail && item.sender_email)
+      ? ` <span style="color:var(--text-muted);font-size:10.5px;">&lt;${escapeHtml(item.sender_email)}&gt;</span>` : '';
+    const bodyHtml = isEmail
+      ? `<div class="sns-bilingual">
+           <div class="sns-bilingual-col">
+             <div class="sns-bilingual-label">ORIGINAL / ต้นฉบับ</div>
+             ${item.subject ? `<div class="sns-email-subject">${escapeHtml(item.subject)}</div>` : ''}
+             <div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>
+           </div>
+           <div class="sns-bilingual-col th">
+             <div class="sns-bilingual-label">THAI / ภาษาไทย (แปลโดยเครื่อง / machine translation)</div>
+             ${item.subject_th ? `<div class="sns-email-subject">${escapeHtml(item.subject_th)}</div>` : ''}
+             <div class="sns-item-text">${escapeHtml(item.message_text_th || '—')}</div>
+           </div>
+         </div>`
+      : `<div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>`;
     const readBtn = item.is_read
       ? ''
       : `<button onclick="markInboxRead('${item.id}')">Mark as read / อ่านแล้ว</button>`;
@@ -4066,13 +4094,13 @@ async function loadInboxList() {
       <div class="sns-item ${item.is_read ? '' : 'unread'}">
         <div class="sns-item-top">
           <span>
-            <span class="sns-item-platform ${item.platform === 'instagram' ? 'instagram' : 'facebook'}">${item.platform === 'instagram' ? 'IG' : 'FB'}</span>
-            <span class="sns-item-sender">${escapeHtml(item.sender_name || '(unknown)')}</span>
+            <span class="sns-item-platform ${platformClass}">${platformLabel}</span>
+            <span class="sns-item-sender">${escapeHtml(item.sender_name || '(unknown)')}</span>${senderEmailHtml}
             <span style="color:var(--text-muted);font-size:10.5px;"> ・ ${typeLabel}</span>
           </span>
           <span class="sns-item-time">${timeStr}</span>
         </div>
-        <div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>
+        ${bodyHtml}
         <div class="sns-item-actions">${readBtn}${permalinkBtn}</div>
       </div>`;
   }).join('');
