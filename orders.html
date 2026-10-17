@@ -626,6 +626,9 @@
     <button class="header-icon-btn" id="inbox-bell-btn" onclick="openSnsModal('inbox')" title="Messages &amp; Comments / ข้อความและคอมเมนต์">
       💬<span class="header-icon-badge" id="inbox-badge">0</span>
     </button>
+    <button class="header-icon-btn" id="email-bell-btn" onclick="openSnsModal('email')" title="Customer emails / อีเมลจากลูกค้า">
+      ✉️<span class="header-icon-badge" id="email-badge">0</span>
+    </button>
     <button class="header-icon-btn" id="autopost-bell-btn" onclick="openSnsModal('autopost')" title="FB Auto-post history / ประวัติโพสต์อัตโนมัติ">
       📢
     </button>
@@ -4023,27 +4026,42 @@ async function deleteOrder(orderId) {
 // ================= SNS受信通知(未読メッセージ・コメント) =================
 // sns_inbox テーブル(GASのsns_inbox_watch.gsが30分おきに書き込む)を読んで、
 // ヘッダーの💬ベルに未読件数バッジを表示し、クリックで一覧モーダルを開く。
-async function loadInboxBadge() {
-  const { count, error } = await supabaseClient
-    .from('sns_inbox').select('id', { count: 'exact', head: true }).eq('is_read', false);
-  const badge = document.getElementById('inbox-badge');
+// お客様からのメール(platform='email')は、FB/IGの💬ベルとは別に✉️ベルで表示する。
+function setInboxBadge(badgeId, count, error) {
+  const badge = document.getElementById(badgeId);
+  if (!badge) return;
   if (error || !count) { badge.style.display = 'none'; return; }
   badge.textContent = count > 99 ? '99+' : String(count);
   badge.style.display = 'flex';
 }
 
-let snsModalMode = 'inbox'; // 'inbox' or 'autopost'
+async function loadInboxBadge() {
+  const snsRes = await supabaseClient
+    .from('sns_inbox').select('id', { count: 'exact', head: true })
+    .eq('is_read', false).neq('platform', 'email');
+  setInboxBadge('inbox-badge', snsRes.count, snsRes.error);
+  const mailRes = await supabaseClient
+    .from('sns_inbox').select('id', { count: 'exact', head: true })
+    .eq('is_read', false).eq('platform', 'email');
+  setInboxBadge('email-badge', mailRes.count, mailRes.error);
+}
+
+let snsModalMode = 'inbox'; // 'inbox'(FB/IG) / 'email' / 'autopost'
 
 function openSnsModal(mode) {
   snsModalMode = mode;
-  document.getElementById('sns-modal-title').textContent =
-    mode === 'inbox' ? 'Messages, Comments & Emails / ข้อความ คอมเมนต์ และอีเมล' :'FB Auto-post History / ประวัติโพสต์อัตโนมัติ';
+  const titles = {
+    inbox: 'Messages & Comments / ข้อความและคอมเมนต์',
+    email: 'Customer Emails / อีเมลจากลูกค้า',
+    autopost: 'FB Auto-post History / ประวัติโพสต์อัตโนมัติ'
+  };
+  document.getElementById('sns-modal-title').textContent = titles[mode] || titles.inbox;
   const actionsEl = document.getElementById('sns-modal-actions');
-  actionsEl.innerHTML = mode === 'inbox'
+  actionsEl.innerHTML = (mode === 'inbox' || mode === 'email')
     ? '<button onclick="markAllInboxRead()">Mark all as read / ทำเครื่องหมายว่าอ่านทั้งหมด</button>'
     : '';
   document.getElementById('sns-modal').classList.add('open');
-  if (mode === 'inbox') { loadInboxList(); } else { loadAutoPostList(); }
+  if (mode === 'inbox' || mode === 'email') { loadInboxList(); } else { loadAutoPostList(); }
 }
 
 function closeSnsModal() {
@@ -4054,8 +4072,9 @@ async function loadInboxList() {
   const listEl = document.getElementById('sns-modal-list');
   listEl.innerHTML = '<div class="loading">Loading...</div>';
 
-  const { data, error } = await supabaseClient
-    .from('sns_inbox').select('*').order('received_at', { ascending: false }).limit(50);
+  let q = supabaseClient.from('sns_inbox').select('*');
+  q = (snsModalMode === 'email') ? q.eq('platform', 'email') : q.neq('platform', 'email');
+  const { data, error } = await q.order('received_at', { ascending: false }).limit(50);
 
   if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
   if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No messages / ไม่มีข้อความ</div>'; return; }
@@ -4113,7 +4132,9 @@ async function markInboxRead(id) {
 }
 
 async function markAllInboxRead() {
-  await supabaseClient.from('sns_inbox').update({ is_read: true }).eq('is_read', false);
+  let q = supabaseClient.from('sns_inbox').update({ is_read: true }).eq('is_read', false);
+  q = (snsModalMode === 'email') ? q.eq('platform', 'email') : q.neq('platform', 'email');
+  await q;
   loadInboxList();
   loadInboxBadge();
 }
