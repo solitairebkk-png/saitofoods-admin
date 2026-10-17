@@ -385,9 +385,9 @@
   .footer-copyright { text-align: center; color: #999; font-size: 11px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 
   /* 移行ガイドのポップアップ(2026-09-27) */
-  .mg-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(58,46,31,0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
+  .mg-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(58,46,31,0.55); z-index: 9999; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .mg-modal-overlay.open { display: flex; }
-  .mg-modal-box { background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 30px 24px 22px; position: relative; box-shadow: var(--shadow-md); text-align: center; }
+  .mg-modal-box { background: #fff; border-radius: 16px; max-width: 420px; width: 100%; padding: 30px 24px 22px; position: relative; box-shadow: var(--shadow-md); text-align: center; margin: auto; }
   .mg-modal-close { position: absolute; top: 8px; right: 12px; background: none; border: none; font-size: 24px; color: var(--ink); cursor: pointer; line-height: 1; padding: 6px; }
   .mg-modal-box h2 { font-size: 17px; color: var(--brand-dark); margin-bottom: 12px; line-height: 1.4; }
   .mg-modal-box p { font-size: 13.5px; line-height: 1.7; margin-bottom: 20px; color: var(--ink); }
