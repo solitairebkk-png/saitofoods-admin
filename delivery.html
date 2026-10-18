@@ -202,6 +202,7 @@
   </div>
   <main>
     <div id="last-upd"></div>
+    <div style="font-size:12px;color:#666;margin:4px 2px 0;">📍 บันทึกตำแหน่งเฉพาะตอนกดยืนยันส่งของเท่านั้น ไม่ได้ติดตามตลอดเวลา</div>
     <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
     <div id="todo-list"></div>
     <div class="section-title">ส่งแล้ววันนี้ (<span id="done-count">0</span>)</div>
@@ -240,6 +241,27 @@ function confirmDone(orderId, question) {
   const o = orderCache[orderId];
   const who = o ? `${customerLabel(o)}\n${addressLabel(o)}` : '';
   return confirm(`${who}\n\n${question}`);
+}
+// 完了ボタンを押した瞬間の位置を「1回だけ」取得する(常時追跡はしない)。
+// 最大8秒で打ち切り、許可されていない・電波が悪い等で取れない場合は null を返す(完了処理は止めない)。
+function getCompletionLocation() {
+  return new Promise(resolve => {
+    if (!navigator.geolocation) return resolve(null);
+    let finished = false;
+    const finish = v => { if (!finished) { finished = true; resolve(v); } };
+    setTimeout(() => finish(null), 8500);
+    try {
+      navigator.geolocation.getCurrentPosition(
+        pos => finish({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          acc: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : null
+        }),
+        () => finish(null),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+    } catch (_) { finish(null); }
+  });
 }
 function escapeHtml(v) {
   return String(v == null ? '' : v)
@@ -836,9 +858,12 @@ async function markHandedOver(orderId) {
   if (!confirmDone(orderId, '🤝 ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
+  const locPromise = getCompletionLocation();
   try {
+    const loc = await locPromise;
     const { error } = await supabaseClient.rpc('delivery_app_complete',
-      { p_order_id: orderId, p_paths: null, p_handed_over: true });
+      { p_order_id: orderId, p_paths: null, p_handed_over: true,
+        p_lat: loc ? loc.lat : null, p_lng: loc ? loc.lng : null, p_accuracy_m: loc ? loc.acc : null });
     if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
   } catch (e) {
     $('main-error').textContent = e.message || String(e);
@@ -888,6 +913,8 @@ async function submitDelivery(orderId) {
   if (!confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที')) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
+  // ボタンを押した瞬間の位置を取り始める(写真のアップロードと並行して待つので、追加の待ち時間はほぼ出ない)
+  const locPromise = getCompletionLocation();
   await loadOrders();
   let uploadedPaths = [];
   try {
@@ -905,8 +932,10 @@ async function submitDelivery(orderId) {
     }
 
     // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
+    const loc = await locPromise;
     const { data: doneAt, error: updErr } = await supabaseClient.rpc('delivery_app_complete',
-      { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false });
+      { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false,
+        p_lat: loc ? loc.lat : null, p_lng: loc ? loc.lng : null, p_accuracy_m: loc ? loc.acc : null });
     if (updErr) throw new Error(String(updErr.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง) รูปที่ถ่ายไม่ได้ถูกบันทึก' : 'บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
     if (doneAt) deliveredIso = new Date(doneAt).toISOString();
 

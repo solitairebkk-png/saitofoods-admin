@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Delivery Route | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 20px; max-width: 960px; margin: 0 auto; display: none; }
+
+  .bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .bar label { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .bar input, .bar select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; background: var(--panel); color: inherit; min-width: 150px; }
+
+  .note { font-size: 12px; color: var(--text-muted); margin: 0 0 12px; line-height: 1.5; }
+  .summary { font-size: 13px; font-weight: 600; color: var(--navy); margin: 0 0 10px; }
+
+  #map { height: 55vh; min-height: 320px; border: 1px solid var(--border); border-radius: 8px; background: #e8e6df; }
+
+  .pin { width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; border: 2px solid #fff;
+         display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+         box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+  .pin.first { background: var(--green); }
+  .pin.last { background: var(--red-accent); }
+  .pin.on { outline: 3px solid #f2b705; }
+
+  .list { margin-top: 14px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: #f1efe9; }
+  .row.noloc { cursor: default; color: var(--text-muted); }
+  .row.noloc:hover { background: transparent; }
+  .num { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700;
+         display: flex; align-items: center; justify-content: center; }
+  .row.noloc .num { background: #b9b6ad; }
+  .row .main-line { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .row .sub-line { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-left: 6px; vertical-align: middle; }
+  .badge.photo { background: #e3f3ea; color: var(--green); }
+  .badge.hand { background: #e6eefb; color: #1a5fb4; }
+  .badge.skip { background: #fdf4e3; color: var(--amber); }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .err { color: var(--red-accent); font-size: 13px; margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Delivery Route <span class="th">เส้นทางส่งของ</span></h1>
+  <div class="nav-links" id="nav-links" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+  <div class="bar">
+    <label>วันที่ / Date
+      <input type="date" id="filter-date" onchange="loadDay()">
+    </label>
+    <label>พนักงาน / Staff
+      <select id="filter-staff" onchange="renderStaff()"></select>
+    </label>
+    <button class="btn" onclick="resetToToday()">Today / วันนี้</button>
+  </div>
+
+  <p class="note">
+    ลำดับตามเวลาที่กดยืนยันส่งของในแอป / Numbers follow the order in which the staff pressed the delivery-complete button
+    (if completions are pressed later in a batch, it may differ from the real driving order).
+  </p>
+
+  <div class="summary" id="summary"></div>
+  <div class="err" id="main-error"></div>
+
+  <div id="map"></div>
+  <div class="list" id="list"><div class="loading">กำลังโหลด... / Loading...</div></div>
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // orders.html などの管理画面と同じログインを共有する(ECサイト側とは分離)
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
+
+let currentCustomer = null;
+let dayOrders = [];          // 選択日に配達完了した注文(完了時刻の昇順)
+let map = null;
+let layer = null;            // ピン・線を載せるレイヤー
+let markersByOrder = {};     // orderId -> Leaflet marker
+
+function escapeHtml(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ---------------- Auth ----------------
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function todayStr() {
+  const bkk = new Date(Date.now() + 7 * 3600000); // Asia/Bangkok (UTC+7)
+  return bkk.toISOString().slice(0, 10);
+}
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  document.getElementById('filter-date').value = todayStr();
+  initMap();
+  loadDay();
+}
+
+function resetToToday() {
+  document.getElementById('filter-date').value = todayStr();
+  loadDay();
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+// ---------------- Map ----------------
+function initMap() {
+  if (map) return;
+  map = L.map('map');
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  layer = L.layerGroup().addTo(map);
+  map.setView([13.7563, 100.5018], 11); // バンコク(データがない時の初期表示)
+}
+
+function timeStr(iso) {
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+}
+function customerName(o) {
+  const c = o.customers;
+  const name = c ? [c.family_name, c.first_name].filter(Boolean).join(' ') : '';
+  return name || '(no name)';
+}
+function typeBadge(o) {
+  if (o.delivery_photo_skipped) return '<span class="badge skip">no photo</span>';
+  if (o.delivery_handed_over) return '<span class="badge hand">handed over</span>';
+  return '<span class="badge photo">photo</span>';
+}
+
+// ---------------- Data ----------------
+async function loadDay() {
+  const date = document.getElementById('filter-date').value;
+  if (!date) return;
+  document.getElementById('main-error').textContent = '';
+  document.getElementById('list').innerHTML = '<div class="loading">กำลังโหลด... / Loading...</div>';
+  document.getElementById('summary').textContent = '';
+
+  const start = new Date(date + 'T00:00:00+07:00');
+  const end = new Date(start.getTime() + 24 * 3600000);
+
+  const { data, error } = await supabaseClient
+    .from('orders')
+    .select(`
+      id, legacy_order_no, delivered_at, delivery_lat, delivery_lng, delivery_accuracy_m,
+      delivery_handed_over, delivery_photo_skipped, condo_name, delivery_time_slot,
+      assigned_staff_id, staff:assigned_staff_id ( name, is_route_account ),
+      customers!customer_id ( family_name, first_name )
+    `)
+    .eq('order_type', 'delivery')
+    .eq('is_cancelled', false)
+    .not('assigned_staff_id', 'is', null)
+    .gte('delivered_at', start.toISOString())
+    .lt('delivered_at', end.toISOString())
+    .order('delivered_at', { ascending: true });
+
+  if (error) {
+    document.getElementById('main-error').textContent = 'Load failed: ' + error.message;
+    document.getElementById('list').innerHTML = '';
+    return;
+  }
+
+  // ルート用アカウント(エリア外配送の共用アカウント)は、個人の配送順を見る用途に合わないので除く
+  dayOrders = (data || []).filter(o => !(o.staff && o.staff.is_route_account));
+
+  // その日に配達完了があったスタッフだけを選択肢にする
+  const byStaff = new Map();
+  dayOrders.forEach(o => {
+    const cur = byStaff.get(o.assigned_staff_id) || { name: (o.staff && o.staff.name) || '(unknown)', n: 0 };
+    cur.n += 1;
+    byStaff.set(o.assigned_staff_id, cur);
+  });
+  const prev = document.getElementById('filter-staff').value;
+  const sel = document.getElementById('filter-staff');
+  sel.innerHTML = '';
+  [...byStaff.entries()]
+    .sort((a, b) => a[1].name.localeCompare(b[1].name))
+    .forEach(([id, s]) => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = `${s.name} (${s.n})`;
+      sel.appendChild(opt);
+    });
+  if (prev && byStaff.has(prev)) sel.value = prev;
+
+  renderStaff();
+}
+
+// ---------------- Render ----------------
+function renderStaff() {
+  const staffId = document.getElementById('filter-staff').value;
+  const listEl = document.getElementById('list');
+  layer.clearLayers();
+  markersByOrder = {};
+
+  if (!staffId) {
+    document.getElementById('summary').textContent = '';
+    listEl.innerHTML = '<div class="empty-state">ไม่มีรายการส่งของที่เสร็จในวันนี้ / No completed deliveries on this date.</div>';
+    map.setView([13.7563, 100.5018], 11);
+    return;
+  }
+
+  const rows = dayOrders.filter(o => o.assigned_staff_id === staffId); // 完了時刻の昇順のまま
+  const located = rows.filter(o => o.delivery_lat != null && o.delivery_lng != null);
+  document.getElementById('summary').textContent =
+    `Completed ${rows.length} · with location ${located.length} / ส่งเสร็จ ${rows.length} รายการ · มีตำแหน่ง ${located.length}`;
+
+  // 番号は「完了した順」。位置がない注文も番号は数えて一覧に載せる(地図には出さない)
+  const pts = [];
+  rows.forEach((o, i) => {
+    if (o.delivery_lat == null || o.delivery_lng == null) return;
+    const n = i + 1;
+    const extra = (n === 1 ? ' first' : '') + (n === rows.length ? ' last' : '');
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="pin${extra}" id="pin-${o.id}">${n}</div>`,
+      iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -14]
+    });
+    const latlng = [o.delivery_lat, o.delivery_lng];
+    const m = L.marker(latlng, { icon, title: String(n) }).addTo(layer);
+    m.bindPopup(
+      `<b>#${n} · ${escapeHtml(timeStr(o.delivered_at))}</b><br>` +
+      `${escapeHtml(customerName(o))}` +
+      (o.condo_name ? `<br>${escapeHtml(o.condo_name)}` : '') +
+      (o.delivery_accuracy_m != null ? `<br><small>±${escapeHtml(o.delivery_accuracy_m)} m</small>` : '') +
+      `<br><a href="https://www.google.com/maps?q=${encodeURIComponent(o.delivery_lat + ',' + o.delivery_lng)}" target="_blank" rel="noopener">📍 Google Maps</a>`
+    );
+    markersByOrder[o.id] = m;
+    pts.push(latlng);
+  });
+  if (pts.length >= 2) {
+    L.polyline(pts, { color: '#1c3557', weight: 3, opacity: 0.6, dashArray: '6 6' }).addTo(layer);
+  }
+  if (pts.length === 1) map.setView(pts[0], 16);
+  else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 17 });
+  else map.setView([13.7563, 100.5018], 11);
+
+  // 一覧(完了順)。前の完了からの経過時間も出す
+  listEl.innerHTML = rows.map((o, i) => {
+    const hasLoc = o.delivery_lat != null && o.delivery_lng != null;
+    let gap = '';
+    if (i > 0) {
+      const mins = Math.round((new Date(o.delivered_at) - new Date(rows[i - 1].delivered_at)) / 60000);
+      gap = ` · +${mins} min`;
+    }
+    const sub = [
+      o.condo_name ? escapeHtml(o.condo_name) : '',
+      o.delivery_time_slot ? escapeHtml(o.delivery_time_slot) : ''
+    ].filter(Boolean).join(' · ');
+    return `
+      <div class="row${hasLoc ? '' : ' noloc'}" ${hasLoc ? `onclick="focusOrder('${o.id}')"` : ''}>
+        <div class="num">${i + 1}</div>
+        <div>
+          <div class="main-line">${escapeHtml(timeStr(o.delivered_at))}${gap} — ${escapeHtml(customerName(o))}${typeBadge(o)}</div>
+          <div class="sub-line">${sub}${sub ? ' · ' : ''}${hasLoc ? '📍' : '— ไม่มีตำแหน่ง / No location'}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  setTimeout(() => map.invalidateSize(), 50);
+}
+
+function focusOrder(orderId) {
+  const m = markersByOrder[orderId];
+  if (!m) return;
+  document.querySelectorAll('.pin.on').forEach(el => el.classList.remove('on'));
+  const el = document.getElementById('pin-' + orderId);
+  if (el) el.classList.add('on');
+  map.setView(m.getLatLng(), Math.max(map.getZoom(), 16));
+  m.openPopup();
+  document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+</body>
+</html>

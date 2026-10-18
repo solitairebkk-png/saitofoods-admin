@@ -606,6 +606,7 @@
       <a href="product_control.html">📦 Products</a>
       <a href="category_control.html">🏷️ Categories</a>
       <a href="sales_summary.html">📊 Sales Summary</a>
+      <a href="delivery_map.html">🗺️ Delivery Route / เส้นทางส่งของ</a>
       <a href="settings.html">⚙️ Settings</a>
       <a href="index.html" target="_blank">🏬 EC Site / เว็บไซต์ร้านค้า</a>
     </div>
@@ -1941,6 +1942,7 @@ async function loadOrders() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
+      delivery_lat, delivery_lng, delivery_accuracy_m,
       order_delivery_memos ( memo, memo_by, memo_at ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
@@ -2698,6 +2700,14 @@ function deliveryMemoHtml(order) {
   return row('📌', 'お客様メモ(配達)', cm.memo, cm.memo_by, cm.memo_at, '#fff8e1', '#f5d98b')
        + row('🚴', '配達メモ', om.memo, om.memo_by, om.memo_at, '#eef4ff', '#c7d7fb');
 }
+// 配達完了の位置(スタッフ用アプリで完了を押した瞬間の座標)をGoogleマップで開くリンク。座標がない注文には何も出さない
+function deliveryMapLinkHtml(order) {
+  const lat = order.delivery_lat, lng = order.delivery_lng;
+  if (lat == null || lng == null) return '';
+  const acc = order.delivery_accuracy_m != null ? ` (±${order.delivery_accuracy_m} m)` : '';
+  const url = `https://www.google.com/maps?q=${encodeURIComponent(lat + ',' + lng)}`;
+  return `<div style="margin-top:2px;"><a href="${url}" target="_blank" rel="noopener" style="color:#1a5fb4;font-weight:700;">📍 Map / ดูแผนที่</a><span style="color:var(--text-muted);">${acc}</span></div>`;
+}
 function renderDispatchBlock(order) {
   if (order.order_type !== 'delivery' || order.is_cancelled) return '';
 
@@ -2719,7 +2729,7 @@ function renderDispatchBlock(order) {
         const hTime = new Date(order.delivered_at).toLocaleTimeString('en-GB', {
           hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
         });
-        deliveryProofHtml = `<div style="margin-top:4px;color:#1f6f43;font-weight:700;">🤝 Handed over ${hTime} / ส่งมอบแล้ว</div>`;
+        deliveryProofHtml = `<div style="margin-top:4px;color:#1f6f43;font-weight:700;">🤝 Handed over ${hTime} / ส่งมอบแล้ว</div>${deliveryMapLinkHtml(order)}`;
       } else if (order.delivered_at) {
         const dTime = new Date(order.delivered_at).toLocaleTimeString('en-GB', {
           hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
@@ -2730,6 +2740,7 @@ function renderDispatchBlock(order) {
         deliveryProofHtml = `
         <div style="margin-top:4px;color:#1f6f43;font-weight:700;">📷 Delivered ${dTime} / ส่งของแล้ว</div>
         <div style="color:var(--text-muted);">${mailLabel}</div>
+        ${deliveryMapLinkHtml(order)}
         ${(order.delivery_photo_paths || []).length
           ? `<button class="btn-undo-dispatch" onclick="viewDeliveryPhotos('${order.id}')">📷 View photo / ดูรูป</button>`
           : `<div style="color:var(--text-muted);">Photo deleted (3 months) / ลบรูปแล้ว</div>`}`;
