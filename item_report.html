@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Items Sold Report | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans Thai", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header h1 .th { font-weight: 500; color: #cdd8e6; font-size: 12px; display: block; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.light { background: var(--panel); color: var(--navy); border: 1px solid var(--border); }
+  .btn.light:hover { background: var(--bg); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  main { padding: 24px; max-width: 1000px; margin: 0 auto; display: none; }
+
+  .date-bar { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .date-bar label { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .date-bar input, .date-bar select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; background: var(--panel); color: inherit; }
+  .quick-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .card .amount { font-size: 22px; font-weight: 700; color: var(--navy); }
+
+  .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 14px; display: none; }
+  .section-note { font-size: 11px; color: var(--text-muted); margin: 0 0 10px; line-height: 1.5; }
+
+  .tool-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+  .tool-bar input[type=text] { padding: 7px 10px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; min-width: 200px; font-family: inherit; }
+  .tool-bar select { padding: 7px 8px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: inherit; }
+
+  table.prod { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  table.prod th { text-align: left; padding: 8px 8px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); }
+  table.prod td { padding: 8px 8px; border-bottom: 1px solid var(--border); }
+  table.prod tr:last-child td { border-bottom: none; }
+  table.prod td.num, table.prod th.num { text-align: right; white-space: nowrap; }
+  table.prod td.name { min-width: 160px; line-height: 1.4; }
+  table.prod td.zero { color: var(--text-muted); }
+  table.prod td.total, table.prod th.total { font-weight: 700; background: var(--bg); }
+  .prod-wrap { overflow-x: auto; }
+  .sub { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+
+  .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+  .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Items Sold Report <span class="th">รายงานจำนวนสินค้าที่ขาย (ตามช่วงวันที่)</span></h1>
+  <div class="nav-links" id="nav-links" style="display:none;">
+    <a href="orders.html">รายการคำสั่งซื้อ / Order List</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+    <a href="product_control.html">📦 Products</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
+    <span id="user-email"></span>
+    <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>Staff Login</h2>
+  <input type="email" id="login-email" placeholder="Email">
+  <input type="password" id="login-password" placeholder="Password">
+  <button class="btn" onclick="login()">Login</button>
+  <div id="login-error"></div>
+</div>
+
+<main id="main">
+
+  <div class="date-bar">
+    <label>From / ตั้งแต่วันที่
+      <input type="date" id="date-from">
+    </label>
+    <label>To / ถึงวันที่
+      <input type="date" id="date-to">
+    </label>
+    <button class="btn" id="search-btn" onclick="loadReport()">Search / ค้นหา</button>
+  </div>
+  <div class="quick-bar">
+    <button class="btn light" onclick="quickRange('today')">Today / วันนี้</button>
+    <button class="btn light" onclick="quickRange('7d')">Last 7 days / 7 วันล่าสุด</button>
+    <button class="btn light" onclick="quickRange('30d')">Last 30 days / 30 วันล่าสุด</button>
+    <button class="btn light" onclick="quickRange('thisMonth')">This month / เดือนนี้</button>
+    <button class="btn light" onclick="quickRange('lastMonth')">Last month / เดือนที่แล้ว</button>
+  </div>
+
+  <div class="warn-box" id="unconfirmed-warn"></div>
+
+  <div class="summary-cards" id="summary-cards"></div>
+
+  <div class="section-note">
+    Saito Foods products only (cancelled orders excluded). Delivery orders are counted by delivery date, walk-in orders by order date (Bangkok time). Wholesale (restaurant invoice) entries have no item detail, so they are not included here. Sales = after item-level price, before point discounts. /
+    เฉพาะสินค้า Saito Foods (ไม่รวมออเดอร์ที่ยกเลิก) ออเดอร์จัดส่งนับตามวันส่ง ออเดอร์หน้าร้านนับตามวันที่สั่ง (เวลากรุงเทพฯ) งานขายส่ง (ใบแจ้งหนี้ร้านอาหาร) ไม่มีรายการสินค้า จึงไม่รวมในรายงานนี้
+  </div>
+
+  <div class="tool-bar">
+    <input type="text" id="product-filter" placeholder="Filter by product name / ค้นหาชื่อสินค้า" oninput="renderTable()">
+    <select id="export-scope" onchange="renderTable()">
+      <option value="all">All areas / ทุกพื้นที่</option>
+      <option value="bkk">Bangkok only / เฉพาะกรุงเทพฯ</option>
+      <option value="sp">Sriracha &amp; Pattaya only / เฉพาะศรีราชา &amp; พัทยา</option>
+      <option value="walk">Walk-in only / เฉพาะหน้าร้าน</option>
+    </select>
+    <select id="sort-by" onchange="renderTable()">
+      <option value="qty">Sort: Quantity / เรียงตามจำนวน</option>
+      <option value="rev">Sort: Sales / เรียงตามยอดขาย</option>
+      <option value="name">Sort: Name / เรียงตามชื่อ</option>
+    </select>
+    <button class="btn" onclick="exportCsv()">Download CSV / ดาวน์โหลด CSV</button>
+    <span id="range-label" class="sub"></span>
+  </div>
+
+  <div class="prod-wrap">
+  <table class="prod">
+    <thead>
+      <tr>
+        <th>Product / สินค้า</th>
+        <th class="num">Bangkok<br>กรุงเทพฯ</th>
+        <th class="num">Sriracha &amp; Pattaya<br>ศรีราชา &amp; พัทยา</th>
+        <th class="num">Walk-in<br>หน้าร้าน</th>
+        <th class="num total">Total<br>รวม</th>
+        <th class="num">Sales (THB)<br>ยอดขาย (บาท)</th>
+      </tr>
+    </thead>
+    <tbody id="prod-tbody">
+      <tr><td colspan="6" class="empty-state">Choose a date range and press Search. / เลือกช่วงวันที่แล้วกดค้นหา</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+</main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // 他の管理画面と同じスタッフ用ストレージキー(ログインを共有する)
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
+
+let currentCustomer = null;
+let reportProducts = [];     // 集計結果(表示・CSV用)
+let reportRange = { from: '', to: '' };
+let reportOrderCount = 0;
+let reportUnconfirmed = 0;
+
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'Login failed: ' + error.message; return; }
+  const { data: customerRow, error: custErr } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', data.user.id).single();
+  if (custErr || !customerRow || !['staff', 'admin'].includes(customerRow.role)) {
+    errEl.textContent = 'Account not found or not authorized.';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = customerRow;
+  showMain();
+}
+
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+// バンコク時間(UTC+7)の「今日」を YYYY-MM-DD で返す
+function todayStr() {
+  return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = currentCustomer.family_name + ' ' + currentCustomer.first_name;
+  quickRange('thisMonth');
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    const { data: customerRow } = await supabaseClient
+      .from('customers').select('id, family_name, first_name, role').eq('auth_user_id', session.user.id).single();
+    if (customerRow && ['staff', 'admin'].includes(customerRow.role)) { currentCustomer = customerRow; showMain(); }
+  }
+})();
+
+function quickRange(kind) {
+  const today = todayStr();
+  let from = today, to = today;
+  if (kind === '7d') from = addDays(today, -6);
+  else if (kind === '30d') from = addDays(today, -29);
+  else if (kind === 'thisMonth') from = today.slice(0, 8) + '01';
+  else if (kind === 'lastMonth') {
+    const firstThis = today.slice(0, 8) + '01';
+    to = addDays(firstThis, -1);
+    from = to.slice(0, 8) + '01';
+  }
+  document.getElementById('date-from').value = from;
+  document.getElementById('date-to').value = to;
+  loadReport();
+}
+
+// ---------------- データ取得 ----------------
+// Supabaseの1回あたり1000行上限を避けるため、ページ分けして全件取得する
+const ORDER_SELECT = `
+  id, order_type, delivery_date, created_at, area_name, is_cancelled, is_weight_confirmed,
+  order_items ( product_id, product_name_snapshot, quantity, unit_price, sale_type, total_price, products ( name_en, name_th, unit_label ) )
+`;
+const PAGE = 500;
+
+async function fetchAll(buildQuery) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await buildQuery().order('id', { ascending: true }).range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return rows;
+}
+
+async function loadReport() {
+  const from = document.getElementById('date-from').value;
+  const to = document.getElementById('date-to').value;
+  if (!from || !to) { alert('Please choose both dates. / กรุณาเลือกวันที่ทั้งสองช่อง'); return; }
+  if (from > to) { alert('"From" must be on or before "To". / วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด'); return; }
+
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  document.getElementById('prod-tbody').innerHTML = '<tr><td colspan="6" class="loading">กำลังโหลด... / Loading...</td></tr>';
+  document.getElementById('summary-cards').innerHTML = '';
+  document.getElementById('unconfirmed-warn').style.display = 'none';
+  document.getElementById('range-label').textContent = '';
+
+  try {
+    const [delivery, walkin] = await Promise.all([
+      fetchAll(() => supabaseClient.from('orders').select(ORDER_SELECT)
+        .eq('order_type', 'delivery').gte('delivery_date', from).lte('delivery_date', to)),
+      fetchAll(() => supabaseClient.from('orders').select(ORDER_SELECT)
+        .eq('order_type', 'walk_in')
+        .gte('created_at', `${from}T00:00:00+07:00`).lte('created_at', `${to}T23:59:59.999+07:00`)),
+    ]);
+    const orders = [...delivery, ...walkin].filter(o => !o.is_cancelled);
+    aggregate(orders);
+    reportRange = { from, to };
+    document.getElementById('range-label').textContent = `Showing / แสดงข้อมูล: ${from} → ${to}`;
+    renderCards();
+    renderTable();
+  } catch (e) {
+    document.getElementById('prod-tbody').innerHTML = `<tr><td colspan="6" class="empty-state">Error: ${escapeHtml(e.message || e)}</td></tr>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------------- 集計(sales_summary.html と同じ振り分けルール) ----------------
+// ・Sriracha/Pattaya → sp、Walk-in → walk、それ以外(バンコク・エリア外・未設定)→ bkk
+// ・量り売り: 重量確定済みはグラム換算で集計、未確定はパック数を別枠(pending)で数える
+function aggregate(orders) {
+  const map = new Map();
+  reportOrderCount = orders.length;
+  reportUnconfirmed = 0;
+  const KNOWN_AREAS = ['Sriracha', 'Pattaya'];
+
+  orders.forEach(order => {
+    let grp;
+    if (order.order_type === 'walk_in') grp = 'walk';
+    else if (KNOWN_AREAS.includes(order.area_name)) grp = 'sp';
+    else grp = 'bkk';
+
+    let hasUnconfirmed = false;
+    (order.order_items || []).forEach(item => {
+      const key = item.product_id || item.product_name_snapshot;
+      const name = item.products?.name_en || item.products?.name_th || item.product_name_snapshot || '(unknown)';
+      const isWeight = item.sale_type === 'weight';
+      const unit = isWeight ? 'g' : (item.products?.unit_label || 'pcs');
+      if (!map.has(key)) map.set(key, {
+        name, unit, isWeight,
+        qty: { bkk: 0, sp: 0, walk: 0 }, sortQty: { bkk: 0, sp: 0, walk: 0 },
+        pending: { bkk: 0, sp: 0, walk: 0 }, revenue: { bkk: 0, sp: 0, walk: 0 },
+      });
+      const p = map.get(key);
+      const rawQty = Number(item.quantity) || 0;
+      if (isWeight && !order.is_weight_confirmed) {
+        p.pending[grp] += rawQty;
+        hasUnconfirmed = true;
+      } else if (isWeight) {
+        const up = Number(item.unit_price) || 0, tp = Number(item.total_price) || 0;
+        const consistent = Math.abs(tp - rawQty * up) <= Math.max(1, tp * 0.02);
+        if (!consistent && up > 0 && tp > 0) p.qty[grp] += Math.round(tp / up);
+        else p.qty[grp] += Math.round(rawQty * parseGramsPerUnit(item.products?.unit_label));
+      } else {
+        p.qty[grp] += rawQty;
+      }
+      p.sortQty[grp] += rawQty;
+      p.revenue[grp] += Number(item.total_price) || 0;
+    });
+    if (hasUnconfirmed) reportUnconfirmed += 1;
+  });
+
+  reportProducts = [...map.values()];
+}
+
+function parseGramsPerUnit(unitLabel) {
+  const str = String(unitLabel || '').trim();
+  const m = str.match(/([\d.]+)\s*(kg|g)/i);
+  if (m) {
+    const num = parseFloat(m[1]);
+    return m[2].toLowerCase() === 'kg' ? num * 1000 : num;
+  }
+  if (/kg/i.test(str)) return 1000;
+  return 100;
+}
+
+// ---------------- 表示 ----------------
+const sumGrp = (o, scope) => scope === 'all' ? o.bkk + o.sp + o.walk : o[scope];
+
+function renderCards() {
+  const revenue = reportProducts.reduce((s, p) => s + sumGrp(p.revenue, 'all'), 0);
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="card"><div class="label">Orders / คำสั่งซื้อ</div><div class="amount">${reportOrderCount.toLocaleString()}</div></div>
+    <div class="card"><div class="label">Products sold / จำนวนรายการสินค้า</div><div class="amount">${reportProducts.length.toLocaleString()}</div></div>
+    <div class="card"><div class="label">Item sales / ยอดขายสินค้า (THB)</div><div class="amount">${Math.round(revenue).toLocaleString()}</div></div>`;
+  const w = document.getElementById('unconfirmed-warn');
+  if (reportUnconfirmed > 0) {
+    w.style.display = 'block';
+    w.textContent = `⚠️ 量り売り重量未確定の注文が${reportUnconfirmed}件含まれています。該当商品のグラム数は確定分のみで、未確定分は「+N pack (unconfirmed)」で別表示です。 / ${reportUnconfirmed} order(s) have unconfirmed weight — shown separately as packs.`;
+  }
+}
+
+function visibleRows() {
+  const scope = document.getElementById('export-scope').value;
+  const q = document.getElementById('product-filter').value.trim().toLowerCase();
+  const sortBy = document.getElementById('sort-by').value;
+  let rows = reportProducts.filter(p => (sumGrp(p.qty, scope) > 0 || sumGrp(p.pending, scope) > 0));
+  if (q) rows = rows.filter(p => p.name.toLowerCase().includes(q));
+  rows.sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    if (sortBy === 'rev') return sumGrp(b.revenue, scope) - sumGrp(a.revenue, scope);
+    return sumGrp(b.sortQty, scope) - sumGrp(a.sortQty, scope) || sumGrp(b.revenue, scope) - sumGrp(a.revenue, scope);
+  });
+  return { rows, scope };
+}
+
+function formatQty(qty) { return Number.isInteger(qty) ? qty : qty.toFixed(2); }
+
+function renderTable() {
+  const tbody = document.getElementById('prod-tbody');
+  if (!reportRange.from) return;
+  const { rows, scope } = visibleRows();
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ไม่มีข้อมูล / No sales data</td></tr>';
+    return;
+  }
+  const cell = (q, pend) => (q > 0 || pend > 0)
+    ? `<td class="num">${q > 0 ? formatQty(q) : ''}${pend > 0 ? `<div class="sub">+${formatQty(pend)} pack (unconfirmed)</div>` : ''}</td>`
+    : '<td class="num zero">-</td>';
+  tbody.innerHTML = rows.map(p => {
+    const tq = sumGrp(p.qty, scope), tp = sumGrp(p.pending, scope);
+    return `
+    <tr>
+      <td class="name">${escapeHtml(p.name)}</td>
+      ${cell(scope === 'all' || scope === 'bkk' ? p.qty.bkk : 0, scope === 'all' || scope === 'bkk' ? p.pending.bkk : 0)}
+      ${cell(scope === 'all' || scope === 'sp' ? p.qty.sp : 0, scope === 'all' || scope === 'sp' ? p.pending.sp : 0)}
+      ${cell(scope === 'all' || scope === 'walk' ? p.qty.walk : 0, scope === 'all' || scope === 'walk' ? p.pending.walk : 0)}
+      <td class="num total">${formatQty(tq)} ${escapeHtml(p.unit)}${tp > 0 ? `<div class="sub">+${formatQty(tp)} pack (unconfirmed)</div>` : ''}</td>
+      <td class="num">${Math.round(sumGrp(p.revenue, scope)).toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ---------------- CSV出力 ----------------
+function csvCell(v) {
+  let t = String(v == null ? '' : v);
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+
+function exportCsv() {
+  if (!reportRange.from) { alert('Please run a search first. / กรุณากดค้นหาก่อน'); return; }
+  // 画面で選んだ日付が、表示中の結果とずれていないか確認
+  if (document.getElementById('date-from').value !== reportRange.from || document.getElementById('date-to').value !== reportRange.to) {
+    alert(`The table is showing ${reportRange.from} → ${reportRange.to}. Press Search again to update it. / ตารางแสดงข้อมูล ${reportRange.from} → ${reportRange.to} กรุณากดค้นหาอีกครั้ง`);
+    return;
+  }
+  const { rows, scope } = visibleRows();
+  if (!rows.length) { alert('No data to export. / ไม่มีข้อมูลให้ส่งออก'); return; }
+  const SCOPE_NAME = { all: 'all', bkk: 'bangkok', sp: 'sriracha-pattaya', walk: 'walk-in' };
+  const r = n => Math.round(n);
+  const header = ['From / ตั้งแต่', 'To / ถึง', 'Product / สินค้า', 'Bangkok / กรุงเทพฯ', 'Sriracha & Pattaya / ศรีราชา & พัทยา', 'Walk-in / หน้าร้าน', 'Total / รวม', 'Unit / หน่วย', 'Unconfirmed packs / รอชั่ง (แพ็ค)', 'Sales (THB) / ยอดขาย (บาท)'];
+  const out = rows.map(p => {
+    const bkk = scope === 'all' || scope === 'bkk' ? p.qty.bkk : 0;
+    const sp = scope === 'all' || scope === 'sp' ? p.qty.sp : 0;
+    const walk = scope === 'all' || scope === 'walk' ? p.qty.walk : 0;
+    return [reportRange.from, reportRange.to, p.name, bkk || '', sp || '', walk || '', bkk + sp + walk, p.unit, sumGrp(p.pending, scope) || '', r(sumGrp(p.revenue, scope))];
+  });
+  const csv = [header, ...out].map(row => row.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `items-sold_${reportRange.from}_to_${reportRange.to}_${SCOPE_NAME[scope]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function escapeHtml(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+</script>
+
+</body>
+</html>
