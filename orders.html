@@ -457,6 +457,9 @@
   .sns-email-subject { font-weight: 700; margin-bottom: 4px; }
   @media (max-width: 600px) { .sns-bilingual { grid-template-columns: 1fr; } }
   .sns-item-text { line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .sns-replied { margin-top: 6px; font-size: 11.5px; font-weight: 600; color: #1f6b34; }
+  .sns-replied summary { cursor: pointer; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+  .sns-replied-body { font-weight: 400; color: var(--text); background: #f4f8f4; border: 1px solid #d5e6d8; border-radius: 6px; padding: 8px 10px; margin-top: 4px; font-size: 12px; }
   .sns-item-actions { margin-top: 6px; display: flex; gap: 8px; }
   .sns-item-actions button, .sns-item-actions a {
     font-size: 10.5px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
@@ -854,8 +857,8 @@
 <!-- 個別メール送信(顧客への自由文面メール)モーダル -->
 <div id="email-modal">
   <div class="email-modal-box">
-    <h3>Email Customer <span style="font-size:11px;color:var(--text-muted);">(ส่งอีเมลถึงลูกค้า)</span></h3>
-    <div class="email-modal-sub">
+    <h3 id="email-modal-title">Email Customer <span style="font-size:11px;color:var(--text-muted);">(ส่งอีเมลถึงลูกค้า)</span></h3>
+    <div class="email-modal-sub" id="email-modal-sub">
       For customers who don't answer the phone during delivery. The recipient is always looked up from the order record — you can't change it here.<br>
       สำหรับลูกค้าที่ติดต่อทางโทรศัพท์ไม่ได้ในช่วงจัดส่ง ผู้รับจะดึงจากข้อมูลคำสั่งซื้อเสมอ ไม่สามารถแก้ไขได้ที่นี่
     </div>
@@ -867,21 +870,28 @@
       <label>Subject / หัวข้อ (fixed / คงที่)</label>
       <input type="text" id="email-modal-subject" readonly>
     </div>
+    <div class="email-field" id="email-modal-lang-field" style="display:none;">
+      <label>Greeting &amp; signature language / ภาษาของคำทักทายและลายเซ็น</label>
+      <select id="email-modal-lang" onchange="onEmailLangChange()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:inherit;background:#fff;">
+        <option value="th">ไทย — Thai customers / ลูกค้าชาวไทย</option>
+        <option value="ja">日本語 — Japanese customers / ลูกค้าชาวญี่ปุ่น</option>
+      </select>
+    </div>
     <div class="email-field">
       <div style="display:flex;justify-content:space-between;align-items:baseline;">
         <label style="margin-bottom:0;">Message / ข้อความ (เขียนภาษาไทยได้ แล้วกดปุ่มแปล / You can write in Thai and translate)</label>
       </div>
       <textarea id="email-modal-message" placeholder="เขียนข้อความที่นี่ (ไทยหรือญี่ปุ่นก็ได้) / Write your message here (Thai or Japanese)" style="min-height:110px;"></textarea>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+      <div id="email-translate-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;">
         <button type="button" onclick="translateEmailMessageToJapanese()" id="email-translate-btn" style="flex:none;padding:6px 12px;font-size:12px;border-radius:6px;border:1px solid var(--border);background:#fff;cursor:pointer;font-family:inherit;">🇯🇵 Translate to Japanese / แปลเป็นภาษาญี่ปุ่น</button>
         <span id="email-translate-status" style="font-size:11.5px;color:var(--text-muted);"></span>
         <a href="#" id="email-translate-undo" style="display:none;font-size:11.5px;text-decoration:underline;" onclick="event.preventDefault(); undoTranslateEmailMessage();">Undo / เลิกทำ</a>
       </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+      <div id="email-ja-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px;">
         If you write in Japanese already, there's no need to translate — it will be sent as-is. / หากเขียนเป็นภาษาญี่ปุ่นอยู่แล้ว ไม่ต้องแปล ระบบจะส่งตามที่เขียนไว้เลย
       </div>
     </div>
-    <div class="email-field">
+    <div class="email-field" id="email-modal-slip-field">
       <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
         <input type="checkbox" id="email-modal-slip-check" style="width:auto;margin:0;" onchange="onEmailSlipCheckChange()">
         <span>💳 Include payment slip link / แนบลิงก์อัปโหลดสลิป</span>
@@ -3654,6 +3664,12 @@ const EMAIL_ATTACH_MAX_FILES = 5;
 const EMAIL_ATTACH_MAX_TOTAL_BYTES = 10 * 1024 * 1024; // 合計10MB
 let emailAttachments = []; // File オブジェクトの配列
 
+// このモーダルは「注文のお客様へのメール(order)」と「お問い合わせメールへの返信(inquiry)」で共用する。
+// inquiry の宛先はクライアントでは決めず、GAS(replyInboxEmail)が元のメールから決める。
+let emailModalMode = 'order';   // 'order' / 'inquiry'
+let emailModalInboxId = null;   // inquiry のとき: 返信先の問い合わせ(sns_inbox)のID
+let emailModalLang = 'ja';      // inquiry のとき: 挨拶・署名の言語('th' / 'ja')
+
 function formatFileSize(bytes) {
   if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   return Math.max(1, Math.round(bytes / 1024)) + ' KB';
@@ -3737,11 +3753,113 @@ function onEmailSlipCheckChange() {
 }
 
 function buildEmailPreview(customerName, message) {
+  // お問い合わせへの返信(タイ人のお客様向け): タイ語の挨拶と署名
+  if (emailModalMode === 'inquiry' && emailModalLang === 'th') {
+    const msgTh = message || '(พิมพ์ข้อความที่นี่ / message goes here)';
+    const greetName = customerName ? `คุณ${customerName}` : 'ท่านลูกค้า';
+    return `เรียน ${greetName}\n\nขอบคุณที่ติดต่อสอบถามมายัง Saitofoods Co.,Ltd.\n\n${msgTh}\n\n\nSaitofoods Co.,Ltd.\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+  }
   const msg = message || '(メッセージをここに入力 / message goes here)';
   const translateNote = emailWasTranslated
     ? '\n\n※このメールの一部は機械翻訳を使用しております。表現に至らない点がございましたら何卒ご容赦ください。'
     : '';
-  return `${customerName}様\n\n毎度当店をご利用いただきまして誠にありがとうございます。\n\n${msg}${buildSlipLinkBlock()}${translateNote}\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+  const greeting = (emailModalMode === 'inquiry' && !customerName)
+    ? 'お客様'
+    : `${customerName}様`;
+  const opening = emailModalMode === 'inquiry'
+    ? 'この度はお問い合わせいただき、誠にありがとうございます。'
+    : '毎度当店をご利用いただきまして誠にありがとうございます。';
+  return `${greeting}\n\n${opening}\n\n${msg}${buildSlipLinkBlock()}${translateNote}\n\n\nサイトウフーズ株式会社\n23/7 Soi Naphasub Yeak 2 Soi Sukhumvit 36\nKlongton Klontoey Bangkok 10110\norders@saitofoods.com\n02-258-9878,06-5618-9906`;
+}
+
+// モーダルの表示を「注文のお客様へ(order)」「お問い合わせへの返信(inquiry)」で切り替える
+function setEmailModalMode(mode) {
+  emailModalMode = mode;
+  const inquiry = mode === 'inquiry';
+  const titleEl = document.getElementById('email-modal-title');
+  const subEl = document.getElementById('email-modal-sub');
+  // 元の文言を最初に1回だけ控えておき、order に戻すときに復元する
+  if (titleEl.dataset.orig === undefined) titleEl.dataset.orig = titleEl.innerHTML;
+  if (subEl.dataset.orig === undefined) subEl.dataset.orig = subEl.innerHTML;
+  titleEl.innerHTML = inquiry
+    ? 'Reply to Customer <span style="font-size:11px;color:var(--text-muted);">(ตอบกลับลูกค้า)</span>'
+    : titleEl.dataset.orig;
+  subEl.innerHTML = inquiry
+    ? 'Reply to a customer\'s inquiry email. The reply is sent to the customer who wrote it — the address can\'t be changed here.<br>ตอบอีเมลสอบถามของลูกค้า ระบบจะส่งถึงลูกค้าที่เขียนมาโดยอัตโนมัติ ไม่สามารถแก้ไขที่อยู่ได้ที่นี่'
+    : subEl.dataset.orig;
+  document.getElementById('email-modal-lang-field').style.display = inquiry ? '' : 'none';
+  document.getElementById('email-modal-slip-field').style.display = inquiry ? 'none' : '';
+  if (!inquiry) {
+    emailModalLang = 'ja';
+    document.getElementById('email-translate-row').style.display = 'flex';
+    document.getElementById('email-ja-hint').style.display = '';
+  }
+}
+
+// 挨拶・署名の言語を切り替えた(inquiry のときだけ)。日本語のときだけ「日本語に翻訳」を出す
+function onEmailLangChange() {
+  emailModalLang = document.getElementById('email-modal-lang').value === 'th' ? 'th' : 'ja';
+  const ja = emailModalLang === 'ja';
+  document.getElementById('email-translate-row').style.display = ja ? 'flex' : 'none';
+  document.getElementById('email-ja-hint').style.display = ja ? '' : 'none';
+  if (!ja) {
+    emailWasTranslated = false;
+    emailMessageBeforeTranslate = null;
+    document.getElementById('email-translate-status').textContent = '';
+    document.getElementById('email-translate-undo').style.display = 'none';
+  }
+  refreshEmailPreview();
+}
+
+// 問い合わせの宛名に使う名前。取れていない・自社フォームの名前・メールアドレスそのものの場合は空にする
+function inquiryCustomerName(item) {
+  const name = String(item.sender_name || '').trim();
+  if (!name || name === '(unknown)' || name.indexOf('@') !== -1 || name === 'サイトウフーズ お問い合わせフォーム') return '';
+  return name;
+}
+
+// 「Customer Emails」の問い合わせメールから返信画面を開く
+function openInquiryReplyModal(itemId) {
+  const item = inboxItemCache[itemId];
+  if (!item) return;
+  if (item.replied_at) {
+    const when = new Date(item.replied_at).toLocaleString('en-GB', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+    });
+    const ok = confirm(`This inquiry was already answered by ${item.replied_by || '(unknown)'} (${when}).\nSend another reply?\n\nมีการตอบกลับไปแล้วโดย ${item.replied_by || '(ไม่ทราบ)'} (${when})\nต้องการตอบซ้ำหรือไม่?`);
+    if (!ok) return;
+  }
+  setEmailModalMode('inquiry');
+  emailModalOrderId = null;
+  emailModalInboxId = item.id;
+  emailModalCustomerName = inquiryCustomerName(item);
+  emailMessageBeforeTranslate = null;
+  emailWasTranslated = false;
+  emailAttachments = [];
+  renderEmailAttachments();
+  document.getElementById('email-modal-files').onchange = onEmailFilesSelected;
+
+  // 注文用のスリップリンクは、問い合わせの返信では使わない
+  document.getElementById('email-modal-slip-check').checked = false;
+  emailModalSlipLink = '';
+  emailModalTotalAmount = 0;
+
+  const addr = String(item.sender_email || '').trim();
+  const shown = addr && !/@saitofoods\.(com|shop)$/i.test(addr)
+    ? `${emailModalCustomerName ? emailModalCustomerName + ' ' : ''}<${addr}>`
+    : '(the customer who wrote this inquiry / ลูกค้าที่เขียนมา)';
+  document.getElementById('email-modal-to').value = shown;
+  const baseSubject = String(item.subject || '').trim();
+  document.getElementById('email-modal-subject').value = /^re\s*:/i.test(baseSubject) ? baseSubject : 'Re: ' + baseSubject;
+  document.getElementById('email-modal-message').value = '';
+  document.getElementById('email-translate-status').textContent = '';
+  document.getElementById('email-translate-undo').style.display = 'none';
+  document.getElementById('email-modal-send-btn').disabled = false;
+  document.getElementById('email-modal-send-btn').textContent = 'Send / ส่ง';
+  document.getElementById('email-modal-lang').value = 'th'; // 標準はタイ語(タイ人スタッフが返信する運用)
+  onEmailLangChange(); // タイ語に合わせて表示を整え、プレビューも更新する
+  document.getElementById('email-modal').classList.add('open');
+  document.getElementById('email-modal-message').oninput = refreshEmailPreview;
 }
 
 function refreshEmailPreview() {
@@ -3751,6 +3869,8 @@ function refreshEmailPreview() {
 
 function openEmailModal(order) {
   if (!order.customers?.email) { alert('This customer has no email on file. / ลูกค้ารายนี้ไม่มีอีเมลในระบบ'); return; }
+  setEmailModalMode('order');
+  emailModalInboxId = null;
   emailModalOrderId = order.id;
   emailModalCustomerName = `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim();
   emailMessageBeforeTranslate = null;
@@ -3795,6 +3915,8 @@ function openEmailModal(order) {
 function closeEmailModal() {
   document.getElementById('email-modal').classList.remove('open');
   emailModalOrderId = null;
+  emailModalInboxId = null;
+  setEmailModalMode('order');
   emailAttachments = [];
   renderEmailAttachments();
 }
@@ -3958,7 +4080,8 @@ async function saveStaffMessage() {
 // 宛先は画面には表示するが、実際に送信する際はGAS側がorder_idから毎回取得し直す
 // (このtoフィールドの値自体は送信リクエストに含めない。改ざん防止のため)。
 async function sendCustomEmail() {
-  if (!emailModalOrderId) return;
+  const isInquiry = emailModalMode === 'inquiry';
+  if (isInquiry ? !emailModalInboxId : !emailModalOrderId) return;
   const subject = STAFF_EMAIL_FIXED_SUBJECT;
   const message = document.getElementById('email-modal-message').value.trim();
   if (!message) { alert('Please write a message. / กรุณากรอกข้อความ'); return; }
@@ -3982,10 +4105,11 @@ async function sendCustomEmail() {
     // ログイン中のスタッフの「通行証」(アクセストークン)を一緒に送る。GAS側でSupabaseに照会して本人確認する。
     const { data: sess } = await supabaseClient.auth.getSession();
     const access_token = sess && sess.session ? sess.session.access_token : '';
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'sendStaffEmail', access_token, order_id: emailModalOrderId, subject, body, attachments }),
-    });
+    // お問い合わせへの返信は、問い合わせのIDだけを渡す(宛先はGAS側が元のメールから決める)
+    const payload = isInquiry
+      ? { action: 'replyInboxEmail', access_token, inbox_id: emailModalInboxId, body, attachments }
+      : { action: 'sendStaffEmail', access_token, order_id: emailModalOrderId, subject, body, attachments };
+    const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     const json = await res.json();
     if (json.status !== 'ok') {
       alert('Send failed / ส่งไม่สำเร็จ: ' + (json.message || ''));
@@ -3994,6 +4118,12 @@ async function sendCustomEmail() {
       return;
     }
     closeEmailModal();
+    if (isInquiry) {
+      if (json.warning) {
+        alert('The reply was sent, but the "replied" mark could not be saved. Please tell the manager.\nส่งอีเมลตอบกลับแล้ว แต่บันทึกสถานะ "ตอบแล้ว" ไม่สำเร็จ กรุณาแจ้งผู้จัดการ');
+      }
+      loadInboxList();
+    }
   } catch (e) {
     alert('Send failed (network error). / ส่งไม่สำเร็จ (ข้อผิดพลาดเครือข่าย)');
     btn.disabled = false;
@@ -4058,6 +4188,7 @@ async function loadInboxBadge() {
 }
 
 let snsModalMode = 'inbox'; // 'inbox'(FB/IG) / 'email' / 'autopost'
+let inboxItemCache = {};    // 一覧に表示中の受信メッセージ(id → 行)。メール返信画面で使う
 
 function openSnsModal(mode) {
   snsModalMode = mode;
@@ -4089,6 +4220,10 @@ async function loadInboxList() {
 
   if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
   if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No messages / ไม่มีข้อความ</div>'; return; }
+
+  // 返信画面を開くときに使うため、読み込んだ行を控えておく
+  inboxItemCache = {};
+  data.forEach(i => { inboxItemCache[i.id] = i; });
 
   listEl.innerHTML = data.map(item => {
     const timeStr = new Date(item.received_at).toLocaleString('en-GB', {
@@ -4122,6 +4257,15 @@ async function loadInboxList() {
     const readBtn = item.is_read
       ? ''
       : `<button onclick="markInboxRead('${item.id}')">Mark as read / อ่านแล้ว</button>`;
+    // メールには「返信」ボタン(左端)と、返信済みの表示(誰が・いつ・送った文面)を出す
+    const replyBtn = isEmail
+      ? `<button onclick="openInquiryReplyModal('${item.id}')">✉️ Reply / ตอบกลับ</button>` : '';
+    const repliedHtml = (isEmail && item.replied_at)
+      ? `<div class="sns-replied">✅ Replied by ${escapeHtml(item.replied_by || '(unknown)')} · ${escapeHtml(new Date(item.replied_at).toLocaleString('en-GB', {
+          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+        }))} / ตอบแล้ว
+           <details><summary>Show reply / ดูข้อความที่ตอบ</summary><div class="sns-item-text sns-replied-body">${escapeHtml(item.reply_body || '')}</div></details>
+         </div>` : '';
     return `
       <div class="sns-item ${item.is_read ? '' : 'unread'}">
         <div class="sns-item-top">
@@ -4133,7 +4277,8 @@ async function loadInboxList() {
           <span class="sns-item-time">${timeStr}</span>
         </div>
         ${bodyHtml}
-        <div class="sns-item-actions">${readBtn}${permalinkBtn}</div>
+        ${repliedHtml}
+        <div class="sns-item-actions">${replyBtn}${readBtn}${permalinkBtn}</div>
       </div>`;
   }).join('');
 }
