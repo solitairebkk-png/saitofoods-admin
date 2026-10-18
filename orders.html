@@ -4096,8 +4096,10 @@ async function loadInboxList() {
     });
     const isEmail = item.platform === 'email';
     const typeLabel = isEmail ? 'Email' : (item.item_type === 'dm' ? 'DM' : 'Comment');
-    const permalinkBtn = item.permalink
-      ? `<a href="${escapeHtml(item.permalink)}" target="_blank">${isEmail ? 'Open in Gmail / เปิดใน Gmail' : 'Open post / เปิดโพสต์'}</a>` : '';
+    // メールの「Open in Gmail」は、リンクがオーナーのGmailアカウント指定で他のスタッフは開けないため出さない
+    // (本文と件名はこの画面に全文表示している)。FB/IGの「Open post」は従来どおり。
+    const permalinkBtn = (item.permalink && !isEmail)
+      ? `<a href="${escapeHtml(item.permalink)}" target="_blank">Open post / เปิดโพสต์</a>` : '';
     // メール: 左に原文(日本語)、右にタイ語訳(GASが取り込み時に機械翻訳して保存)を並べる
     const platformClass = isEmail ? 'email' : (item.platform === 'instagram' ? 'instagram' : 'facebook');
     const platformLabel = isEmail ? 'MAIL' : (item.platform === 'instagram' ? 'IG' : 'FB');
