@@ -693,7 +693,7 @@
       <description>骨取りノルウェーサバをお味噌と少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 ご飯がすすみます。</description>
       <link>https://saitofoods.com/en/products/1367.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06151522_6a2fb63882be4.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1474,7 +1474,7 @@
       <description>北海道大豆を使用した小粒の納豆です。3パックセット タレ、からし付き</description>
       <link>https://saitofoods.com/en/products/1176.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868855340_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
