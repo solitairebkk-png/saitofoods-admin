@@ -1609,10 +1609,12 @@ const PICKUP_RICE_COLS = [
   { key: 'nigata', label: 'Niigata' },
 ];
 
+// 現金/振込みの区別は、お客様が選んだ支払い方法(payment_method)ではなく、実際に送金された証拠で判定する(2026-10-19変更)。
+// スリップがアップロード済み(お客様 or スタッフ添付)、またはスリップなしで振込みを手動確認済み → 振込み。
+// それ以外(まだ送金されていない)→ 現金(配達時に集金する前提)。
 function pickupPaymentKind(order) {
-  if (order.payment_method === 'cash') return 'cash';
-  if (order.payment_method === 'qr') return 'transfer';
-  return 'none'; // 支払い方法が未選択
+  if (order.slip_image_url || order.manual_payment_confirmed) return 'transfer';
+  return 'cash';
 }
 
 function buildPickupSection(dateStr, orders) {
