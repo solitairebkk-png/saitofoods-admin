@@ -702,6 +702,7 @@
   </div>
 
   <div id="pickup-sheet-bar" style="display:none; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+    <button class="btn" id="depart-all-btn" style="background:var(--navy);color:#fff;" onclick="departAllSriracha()">🚴 Depart all / ออกเดินทางทั้งหมด</button>
     <button class="btn" id="pickup-export-btn" style="background:#2f6f3e;color:#fff;" onclick="exportPickupToSheet()">📊 Pickup Sheet / ส่งออกไป Google Sheets</button>
     <button class="btn ghost" onclick="openPickupSheet()">🖨 Print view / พิมพ์</button>
     <span style="font-size:12px;color:var(--text-muted);">Exports the nearest delivery date in the list below to a new tab in the SPDELI2026 spreadsheet (existing tabs are never changed). / ส่งออกวันจัดส่งที่ใกล้ที่สุดในรายการไปเป็นแท็บใหม่ใน Google Sheets (ไม่แก้แท็บเดิม)</span>
@@ -2824,6 +2825,48 @@ async function departOrder(orderId) {
     if (staffRow) {
       await supabaseClient.from('staff').update({ selection_count: (staffRow.selection_count || 0) + 1 }).eq('id', staffId);
     }
+  }
+  loadOrders();
+}
+
+// シラチャ・パタヤタブ: 表示中の注文をまとめて1回で「出発」にする(2026-10-19追加)。
+// シラチャ・パタヤは全部の注文が同時に出発する運用のため、1件ずつ押さずに済むようにした。
+// 個別のDepartボタンと同じく、「Sriracha Deliver」アカウントを自動で割り当て、出発時刻は全件同じ時刻にする。
+// ・対象は「まだ出発していない注文のうち、いちばん近い配送日」の分だけ(先の日付の注文を誤って出発にしないため)
+// ・個別ボタンと同じ条件で、伝票が未印刷、または量り売りの重量メールが未送信の注文は飛ばす(件数を確認画面に出す)
+async function departAllSriracha() {
+  const pending = (lastPickupRows || []).filter(o =>
+    o.order_type === 'delivery' && !o.is_cancelled && !o.departed_at && o.delivery_date);
+  if (pending.length === 0) {
+    alert('ไม่มีคำสั่งซื้อที่รอออกเดินทาง / No orders waiting to depart.');
+    return;
+  }
+  const nearest = pending.map(o => o.delivery_date).sort()[0];
+  const sameDay = pending.filter(o => o.delivery_date === nearest);
+  const ready = sameDay.filter(o => o.is_slip_printed && !(o.has_weight_items && !o.weight_email_sent));
+  const skipped = sameDay.length - ready.length;
+  const laterCount = pending.length - sameDay.length;
+  if (ready.length === 0) {
+    alert(`Cannot depart: all ${sameDay.length} order(s) for ${nearest} are blocked (slip not printed / weight email not sent).\nออกเดินทางไม่ได้: ทั้ง ${sameDay.length} รายการของวันที่ ${nearest} ยังไม่พร้อม (ยังไม่พิมพ์สลิป / ยังไม่ส่งอีเมลน้ำหนัก)`);
+    return;
+  }
+  let msg = `Depart ${ready.length} order(s) for ${nearest} all at once?\nออกเดินทาง ${ready.length} รายการ (วันที่ ${nearest}) พร้อมกันหรือไม่?`;
+  if (skipped > 0) msg += `\n\n⚠️ ${skipped} order(s) will be skipped (slip not printed / weight email not sent).\nข้าม ${skipped} รายการ (ยังไม่พิมพ์สลิป / ยังไม่ส่งอีเมลน้ำหนัก)`;
+  if (laterCount > 0) msg += `\n\n(${laterCount} order(s) with later dates are not included.\nไม่รวม ${laterCount} รายการของวันถัดไป)`;
+  if (!confirm(msg)) return;
+
+  const btn = document.getElementById('depart-all-btn');
+  if (btn) btn.disabled = true;
+  try {
+    // departed_at が空の注文だけ更新する(確認画面を開いている間に別のスタッフが出発を押した注文を、上書きしないため)
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({ assigned_staff_id: srirachaRouteStaffId || null, departed_at: new Date().toISOString() })
+      .in('id', ready.map(o => o.id))
+      .is('departed_at', null);
+    if (error) { alert('บันทึกไม่สำเร็จ / Save failed: ' + error.message); return; }
+  } finally {
+    if (btn) btn.disabled = false;
   }
   loadOrders();
 }
