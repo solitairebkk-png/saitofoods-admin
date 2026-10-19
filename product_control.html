@@ -1146,6 +1146,13 @@ async function saveProduct(productId) {
 
   if (!payload.name_ja) { showSaveMsg('商品名(日)を入力してください / Please enter a Japanese name', true); return; }
 
+  // 既存商品で「並び順」欄を触っていない場合は sort_order を送らない。
+  // (画面を開いた時点の古い値で、並べ替え画面で保存した順番を上書きしてしまうのを防ぐ)
+  const sortInputEl = g('.e-sort');
+  if (!productId.startsWith('new-') && sortInputEl.value === sortInputEl.defaultValue) {
+    delete payload.sort_order;
+  }
+
   const selectedCatIds = [...editRow.querySelectorAll('.e-cat:checked')].map(el => el.value);
 
   let productRowId = productId;
@@ -1161,22 +1168,52 @@ async function saveProduct(productId) {
 
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
 
-  // カテゴリ紐付けを一旦削除して選択分を入れ直す
-  const { error: catDeleteErr } = await supabaseClient.from('product_categories').delete().eq('product_id', productRowId);
-  if (catDeleteErr) {
-    alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
-    showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
+  // カテゴリ紐付けは「全削除して入れ直す」のではなく、差分だけ更新する。
+  // (全削除すると、並べ替え画面で保存したカテゴリ内の順番が毎回リセットされてしまうため)
+  // 既に紐付いていて、今回も選択されているカテゴリは何もしない = 並び順がそのまま残る。
+  const { data: currentLinks, error: curLinkErr } = await supabaseClient
+    .from('product_categories').select('category_id').eq('product_id', productRowId);
+  if (curLinkErr) {
+    alert('カテゴリの更新に失敗しました(取得段階) / Failed to update categories (fetch step):\n' + curLinkErr.message);
+    showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + curLinkErr.message, true);
     loadProducts(productRowId, fallbackAnchorIds);
     return;
   }
+  const currentCatIds = (currentLinks || []).map(r => String(r.category_id));
+  const selectedSet = new Set(selectedCatIds.map(String));
+  const removeCatIds = currentCatIds.filter(cid => !selectedSet.has(cid));
+  const addCatIds = selectedCatIds.filter(cid => !currentCatIds.includes(String(cid)));
 
-  if (selectedCatIds.length > 0) {
-    // 新規に紐付けたカテゴリでは、そのカテゴリの末尾に追加する(既存の並び順を壊さないため)
-    const insertRows = selectedCatIds.map(cid => {
-      const existing = categoryPcRows[cid] || [];
-      const maxOrder = existing.reduce((max, r) => Math.max(max, r.sort_order ?? -1), -1);
-      return { product_id: productRowId, category_id: cid, sort_order: maxOrder + 1 };
-    });
+  if (removeCatIds.length > 0) {
+    const { error: catDeleteErr } = await supabaseClient
+      .from('product_categories').delete().eq('product_id', productRowId).in('category_id', removeCatIds);
+    if (catDeleteErr) {
+      alert('カテゴリの更新に失敗しました(削除段階) / Failed to update categories (delete step):\n' + catDeleteErr.message);
+      showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + catDeleteErr.message, true);
+      loadProducts(productRowId, fallbackAnchorIds);
+      return;
+    }
+  }
+
+  if (addCatIds.length > 0) {
+    // 新しく紐付けたカテゴリだけ、そのカテゴリの末尾に追加する(既存の並び順を壊さないため)。
+    // 末尾の番号は、画面の古いキャッシュではなくDBの最新値から求める。
+    let insertRows;
+    try {
+      insertRows = await Promise.all(addCatIds.map(async cid => {
+        const { data: topRow, error: topErr } = await supabaseClient
+          .from('product_categories').select('sort_order').eq('category_id', cid)
+          .order('sort_order', { ascending: false, nullsFirst: false }).limit(1);
+        if (topErr) throw topErr;
+        const maxOrder = (topRow && topRow.length && topRow[0].sort_order != null) ? topRow[0].sort_order : -1;
+        return { product_id: productRowId, category_id: cid, sort_order: maxOrder + 1 };
+      }));
+    } catch (topErr) {
+      alert('カテゴリの更新に失敗しました(並び順取得) / Failed to update categories (order lookup):\n' + topErr.message);
+      showSaveMsg('商品は保存されましたが、カテゴリの更新に失敗しました / Product saved, but category update failed: ' + topErr.message, true);
+      loadProducts(productRowId, fallbackAnchorIds);
+      return;
+    }
     const { error: catInsertErr } = await supabaseClient.from('product_categories').insert(insertRows);
     if (catInsertErr) {
       alert('カテゴリの更新に失敗しました(登録段階) / Failed to update categories (insert step):\n' + catInsertErr.message);
