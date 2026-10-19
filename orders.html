@@ -1771,7 +1771,23 @@ async function exportPickupToSheet() {
     const kind = pickupPaymentKind(order);
     const payState = getPaymentState(order);
     const due = payState === 'paid' ? 0 : Math.max(0, total - (Number(order.paid_amount) || 0));
+    // Transfer / Cash / Dif 列用(2026-10-19)。支払い方法の文字は出さず、金額がどちらの列に入るかで区別する。
+    //  ・Transfer: 実際に振り込まれた額(入金確認済みの額 paid_amount。無ければスリップから読み取った額)。
+    //    入金の確認がまだ取れていない(paid_amountが0)注文は、請求額を入れて unverified=true にする(シート側で色を付ける)。
+    //  ・Cash: 配達時に現金で受け取る予定の額(請求額 − 入金済みの額)。
+    //  ・Dif: 振込額 − 請求額(振込額が請求額と違う場合のみ。+は多く振り込まれた、−は不足)。
+    const paidAmt = Number(order.paid_amount) || 0;
+    const slipAmt = Number(order.slip_amount_detected) || 0;
+    let transfer = 0, cash = 0, dif = 0, unverified = false;
+    if (kind === 'transfer') {
+      transfer = paidAmt > 0 ? paidAmt : (slipAmt > 0 ? slipAmt : total);
+      unverified = paidAmt <= 0;
+      if (!unverified && total > 0) dif = transfer - total;
+    } else {
+      cash = Math.max(0, total - paidAmt);
+    }
     return {
+      transfer, cash, dif, unverified,
       name, condo, room, isWs,
       // Googleスプレッドシート側のGAS(Pickup Sheet)がまだお米6列(末尾2列=旧nanatsu・blackrice)を
       // 前提にしているため、末尾に0を2つ足して従来の列位置を保つ。GAS側を4列に直したらこの2つを外す。
@@ -1950,7 +1966,7 @@ async function loadOrders() {
       has_weight_items, is_weight_confirmed, weight_email_sent, is_slip_printed, is_completed,
       is_cancelled, cancelled_at, cancelled_by, area_name,
       payment_method, payment_status, subtotal, coupon_code, discount_amount, points_used,
-      total_amount, shipping_cost, comment, staff_message_ja, staff_message_th, slip_image_url, paid_amount,
+      total_amount, shipping_cost, comment, staff_message_ja, staff_message_th, slip_image_url, slip_amount_detected, paid_amount,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
