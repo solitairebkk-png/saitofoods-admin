@@ -570,6 +570,7 @@ function renderProductRow(p) {
     exclAreas.length ? `<span class="tag unpub">🚫 ${exclAreas.join('・')}では販売不可</span>` : '',
     (p.excluded_condos || []).length ? `<span class="tag unpub">🚫 ${p.excluded_condos.join('・')}宛は販売不可</span>` : '',
     (p.order_cutoff_prev_day_hour ?? null) !== null ? `<span class="tag weight">⏰ 前日${p.order_cutoff_prev_day_hour}:00まで(シラチャ・パタヤ)</span>` : '',
+    (p.max_per_order ?? null) !== null ? `<span class="tag weight">🔢 1回の注文 ${p.max_per_order}個まで</span>` : '',
   ].join('');
 
   const imgCell = p.image_url
@@ -672,6 +673,7 @@ function toggleEdit(productId) {
         <label>単位 / Unit Label<input type="text" class="e-unitlabel" value="${p.unit_label || ''}" placeholder="kg"></label>
         <label>ポイント率% / Point Rate<input type="number" class="e-pointrate" min="0" step="0.1" value="${p.point_rate_percent ?? ''}"></label>
         <label>在庫数 / Stock Qty<input type="number" class="e-stock" min="0" step="1" value="${p.stock_qty ?? ''}" ${p.is_unlimited_stock ? 'disabled' : ''}></label>
+        <label>購入制限 / Max per order<input type="number" class="e-max-per-order" min="1" step="1" value="${p.max_per_order ?? ''}" placeholder="空欄=無制限 / blank = no limit"></label>
         <label>並び順 / Sort Order<input type="number" class="e-sort" value="${p.sort_order ?? ''}"></label>
         <label>保管 / Storage <span style="font-weight:400;color:var(--text-muted);font-size:10px;">※伝票で「冷凍・冷蔵」と「常温」を分けて表示します</span>
           <select class="e-storage">
@@ -1114,6 +1116,7 @@ async function saveProduct(productId) {
     is_unlimited_stock: g('.e-unlimited').checked,
     stock_qty: g('.e-unlimited').checked ? null : (parseInt(g('.e-stock').value, 10) || 0),
     sort_order: g('.e-sort').value ? parseInt(g('.e-sort').value, 10) : null,
+    max_per_order: (() => { const n = parseInt(g('.e-max-per-order').value, 10); return n >= 1 ? n : null; })(),
     image_url: g('.e-image-1').value.trim() || null,
     image_url_2: g('.e-image-2').value.trim() || null,
     image_url_3: g('.e-image-3').value.trim() || null,

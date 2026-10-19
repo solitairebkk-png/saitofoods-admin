@@ -1115,7 +1115,7 @@ async function loadCartItems() {
 
   const { data: fetchedProducts, error } = await supabaseClient
     .from('products')
-    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty, excluded_areas, excluded_condos, order_cutoff_prev_day_hour')
+    .select('id, name_ja, name_en, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, image_url, is_unlimited_stock, stock_qty, excluded_areas, excluded_condos, order_cutoff_prev_day_hour, max_per_order')
     .in('id', ids);
 
   if (error || !fetchedProducts) {
@@ -1151,8 +1151,19 @@ async function loadCartItems() {
     unit_price: p.unit_price,
     unit_label: p.unit_label,
     image_url: p.image_url,
-    quantity: Math.max(1, parseInt(map[p.id], 10) || 1),
-    maxQty: p.is_unlimited_stock ? 999 : (p.stock_qty || 0),
+    // 1回の注文での購入上限(products.max_per_order)があれば、在庫数との小さい方を上限にする。
+    // 以前にカートへ入れた数が上限を超えている場合も、ここで上限まで自動的に減らす(2026-10-19)
+    orderLimit: (Number(p.max_per_order) >= 1 ? Number(p.max_per_order) : null),
+    quantity: (() => {
+      const q = Math.max(1, parseInt(map[p.id], 10) || 1);
+      const lim = Number(p.max_per_order) >= 1 ? Number(p.max_per_order) : null;
+      return lim !== null ? Math.min(q, lim) : q;
+    })(),
+    maxQty: (() => {
+      const stockMax = p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
+      const lim = Number(p.max_per_order) >= 1 ? Number(p.max_per_order) : null;
+      return lim !== null ? Math.min(stockMax, lim) : stockMax;
+    })(),
     excluded_condos: p.excluded_condos || [],
     cutoff_hour: p.order_cutoff_prev_day_hour ?? null,
   }));
@@ -1191,6 +1202,7 @@ function renderCart() {
         <div class="cart-item-info">
           <div class="cart-item-name">${displayName}${isWeight ? `<span class="cart-item-weight-tag">${i18nText('cart.weightTag')}</span>` : ''}</div>
           <div class="cart-item-price">${priceLabel}</div>
+          ${item.orderLimit ? `<div style="font-size:11px;color:#b45309;margin-top:2px;">1回のご注文 ${item.orderLimit}個まで / Limit ${item.orderLimit} per order</div>` : ''}
         </div>
         <div class="cart-item-controls">
           <button class="qty-btn" onclick="updateQty(${i}, -1)">−</button>
@@ -1209,6 +1221,10 @@ function updateQty(index, delta) {
   const item = cart[index];
   if (!item) return;
   const max = item.maxQty && item.maxQty > 0 ? item.maxQty : 999;
+  if (delta > 0 && item.orderLimit && item.quantity >= item.orderLimit) {
+    alert('この商品は1回のご注文 ' + item.orderLimit + '個までです / Limit ' + item.orderLimit + ' per order for this item.');
+    return;
+  }
   item.quantity = Math.max(1, Math.min(max, item.quantity + delta));
   saveCartToStorage();
   renderCart();
@@ -1796,7 +1812,8 @@ async function submitOrder() {
     // サーバー側が投げるエラーコードを、お客様向けの分かりやすい文言に変換する
     const raw = (e && e.message) ? e.message : '';
     let friendly = '注文の送信に失敗しました / Failed to submit order';
-    if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
+    if (raw.includes('PRODUCT_LIMIT_EXCEEDED')) friendly = '申し訳ございません、1回のご注文の上限数を超えている商品があります(' + (raw.split(':').slice(1).join(':').trim() || '') + ')。カートの数量をご確認ください / Sorry, an item in your cart exceeds the per-order limit. Please review your cart.';
+    else if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
     else if (raw.includes('PRODUCT_UNPUBLISHED') || raw.includes('PRODUCT_NOT_FOUND')) friendly = '現在ご購入いただけない商品がカートに含まれています / Your cart contains an item that is no longer available.';
     else if (raw.includes('COUPON_EXPIRED')) friendly = 'クーポンの有効期限が切れています / This coupon has expired.';
     else if (raw.includes('COUPON_MAX_USES')) friendly = 'このクーポンは使用上限に達しています / This coupon has reached its usage limit.';
@@ -1850,7 +1867,8 @@ async function submitOutOfAreaOrder() {
   } catch (e) {
     const raw = (e && e.message) ? e.message : '';
     let friendly = '注文の送信に失敗しました / Failed to submit order';
-    if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
+    if (raw.includes('PRODUCT_LIMIT_EXCEEDED')) friendly = '申し訳ございません、1回のご注文の上限数を超えている商品があります(' + (raw.split(':').slice(1).join(':').trim() || '') + ')。カートの数量をご確認ください / Sorry, an item in your cart exceeds the per-order limit. Please review your cart.';
+    else if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
     else if (raw.includes('PRODUCT_NOT_FOUND')) friendly = '現在ご購入いただけない商品がカートに含まれています / Your cart contains an item that is no longer available.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';

@@ -77,7 +77,12 @@ const effectivePrice = (p) => {
   return (p.is_monthly_promotion && promo !== null && promo !== undefined && Number(promo) < Number(p.price)) ? Number(promo) : Number(p.price);
 };
 const isAvailable = (p) => !!(p.is_unlimited_stock || (p.stock_qty && p.stock_qty > 0));
-const maxQty = (p) => (p.is_unlimited_stock ? 999 : Math.max(0, p.stock_qty || 0));
+const orderLimit = (p) => { const n = Number(p.max_per_order); return n >= 1 ? n : null; };
+const maxQty = (p) => {
+  const stockMax = p.is_unlimited_stock ? 999 : Math.max(0, p.stock_qty || 0);
+  const lim = orderLimit(p);
+  return lim !== null ? Math.min(stockMax, lim) : stockMax;
+};
 const images = (p) => [p.image_url, p.image_url_2, p.image_url_3, p.image_url_4, p.image_url_5, p.image_url_6, p.image_url_7, p.image_url_8].filter(Boolean);
 const oneLine = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 
@@ -87,7 +92,7 @@ const T = {
     htmlLang: 'ja', home: 'トップ', products: '商品一覧', mypage: 'マイページ', langLabel: 'EN',
     crumbHome: 'トップ', crumbProducts: '商品一覧',
     inStock: '在庫あり', outOfStock: '在庫なし', outOfStockBtn: '在庫なし',
-    add: 'カートに入れる', added: 'カートに入れました', viewCart: 'カートを見る', maxed: 'これ以上は入れられません(在庫の上限)',
+    add: 'カートに入れる', added: 'カートに入れました', viewCart: 'カートを見る', maxed: 'これ以上は入れられません(在庫の上限)', maxedLimit: 'ご注文の上限に達しました(1回のご注文 {n}個まで)', limitNote: '※ 1回のご注文 {n}個までです。',
     qty: '数量', perUnit: '1パックの目安', weightNote: '※ 量り売りの商品です。ご注文後に重さを量って、金額を確定します。',
     excludedNote: '※ お届け先のエリアや建物によっては、ご注文いただけない場合があります。',
     unavailable: 'この商品は現在お取り扱いしておりません。', descTitle: '商品説明', descJaOnly: '',
@@ -101,7 +106,7 @@ const T = {
     htmlLang: 'en', home: 'Home', products: 'Products', mypage: 'My Page', langLabel: '日本語',
     crumbHome: 'Home', crumbProducts: 'Products',
     inStock: 'In stock', outOfStock: 'Out of stock', outOfStockBtn: 'Out of stock',
-    add: 'Add to cart', added: 'Added to cart', viewCart: 'View cart', maxed: 'You have reached the stock limit.',
+    add: 'Add to cart', added: 'Added to cart', viewCart: 'View cart', maxed: 'You have reached the stock limit.', maxedLimit: 'Order limit reached ({n} per order).', limitNote: '* Limit {n} per order.',
     qty: 'Quantity', perUnit: 'Approx. per pack', weightNote: '* Sold by weight. The final amount is confirmed after your order is weighed.',
     excludedNote: '* This item may not be available for some delivery areas or buildings.',
     unavailable: 'This item is currently unavailable.', descTitle: 'Description', descJaOnly: '(Description in Japanese)',
@@ -166,9 +171,9 @@ function buildPage(p, lang, cats) {
     : '';
 
   const clientCfg = {
-    id: p.id, lang, max: maxQty(p), price: Number(p.price), unitPrice: p.unit_price === null ? null : Number(p.unit_price),
+    id: p.id, lang, max: maxQty(p), limit: orderLimit(p), price: Number(p.price), unitPrice: p.unit_price === null ? null : Number(p.unit_price),
     unitLabel: p.unit_label || '', weight: isWeight, images: imgs,
-    url, title: name, t: { copyManual: t.shareCopyManual, igCopied: t.shareIgCopied, copied: t.shareCopied, inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, unavailable: t.unavailable },
+    url, title: name, t: { copyManual: t.shareCopyManual, igCopied: t.shareIgCopied, copied: t.shareCopied, inStock: t.inStock, outOfStock: t.outOfStock, add: t.add, added: t.added, maxed: t.maxed, maxedLimit: t.maxedLimit, unavailable: t.unavailable },
   };
 
   return `<!DOCTYPE html>
@@ -334,6 +339,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     <div class="added" id="added">${t.added}<a href="/cart.html">${t.viewCart} ›</a></div>
     ${isWeight ? `<div class="note">${t.weightNote}</div>` : ''}
     ${showExcluded ? `<div class="note">${t.excludedNote}</div>` : ''}
+    ${orderLimit(p) !== null ? `<div class="note">${t.limitNote.replace('{n}', orderLimit(p))}</div>` : ''}
     <div class="note">${t.delivery}</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">${t.share}</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">${t.shareCopied}</span></div>
   </div>
@@ -428,7 +434,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     if (P.max <= 0) return;
     var c = readCart();
     var cur = Number(c[P.id]) || 0;
-    if (cur >= P.max) { alert(P.t.maxed); return; }
+    if (cur >= P.max) { alert(P.limit && P.max === P.limit ? P.t.maxedLimit.replace('{n}', P.limit) : P.t.maxed); return; }
     c[P.id] = Math.min(P.max, cur + qty);
     try { localStorage.setItem('saitofoods_cart', JSON.stringify(c)); } catch (e) {}
     refreshCount();
@@ -437,7 +443,9 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
 
   // 価格と在庫だけ最新の値を読み直す(取得できなければ、ページに書いてある値のまま)
   function apply(r) {
-    P.max = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var stockMax = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var lim = Number(r.max_per_order); P.limit = lim >= 1 ? lim : null;
+    P.max = P.limit ? Math.min(stockMax, P.limit) : stockMax;
     var price = Number(r.price), promo = r.promotion_price;
     var eff = (r.is_monthly_promotion && promo !== null && promo !== undefined && Number(promo) < price) ? Number(promo) : price;
     var el = document.getElementById('price');
@@ -454,7 +462,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
   }
   refreshCount();
   try {
-    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published&limit=1',
+    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published,max_per_order&limit=1',
       { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
       .then(function (res) { return res.ok ? res.json() : []; })
       .then(function (rows) { if (rows && rows[0]) apply(rows[0]); })

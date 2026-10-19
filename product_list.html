@@ -550,7 +550,7 @@ function loadCartFromStorage() {
     Object.entries(map).forEach(([pid, qty]) => {
       const product = allProducts.find(p => p.id === pid);
       if (!product) return;
-      const maxQty = isAvailable(product) ? (product.is_unlimited_stock ? 999 : product.stock_qty) : 0;
+      const maxQty = isAvailable(product) ? maxQtyFor(product) : 0;
       const safeQty = Math.max(0, Math.min(maxQty, qty));
       if (safeQty > 0) cart[product.id] = { product, qty: safeQty };
     });
@@ -568,8 +568,15 @@ function effectivePrice(p) {
   return (p.is_monthly_promotion && promo !== null && promo !== undefined && promo < p.price) ? promo : p.price;
 }
 
+// 1回の注文での購入上限(products.max_per_order。空欄=無制限)。在庫数との小さい方がカートに入れられる上限になる(2026-10-19)
+function orderLimitFor(p) {
+  const n = Number(p.max_per_order);
+  return n >= 1 ? n : null;
+}
 function maxQtyFor(p) {
-  return p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
+  const stockMax = p.is_unlimited_stock ? 999 : (p.stock_qty || 0);
+  const lim = orderLimitFor(p);
+  return lim !== null ? Math.min(stockMax, lim) : stockMax;
 }
 
 async function supabaseRest(method, path, body) {
@@ -929,7 +936,7 @@ function productCardHtml(p) {
        </div>`
     : `<button class="add-cart-btn" onclick="event.stopPropagation(); changeQty('${p.id}', 1)">${i18nText('plist.addBtn')}</button>`;
   const primaryName = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
-  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${primaryName}</div>${p.is_local_special ? `<div class="product-local-tag">${i18nText('plist.localSpecial')}</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">${i18nText('plist.weightSale')}</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
+  return `<div class="product-card" onclick="openPModal('${p.id}')"><div class="product-img-wrap">${img}<button class="fav-btn ${isFav ? 'active' : ''}" data-pid="${p.id}" onclick="event.stopPropagation(); toggleFavorite('${p.id}', this)"><svg class="heart-icon" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-10.2-9.1C.2 8.2 1 4.6 4.2 3.2c2.4-1 5.1-.2 6.8 1.8L12 6.2l1-1.2c1.7-2 4.4-2.8 6.8-1.8 3.2 1.4 4 5 2.4 8.2C19.5 15.9 12 20.5 12 20.5z"/></svg></button></div><div class="product-body"><div class="product-name-ja">${primaryName}</div>${p.is_local_special ? `<div class="product-local-tag">${i18nText('plist.localSpecial')}</div>` : ''}${isWeight ? `<div class="product-local-tag" style="color:#1c5279;">${i18nText('plist.weightSale')}</div>` : ''}${orderLimitFor(p) !== null ? `<div class="product-local-tag" style="color:#b45309;">${i18nText('plist.maxPerOrder').replace('{n}', orderLimitFor(p))}</div>` : ''}<div class="product-bottom"><div class="product-price">${priceLabel}</div>${stepper}</div></div></div>`;
 }
 
 function toggleSearchClearBtn(inputId, btnId) {
@@ -962,6 +969,11 @@ function changeQty(productId, delta) {
   const product = allProducts.find(p => p.id === productId);
   if (!product) return;
   const current = cart[productId]?.qty || 0;
+  const lim = orderLimitFor(product);
+  if (delta > 0 && lim !== null && current >= lim) {
+    alert(i18nText('plist.limitReached').replace('{n}', lim));
+    return;
+  }
   const next = Math.max(0, Math.min(maxQtyFor(product), current + delta));
   if (next === 0) delete cart[productId];
   else cart[productId] = { product, qty: next };
@@ -1121,7 +1133,8 @@ function openPModal(productId, fromBack) {
   const alreadyInCart = cart[productId]?.qty || 0;
   const available = isAvailable(p);
   if (!available || alreadyInCart >= maxQtyFor(p)) {
-    addBtn.textContent = i18nText('plist.outOfStock');
+    const limHit = available && orderLimitFor(p) !== null && alreadyInCart >= orderLimitFor(p);
+    addBtn.textContent = limHit ? i18nText('plist.limitReached').replace('{n}', orderLimitFor(p)) : i18nText('plist.outOfStock');
     addBtn.disabled = true;
   } else {
     addBtn.textContent = i18nText('plist.addToCart');

@@ -80,6 +80,8 @@
     'plist.addToCart': { ja: 'カートに入れる / Add to cart', en: 'Add to cart' },
     'plist.outOfStock': { ja: '在庫切れ / Out of stock', en: 'Out of stock' },
     'plist.outOfStockShort': { ja: '在庫切れ', en: 'Out of stock' },
+    'plist.maxPerOrder': { ja: '1回のご注文 {n}個まで', en: 'Limit {n} per order' },
+    'plist.limitReached': { ja: 'ご注文の上限に達しました(1回のご注文 {n}個まで)', en: 'Order limit reached ({n} per order)' },
     'plist.addShort': { ja: '+ 追加', en: '+ Add' },
     'plist.addBtn': { ja: 'カートに追加', en: 'Add to cart' },
     'plist.localSpecial': { ja: '🏠 ローカル限定', en: '🏠 Local special' },
