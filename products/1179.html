@@ -162,6 +162,7 @@
     <div class="added" id="added">カートに入れました<a href="/cart.html">カートを見る ›</a></div>
     <div class="note">※ 量り売りの商品です。ご注文後に重さを量って、金額を確定します。</div>
     
+    
     <div class="note">バンコク・シラチャ・パタヤへお届けします。</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 この商品を共有</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">リンクをコピーしました ✓</span></div>
   </div>
@@ -207,7 +208,7 @@
 
 <script>
 (function () {
-  var P = {"id":"7557775c-a165-4f27-9f39-4b420cb020e9","lang":"ja","max":1,"price":270,"unitPrice":100,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555365802_slot1.jpg"],"url":"https://saitofoods.com/products/1179.html","title":"鹿児島県産 冷凍ブリカマ　約250g-300g","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","unavailable":"この商品は現在お取り扱いしておりません。"}};
+  var P = {"id":"7557775c-a165-4f27-9f39-4b420cb020e9","lang":"ja","max":1,"limit":null,"price":270,"unitPrice":100,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555365802_slot1.jpg"],"url":"https://saitofoods.com/products/1179.html","title":"鹿児島県産 冷凍ブリカマ　約250g-300g","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","maxedLimit":"ご注文の上限に達しました(1回のご注文 {n}個まで)","unavailable":"この商品は現在お取り扱いしておりません。"}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   
@@ -264,7 +265,7 @@
     if (P.max <= 0) return;
     var c = readCart();
     var cur = Number(c[P.id]) || 0;
-    if (cur >= P.max) { alert(P.t.maxed); return; }
+    if (cur >= P.max) { alert(P.limit && P.max === P.limit ? P.t.maxedLimit.replace('{n}', P.limit) : P.t.maxed); return; }
     c[P.id] = Math.min(P.max, cur + qty);
     try { localStorage.setItem('saitofoods_cart', JSON.stringify(c)); } catch (e) {}
     refreshCount();
@@ -273,7 +274,9 @@
 
   // 価格と在庫だけ最新の値を読み直す(取得できなければ、ページに書いてある値のまま)
   function apply(r) {
-    P.max = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var stockMax = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var lim = Number(r.max_per_order); P.limit = lim >= 1 ? lim : null;
+    P.max = P.limit ? Math.min(stockMax, P.limit) : stockMax;
     var price = Number(r.price), promo = r.promotion_price;
     var eff = (r.is_monthly_promotion && promo !== null && promo !== undefined && Number(promo) < price) ? Number(promo) : price;
     var el = document.getElementById('price');
@@ -290,7 +293,7 @@
   }
   refreshCount();
   try {
-    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published&limit=1',
+    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published,max_per_order&limit=1',
       { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
       .then(function (res) { return res.ok ? res.json() : []; })
       .then(function (rows) { if (rows && rows[0]) apply(rows[0]); })

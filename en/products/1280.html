@@ -162,6 +162,7 @@
     <div class="added" id="added">Added to cart<a href="/cart.html">View cart ›</a></div>
     
     
+    
     <div class="note">We deliver to Bangkok, Sriracha and Pattaya.</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 Share this item</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">Link copied ✓</span></div>
   </div>
@@ -199,7 +200,7 @@
 
 <script>
 (function () {
-  var P = {"id":"2058277e-d5c3-4a79-9d01-8b65742874aa","lang":"en","max":20,"price":142,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07041611_68679abc6e120.jpg"],"url":"https://saitofoods.com/en/products/1280.html","title":"Marian Plum Jam 110g","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","unavailable":"This item is currently unavailable."}};
+  var P = {"id":"2058277e-d5c3-4a79-9d01-8b65742874aa","lang":"en","max":20,"limit":null,"price":142,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07041611_68679abc6e120.jpg"],"url":"https://saitofoods.com/en/products/1280.html","title":"Marian Plum Jam 110g","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","maxedLimit":"Order limit reached ({n} per order).","unavailable":"This item is currently unavailable."}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   try { if (!localStorage.getItem('saitofoods_lang')) localStorage.setItem('saitofoods_lang', 'en'); } catch (e) {}
@@ -256,7 +257,7 @@
     if (P.max <= 0) return;
     var c = readCart();
     var cur = Number(c[P.id]) || 0;
-    if (cur >= P.max) { alert(P.t.maxed); return; }
+    if (cur >= P.max) { alert(P.limit && P.max === P.limit ? P.t.maxedLimit.replace('{n}', P.limit) : P.t.maxed); return; }
     c[P.id] = Math.min(P.max, cur + qty);
     try { localStorage.setItem('saitofoods_cart', JSON.stringify(c)); } catch (e) {}
     refreshCount();
@@ -265,7 +266,9 @@
 
   // 価格と在庫だけ最新の値を読み直す(取得できなければ、ページに書いてある値のまま)
   function apply(r) {
-    P.max = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var stockMax = r.is_unlimited_stock ? 999 : Math.max(0, r.stock_qty || 0);
+    var lim = Number(r.max_per_order); P.limit = lim >= 1 ? lim : null;
+    P.max = P.limit ? Math.min(stockMax, P.limit) : stockMax;
     var price = Number(r.price), promo = r.promotion_price;
     var eff = (r.is_monthly_promotion && promo !== null && promo !== undefined && Number(promo) < price) ? Number(promo) : price;
     var el = document.getElementById('price');
@@ -282,7 +285,7 @@
   }
   refreshCount();
   try {
-    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published&limit=1',
+    fetch(SB + '/rest/v1/products?id=eq.' + encodeURIComponent(P.id) + '&select=price,unit_price,promotion_price,is_monthly_promotion,stock_qty,is_unlimited_stock,is_published,max_per_order&limit=1',
       { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
       .then(function (res) { return res.ok ? res.json() : []; })
       .then(function (rows) { if (rows && rows[0]) apply(rows[0]); })
