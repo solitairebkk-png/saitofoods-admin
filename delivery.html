@@ -242,27 +242,31 @@ function confirmDone(orderId, question) {
   const who = o ? `${customerLabel(o)}\n${addressLabel(o)}` : '';
   return confirm(`${who}\n\n${question}`);
 }
-// 完了ボタンを押した瞬間の位置を「1回だけ」取得する(常時追跡はしない)。
-// 最大8秒で打ち切り、許可されていない・電波が悪い等で取れない場合は null を返す(完了処理は止めない)。
-function getCompletionLocation() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve(null);
-    let finished = false;
-    const finish = v => { if (!finished) { finished = true; resolve(v); } };
-    setTimeout(() => finish(null), 8500);
-    try {
-      navigator.geolocation.getCurrentPosition(
-        pos => finish({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          acc: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : null
-        }),
-        () => finish(null),
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
-      );
-    } catch (_) { finish(null); }
-  });
+// 位置は「写真を選んだ時・画面を開いた時」にバックグラウンドで取り、結果をキャッシュしておく。
+// 完了ボタンはキャッシュを即座に読むだけで、GPSの応答は絶対に待たない(取れなければ位置なしで完了)。
+let lastFix = null; // {lat,lng,acc,t}
+let fixInFlight = false;
+function refreshLocation() {
+  try {
+    if (!navigator.geolocation || fixInFlight) return;
+    fixInFlight = true;
+    setTimeout(() => { fixInFlight = false; }, 12000);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        fixInFlight = false;
+        lastFix = { lat: pos.coords.latitude, lng: pos.coords.longitude,
+          acc: Number.isFinite(pos.coords.accuracy) ? Math.round(pos.coords.accuracy) : null, t: Date.now() };
+      },
+      () => { fixInFlight = false; },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
+  } catch (_) { fixInFlight = false; }
 }
+function getCompletionLocation() {
+  refreshLocation(); // 次回用に更新を開始(待たない)
+  if (lastFix && Date.now() - lastFix.t < 15 * 60 * 1000) return Promise.resolve(lastFix);
+  return Promise.resolve(null);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshLocation(); });
 function escapeHtml(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -733,6 +737,7 @@ async function onPhotoPicked(orderId, input) {
   try {
     const blob = await shrinkImage(file);
     (staged[orderId] = staged[orderId] || []).push({ blob, url: URL.createObjectURL(blob) });
+    refreshLocation();
     await loadOrders();
   } catch (e) {
     $('main-error').textContent = 'อ่านรูปไม่ได้: ' + (e.message || e);
@@ -996,7 +1001,7 @@ async function resendEmail(orderId) {
 // ---------------- 起動 ----------------
 function enterMain() {
   $('who-label').textContent = currentStaff.name;
-  show('main-view');
+  show('main-view'); refreshLocation();
   loadOrders();
 }
 
