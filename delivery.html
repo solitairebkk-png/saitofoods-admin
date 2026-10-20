@@ -1136,7 +1136,10 @@ function rebuildCondoOptions() {
   const sel = $('search-condo'); if (!sel) return;
   const id = $('todo-list').classList.contains('hidden') ? 'done-list' : 'todo-list';
   const cnt = new Map();
-  lastLists[id].forEach(o => { const c = condoOf(o); if (c) cnt.set(c, (cnt.get(c) || 0) + 1); });
+  // プルダウンはシラチャ/パタヤの注文だけが対象(バンコクは単発が多く不要)。該当が無ければ非表示
+  const isSP = o => /sriracha|pattaya/i.test(String(o.area_name || '') + ' ' + String(o.delivery_time_slot || ''));
+  lastLists[id].forEach(o => { const c = condoOf(o); if (c && isSP(o)) cnt.set(c, (cnt.get(c) || 0) + 1); });
+  sel.classList.toggle('hidden', cnt.size === 0);
   const prev = sel.value;
   sel.innerHTML = '<option value="">🏢 ทุกคอนโด / All condos</option>' +
     [...cnt.entries()].sort((a, b) => a[0].localeCompare(b[0]))
@@ -1144,7 +1147,7 @@ function rebuildCondoOptions() {
   sel.value = cnt.has(prev) ? prev : '';
 }
 function applySearch() {
-  const condoSel = $('search-condo') ? $('search-condo').value : '';
+  const condoSel = ($('search-condo') && !$('search-condo').classList.contains('hidden')) ? $('search-condo').value : '';
   const q = normQ($('search-q') ? $('search-q').value : '');
   const tokens = q ? q.split(' ') : [];
   let shown = 0, total = 0;
