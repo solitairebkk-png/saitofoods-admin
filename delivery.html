@@ -690,6 +690,48 @@ async function translateNotes(list) {
   } catch (e) { /* 翻訳に失敗しても原文は表示されているので何もしない */ }
 }
 
+// 完了済みの写真: ボタンを押した注文だけ保管庫から読み込む(最初から全部読むと重いため)
+const donePhotos = {}; // orderId -> [objectURL]
+function photoViewHtml(o) {
+  const n = (o.delivery_photo_paths || []).length;
+  if (o.delivery_handed_over || o.delivery_photo_skipped || !n) return '';
+  const id = escapeHtml(o.id);
+  const urls = donePhotos[o.id];
+  if (urls) {
+    return `<div class="thumbs">${urls.map(u => `<div class="th"><img src="${u}" alt="" onclick="openPhoto('${u}')"></div>`).join('')}</div>`;
+  }
+  const dis = busy['ph-' + o.id] ? 'disabled' : '';
+  return `<div style="margin-top:8px"><button class="btn small" ${dis} onclick="viewDonePhotos('${id}')">${busy['ph-' + o.id] ? 'กำลังโหลด...' : '📷 ดูรูป (' + n + ')'}</button></div>`;
+}
+async function viewDonePhotos(orderId) {
+  if (busy['ph-' + orderId] || donePhotos[orderId]) return;
+  busy['ph-' + orderId] = true;
+  $('main-error').textContent = '';
+  await loadOrders();
+  try {
+    const order = await fetchOrder(orderId);
+    const urls = [];
+    for (const path of (order.delivery_photo_paths || [])) {
+      const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).download(path);
+      if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ: ' + error.message);
+      urls.push(URL.createObjectURL(data));
+    }
+    donePhotos[orderId] = urls;
+  } catch (e) {
+    $('main-error').textContent = e.message || String(e);
+  } finally {
+    delete busy['ph-' + orderId];
+    await loadOrders();
+  }
+}
+function openPhoto(url) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px';
+  ov.innerHTML = `<img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain"><div style="position:absolute;top:10px;right:16px;color:#fff;font-size:34px;line-height:1">×</div>`;
+  ov.onclick = () => ov.remove();
+  document.body.appendChild(ov);
+}
+
 function renderDone(list) {
   $('done-count').textContent = list.length;
   const el = $('done-list');
@@ -716,6 +758,7 @@ function renderDone(list) {
       ${memoHtml(o)}
       ${slipHtml(o)}
       ${mail}
+      ${photoViewHtml(o)}
       <div>${retry}${undo}</div>
     </div>`;
   }).join('');
