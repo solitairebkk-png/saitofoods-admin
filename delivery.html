@@ -584,12 +584,18 @@ function callBadge(o) {
   // 現金払い(未払い)は、不在で置いて帰った場合の確認のため目立たせる
   const cash = (o.payment_method === 'cash' && o.payment_status !== 'paid')
     ? ' <span class="badge warn">💵 เงินสด</span>' : '';
-  // 振込・QR払い: 入金確認(payment_status)をスタッフ画面に反映。15秒ごとの自動更新で切り替わる
+  // 振込・QR払い: 入金済みのときだけ、入金確認の時刻つきで表示(15秒ごとの自動更新で切り替わる)
   let pay = '';
-  if (o.payment_method !== 'cash') {
-    if (o.payment_status === 'paid') pay = ' <span class="badge paid">💰 ชำระเงินแล้ว (ตรวจสอบแล้ว)</span>';
-    else if (o.slip_state && o.slip_state !== 'none') pay = ' <span class="badge warn">🕐 ได้รับสลิปแล้ว รอตรวจสอบ</span>';
-    else pay = ' <span class="badge warn">⏳ ยังไม่ชำระเงิน</span>';
+  if (o.payment_method !== 'cash' && o.payment_status === 'paid') {
+    let t = '';
+    if (o.paid_at) {
+      const tz = 'Asia/Bangkok';
+      const day = d => new Date(d).toLocaleDateString('en-CA', { timeZone: tz });
+      const sameDay = day(o.paid_at) === day(new Date());
+      const dm = sameDay ? '' : new Date(o.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', timeZone: tz }) + ' ';
+      t = ' ' + dm + fmtTimeBkk(o.paid_at);
+    }
+    pay = ` <span class="badge paid">💰 ชำระเงินแล้ว${t}</span>`;
   }
   return main + cash + pay;
 }
