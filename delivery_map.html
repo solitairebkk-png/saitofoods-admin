@@ -249,8 +249,8 @@ async function loadDay() {
     return;
   }
 
-  // ルート用アカウント(エリア外配送の共用アカウント)は、個人の配送順を見る用途に合わないので除く
-  dayOrders = (data || []).filter(o => !(o.staff && o.staff.is_route_account));
+  // シラチャ等のルート用アカウント(Sriracha Deliver)も選択肢に含める
+  dayOrders = data || [];
 
   // その日に配達完了があったスタッフだけを選択肢にする
   const byStaff = new Map();
