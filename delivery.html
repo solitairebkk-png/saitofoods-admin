@@ -1035,6 +1035,25 @@ document.addEventListener('click', e => {
 // メモを書いている間も更新しない(書きかけの文字が消えないように)
 setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil && !Object.keys(memoEditing).length) loadOrders(); }, 15000);
 
+// アプリ本体の自動更新: 新しい版が公開されたら、作業の邪魔にならない時だけ自動で読み込み直す。
+// 撮影済みの写真・送信中・メモ入力中・カメラ起動中は絶対に再読み込みしない。
+let appHash = null;
+async function checkAppUpdate() {
+  try {
+    const res = await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const text = await res.text();
+    let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
+    if (appHash === null) { appHash = h; return; }
+    if (h === appHash) return;
+    const working = Object.keys(staged).length || Object.keys(busy).length || Object.keys(memoEditing).length || Date.now() < pickerUntil;
+    if (!working && !document.hidden) location.reload();
+  } catch (_) { /* オフライン等は無視 */ }
+}
+checkAppUpdate();
+setInterval(checkAppUpdate, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAppUpdate(); });
+
 (async function init() {
   try {
     const { data: { session } } = await supabaseClient.auth.getSession();
