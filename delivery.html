@@ -143,6 +143,9 @@
   .hidden { display: none !important; }
   input[type=file] { display: none; }
   .badge.paid { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
+  .tab { flex: 1 1 0; border: 2px solid #d1d5db; background: #fff; color: #374151; font-weight: 700; font-size: 15px; padding: 12px 6px; border-radius: 12px; }
+  .tab.active { background: var(--green); border-color: var(--green); color: #fff; }
 </style>
 </head>
 <body>
@@ -204,10 +207,12 @@
   <main>
     <div id="last-upd"></div>
     <div style="font-size:12px;color:#666;margin:4px 2px 0;">📍 บันทึกตำแหน่งเฉพาะตอนกดยืนยันส่งของเท่านั้น ไม่ได้ติดตามตลอดเวลา</div>
-    <div class="section-title">รอส่งรูป (<span id="todo-count">0</span>)</div>
+    <div class="tabs">
+      <button type="button" id="tab-todo" class="tab active" onclick="setTab('todo')">🚚 รอส่งรูป (<span id="todo-count">0</span>)</button>
+      <button type="button" id="tab-done" class="tab" onclick="setTab('done')">✅ ส่งแล้ววันนี้ (<span id="done-count">0</span>)</button>
+    </div>
     <div id="todo-list"></div>
-    <div class="section-title">ส่งแล้ววันนี้ (<span id="done-count">0</span>)</div>
-    <div id="done-list"></div>
+    <div id="done-list" class="hidden"></div>
     <div id="main-error" class="err"></div>
   </main>
 </div>
@@ -1053,6 +1058,16 @@ async function checkAppUpdate() {
 checkAppUpdate();
 setInterval(checkAppUpdate, 5 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAppUpdate(); });
+
+// 「รอส่งรูป(未完了)」と「ส่งแล้ววันนี้(完了済み)」をタブで切り替える(スクロールを短くするため)
+function setTab(name) {
+  $('todo-list').classList.toggle('hidden', name !== 'todo');
+  $('done-list').classList.toggle('hidden', name !== 'done');
+  $('tab-todo').classList.toggle('active', name === 'todo');
+  $('tab-done').classList.toggle('active', name === 'done');
+  try { sessionStorage.setItem('deliveryTab', name); } catch (_) {}
+}
+try { const t = sessionStorage.getItem('deliveryTab'); if (t === 'done') setTab('done'); } catch (_) {}
 
 (async function init() {
   try {
