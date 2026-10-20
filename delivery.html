@@ -146,6 +146,13 @@
   .tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
   .tab { flex: 1 1 0; border: 2px solid #d1d5db; background: #fff; color: #374151; font-weight: 700; font-size: 15px; padding: 12px 6px; border-radius: 12px; }
   .tab.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .searchbar { margin: 12px 0 0; }
+  .searchbar input { width: 100%; box-sizing: border-box; font-size: 16px; padding: 12px 14px; border: 2px solid #d1d5db; border-radius: 12px; background: #fff; }
+  #search-info { font-size: 13px; color: #6b7280; margin: 4px 4px 0; min-height: 0; }
+  .card.nomatch { display: none !important; }
+  .navbtns { position: fixed; right: 14px; bottom: calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; z-index: 20; }
+  .navbtns button { width: 52px; height: 52px; border-radius: 50%; border: 0; background: rgba(31,107,60,.92); color: #fff; font-size: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+  .navbtns button:active { transform: scale(.94); }
 </style>
 </head>
 <body>
@@ -207,6 +214,10 @@
   <main>
     <div id="last-upd"></div>
     <div style="font-size:12px;color:#666;margin:4px 2px 0;">📍 บันทึกตำแหน่งเฉพาะตอนกดยืนยันส่งของเท่านั้น ไม่ได้ติดตามตลอดเวลา</div>
+    <div class="searchbar">
+      <input type="search" id="search-q" placeholder="🔍 ค้นหาชื่อลูกค้า / Search customer" autocomplete="off" autocapitalize="off" oninput="applySearch()">
+      <div id="search-info"></div>
+    </div>
     <div class="tabs">
       <button type="button" id="tab-todo" class="tab active" onclick="setTab('todo')">🚚 รอส่งรูป (<span id="todo-count">0</span>)</button>
       <button type="button" id="tab-done" class="tab" onclick="setTab('done')">✅ ส่งแล้ววันนี้ (<span id="done-count">0</span>)</button>
@@ -215,6 +226,10 @@
     <div id="done-list" class="hidden"></div>
     <div id="main-error" class="err"></div>
   </main>
+  <div class="navbtns">
+    <button type="button" aria-label="previous" onclick="jumpCard(-1)">▲</button>
+    <button type="button" aria-label="next" onclick="jumpCard(1)">▼</button>
+  </div>
 </div>
 
 <script>
@@ -1108,6 +1123,44 @@ function setTab(name) {
   $('done-list').classList.toggle('hidden', name !== 'done');
   $('tab-todo').classList.toggle('active', name === 'todo');
   $('tab-done').classList.toggle('active', name === 'done');
+}
+
+// ---- お客様名の検索 / 上下ナビゲーション ----
+function normQ(v) { return String(v || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim(); }
+function applySearch() {
+  const q = normQ($('search-q') ? $('search-q').value : '');
+  const tokens = q ? q.split(' ') : [];
+  let shown = 0, total = 0;
+  ['todo-list', 'done-list'].forEach(id => {
+    const list = $(id);
+    list.querySelectorAll('.card').forEach(card => {
+      const nm = card.querySelector('.name');
+      const hay = normQ(nm ? nm.textContent : '');
+      const ok = tokens.every(t => hay.includes(t));
+      card.classList.toggle('nomatch', !ok);
+      if (!list.classList.contains('hidden')) { total++; if (ok) shown++; }
+    });
+  });
+  const info = $('search-info');
+  if (info) info.textContent = tokens.length ? (shown ? `พบ ${shown} / ${total} รายการ` : 'ไม่พบรายการ (ลองดูอีกแท็บด้วย)') : '';
+}
+const _renderTodo = renderTodo, _renderDone = renderDone;
+renderTodo = function (l) { _renderTodo(l); applySearch(); };
+renderDone = function (l) { _renderDone(l); applySearch(); };
+const _setTab = setTab;
+setTab = function (n) { _setTab(n); applySearch(); };
+
+// 右下の ▲▼: 表示中のカードを1件ずつ前後に移動(固定ヘッダーの高さ分を避ける)
+function jumpCard(dir) {
+  const list = $('todo-list').classList.contains('hidden') ? $('done-list') : $('todo-list');
+  const cards = [...list.querySelectorAll('.card')].filter(c => c.offsetParent !== null);
+  const bar = document.querySelector('.top-fixed');
+  const off = (bar ? bar.offsetHeight : 0) + 8;
+  let target = null;
+  if (dir > 0) target = cards.find(c => c.getBoundingClientRect().top > off + 4);
+  else for (const c of cards) { if (c.getBoundingClientRect().top < off - 4) target = c; else break; }
+  if (target) window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - off, behavior: 'smooth' });
+  else window.scrollTo({ top: dir > 0 ? document.documentElement.scrollHeight : 0, behavior: 'smooth' });
 }
 
 (async function init() {
