@@ -488,13 +488,13 @@ function rerenderFromCache() {
   renderDone(all.filter(o => o.delivered_at)
     .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
 }
-// 配達時間帯の並び順: 朝(Morning/เช้า) → "13:00-15:00" など開始時刻の早い順 → 時間指定なし(最後)
+// 配達時間帯の並び順: 時間指定なし(残りやすいので最初) → 朝(Morning/เช้า) → "13:00-15:00" など開始時刻の早い順
 function slotKey(o) {
   const s = String(o.delivery_time_slot || '');
   const m = s.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
   if (m) return (+m[1]) * 60 + (+m[2]) + (+m[3] * 60 + +m[4]) / 10000;
   if (/morning|เช้า/i.test(s)) return 0;
-  return 99999;
+  return -1;
 }
 // QR送金画面(スリップ)の撮影。現金払いには出さない。お客様が既にスリップを上げている注文は撮影不要。
 function slipHtml(o) {
