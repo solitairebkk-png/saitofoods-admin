@@ -1065,9 +1065,7 @@ function setTab(name) {
   $('done-list').classList.toggle('hidden', name !== 'done');
   $('tab-todo').classList.toggle('active', name === 'todo');
   $('tab-done').classList.toggle('active', name === 'done');
-  try { sessionStorage.setItem('deliveryTab', name); } catch (_) {}
 }
-try { const t = sessionStorage.getItem('deliveryTab'); if (t === 'done') setTab('done'); } catch (_) {}
 
 (async function init() {
   try {
