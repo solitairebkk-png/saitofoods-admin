@@ -142,6 +142,7 @@
   .hint { font-size: 13px; color: var(--gray); margin-top: 6px; }
   .hidden { display: none !important; }
   input[type=file] { display: none; }
+  .badge.paid { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 </style>
 </head>
 <body>
@@ -583,7 +584,14 @@ function callBadge(o) {
   // 現金払い(未払い)は、不在で置いて帰った場合の確認のため目立たせる
   const cash = (o.payment_method === 'cash' && o.payment_status !== 'paid')
     ? ' <span class="badge warn">💵 เงินสด</span>' : '';
-  return main + cash;
+  // 振込・QR払い: 入金確認(payment_status)をスタッフ画面に反映。15秒ごとの自動更新で切り替わる
+  let pay = '';
+  if (o.payment_method !== 'cash') {
+    if (o.payment_status === 'paid') pay = ' <span class="badge paid">💰 ชำระเงินแล้ว (ตรวจสอบแล้ว)</span>';
+    else if (o.slip_state && o.slip_state !== 'none') pay = ' <span class="badge warn">🕐 ได้รับสลิปแล้ว รอตรวจสอบ</span>';
+    else pay = ' <span class="badge warn">⏳ ยังไม่ชำระเงิน</span>';
+  }
+  return main + cash + pay;
 }
 
 function renderTodo(list) {
