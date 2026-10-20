@@ -147,6 +147,7 @@
   .tab { flex: 1 1 0; border: 2px solid #d1d5db; background: #fff; color: #374151; font-weight: 700; font-size: 15px; padding: 12px 6px; border-radius: 12px; }
   .tab.active { background: var(--green); border-color: var(--green); color: #fff; }
   .searchbar { margin: 12px 0 0; }
+  .searchbar select { width: 100%; box-sizing: border-box; font-size: 16px; padding: 12px 14px; margin-bottom: 8px; border: 2px solid #d1d5db; border-radius: 12px; background: #fff; }
   .searchbar input { width: 100%; box-sizing: border-box; font-size: 16px; padding: 12px 14px; border: 2px solid #d1d5db; border-radius: 12px; background: #fff; }
   #search-info { font-size: 13px; color: #6b7280; margin: 4px 4px 0; min-height: 0; }
   .card.nomatch { display: none !important; }
@@ -215,6 +216,7 @@
     <div id="last-upd"></div>
     <div style="font-size:12px;color:#666;margin:4px 2px 0;">📍 บันทึกตำแหน่งเฉพาะตอนกดยืนยันส่งของเท่านั้น ไม่ได้ติดตามตลอดเวลา</div>
     <div class="searchbar">
+      <select id="search-condo" onchange="applySearch()"><option value="">🏢 ทุกคอนโด / All condos</option></select>
       <input type="search" id="search-q" placeholder="🔍 ค้นหาชื่อลูกค้า / คอนโด · Name / Condo" autocomplete="off" autocapitalize="off" oninput="applySearch()">
       <div id="search-info"></div>
     </div>
@@ -1127,7 +1129,22 @@ function setTab(name) {
 
 // ---- お客様名の検索 / 上下ナビゲーション ----
 function normQ(v) { return String(v || '').normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim(); }
+const lastLists = { 'todo-list': [], 'done-list': [] };
+function condoOf(o) { return String((o.condo_name || (o.customers && o.customers.condo_name) || '')).trim(); }
+// 今のタブにあるコンドミニアム名だけを選択肢にする(件数つき)
+function rebuildCondoOptions() {
+  const sel = $('search-condo'); if (!sel) return;
+  const id = $('todo-list').classList.contains('hidden') ? 'done-list' : 'todo-list';
+  const cnt = new Map();
+  lastLists[id].forEach(o => { const c = condoOf(o); if (c) cnt.set(c, (cnt.get(c) || 0) + 1); });
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">🏢 ทุกคอนโด / All condos</option>' +
+    [...cnt.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([c, n]) => `<option value="${escapeHtml(c)}">${escapeHtml(c)} (${n})</option>`).join('');
+  sel.value = cnt.has(prev) ? prev : '';
+}
 function applySearch() {
+  const condoSel = $('search-condo') ? $('search-condo').value : '';
   const q = normQ($('search-q') ? $('search-q').value : '');
   const tokens = q ? q.split(' ') : [];
   let shown = 0, total = 0;
@@ -1136,19 +1153,25 @@ function applySearch() {
     list.querySelectorAll('.card').forEach(card => {
       const nm = card.querySelector('.name'), ad = card.querySelector('.addr'); // お客様名+コンドミニアム/住所
       const hay = normQ((nm ? nm.textContent : '') + ' ' + (ad ? ad.textContent : ''));
-      const ok = tokens.every(t => hay.includes(t));
+      const ok = tokens.every(t => hay.includes(t)) && (!condoSel || card.dataset.condo === condoSel);
       card.classList.toggle('nomatch', !ok);
       if (!list.classList.contains('hidden')) { total++; if (ok) shown++; }
     });
   });
   const info = $('search-info');
-  if (info) info.textContent = tokens.length ? (shown ? `พบ ${shown} / ${total} รายการ` : 'ไม่พบรายการ (ลองดูอีกแท็บด้วย)') : '';
+  if (info) info.textContent = (tokens.length || condoSel) ? (shown ? `พบ ${shown} / ${total} รายการ` : 'ไม่พบรายการ (ลองดูอีกแท็บด้วย)') : '';
 }
 const _renderTodo = renderTodo, _renderDone = renderDone;
-renderTodo = function (l) { _renderTodo(l); applySearch(); };
-renderDone = function (l) { _renderDone(l); applySearch(); };
+function afterRender(id, l) {
+  lastLists[id] = l || [];
+  [...$(id).querySelectorAll('.card')].forEach((card, i) => { if (l && l[i]) card.dataset.condo = condoOf(l[i]); });
+  rebuildCondoOptions();
+  applySearch();
+}
+renderTodo = function (l) { _renderTodo(l); afterRender('todo-list', l); };
+renderDone = function (l) { _renderDone(l); afterRender('done-list', l); };
 const _setTab = setTab;
-setTab = function (n) { _setTab(n); applySearch(); };
+setTab = function (n) { _setTab(n); rebuildCondoOptions(); applySearch(); };
 
 // 右下の ▲▼: 表示中のカードを1件ずつ前後に移動(固定ヘッダーの高さ分を避ける)
 function jumpCard(dir) {
