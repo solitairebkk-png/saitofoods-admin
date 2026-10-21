@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>お届け方法アンケート | サイトウフーズ Saito Foods</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo1.png">
+<style>
+  :root { --brand:#F5A93C; --brand-dark:#C97A1F; --accent:#FFD166; --cream:#FFF9EC; --ink:#3A2E1F; --line:#F0DFB8; --muted:#7a6a52; --ok:#2e7d32; --err:#b3261e; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Hiragino Sans','Noto Sans JP',sans-serif; background:var(--cream); color:var(--ink); line-height:1.7; -webkit-text-size-adjust:100%; }
+  header { background:linear-gradient(135deg,#FFCB4D 0%,var(--brand) 100%); border-bottom:4px solid var(--brand-dark); }
+  .wrap { max-width:640px; margin:0 auto; padding:0 16px; }
+  header .wrap { padding-top:20px; padding-bottom:18px; }
+  .brand { font-size:12px; font-weight:700; letter-spacing:1px; }
+  h1 { font-size:22px; line-height:1.35; margin-top:4px; }
+  main.wrap { padding-top:20px; padding-bottom:48px; }
+  .lead { font-size:15px; margin-bottom:18px; }
+  .lead small { display:block; color:var(--muted); font-size:13px; margin-top:6px; }
+  .card { background:#fff; border:2px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px; }
+  .card h2 { font-size:16px; line-height:1.5; margin-bottom:4px; }
+  .req { display:inline-block; font-size:11px; font-weight:800; color:#fff; background:var(--err); border-radius:10px; padding:0 8px; margin-left:6px; vertical-align:2px; }
+  .opt { display:inline-block; font-size:11px; font-weight:700; color:var(--muted); border:1px solid var(--line); border-radius:10px; padding:0 8px; margin-left:6px; vertical-align:2px; }
+  .hint { font-size:13px; color:var(--muted); margin-bottom:10px; }
+  .choice { display:block; position:relative; border:2px solid var(--line); border-radius:14px; padding:12px 14px 12px 44px; margin-top:10px; cursor:pointer; background:#fff; }
+  .choice input { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:20px; height:20px; accent-color:var(--brand-dark); }
+  .choice b { display:block; font-size:15px; }
+  .choice span { display:block; font-size:13px; color:var(--muted); margin-top:2px; }
+  .choice.on { border-color:var(--brand-dark); background:#FFF1D6; }
+  textarea { width:100%; min-height:96px; border:2px solid var(--line); border-radius:12px; padding:10px 12px; font:inherit; font-size:16px; color:var(--ink); resize:vertical; background:#fff; }
+  textarea:focus { outline:none; border-color:var(--brand-dark); }
+  .count { text-align:right; font-size:12px; color:var(--muted); margin-top:4px; }
+  .hp { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+  button.send { width:100%; border:0; border-radius:28px; background:var(--brand-dark); color:#fff; font:inherit; font-size:17px; font-weight:800; padding:14px; cursor:pointer; }
+  button.send:disabled { opacity:.55; cursor:default; }
+  .msg { font-size:14px; font-weight:700; margin-top:12px; text-align:center; min-height:1.5em; }
+  .msg.err { color:var(--err); }
+  .done { text-align:center; padding:28px 16px; }
+  .done .big { font-size:40px; }
+  .done h2 { font-size:20px; margin:8px 0; }
+  .done p { font-size:15px; }
+  .note { font-size:12px; color:var(--muted); text-align:center; margin-top:16px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">サイトウフーズ SAITO FOODS</div>
+    <h1>ハーモニックへのお届け方法についてのアンケート</h1>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <form id="form" novalidate>
+    <p class="lead">
+      いつもご利用ありがとうございます。お届け方法をより良くするため、皆さんのご意見を聞かせてください。
+      <small>匿名で、1分ほどで終わります。お名前やお部屋番号は聞きません。</small>
+    </p>
+
+    <section class="card">
+      <h2>1. 今後のお届け方法は、どちらが良いですか？<span class="req">必須</span></h2>
+      <p class="hint">人手の都合で、どちらか一方に統一したいと考えています。</p>
+      <label class="choice" id="cA">
+        <input type="radio" name="choice" value="A">
+        <b>A. 今まで通り、お部屋までお届け</b>
+        <span>到着時刻は目安になります</span>
+      </label>
+      <label class="choice" id="cB">
+        <input type="radio" name="choice" value="B">
+        <b>B. 決まった時間に、テーブルで受け取り</b>
+        <span>その時間に取りに来ていただきます</span>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>2. そう思う理由を教えてください<span class="opt">任意</span></h2>
+      <textarea id="reason" maxlength="1000" placeholder="例：在宅時間が決まっているので、など"></textarea>
+      <div class="count"><span id="n1">0</span>/1000</div>
+    </section>
+
+    <section class="card">
+      <h2>3. 最近のご利用頻度を教えてください<span class="opt">任意</span></h2>
+      <label class="choice"><input type="radio" name="frequency" value="weekly"><b>ほぼ毎週</b></label>
+      <label class="choice"><input type="radio" name="frequency" value="twice_month"><b>月に2〜3回</b></label>
+      <label class="choice"><input type="radio" name="frequency" value="monthly"><b>月1回程度</b></label>
+      <label class="choice"><input type="radio" name="frequency" value="none_recently"><b>最近は注文していない</b></label>
+    </section>
+
+    <section class="card">
+      <h2>4. お届けや注文について、ほかに感じていることがあればお書きください<span class="opt">任意</span></h2>
+      <textarea id="comment" maxlength="1000"></textarea>
+      <div class="count"><span id="n2">0</span>/1000</div>
+    </section>
+
+    <div class="hp" aria-hidden="true"><label>website <input type="text" id="website" tabindex="-1" autocomplete="off"></label></div>
+
+    <button class="send" id="send" type="submit">送信する</button>
+    <div class="msg" id="msg" role="status"></div>
+    <p class="note">いただいたご意見は、お届け方法の改善にのみ使わせていただきます。</p>
+  </form>
+
+  <section class="card done" id="done" hidden>
+    <div class="big">🙏</div>
+    <h2>ご協力ありがとうございました</h2>
+    <p>いただいたご意見をもとに、お届け方法を決めてまいります。</p>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk'; // 公開用キー(各ページにも書いてあるもの)
+  var DONE_KEY = 'survey_harmoniq_delivery_done_v1';
+
+  var form = document.getElementById('form');
+  var done = document.getElementById('done');
+  var msg = document.getElementById('msg');
+  var sendBtn = document.getElementById('send');
+  var reason = document.getElementById('reason');
+  var comment = document.getElementById('comment');
+
+  function showDone() { form.hidden = true; done.hidden = false; window.scrollTo(0, 0); }
+
+  // 同じ端末で回答済みなら、完了画面を表示(ブラウザ上の簡易チェック。匿名のため完全な重複防止ではありません)
+  try { if (localStorage.getItem(DONE_KEY) === '1') { showDone(); } } catch (e) {}
+
+  // 選択中の枠をハイライト
+  function refreshChoices() {
+    var labels = document.querySelectorAll('label.choice');
+    for (var i = 0; i < labels.length; i++) {
+      var input = labels[i].querySelector('input');
+      labels[i].classList.toggle('on', !!(input && input.checked));
+    }
+  }
+  form.addEventListener('change', refreshChoices);
+
+  reason.addEventListener('input', function () { document.getElementById('n1').textContent = reason.value.length; });
+  comment.addEventListener('input', function () { document.getElementById('n2').textContent = comment.value.length; });
+
+  function radioValue(name) {
+    var el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    msg.className = 'msg'; msg.textContent = '';
+
+    var choice = radioValue('choice');
+    if (!choice) {
+      msg.className = 'msg err';
+      msg.textContent = '質問1の A か B を選んでください。';
+      document.getElementById('cA').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // ボット対策(人には見えない欄に入力があれば送信しない)
+    if (document.getElementById('website').value) { showDone(); return; }
+
+    var row = {
+      choice: choice,
+      reason: reason.value.trim() || null,
+      frequency: radioValue('frequency'),
+      comment: comment.value.trim() || null
+    };
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = '送信中…';
+
+    // 匿名の投稿のみ。結果の読み戻しはしない(閲覧権限が無いため)
+    fetch(SUPABASE_URL + '/rest/v1/survey_harmoniq_delivery', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(row)
+    }).then(function (res) {
+      if (!res.ok) { throw new Error('HTTP ' + res.status); }
+      try { localStorage.setItem(DONE_KEY, '1'); } catch (e) {}
+      showDone();
+    }).catch(function () {
+      sendBtn.disabled = false;
+      sendBtn.textContent = '送信する';
+      msg.className = 'msg err';
+      msg.textContent = '送信できませんでした。電波の良い場所で、もう一度お試しください。';
+    });
+  });
+})();
+</script>
+</body>
+</html>
