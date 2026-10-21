@@ -76,7 +76,7 @@
       <description>北海道産の無洗米 ななつぼし 2kg袋です。 定番商品になりました! ほどよい甘みと粘り。 甘みと粘りのバランスがよく、あっさりとした食感です。 · お弁当や和食に。 冷めてもおいしいという特長から、お弁当やお寿司に最適です</description>
       <link>https://saitofoods.com/products/1085.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889219538_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>370.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -416,7 +416,7 @@
       <description>メーカー欠品の為に類似した製品に切り替え。 サイズが大きくなったので、8個入りに。 お弁当やおやつにカワイイですね! 177度の油で約2分揚げるまたは、油にくぐらせてからエアフライヤーで様子を見ながらひっくり返して薄きつね色になったら出来上がり。 カラッと感は劣りますが、油にくぐらせないままエアフライヤーでもいけました。 シンプルな優しい塩味です。8個入り</description>
       <link>https://saitofoods.com/products/1399.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790421890304_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>72.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -688,19 +688,6 @@
       <g:product_type>売れ筋商品</g:product_type>
     </item>
     <item>
-      <g:id>1367</g:id>
-      <title>オカムラキッチン 骨取り サバ味噌煮 2切れ=S-07</title>
-      <description>骨取りノルウェーサバをお味噌と少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 ご飯がすすみます。</description>
-      <link>https://saitofoods.com/products/1367.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06151522_6a2fb63882be4.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>68.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>冷凍食品</g:product_type>
-    </item>
-    <item>
       <g:id>1366</g:id>
       <title>オカムラキッチン 骨取り サバみぞれ煮 2切れ=S-07</title>
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
@@ -732,7 +719,7 @@
       <description>優しい塩味のサバ塩焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1273.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884156393_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -953,7 +940,7 @@
       <description>タイ産の白豚のスライスです。 豚しゃぶ、豚しゃぶサラダなどにぴったりの厚みに スライスしてあります。200g入り</description>
       <link>https://saitofoods.com/products/1112.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489115964_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>133.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1344,7 +1331,7 @@
       <link>https://saitofoods.com/products/561.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485838440_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01161021_587c3c20b188a.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1474,7 +1461,7 @@
       <description>北海道大豆を使用した小粒の納豆です。3パックセット タレ、からし付き</description>
       <link>https://saitofoods.com/products/1176.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868855340_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1898,34 +1885,6 @@
       <g:product_type>無添加の商品</g:product_type>
     </item>
     <item>
-      <g:id>1168</g:id>
-      <title>日本産大豆100% Soft 絹ごし豆腐 300G</title>
-      <description>これは便利!常温保管できる日本から輸入の日本産大豆100%のお豆腐300g入りです。 Softはお箸で持ち上げられない程度の硬さです。 冷奴や柔らかい絹ごしがお好みの方へ しっかりと豆の味がする美味しいお豆腐です。</description>
-      <link>https://saitofoods.com/products/1168.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883251033_slot2.jpg</g:image_link>
-      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07161049_6695ede653495.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>58.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>日本からの輸入品</g:product_type>
-    </item>
-    <item>
-      <g:id>1169</g:id>
-      <title>日本産大豆100% Firm 絹ごし豆腐 300G</title>
-      <description>これは便利!常温保管できる日本から輸入の日本産大豆100%のお豆腐300g入りです。 Firmはお箸で挟んで持ち上げられる程度の硬さ。 煮崩れしにくいので、お鍋や麻婆豆腐におススメ! しっかりと豆の味がする美味しいお豆腐です。</description>
-      <link>https://saitofoods.com/products/1169.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883203421_slot2.jpg</g:image_link>
-      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07161052_6695ee853ad13.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>58.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>日本からの輸入品</g:product_type>
-    </item>
-    <item>
       <g:id>1320</g:id>
       <title>山口豆腐店 プレミアム 寄せ豆腐 450g</title>
       <description>あの山口豆腐店のお豆腐が再登場! 使用する豆乳はプレミアム絹ごし豆腐と同様です。 絹ごし豆腐とは違った『にがり』を使用しています。 使用している『にがり』は、山口豆腐店が塩田から直接独自に取寄せた天然素材を原料として、自家製で生産しています。その『にがり』をふんだんに使用することで、マグネシウムを主とした天然のミネラルを豊富に含んだ商品になっています。風味も味わいもより濃厚で多くのミネラルを含んだ味も栄養も抜群なプレミアム豆腐です。 恐れ入りますが、ご注文後のキャンセルはご連絡いただくタイミングによっては既に仕入れが完了してしまっており、お断りさせて頂く場合がございます。予めご了承くださいませ。</description>
@@ -1970,7 +1929,7 @@
       <description>手作りでニンジン、豚肉、しめじ、おから200gで甘すぎないように炊きました。 無添加です。</description>
       <link>https://saitofoods.com/products/979.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488017910_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>105.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3283,7 +3242,7 @@
       <description>言わずと知れた、安心して飲める無糖のむぎ茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/products/767.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486283135_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>720.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
