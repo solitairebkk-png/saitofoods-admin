@@ -240,19 +240,6 @@
       <g:product_type>冷凍食品</g:product_type>
     </item>
     <item>
-      <g:id>1251</g:id>
-      <title>イシイのミートボール 10個入り=B-02</title>
-      <description>遂に入荷! イシイのミートボール 10個入り 食品添加物不使用!常温保存可!</description>
-      <link>https://saitofoods.com/products/1251.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483964537_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>91.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>売れ筋商品</g:product_type>
-    </item>
-    <item>
       <g:id>1331</g:id>
       <title>無添加 イシイのチキンハンバーグ 常温保管=CK HAM</title>
       <description>遂に入荷! イシイのチキンハンバーグ 90g 食品添加物不使用!常温保存可!</description>
@@ -377,7 +364,7 @@
       <link>https://saitofoods.com/products/1348.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884584491_slot2.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>62.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -522,7 +509,7 @@
       <description>ちょっと仕入れ値がお高かったので販売はどうかな〜と思いながらサンプルを試させていただいたら…高くても食べたい!!となり緊急入荷です。 子供もポリポリパクパク!大人はビールが止まりませんのでご注意ください。 250g入り マヨ七味や麺つゆにも相性抜群! 粉自体に卵関連の原料はありませんが卵パウダーの使用がある工場で製造されておりますので製品の裏面に一応、卵や大豆の可能性ありの記載がございます。</description>
       <link>https://saitofoods.com/products/1205.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555612912_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>193.00 THB</g:price>
       <g:sale_price>128.00 THB</g:sale_price>
       <g:condition>new</g:condition>
@@ -680,7 +667,7 @@
       <description>ノルウェー産の冷凍サバを弊社で開いて塩漬けしてほした手作り商品。ダイナミックな大きいサイズ！</description>
       <link>https://saitofoods.com/products/358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785556020999_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>210.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -719,7 +706,7 @@
       <description>優しい塩味のサバ塩焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1273.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884156393_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -732,7 +719,7 @@
       <description>優しい甘醤油味 サバ照り焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1272.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884213892_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -836,7 +823,7 @@
       <description>ホテル等で提供されるねっとりしたタイプのスモークサーモンです。 チリ産トラウトを使用した本格的な商品です。 パンに挟んだりサラダやスパゲティに。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/reel/DIitpqJRM5T/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
       <link>https://saitofoods.com/products/934.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487152586_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>299.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1331,7 +1318,7 @@
       <link>https://saitofoods.com/products/561.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485838440_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01161021_587c3c20b188a.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1513,7 +1500,7 @@
       <description>使用大豆:アメリカ産 有機小粒大豆、契約栽培大豆を100%使用。 有機栽培大豆とは… ①畑は、2年以上有機肥料で土作りをします ②農薬や化学肥料に頼らないことを基本としています ③遺伝子組換え技術を使用しません 大豆の栽培から納豆の製造まで有機認証を受けた納豆です。 有機しょうゆ使用たれとからし付。 40g * 3パック</description>
       <link>https://saitofoods.com/products/1358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201401_6a0d5c592fe48.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1604,7 +1591,7 @@
       <description>紀文の定番ちくわ 竹笛 5本入り 32g*5本</description>
       <link>https://saitofoods.com/products/1130.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489876742_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>62.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2021,7 +2008,7 @@
       <description>サイトウフーズオリジナル商品の冷凍ひじき煮です。</description>
       <link>https://saitofoods.com/products/965.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487736071_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2047,7 +2034,7 @@
       <description>こちらの商品は調理済みとなります。 袋のまま湯煎もしくは、器に出して電子レンジでお好みの温かさに温めて お召し上がりくださいませ。</description>
       <link>https://saitofoods.com/products/1361.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06051804_6a22ad5450f58.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2114,7 +2101,7 @@
       <link>https://saitofoods.com/products/1180.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>172.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2572,7 +2559,7 @@
       <description>既に焼いてある日本産サワラの西京味噌漬けです。 湯銭または自然解凍でお召しあがれる商品です。 100g 甘めの味付けですが、しっかりと味が入ってます。 ご飯が進む味付けです。</description>
       <link>https://saitofoods.com/products/1095.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555424680_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
