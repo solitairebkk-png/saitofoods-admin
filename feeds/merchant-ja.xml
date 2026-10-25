@@ -680,7 +680,7 @@
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
       <link>https://saitofoods.com/products/1366.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784789172165_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -810,7 +810,7 @@
       <description>ちょどよい塩加減の鮭フレークです。 合成添加物 無添加の美味しい鮭フレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
       <link>https://saitofoods.com/products/1271.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883907569_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
