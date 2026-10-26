@@ -175,6 +175,8 @@
   .btn-cancel { background: #6b7280; }
   .btn-manual-pay { background: #2c8f6b; }
   .btn-manual-pay-undo { background: #6b7280; font-size: 10px !important; }
+  .btn-uncollected { background: #c62828; }
+  .btn-uncollected-undo { background: #6b7280; font-size: 10px !important; }
   .btn-send-email { background: #3b6fd6; }
   .walkin-pay-box { display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed #dcdad4; padding-top: 6px; margin-top: 2px; }
   .walkin-pay-label { font-size: 10px; color: var(--text-muted); }
@@ -1969,6 +1971,7 @@ async function loadOrders() {
       total_amount, shipping_cost, comment, staff_message_ja, staff_message_th, slip_image_url, slip_amount_detected, paid_amount,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
+      payment_uncollected, payment_uncollected_at, payment_uncollected_by,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
       delivery_lat, delivery_lng, delivery_accuracy_m,
@@ -2968,6 +2971,10 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
   if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
   if (order.manual_payment_confirmed) paymentBadges.push(renderManualPaidBadge(order));
+  // 「未回収」の印(2026-10-26): 配送済みなのに代金を回収できていない注文。入金が確認できると自動で表示されなくなる
+  if (order.payment_uncollected && getPaymentState(order) !== 'paid') {
+    paymentBadges.push('<span class="badge" style="background:#fdecea;color:#c62828;border:1px solid #e57373;">⚠️ ยังไม่ได้รับเงิน / Not Collected</span>');
+  }
   if (getPaymentState(order) === 'partial') {
     const due = (Number(order.total_amount) || 0) - (Number(order.paid_amount) || 0);
     paymentBadges.push(`<span class="badge" style="background:#fff3cd;color:#8a6300;">🟡 ยอดค้างชำระ ฿${due} / ฿${due} due</span>`);
@@ -3132,6 +3139,18 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       } else if (getPaymentState(order) !== 'paid') {
         manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
+    }
+  }
+
+  // 「未回収」ボタン(2026-10-26): 配送済み(Complete済み)なのに代金を回収できていない注文に、
+  // キャッシャー等のスタッフが印を付ける。印が付いた注文には、お客様へ未入金リマインドメールが自動で届く
+  // (配送日の19:00以降と、その翌朝9:00以降。送信はGAS側)。入金を確認して「Confirm Payment」を押すと止まる。
+  // Complete済みの注文は管理者しか直接更新できないため、専用の関数(set_payment_uncollected)経由で更新する。
+  if (order.is_completed && order.order_type === 'delivery' && !order.is_wholesale && getPaymentState(order) !== 'paid') {
+    if (order.payment_uncollected) {
+      manageCol.appendChild(makeButton('Undo Not Collected / ยกเลิก', () => setPaymentUncollected(order, false), 'btn-uncollected-undo'));
+    } else {
+      manageCol.appendChild(makeButton('⚠️ Not Collected / ยังไม่ได้รับเงิน', () => setPaymentUncollected(order, true), 'btn-uncollected'));
     }
   }
 
@@ -4209,6 +4228,21 @@ async function sendWeightConfirmedEmail(order) {
 }
 
 // ---------------- Update / Delete ----------------
+// 「未回収」の印を付ける/外す。付けると、メールアドレスのあるお客様へ未入金リマインドメールが自動で届く。
+async function setPaymentUncollected(order, flag) {
+  if (flag) {
+    const noEmail = !(order.customers && order.customers.email);
+    const msg = 'ยืนยันว่ายังไม่ได้รับเงินจากออเดอร์นี้ใช่หรือไม่?\nระบบจะส่งอีเมลแจ้งเตือนให้ลูกค้า\n'
+      + (noEmail ? '(ลูกค้าท่านนี้ไม่มีอีเมล จึงไม่มีการส่งอีเมลแจ้งเตือน)\n' : '')
+      + '\nMark this order as NOT COLLECTED? A payment reminder email will be sent to the customer.'
+      + (noEmail ? '\n(No email on file: no reminder will be sent.)' : '');
+    if (!confirm(msg)) return;
+  }
+  const { error } = await supabaseClient.rpc('set_payment_uncollected', { p_order_id: order.id, p_uncollected: !!flag });
+  if (error) { alert('อัปเดตไม่สำเร็จ / Update failed: ' + error.message); return; }
+  loadOrders();
+}
+
 async function updateOrder(orderId, fields) {
   const { error } = await supabaseClient.from('orders').update(fields).eq('id', orderId);
   if (error) { alert('อัปเดตไม่สำเร็จ / Update failed: ' + error.message); return; }
