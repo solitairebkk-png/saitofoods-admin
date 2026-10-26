@@ -1683,9 +1683,10 @@ async function loadFavorites(customerId) {
       <span class="fav-item-go" aria-hidden="true">›</span>
       <button class="fav-remove-btn" onclick="event.stopPropagation(); removeFavorite('${fav.id}')">×</button>
     `;
-    // 商品をタップすると、商品一覧ページでその商品の詳細(カートに入れる画面)が開く(2026-10-26)。
-    // 「押して注文したくなるのに押せない」との声への対応。在庫・注文上限などの確認は商品一覧側で行われる。
-    div.onclick = () => { location.href = 'product_list.html?view=' + encodeURIComponent(p.id); };
+    // 商品をタップすると、お気に入り商品の一覧ページ(商品一覧のお気に入り表示)に移動する(2026-10-26)。
+    // 「押して注文したくなるのに押せない」との声への対応。他のお気に入り商品も一緒に見られ、
+    // 在庫・注文上限などの確認も商品一覧側で行われる。上の「お気に入りをカートで見る」ボタンと同じ行き先。
+    div.onclick = () => { location.href = 'product_list.html?favorites=1'; };
     listEl.appendChild(div);
   });
 }
