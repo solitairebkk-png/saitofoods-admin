@@ -188,6 +188,10 @@
   .fav-item-name { font-size: 13px; font-weight: 600; }
   .fav-item-sub { font-size: 11px; color: var(--muted); }
   .fav-remove-btn { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; line-height: 1; padding: 4px; }
+  .fav-item.fav-item-link { cursor: pointer; transition: background 0.12s; }
+  .fav-item.fav-item-link:hover { background: var(--yellow-light); }
+  .fav-item-main { flex: 1; min-width: 0; }
+  .fav-item-go { color: var(--muted); font-size: 22px; line-height: 1; margin: 0 8px; }
   .site-footer { background: var(--white); border-top: 2px solid var(--yellow-dark); padding: 24px 20px 18px; font-size: 12.5px; color: var(--muted); }
   .footer-social { display: flex; gap: 10px; margin-bottom: 20px; }
   .footer-social a { width: 36px; height: 36px; border-radius: 50%; background: var(--yellow); color: var(--brown); display: flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; font-size: 14px; }
@@ -1669,15 +1673,19 @@ async function loadFavorites(customerId) {
     const p = fav.products;
     if (!p) return;
     const div = document.createElement('div');
-    div.className = 'fav-item';
+    div.className = 'fav-item fav-item-link';
     const priceLabel = p.sale_type === 'weight' ? `${p.unit_price} THB / ${p.unit_label}` : `${p.price} THB`;
     div.innerHTML = `
-      <div>
+      <div class="fav-item-main">
         <div class="fav-item-name">${p.name_ja}</div>
         <div class="fav-item-sub">${p.name_th || ''} ${priceLabel ? '— ' + priceLabel : ''}</div>
       </div>
-      <button class="fav-remove-btn" onclick="removeFavorite('${fav.id}')">×</button>
+      <span class="fav-item-go" aria-hidden="true">›</span>
+      <button class="fav-remove-btn" onclick="event.stopPropagation(); removeFavorite('${fav.id}')">×</button>
     `;
+    // 商品をタップすると、商品一覧ページでその商品の詳細(カートに入れる画面)が開く(2026-10-26)。
+    // 「押して注文したくなるのに押せない」との声への対応。在庫・注文上限などの確認は商品一覧側で行われる。
+    div.onclick = () => { location.href = 'product_list.html?view=' + encodeURIComponent(p.id); };
     listEl.appendChild(div);
   });
 }
