@@ -34,8 +34,13 @@
   header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; flex-direction: column; gap: 6px; }
   header .nav-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
-  /* PC: keep the user menu left-aligned (right after the nav links) instead of pushed to the right edge */
-  @media (min-width: 761px) { header .user-right { margin-left: 0; } }
+  /* PC: title on the left; nav links and the user menu stacked in the right column so their left edges line up */
+  @media (min-width: 761px) {
+    header { display: grid; grid-template-columns: auto 1fr; column-gap: 24px; row-gap: 8px; align-items: center; }
+    header h1 { grid-column: 1; grid-row: 1 / span 2; }
+    header .nav-links { grid-column: 2; grid-row: 1; }
+    header .user-right { grid-column: 2; grid-row: 2; margin-left: 0; justify-self: start; }
+  }
   header a { color: #cdd8e6; text-decoration: none; }
   header a:hover { color: white; }
 
