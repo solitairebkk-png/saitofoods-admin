@@ -173,6 +173,9 @@
   .id-actions:empty { display: none; }
   .id-actions button { width: 100%; }
   .id-actions .btn-complete { margin-bottom: 4px; }
+  /* あまり使わないボタン(Attach slip / Cancel / Delete)は、Complete等から離して区切り線の下にまとめる */
+  .id-rare { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed #dcdad4; padding-top: 8px; margin-top: 6px; }
+  .id-rare .walkin-pay-box { border-top: none; padding-top: 0; margin-top: 0; }
   .btn-check { background: #3b8fd6; }
   .btn-reorder { background: #e08a2e; }
   .btn-complete { background: #4b9d5f; }
@@ -3056,6 +3059,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const manageCol = tr.querySelector('.manage-col');
   // Order IDの下の置き場: Complete / Confirm Payment / Not Collected のボタンはここに入れる(2026-10-27)
   const idActions = tr.querySelector('.id-actions');
+  // あまり使わないボタン(Attach slip / Cancel / Delete)の置き場。最後にidActionsの末尾へ付ける
+  const idRare = document.createElement('div');
+  idRare.className = 'id-rare';
 
   // 非公開の保存先に入っているスリップ画像は、一時的な閲覧用URLを取ってサムネイルに反映する
   if (isStorageSlip(order.slip_image_url)) hydrateStorageSlip(tr.querySelector('.slip-storage'), order.slip_image_url);
@@ -3065,8 +3071,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     manageCol.appendChild(makeButton('Check / ตรวจสอบ', () => openReceiptPage(order), 'btn-check'));
     // Delete(完全削除)はmakokunn@live.jpのみ(2026-09-26変更)
     if (currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
-      manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
+      idRare.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
+    if (idRare.children.length) idActions.appendChild(idRare);
     return tr;
   }
 
@@ -3102,7 +3109,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       // Cancel(キャンセル処理)はmakokunn@live.jpのみ(2026-09-26変更): 従来からキャンセルは
       // スタッフが行わず本人に連絡する運用だったため、これをシステム側でも強制する
       if (!isSrirachaToday && currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
-        manageCol.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
+        idRare.appendChild(makeButton('ยกเลิก / Cancel', () => cancelOrder(order.id), 'btn-cancel'));
       }
     }
     // 電話に出ない・メールをすぐ見ないお客様向けに、伝票へ直接「お客様へ」メッセージを書く(2026-10-06)。
@@ -3130,7 +3137,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     }
     // Delete(完全削除)はmakokunn@live.jpのみ(2026-09-26変更)
     if (currentCustomer && currentCustomer.email === 'makokunn@live.jp') {
-      manageCol.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
+      idRare.appendChild(makeButton('ลบ / Delete', () => deleteOrder(order.id), 'btn-delete'));
     }
   } else {
     const lockedNote = document.createElement('div');
@@ -3164,8 +3171,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   // Walk-inは、Completedでロックされているかどうかに関係なく、支払い方法(現金/QR)の選択欄を出す
   if (order.order_type === 'walk_in') appendWalkinPayBox(manageCol, order);
   // 配送・卸の注文にも、手動でスリップを添付できるボタンを出す(Completed済みでも可)
-  else appendOrderSlipBox(manageCol, order);
+  else appendOrderSlipBox(idRare, order);
 
+  if (idRare.children.length) idActions.appendChild(idRare);
   return tr;
 }
 
