@@ -79,6 +79,14 @@
   .scb-chip-amt { font-size: 15px; font-weight: 700; line-height: 1.3; }
   .scb-chip-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .scb-strip-msg { font-size: 12px; color: var(--text-muted); padding: 4px 2px; }
+  /* 出発後に配達完了が押されていない配送の警告帯(2026-10-27) */
+  .undeliv-strip { background: #fff4f2; border: 1px solid #e0a9a0; border-radius: 4px; padding: 6px 8px; margin-bottom: 16px; font-size: 12px; }
+  .undeliv-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .undeliv-title { font-weight: 700; color: #b3261e; }
+  .undeliv-refresh { margin-left: auto; border: 1px solid var(--border); background: #fff; border-radius: 4px; width: 28px; height: 24px; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+  .undeliv-row { padding: 2px 0; line-height: 1.5; }
+  .undeliv-row b { margin-right: 4px; }
+  .undeliv-note { color: var(--text-muted); margin-top: 2px; }
 
   .filter-bar {
     background: var(--panel); border: 1px solid var(--border); border-radius: 0 4px 4px 4px;
@@ -767,6 +775,15 @@
     </div>
   </div>
 
+  <div class="undeliv-strip" id="undeliv-strip" style="display:none;">
+    <div class="undeliv-head">
+      <span class="undeliv-title" id="undeliv-title"></span>
+      <button type="button" class="undeliv-refresh" onclick="loadUndelivered()" aria-label="Refresh" title="Refresh">&#8635;</button>
+    </div>
+    <div id="undeliv-list"></div>
+    <div class="undeliv-note">出発から90分以上たっても「配達完了」が押されていない配送です。/ Departed 90+ min ago, not marked delivered.</div>
+  </div>
+
   <div class="scb-strip" id="scb-strip" style="display:none;">
     <div class="scb-strip-head">
       <span class="scb-strip-title">SCB deposits</span>
@@ -1177,6 +1194,7 @@ function showMain() {
   loadReceivablesBadge();
   updateScbStripVisibility();
   loadScbSms(true);
+  loadUndelivered();
 
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
@@ -1199,12 +1217,68 @@ function showMain() {
     checkReportsBadge();
     loadReceivablesBadge();
     loadScbSms(false);
+    loadUndelivered();
   });
 
   // 未読バッジ・レポート新着バッジは5分おきに自動更新(GAS側は30分おきチェックだが、他スタッフの操作も反映したいため)
   setInterval(() => { loadInboxBadge(); checkReportsBadge(); loadReceivablesBadge(); }, 5 * 60 * 1000);
   // SCB deposit strip: refresh every 2 minutes while the page is visible
   setInterval(() => { if (document.visibilityState === 'visible') loadScbSms(false); }, 2 * 60 * 1000);
+  // 出発後に未完了の配送の警告帯: 3分おきに更新(LINE等の通知は送らず、画面表示のみ)
+  setInterval(() => { if (document.visibilityState === 'visible') loadUndelivered(); }, 3 * 60 * 1000);
+}
+
+// 出発(departed_at)から一定時間たっても配達完了(delivered_at)が押されていない配送を、
+// スタッフ別に警告帯で表示する。スタッフアプリで写真が送れていない/完了が押されていない
+// ケースに管理者が早く気づくため(2026-10-27)。
+const UNDELIVERED_MIN = 90;
+const UNDELIVERED_EXCLUDE_STAFF = ['M', 'Tum', 'Sit']; // 警告帯の対象外にするスタッフ名
+async function loadUndelivered() {
+  const strip = document.getElementById('undeliv-strip');
+  if (!strip || !currentCustomer) return;
+  try {
+    const startIso = todayStr() + 'T00:00:00+07:00';
+    const limitIso = new Date(Date.now() - UNDELIVERED_MIN * 60 * 1000).toISOString();
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select('id, condo_name, departed_at, staff:assigned_staff_id ( name ), customers!customer_id ( family_name, first_name )')
+      .neq('order_type', 'walk_in')
+      .eq('is_cancelled', false)
+      .is('delivered_at', null)
+      .gte('departed_at', startIso)
+      .lte('departed_at', limitIso)
+      .order('departed_at', { ascending: true });
+    if (error) throw error;
+    // 車のドライバー(M・Tum・Sit)はスタッフアプリで完了を押さない運用のため対象外にする
+    const rows = (data || []).filter(o => !(o.staff && UNDELIVERED_EXCLUDE_STAFF.includes(o.staff.name)));
+    if (!rows.length) { strip.style.display = 'none'; return; }
+    const groups = {};
+    rows.forEach(o => {
+      const name = (o.staff && o.staff.name) || '(担当未設定 / no staff)';
+      (groups[name] = groups[name] || []).push(o);
+    });
+    const list = document.getElementById('undeliv-list');
+    list.innerHTML = '';
+    Object.keys(groups).forEach(name => {
+      const items = groups[name].map(o => {
+        const mins = Math.floor((Date.now() - new Date(o.departed_at).getTime()) / 60000);
+        const hh = Math.floor(mins / 60), mm = mins % 60;
+        const c = o.customers;
+        const cust = c ? `${c.family_name || ''} ${c.first_name || ''}`.trim() : '';
+        const label = escapeHtml([cust, o.condo_name].filter(Boolean).join(' / ') || String(o.id).slice(0, 8));
+        return `${label}(${hh ? hh + 'h' : ''}${mm}m)`;
+      });
+      const row = document.createElement('div');
+      row.className = 'undeliv-row';
+      row.innerHTML = `<b>${escapeHtml(name)}</b>${groups[name].length}件: ${items.join('、')}`;
+      list.appendChild(row);
+    });
+    document.getElementById('undeliv-title').textContent = `⚠️ 配達完了が未入力 ${rows.length}件 / Not marked delivered`;
+    strip.style.display = 'block';
+  } catch (e) {
+    // 警告帯の取得失敗は黙って非表示(本画面の操作を邪魔しない)
+    strip.style.display = 'none';
+  }
 }
 
 // ---------------- SCB deposit strip (Total / Bangkok tabs) ----------------

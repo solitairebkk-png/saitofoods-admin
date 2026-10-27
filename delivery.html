@@ -154,6 +154,37 @@
   .navbtns { position: fixed; right: 8px; bottom: calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; z-index: 20; opacity: .6; }
   .navbtns button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: #1f6b3c; color: #fff; font-size: 18px; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
   .navbtns button:active { transform: scale(.94); }
+
+  /* ---- エラー表示: 画面下に固定し、スクロール位置に関係なく必ず見えるようにする(タップで閉じる) ---- */
+  #main-error:not(:empty) {
+    position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 60;
+    margin: 0; padding: 14px 44px 14px 14px; background: var(--red-light); border: 2px solid var(--red);
+    border-radius: 12px; font-size: 15px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  }
+  #main-error:not(:empty)::after { content: "×"; position: absolute; top: 6px; right: 14px; font-size: 28px; line-height: 1; }
+  /* ---- 成功表示(数秒だけ出る) ---- */
+  #toast {
+    position: fixed; left: 50%; top: calc(76px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 70;
+    background: #166534; color: #fff; font-weight: 700; font-size: 16px; padding: 12px 18px; border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3); opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 92vw; text-align: center;
+  }
+  #toast.show { opacity: 1; }
+  /* ---- 確認ダイアログ(画面内表示) ---- */
+  .cfm-ov { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .cfm-box { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 420px; box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+  .cfm-msg { white-space: pre-wrap; word-break: break-word; font-size: 17px; line-height: 1.5; margin-bottom: 16px; max-height: 60vh; overflow: auto; }
+  .cfm-btns { display: flex; gap: 28px; }
+  .cfm-btns button { flex: 1 1 0; min-height: 64px; border-radius: 12px; font-size: 16px; font-weight: 700; border: 2px solid var(--green); background: #fff; color: var(--green); }
+  .cfm-btns button.cfm-yes { background: var(--green); color: #fff; }
+  /* ---- 写真の保存状態・未送信の警告 ---- */
+  .thumbs .th .st { position: absolute; left: 3px; bottom: 3px; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,.92); color: #166534; }
+  .thumbs .th .st.saving { color: #92400e; }
+  .thumbs .th .st.failed { background: #fdecea; color: var(--red); }
+  .unsent { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff4d6; border: 2px solid #f59e0b; color: #78350f; font-size: 15px; font-weight: 700; line-height: 1.4; }
+  .unsent small { display: block; font-weight: 600; opacity: .85; }
+  .unsent.bad { background: var(--red-light); border-color: var(--red); color: var(--red); }
+  #pending-banner { background: #f59e0b; color: #fff; font-weight: 800; font-size: 15px; padding: 10px 14px; text-align: center; cursor: pointer; line-height: 1.35; }
+  #pending-banner small { display: block; font-weight: 600; font-size: 12px; opacity: .95; }
 </style>
 </head>
 <body>
@@ -211,6 +242,8 @@
     <a class="main" href="tel:022589878">📞 โทรบริษัท 02-258-9878</a>
     <a class="sub" href="tel:0656189906"><span>06-5618-9906</span><small>สำรอง</small></a>
   </div>
+  <!-- 写真を撮ったのに「ส่งของแล้ว」をまだ押していない注文があるときだけ出る警告(タップでその注文へ移動) -->
+  <div id="pending-banner" class="hidden" onclick="jumpToPending()"></div>
   </div>
   <main>
     <div id="last-upd"></div>
@@ -226,8 +259,9 @@
     </div>
     <div id="todo-list"></div>
     <div id="done-list" class="hidden"></div>
-    <div id="main-error" class="err"></div>
+    <div id="main-error" class="err" onclick="this.textContent=''"></div>
   </main>
+  <div id="toast" role="status"></div>
   <div class="navbtns">
     <button type="button" aria-label="previous" onclick="jumpCard(-1)">▲</button>
     <button type="button" aria-label="next" onclick="jumpCard(1)">▼</button>
@@ -259,11 +293,49 @@ const busy = {};            // orderId -> true(送信処理中)
 let loading = false;
 const orderCache = {};      // orderId -> 直近に読み込んだ注文(確認ダイアログにお客様名を出すため)
 
+// 確認ダイアログ(アプリの画面内に表示する)。
+// iPhoneのSafariは、標準の確認ダイアログ(confirm)を「これ以上表示しない」に設定できてしまい、
+// 一度そうなると、ボタンを押しても何も起きず、エラーも出なくなる。それを避けるため、標準のダイアログは使わない。
+function askConfirm(text) {
+  return new Promise(resolve => {
+    if (document.querySelector('.cfm-ov')) { resolve(false); return; }   // すでに確認中なら二重に開かない
+    const ov = document.createElement('div');
+    ov.className = 'cfm-ov';
+    ov.innerHTML = '<div class="cfm-box"><div class="cfm-msg"></div><div class="cfm-btns">' +
+      '<button type="button" class="cfm-no">ยกเลิก / Cancel</button>' +
+      '<button type="button" class="cfm-yes">ตกลง / OK</button></div></div>';
+    ov.querySelector('.cfm-msg').textContent = text;
+    const done = v => { ov.remove(); resolve(v); };
+    ov.querySelector('.cfm-no').onclick = () => done(false);
+    ov.querySelector('.cfm-yes').onclick = () => done(true);
+    document.body.appendChild(ov);
+  });
+}
 // 完了前の確認。「どのお客様か」を必ず画面に出して、反射的にOKを押しても気づけるようにする
 function confirmDone(orderId, question) {
   const o = orderCache[orderId];
   const who = o ? `${customerLabel(o)}\n${addressLabel(o)}` : '';
-  return confirm(`${who}\n\n${question}`);
+  return askConfirm(`${who}\n\n${question}`);
+}
+
+// 失敗した理由の表示用の文章。電波が悪くて通信自体が失敗したときは、「保存できていない」ことをはっきり伝える
+function errMsg(e) {
+  const m = String((e && e.message) || e || '');
+  if (/load failed|failed to fetch|networkerror|network request failed|timed? ?out|offline/i.test(m)) {
+    return 'สัญญาณอินเทอร์เน็ตไม่ดี ยังไม่ได้บันทึก กรุณากดใหม่อีกครั้ง\nNo signal – NOT saved yet. Please press again.';
+  }
+  return m;
+}
+// 成功したときに数秒だけ出す緑の表示(「ちゃんと記録された」ことが見て分かるように)
+let toastTimer = null;
+function showToast(msg) {
+  const t = $('toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+}
+function doneToast() { showToast('✅ บันทึกแล้ว ' + fmtTimeBkk(new Date().toISOString()) + ' / Saved'); }
+function makePhotoPath(orderId) {
+  return `${orderId}/${new Date().toISOString().replace(/[:.]/g, '-')}_${Math.random().toString(36).slice(2, 6)}.jpg`;
 }
 // 位置は「写真を選んだ時・画面を開いた時」にバックグラウンドで取り、結果をキャッシュしておく。
 // 完了ボタンはキャッシュを即座に読むだけで、GPSの応答は絶対に待たない(取れなければ位置なしで完了)。
@@ -324,7 +396,7 @@ async function login() {
 }
 
 async function logout() {
-  if (!confirm('ออกจากระบบหรือไม่?')) return;
+  if (!(await askConfirm('ออกจากระบบหรือไม่?'))) return;
   localStorage.removeItem(STAFF_KEY);
   await supabaseClient.auth.signOut({ scope: 'local' });
   location.reload();
@@ -376,12 +448,36 @@ function startOfTodayBangkokIso() {
   return new Date(Date.UTC(y, m, d) - 7 * 3600 * 1000).toISOString();
 }
 
-async function loadOrders() {
+// 一覧(未完了・完了済み)を描き直す
+function renderAll(all) {
+  renderTodo(all.filter(o => !o.delivered_at)
+    .sort((a, b) => (slotKey(a) - slotKey(b)) || (new Date(a.departed_at) - new Date(b.departed_at))));
+  renderDone(all.filter(o => o.delivered_at)
+    .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
+}
+// 通信せず、読み込み済みの注文から描き直す(写真の保存状態が変わったときなど)。
+// カメラを開いている間・メモを書いている間は、画面を作り直すと撮った写真や書きかけの文字が消えることがあるので後回しにする。
+let rfcTimer = null;
+function renderFromCache() {
+  if (Object.keys(memoEditing).length) return;
+  if (Date.now() < pickerUntil) {
+    clearTimeout(rfcTimer);
+    rfcTimer = setTimeout(renderFromCache, Math.max(500, pickerUntil - Date.now() + 100));
+    return;
+  }
+  renderAll(Object.values(orderCache));
+}
+
+// background=true: 15秒ごとの自動更新など。失敗しても画面にエラーは出さない(更新時刻が古いままになる)。
+// 失敗の表示は、ボタンを押したときなど本人が操作したときだけ出す。
+async function loadOrders(background) {
   if (!currentStaff || loading) return;
   loading = true;
   const t0 = Date.now();
+  let ok = false;
   $('refresh-btn').classList.add('spin');
-  $('main-error').textContent = '';
+  // 注意: ここでエラー表示(main-error)を消してはいけない。完了ボタンの失敗表示が、直後の再読み込みで消えて
+  // 「押しても何も起きない」ように見えてしまうため。操作の失敗表示は、次の操作か、×で閉じるまで残す。
   try {
     const { data, error } = await supabaseClient.rpc('delivery_app_orders', { p_staff_id: currentStaff.id });
     if (error) throw error;
@@ -391,19 +487,21 @@ async function loadOrders() {
     // 別の端末で完了された注文の、こちらに残っている撮影済み写真を捨てる
     const liveIds = new Set(all.filter(o => !o.delivered_at).map(o => o.id));
     Object.keys(staged).forEach(id => { if (!liveIds.has(id) && !busy[id]) { (staged[id] || []).forEach(p => URL.revokeObjectURL(p.url)); delete staged[id]; } });
-    renderTodo(all.filter(o => !o.delivered_at)
-      .sort((a, b) => (slotKey(a) - slotKey(b)) || (new Date(a.departed_at) - new Date(b.departed_at))));
-    renderDone(all.filter(o => o.delivered_at)
-      .sort((a, b) => new Date(b.delivered_at) - new Date(a.delivered_at)));
+    renderAll(all);
+    ok = true;
+    // 「読み込めなかった」表示が出ていたら、読み込めたので消す(操作の失敗表示は消さない)
+    if (/^โหลดไม่สำเร็จ/.test($('main-error').textContent)) $('main-error').textContent = '';
+    restoreSavedPhotos(all.filter(o => !o.delivered_at));   // 開き直したあとも、サーバーに保存済みの写真を呼び戻す
+    retryFailedUploads();                                    // 電波が悪くて保存できなかった写真を、自動でやり直す
   } catch (e) {
-    $('main-error').textContent = 'โหลดไม่สำเร็จ: ' + (e.message || e);
+    if (background !== true) $('main-error').textContent = 'โหลดไม่สำเร็จ: ' + (e.message || e);
   } finally {
     loading = false;
     // 更新が一瞬で終わって「何も起きていない」ように見えないよう、最低0.7秒は回して、更新時刻を出す
     const wait = Math.max(0, 700 - (Date.now() - t0));
     setTimeout(() => {
       $('refresh-btn').classList.remove('spin');
-      $('last-upd').textContent = 'อัปเดตล่าสุด ' + fmtTimeBkk(new Date().toISOString());
+      if (ok) $('last-upd').textContent = 'อัปเดตล่าสุด ' + fmtTimeBkk(new Date().toISOString());
     }, wait);
   }
 }
@@ -654,9 +752,16 @@ function renderTodo(list) {
       <div class="thumbs">
         ${photos.map((p, i) => `
           <div class="th"><img src="${p.url}" alt="">
+            <span class="st ${escapeHtml(p.state || 'saving')}">${p.state === 'saved' ? '☁️✓' : (p.state === 'failed' ? '⚠️' : '⏳')}</span>
             <button class="rm" onclick="removePhoto('${escapeHtml(o.id)}', ${i})" ${isBusy ? 'disabled' : ''}>×</button>
           </div>`).join('')}
       </div>
+      ${photos.length ? `
+      <div class="unsent${photos.some(p => p.state === 'failed') ? ' bad' : ''}">
+        ⚠️ ยังไม่ได้ส่ง! รูปยังไม่ถึงลูกค้า กด “✅ ส่งของแล้ว” ด้านล่าง
+        <small>NOT delivered yet – press “Delivered” below.${photos.every(p => p.state === 'saved') ? ' (☁️✓ รูปถูกบันทึกบนเซิร์ฟเวอร์แล้ว ปิดแอปรูปก็ไม่หาย)' : ''}</small>
+        ${photos.some(p => p.state === 'failed') ? '<small>⚠️ รูปบางรูปยังไม่ได้บันทึกบนเซิร์ฟเวอร์ ระบบจะลองใหม่เอง อย่าปิดแอป</small>' : ''}
+      </div>` : ''}
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       ${memoHtml(o)}
       <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
@@ -807,27 +912,125 @@ async function shrinkImage(file) {
   });
 }
 
+// 撮った写真は、撮った瞬間にサーバーへ保存する(送信ボタンを押す前でも)。
+// 以前は「ส่งของแล้ว」を押すまでスマホのメモリにしか無く、アプリが読み込み直されると消えてしまった。
+// 保存状態: saving=保存中 / saved=サーバーに保存済み / failed=電波などで未保存(自動でやり直す)
+//   item = { blob, url, path, state, pending }  ※ 開き直したあとに呼び戻した写真は blob=null
+function uploadStagedItem(orderId, item) {
+  if (item.pending) return item.pending;
+  item.state = 'saving';
+  item.pending = (async () => {
+    try {
+      const path = makePhotoPath(orderId);
+      const { error } = await supabaseClient.storage.from(PHOTO_BUCKET)
+        .upload(path, item.blob, { contentType: 'image/jpeg', upsert: false });
+      if (error) throw error;
+      item.path = path; item.state = 'saved';
+    } catch (e) {
+      item.state = 'failed';
+      item.lastErr = errMsg(e);
+      item.fails = (item.fails || 0) + 1;
+      // 同じ写真の再試行のたびにエラーを出し直さない(最初の1回だけ)
+      if (item.fails === 1) {
+        $('main-error').textContent = 'รูปยังไม่ได้บันทึกบนเซิร์ฟเวอร์ (รูปยังอยู่ในเครื่อง ระบบจะลองใหม่เอง อย่าปิดแอป)\nPhoto NOT saved to the server yet. It stays on this phone and will retry automatically – keep the app open.\n' + item.lastErr;
+      }
+    } finally {
+      item.pending = null;
+      renderFromCache();
+    }
+  })();
+  return item.pending;
+}
+
+// 保存に失敗している写真を、自動でやり直す(15秒ごとの更新のたびに)
+function retryFailedUploads() {
+  Object.keys(staged).forEach(id => (staged[id] || []).forEach(it => {
+    if (it.state === 'failed' && it.blob && !it.pending && !busy[id]) uploadStagedItem(id, it);
+  }));
+}
+
+// アプリを開き直したとき(メモリの写真が消えたとき)に、サーバーに保存済みの写真を呼び戻して、サムネイルとして並べ直す
+const restoreDone = {};   // orderId -> true(この画面で、保存済み写真の確認が済んだ注文)
+async function restoreSavedPhotos(todoList) {
+  let added = false;
+  await Promise.all(todoList.map(async o => {
+    if (restoreDone[o.id] || busy[o.id]) return;
+    if ((staged[o.id] || []).some(p => p.state === 'saving')) return;   // 保存中の写真と二重にならないよう、次の更新で確認する
+    restoreDone[o.id] = true;
+    try {
+      const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).list(o.id, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
+      if (error || !data) { restoreDone[o.id] = false; return; }   // 次の更新でもう一度確認する
+      const files = data.filter(f => f && f.name && /\.jpe?g$/i.test(f.name)).slice(0, MAX_PHOTOS);
+      for (const f of files) {
+        const path = `${o.id}/${f.name}`;
+        const have = (staged[o.id] || []);
+        if (have.length >= MAX_PHOTOS || have.some(p => p.path === path)) continue;
+        const { data: s, error: se } = await supabaseClient.storage.from(PHOTO_BUCKET).createSignedUrl(path, 6 * 3600);
+        if (se || !s) continue;
+        (staged[o.id] = staged[o.id] || []).push({ blob: null, url: s.signedUrl, path, state: 'saved', pending: null });
+        added = true;
+      }
+    } catch (_) { restoreDone[o.id] = false; }
+  }));
+  if (added) renderFromCache();
+}
+
 async function onPhotoPicked(orderId, input) {
   pickerUntil = 0;
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
   $('main-error').textContent = '';
+  let item;
   try {
     const blob = await shrinkImage(file);
-    (staged[orderId] = staged[orderId] || []).push({ blob, url: URL.createObjectURL(blob) });
+    item = { blob, url: URL.createObjectURL(blob), path: null, state: 'saving', pending: null };
+    (staged[orderId] = staged[orderId] || []).push(item);
     refreshLocation();
-    await loadOrders();
+    renderFromCache();
   } catch (e) {
     $('main-error').textContent = 'อ่านรูปไม่ได้: ' + (e.message || e);
+    return;
   }
+  uploadStagedItem(orderId, item);   // 待たずに、裏でサーバーへ保存する
 }
 
-function removePhoto(orderId, idx) {
+async function removePhoto(orderId, idx) {
   const arr = staged[orderId] || [];
-  if (arr[idx]) URL.revokeObjectURL(arr[idx].url);
-  arr.splice(idx, 1);
-  loadOrders();
+  const it = arr[idx];
+  if (!it || busy[orderId]) return;
+  if (it.pending) { try { await it.pending; } catch (_) {} }
+  if (it.path) {
+    // サーバーに保存済みの写真は、サーバーからも消す(消さないと、開き直したときに復活する)
+    const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).remove([it.path]);
+    if (error || (Array.isArray(data) && data.length === 0)) {
+      $('main-error').textContent = 'ลบรูปไม่สำเร็จ กรุณาลองใหม่\nCould not delete the photo. Please try again.' + (error ? '\n' + errMsg(error) : '');
+      return;
+    }
+  }
+  if (it.blob && it.url) URL.revokeObjectURL(it.url);
+  const k = arr.indexOf(it);
+  if (k >= 0) arr.splice(k, 1);
+  if (!arr.length) delete staged[orderId];
+  renderFromCache();
+}
+
+// 写真を撮ったのに「ส่งของแล้ว」をまだ押していない注文があるときの、画面上部の警告
+function updatePendingBanner(list) {
+  const n = (list || []).filter(o => (staged[o.id] || []).length > 0).length;
+  const el = $('pending-banner');
+  if (!el) return;
+  el.classList.toggle('hidden', n === 0);
+  el.innerHTML = n === 0 ? '' :
+    `⚠️ มี ${n} รายการที่ถ่ายรูปแล้ว แต่ยังไม่ได้กด “ส่งของแล้ว”<small>${n} order(s) with photos NOT delivered yet – tap to jump</small>`;
+}
+function jumpToPending() {
+  setTab('todo');
+  const card = [...$('todo-list').querySelectorAll('.card')].find(c => (staged[c.dataset.id] || []).length > 0);
+  if (!card) return;
+  const bar = document.querySelector('.top-fixed');
+  const off = (bar ? bar.offsetHeight : 0) + 8;
+  window.scrollTo({ top: window.scrollY + card.getBoundingClientRect().top - off, behavior: 'smooth' });
 }
 
 function blobToBase64(blob) {
@@ -939,7 +1142,7 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
 // 直接お客様に渡した注文: 写真もメールもなしで完了にする(一覧から「送信済み」欄へ移す)
 async function markHandedOver(orderId) {
   if (busy[orderId]) return;
-  if (!confirmDone(orderId, '🤝 ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?')) return;
+  if (!(await confirmDone(orderId, '🤝 ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?'))) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   const locPromise = getCompletionLocation();
@@ -949,8 +1152,9 @@ async function markHandedOver(orderId) {
       { p_order_id: orderId, p_paths: null, p_handed_over: true,
         p_lat: loc ? loc.lat : null, p_lng: loc ? loc.lng : null, p_accuracy_m: loc ? loc.acc : null });
     if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
+    doneToast();
   } catch (e) {
-    $('main-error').textContent = e.message || String(e);
+    $('main-error').textContent = errMsg(e) || String(e);
   } finally {
     delete busy[orderId];
     await loadOrders();
@@ -962,14 +1166,15 @@ async function markHandedOver(orderId) {
 // 「写真なしで完了」「手渡し済み」を押し間違えたとき、完了から10分以内なら元に戻す(判定はDB側でも行う)
 async function undoDone(orderId) {
   if (busy[orderId]) return;
-  if (!confirmDone(orderId, '↩️ ยกเลิกการปิดงานนี้ใช่หรือไม่?\nออเดอร์จะกลับไปอยู่ใน “รอส่งรูป”')) return;
+  if (!(await confirmDone(orderId, '↩️ ยกเลิกการปิดงานนี้ใช่หรือไม่?\nออเดอร์จะกลับไปอยู่ใน “รอส่งรูป”'))) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
     const { error } = await supabaseClient.rpc('delivery_app_undo', { p_order_id: orderId });
     if (error) throw new Error(String(error.message).includes('UNDO_NOT_AVAILABLE') ? 'ยกเลิกไม่ได้แล้ว (เกิน 10 นาที หรือมีการส่งอีเมลแล้ว)' : 'ยกเลิกไม่สำเร็จ: ' + error.message);
+    showToast('↩️ ยกเลิกการปิดงานแล้ว / Undone');
   } catch (e) {
-    $('main-error').textContent = e.message || String(e);
+    $('main-error').textContent = errMsg(e) || String(e);
   } finally {
     delete busy[orderId];
     await loadOrders();
@@ -977,14 +1182,15 @@ async function undoDone(orderId) {
 }
 async function skipPhoto(orderId) {
   if (busy[orderId]) return;
-  if (!confirmDone(orderId, '✔️ ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”')) return;
+  if (!(await confirmDone(orderId, '✔️ ปิดงานโดยไม่มีรูปใช่หรือไม่?\nจะไม่มีอีเมลถึงลูกค้า และระบบจะบันทึกว่า “ไม่มีรูป”'))) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   try {
     const { error } = await supabaseClient.rpc('delivery_app_skip', { p_order_id: orderId });
     if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
+    doneToast();
   } catch (e) {
-    $('main-error').textContent = e.message || String(e);
+    $('main-error').textContent = errMsg(e) || String(e);
   } finally {
     delete busy[orderId];
     await loadOrders();
@@ -992,60 +1198,65 @@ async function skipPhoto(orderId) {
 }
 
 async function submitDelivery(orderId) {
-  const photos = staged[orderId] || [];
-  if (!photos.length || busy[orderId]) return;
-  if (!confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที')) return;
+  if (!(staged[orderId] || []).length || busy[orderId]) return;
+  if (!(await confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที'))) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   // ボタンを押した瞬間の位置を取り始める(写真のアップロードと並行して待つので、追加の待ち時間はほぼ出ない)
   const locPromise = getCompletionLocation();
   await loadOrders();
-  let uploadedPaths = [];
   try {
+    const items = (staged[orderId] || []).slice();
+    if (!items.length) throw new Error('ไม่พบรูป กรุณาถ่ายรูปใหม่\nPhoto not found. Please take the photo again.');
     const order = await fetchOrder(orderId);
     if (order.delivered_at) throw new Error('ส่งรูปของออเดอร์นี้ไปแล้ว');
     let deliveredIso = new Date().toISOString();
 
-    // 1) 写真を保管庫へ(これが証拠になる)
-    for (let i = 0; i < photos.length; i++) {
-      const path = `${orderId}/${deliveredIso.replace(/[:.]/g, '-')}_${i + 1}.jpg`;
-      const { error } = await supabaseClient.storage.from(PHOTO_BUCKET)
-        .upload(path, photos[i].blob, { contentType: 'image/jpeg', upsert: false });
-      if (error) throw new Error('อัปโหลดรูปไม่สำเร็จ: ' + error.message);
-      uploadedPaths.push(path);
+    // 1) 写真が全部サーバーに保存されているのを確認する(撮影時に保存済みならそのまま使う。未保存の分だけここで保存)
+    for (const it of items) {
+      if (it.pending) { try { await it.pending; } catch (_) {} }
+      if (!it.path) {
+        if (!it.blob) throw new Error('อ่านรูปไม่ได้ กรุณาถ่ายรูปใหม่\nCannot read the photo. Please take it again.');
+        await uploadStagedItem(orderId, it);
+        if (!it.path) throw new Error('อัปโหลดรูปไม่สำเร็จ: ' + (it.lastErr || '') + '\nรูปยังอยู่ในเครื่อง กรุณากดส่งอีกครั้ง');
+      }
     }
+    const paths = items.map(it => it.path);
 
     // 2) 注文に配達完了時刻と写真を記録(メールが失敗しても記録は残る)
     const loc = await locPromise;
     const { data: doneAt, error: updErr } = await supabaseClient.rpc('delivery_app_complete',
-      { p_order_id: orderId, p_paths: uploadedPaths, p_handed_over: false,
+      { p_order_id: orderId, p_paths: paths, p_handed_over: false,
         p_lat: loc ? loc.lat : null, p_lng: loc ? loc.lng : null, p_accuracy_m: loc ? loc.acc : null });
-    if (updErr) throw new Error(String(updErr.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง) รูปที่ถ่ายไม่ได้ถูกบันทึก' : 'บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
+    if (updErr) throw new Error(String(updErr.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + updErr.message + '\nกรุณาแจ้งแคชเชียร์');
     if (doneAt) deliveredIso = new Date(doneAt).toISOString();
+    doneToast();
 
     // 3) お客様へ写真つきメール(メールアドレスがある場合のみ)
     let mailMsg = '';
     if (order.has_email) {
       try {
-        await sendDeliveryEmail(order, deliveredIso, photos.map(p => p.blob));
+        const blobs = [];
+        for (const it of items) {
+          if (it.blob) { blobs.push(it.blob); continue; }
+          // 開き直したあとに呼び戻した写真は、サーバーから取り直す
+          const { data: dl, error: dlErr } = await supabaseClient.storage.from(PHOTO_BUCKET).download(it.path);
+          if (dlErr) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ: ' + dlErr.message);
+          blobs.push(dl);
+        }
+        await sendDeliveryEmail(order, deliveredIso, blobs);
         await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
       } catch (e) {
         mailMsg = 'บันทึกรูปแล้ว แต่ส่งอีเมลไม่สำเร็จ กดส่งอีกครั้งในรายการ "ส่งแล้ววันนี้"\nPhoto saved, but the email failed. Use "Resend email" in the Done list.\n(' + (e.message || e) + ')';
       }
     }
 
-    photos.forEach(p => URL.revokeObjectURL(p.url));
+    items.forEach(it => { if (it.blob && it.url) URL.revokeObjectURL(it.url); });
     delete staged[orderId];
     if (mailMsg) $('main-error').textContent = mailMsg;
   } catch (e) {
-    $('main-error').textContent = e.message || String(e);
-    // 途中で失敗した場合、アップロード済みの写真が注文に紐付いていなければ掃除する
-    if (uploadedPaths.length) {
-      try {
-        const o = await fetchOrder(orderId);
-        if (!o.delivered_at) await supabaseClient.storage.from(PHOTO_BUCKET).remove(uploadedPaths);
-      } catch (_) { /* 掃除に失敗しても業務には影響しない */ }
-    }
+    // 失敗しても、保存済みの写真は消さない(もう一度押せば、そのまま使える)
+    $('main-error').textContent = errMsg(e) || String(e);
   } finally {
     delete busy[orderId];
     await loadOrders();
@@ -1089,7 +1300,7 @@ $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') lo
 $('staff-ok-btn').addEventListener('click', chooseStaff);
 $('refresh-btn').addEventListener('click', loadOrders);
 $('menu-btn').addEventListener('click', openMenu);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff) loadOrders(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff) loadOrders(true); });
 // 2台で1つの一覧を共有するので、相手の完了が早く反映されるよう15秒ごとに更新する。
 // ただしカメラ(写真選択)を開いている間は、画面を作り直すと撮った写真が消えることがあるので更新しない(最大90秒)。
 let pickerUntil = 0;
@@ -1098,7 +1309,7 @@ document.addEventListener('click', e => {
   if (b && /\.click\(\)/.test(b.getAttribute('onclick') || '')) pickerUntil = Date.now() + 90000;
 }, true);
 // メモを書いている間も更新しない(書きかけの文字が消えないように)
-setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil && !Object.keys(memoEditing).length) loadOrders(); }, 15000);
+setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil && !Object.keys(memoEditing).length) loadOrders(true); }, 15000);
 
 // アプリ本体の自動更新: 新しい版が公開されたら、作業の邪魔にならない時だけ自動で読み込み直す。
 // 撮影済みの写真・送信中・メモ入力中・カメラ起動中は絶対に再読み込みしない。
@@ -1111,7 +1322,9 @@ async function checkAppUpdate() {
     let h = 0; for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) | 0;
     if (appHash === null) { appHash = h; return; }
     if (h === appHash) return;
-    const working = Object.keys(staged).length || Object.keys(busy).length || Object.keys(memoEditing).length || Date.now() < pickerUntil;
+    // 写真はサーバーに保存済み(state=saved)なら、読み込み直しても消えない。まだ保存されていない写真があるときだけ待つ
+    const unsaved = Object.values(staged).some(arr => (arr || []).some(p => p.state !== 'saved'));
+    const working = unsaved || Object.keys(busy).length || Object.keys(memoEditing).length || Date.now() < pickerUntil;
     if (!working && !document.hidden) location.reload();
   } catch (_) { /* オフライン等は無視 */ }
 }
@@ -1171,7 +1384,7 @@ function afterRender(id, l) {
   rebuildCondoOptions();
   applySearch();
 }
-renderTodo = function (l) { _renderTodo(l); afterRender('todo-list', l); };
+renderTodo = function (l) { _renderTodo(l); afterRender('todo-list', l); updatePendingBanner(l); };
 renderDone = function (l) { _renderDone(l); afterRender('done-list', l); };
 const _setTab = setTab;
 setTab = function (n) { _setTab(n); rebuildCondoOptions(); applySearch(); };
