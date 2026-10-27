@@ -60,8 +60,8 @@
   .area-tabs button.active { background: var(--panel); font-weight: 700; }
   .tab-badge { display: inline-block; min-width: 16px; padding: 0 5px; margin-left: 5px; border-radius: 999px; background: var(--red-accent); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 
-  /* SCB deposit strip: one horizontal row above the area tabs (Total / Bangkok only) */
-  .scb-strip { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; }
+  /* SCB deposit strip: one horizontal row right below "Today's Delivery Orders" (Total / Bangkok only) */
+  .scb-strip { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; margin-bottom: 16px; }
   .scb-strip-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
   .scb-strip-title { font-weight: 700; }
   .scb-strip-count { color: var(--text-muted); }
@@ -678,15 +678,6 @@
 
 <main id="main">
 
-  <div class="scb-strip" id="scb-strip" style="display:none;">
-    <div class="scb-strip-head">
-      <span class="scb-strip-title">SCB deposits</span>
-      <span class="scb-strip-count" id="scb-strip-count"></span>
-      <button type="button" class="scb-strip-refresh" onclick="loadScbSms(true)" aria-label="Refresh SCB deposits" title="Refresh">&#8635;</button>
-    </div>
-    <div class="scb-strip-list" id="scb-strip-list"></div>
-  </div>
-
   <div class="area-tabs">
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
@@ -776,6 +767,15 @@
         <div class="value" id="today-count-total">0</div>
       </div>
     </div>
+  </div>
+
+  <div class="scb-strip" id="scb-strip" style="display:none;">
+    <div class="scb-strip-head">
+      <span class="scb-strip-title">SCB deposits</span>
+      <span class="scb-strip-count" id="scb-strip-count"></span>
+      <button type="button" class="scb-strip-refresh" onclick="loadScbSms(true)" aria-label="Refresh SCB deposits" title="Refresh">&#8635;</button>
+    </div>
+    <div class="scb-strip-list" id="scb-strip-list"></div>
   </div>
 
   <div class="express-toolbar" id="express-toolbar" style="display:none;">
