@@ -60,6 +60,19 @@
   .area-tabs button.active { background: var(--panel); font-weight: 700; }
   .tab-badge { display: inline-block; min-width: 16px; padding: 0 5px; margin-left: 5px; border-radius: 999px; background: var(--red-accent); color: #fff; font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
 
+  /* SCB deposit strip: one horizontal row above the area tabs (Total / Bangkok only) */
+  .scb-strip { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; }
+  .scb-strip-head { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+  .scb-strip-title { font-weight: 700; }
+  .scb-strip-count { color: var(--text-muted); }
+  .scb-strip-refresh { margin-left: auto; border: 1px solid var(--border); background: #fff; border-radius: 4px; width: 28px; height: 24px; cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+  .scb-strip-list { display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .scb-chip { flex: 0 0 auto; min-width: 92px; background: #f4f3ef; border-radius: 6px; padding: 5px 8px; }
+  .scb-chip.today { background: var(--status-unprinted); }
+  .scb-chip-amt { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .scb-chip-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .scb-strip-msg { font-size: 12px; color: var(--text-muted); padding: 4px 2px; }
+
   .filter-bar {
     background: var(--panel); border: 1px solid var(--border); border-radius: 0 4px 4px 4px;
     padding: 14px 16px; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px;
@@ -665,6 +678,15 @@
 
 <main id="main">
 
+  <div class="scb-strip" id="scb-strip" style="display:none;">
+    <div class="scb-strip-head">
+      <span class="scb-strip-title">SCB deposits</span>
+      <span class="scb-strip-count" id="scb-strip-count"></span>
+      <button type="button" class="scb-strip-refresh" onclick="loadScbSms(true)" aria-label="Refresh SCB deposits" title="Refresh">&#8635;</button>
+    </div>
+    <div class="scb-strip-list" id="scb-strip-list"></div>
+  </div>
+
   <div class="area-tabs">
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
@@ -1155,6 +1177,8 @@ function showMain() {
   loadInboxBadge();
   checkReportsBadge();
   loadReceivablesBadge();
+  updateScbStripVisibility();
+  loadScbSms(true);
 
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
@@ -1176,10 +1200,101 @@ function showMain() {
     loadInboxBadge();
     checkReportsBadge();
     loadReceivablesBadge();
+    loadScbSms(false);
   });
 
   // 未読バッジ・レポート新着バッジは5分おきに自動更新(GAS側は30分おきチェックだが、他スタッフの操作も反映したいため)
   setInterval(() => { loadInboxBadge(); checkReportsBadge(); loadReceivablesBadge(); }, 5 * 60 * 1000);
+  // SCB deposit strip: refresh every 2 minutes while the page is visible
+  setInterval(() => { if (document.visibilityState === 'visible') loadScbSms(false); }, 2 * 60 * 1000);
+}
+
+// ---------------- SCB deposit strip (Total / Bangkok tabs) ----------------
+// Shows the last 7 days of SCB deposit notifications (same source as Slip Management > SCB SMS),
+// fetched through the Supabase Edge Function "scb-sms" (staff / admin login required).
+// Only the amount and the date/time are shown. Newest first, one horizontal row.
+let scbSmsLoadedAt = 0;
+let scbSmsLoading = false;
+let scbSmsHasData = false;
+const SCB_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function updateScbStripVisibility() {
+  const strip = document.getElementById('scb-strip');
+  if (!strip) return;
+  strip.style.display = (currentAreaFilter === '' || currentAreaFilter === 'Bangkok') ? 'block' : 'none';
+}
+
+// Parse a timestamp string into Bangkok wall-clock parts. Returns null if it cannot be read.
+function scbParseStamp(value) {
+  if (!value) return null;
+  const s = String(value).trim();
+  // ISO string with Z or an explicit offset -> convert to Bangkok time
+  if (/^\d{4}-\d{2}-\d{2}T.*(Z|[+-]\d{2}:?\d{2})$/.test(s)) {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return null;
+    const b = new Date(d.getTime() + 7 * 3600000);
+    return { y: b.getUTCFullYear(), m: b.getUTCMonth() + 1, d: b.getUTCDate(), hh: b.getUTCHours(), mm: b.getUTCMinutes() };
+  }
+  // YYYY-MM-DD HH:MM (or with T / slashes) -> already Bangkok wall-clock time
+  let m = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[ T]+(\d{1,2}):(\d{2})/);
+  if (m) return { y: +m[1], m: +m[2], d: +m[3], hh: +m[4], mm: +m[5] };
+  // DD/MM/YY(YY) HH:MM
+  m = s.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})[ T@]+(\d{1,2}):(\d{2})/);
+  if (m) {
+    let y = +m[3];
+    if (y < 100) y += 2000;
+    if (y > 2400) y -= 543; // Buddhist era
+    return { y, m: +m[2], d: +m[1], hh: +m[4], mm: +m[5] };
+  }
+  return null;
+}
+
+function scbItemStamp(item) {
+  return scbParseStamp(item.tx_date) || scbParseStamp(item.received_at);
+}
+
+async function loadScbSms(force) {
+  const strip = document.getElementById('scb-strip');
+  const list = document.getElementById('scb-strip-list');
+  const countEl = document.getElementById('scb-strip-count');
+  if (!strip || !list || scbSmsLoading) return;
+  if (!force && Date.now() - scbSmsLoadedAt < 60000) return; // at most once per minute unless refreshed by hand
+  scbSmsLoading = true;
+  if (!scbSmsHasData) list.innerHTML = '<span class="scb-strip-msg">Loading...</span>';
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('scb-sms');
+    if (error || !data || !data.ok) throw new Error('load failed');
+    const items = (data.items || [])
+      .map(it => ({ amount: Number(it.amount), stamp: scbItemStamp(it) }))
+      .filter(it => it.stamp && !isNaN(it.amount))
+      .map(it => ({ ...it, key: Date.UTC(it.stamp.y, it.stamp.m - 1, it.stamp.d, it.stamp.hh, it.stamp.mm) }))
+      .sort((a, b) => b.key - a.key);
+    const today = todayStr();
+    list.innerHTML = '';
+    items.forEach(it => {
+      const s = it.stamp;
+      const dateKey = `${s.y}-${String(s.m).padStart(2, '0')}-${String(s.d).padStart(2, '0')}`;
+      const chip = document.createElement('div');
+      chip.className = 'scb-chip' + (dateKey === today ? ' today' : '');
+      const amt = document.createElement('div');
+      amt.className = 'scb-chip-amt';
+      amt.textContent = it.amount.toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ฿';
+      const time = document.createElement('div');
+      time.className = 'scb-chip-time';
+      time.textContent = `${SCB_MONTHS[s.m - 1]} ${s.d} ${String(s.hh).padStart(2, '0')}:${String(s.mm).padStart(2, '0')}`;
+      chip.appendChild(amt);
+      chip.appendChild(time);
+      list.appendChild(chip);
+    });
+    if (!items.length) list.innerHTML = '<span class="scb-strip-msg">No deposits in the last 7 days</span>';
+    countEl.textContent = items.length ? `${items.length} in 7 days` : '';
+    scbSmsHasData = true;
+    scbSmsLoadedAt = Date.now();
+  } catch (e) {
+    if (!scbSmsHasData) list.innerHTML = '<span class="scb-strip-msg">Could not load SCB deposits. Tap the refresh button to retry.</span>';
+  } finally {
+    scbSmsLoading = false;
+  }
 }
 
 // receivables.htmlで今日(バンコク時間)の日付のPDFがアップロードされていたら、
@@ -1943,6 +2058,7 @@ function setAreaTab(btn, area) {
   document.querySelectorAll('.area-tabs button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentAreaFilter = area;
+  updateScbStripVisibility();
   document.getElementById('express-toolbar').style.display = (area === '__EXPRESS__') ? 'flex' : 'none';
   document.getElementById('rice-summary-panel').style.display = 'none';
   document.getElementById('tuna-tofu-summary-panel').style.display = 'none';
