@@ -992,7 +992,7 @@
       <description>Thai white pork ground meat. Fat content: 15%-20%. 200g</description>
       <link>https://saitofoods.com/en/products/602.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483113857_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>86.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1057,7 +1057,7 @@
       <description>弊社オリジナルのキムチペーストと豚バラ肉、玉ねぎをマリネしたものです。解凍後にフライパンで焼いてお召し上がりください。ピリ辛なのでお酒のおつまみやおかずに!200g入りです。</description>
       <link>https://saitofoods.com/en/products/1071.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484796937_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>160.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1885,32 +1885,6 @@
       <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
-      <g:id>271</g:id>
-      <title>Frozen Gyudon Beef Topping 130g</title>
-      <description>牛丼が美味しくバージョンアップしました! 内容量を130gにアップし、使用している牛肉はUSビーフ に変更、玉ねぎも増量しました。なのに価格は据え置き! この商品は加熱調理済みの商品です。 お好みの暖かさに加熱してお召し上がりくださいませ。</description>
-      <link>https://saitofoods.com/en/products/271.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>110.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Original Products</g:product_type>
-    </item>
-    <item>
-      <g:id>1181</g:id>
-      <title>Frozen Hokkaido Squid Kimchi 100g</title>
-      <description>北海道産のスルメイカでイカキムチを作ってみました! 熱いご飯にのせて!もしくはお酒のアテに。 100g入り</description>
-      <link>https://saitofoods.com/en/products/1181.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483377477_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>180.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Original Products</g:product_type>
-    </item>
-    <item>
       <g:id>979</g:id>
       <title>Handmade Frozen Okara-Ni 200g</title>
       <description>手作りでニンジン、豚肉、しめじ、おから200gで甘すぎないように炊きました。 無添加です。</description>
@@ -2048,7 +2022,7 @@
       <link>https://saitofoods.com/en/products/1198.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486836393_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10031448_66fe4c378a547.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>200.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2348,7 +2322,7 @@
       <description>日本から輸入(アメリカ産日本加工)しましたギンダラセンターカットを当社で切り身に致しました。 一枚が大体100g程度に切れてます。2枚入り。 銀鱈美味しいですね!!照り焼き、煮つけ、味噌漬け最高です。 こちらの商品は量り売りです。 表示されている価格は予定価格となります。 実際に配送された際の価格と異なります。 あらかじめご了承くださいませ。 100baht/100g</description>
       <link>https://saitofoods.com/en/products/1012.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483207149_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>200.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2552,19 +2526,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Imported from Japan</g:product_type>
-    </item>
-    <item>
-      <g:id>1095</g:id>
-      <title>Frozen Grilled Sawara in Saikyo Miso 100g</title>
-      <description>既に焼いてある日本産サワラの西京味噌漬けです。 湯銭または自然解凍でお召しあがれる商品です。 100g 甘めの味付けですが、しっかりと味が入ってます。 ご飯が進む味付けです。</description>
-      <link>https://saitofoods.com/en/products/1095.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555424680_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>75.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>1303</g:id>
@@ -2893,19 +2854,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Non Preservative Products</g:product_type>
-    </item>
-    <item>
-      <g:id>1353</g:id>
-      <title>Hokkaido Baked Cheese Truffle Flavor 45g</title>
-      <description>芳醇な香りがほどける、上品な焼きチーズ。 ひと口食べた瞬間に広がる、濃厚なチーズのコクと香ばしさ。そして後からふわりと漂うトリュフの芳醇な香り──「トリュフ香る Baked Cheese」は、家飲みのレベルを軽々と超えてくる贅沢なチーズスナックです。 魚のすり身シートにチーズをのせ、トリュフオイルで風味づけしてから丁寧に焼き上げることで、チーズの旨みを最大限に引き出しつつ、トリュフのリッチな余韻が重なる奥深い味わいに仕上げました。シンプルな素材ながら、ひと口ごとに広がる香りとコクはまさに“大人のご褒美”。 https://kitanohako.shop/items/61d699a10020fc062cdf6d39</description>
-      <link>https://saitofoods.com/en/products/1353.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/04061021_69d326a9d4987.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>140.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
     </item>
     <item>
       <g:id>1327</g:id>
@@ -3294,7 +3242,7 @@
       <description>忙しい朝、移動の間、運動の前後に手軽に栄養を補給できる商品です。この商品は、人口甘味料と着色料を使用していません。アップル味。Lカルニチン125mg配合。脂肪燃焼に効果的!</description>
       <link>https://saitofoods.com/en/products/1247.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882606186_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>14.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3469,6 +3417,19 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>local products</g:product_type>
+    </item>
+    <item>
+      <g:id>1292</g:id>
+      <title>Thai Silk Dental Floss</title>
+      <description>タイ産シルク繊維を、天然の蜜蝋でコーティング! 故シリキット王太后のご支援により創設された財団に由来する製品です。 歯間に入りやすく歯茎を傷めにくいソフトなフィット感。 私自身と息子も長年愛用しており、タイならではのお土産としてもおすすめです。 使用感/詳細 ・スルッと歯間におさまるやわらかなフィット感 ・ミント味なし!!!息子幼少時から仕上げ磨きに欠かせません ・天然由来の糸に食べかすが絡みやすい ・フロスによっては知覚過敏が生じる私の歯も無事です(全ての方に生じることがないとは限りません) ・裏面の日付は製造年月日です。使用期限の設定はございませんが、保管状態により品質が変化する場合があります。変色・異臭等が見られる場合は使用を中止してください ・天然蜜蝋:滅菌済 ・長さ:約30m</description>
+      <link>https://saitofoods.com/en/products/1292.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874847512_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>175.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Mae Kanom</g:product_type>
     </item>
   </channel>
 </rss>
