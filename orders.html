@@ -165,9 +165,14 @@
   }
 
   .manage-col { display: flex; flex-direction: column; gap: 6px; min-width: 100px; }
-  .manage-col button {
+  .manage-col button, .id-actions button {
     font-size: 11px; padding: 6px 6px; border-radius: 4px; border: none; cursor: pointer; font-family: inherit; color: white; line-height: 1.3;
   }
+  /* Complete / Confirm Payment / Not Collected は、押し間違い対策でOrder IDの下に置く(2026-10-27) */
+  .id-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .id-actions:empty { display: none; }
+  .id-actions button { width: 100%; }
+  .id-actions .btn-complete { margin-bottom: 4px; }
   .btn-check { background: #3b8fd6; }
   .btn-reorder { background: #e08a2e; }
   .btn-complete { background: #4b9d5f; }
@@ -589,7 +594,7 @@
 
     /* 管理列のボタンをタップしやすい大きさに */
     .manage-col { min-width: 90px; }
-    .manage-col button { padding: 10px 6px; font-size: 12px; min-height: 40px; }
+    .manage-col button, .id-actions button { padding: 10px 6px; font-size: 12px; min-height: 40px; }
 
     .scroll-fab-wrap { right: 10px; }
     .scroll-fab-wrap-top { top: 14px; }
@@ -760,7 +765,7 @@
       <tr>
         <th style="width:110px;">วันที่จัดส่ง<span class="en">Delivery-Date</span></th>
         <th style="width:90px;">เวลา<span class="en">Time</span></th>
-        <th style="width:110px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
+        <th style="width:140px;">รหัสคำสั่งซื้อ<span class="en">Order ID</span></th>
         <th style="width:200px;">จัดการ<span class="en">Manage</span></th>
         <th>รายละเอียด<span class="en">Details</span></th>
         <th style="width:250px;">ออกเดินทาง / สลิป<span class="en">Dispatch / Slip</span></th>
@@ -3018,7 +3023,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   tr.innerHTML = `
     <td class="center">${dateCell}</td>
     <td class="center">${formatTimeSlotCell(order.delivery_time_slot, order.condo_name, order.area_name)}</td>
-    <td class="center">${order.id.slice(0, 8)}</td>
+    <td class="center">${order.id.slice(0, 8)}<div class="id-actions"></div></td>
     <td><div class="manage-col" id="manage-${order.id}"></div></td>
     <td class="details-cell">
       ${customerCancelledHtml}
@@ -3049,6 +3054,8 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   `;
 
   const manageCol = tr.querySelector('.manage-col');
+  // Order IDの下の置き場: Complete / Confirm Payment / Not Collected のボタンはここに入れる(2026-10-27)
+  const idActions = tr.querySelector('.id-actions');
 
   // 非公開の保存先に入っているスリップ画像は、一時的な閲覧用URLを取ってサムネイルに反映する
   if (isStorageSlip(order.slip_image_url)) hydrateStorageSlip(tr.querySelector('.slip-storage'), order.slip_image_url);
@@ -3089,7 +3096,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
         manageCol.appendChild(makeButton('Edit / แก้ไข', () => openWholesaleModal(order), 'btn-reorder'));
       }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
-      manageCol.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
+      idActions.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
       // シラチャの配送注文は、配送当日になったらキャンセル不可(現地への手配が既に進んでいるため)
       const isSrirachaToday = order.area_name === 'Sriracha' && order.delivery_date === todayStr();
       // Cancel(キャンセル処理)はmakokunn@live.jpのみ(2026-09-26変更): 従来からキャンセルは
@@ -3116,9 +3123,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     // さらに加算されてしまい、二重計上になるため(2026-08-20発覚)。
     if (canManualPay()) {
       if (order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+        idActions.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       } else if (getPaymentState(order) !== 'paid') {
-        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
+        idActions.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
     // Delete(完全削除)はmakokunn@live.jpのみ(2026-09-26変更)
@@ -3135,9 +3142,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     // Completedでロックされた後でも、許可された3人は振込み確認の追加・取消を行えるようにしておく
     if (canManualPay()) {
       if (order.manual_payment_confirmed) {
-        manageCol.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
+        idActions.appendChild(makeButton('Undo Confirmation / ยกเลิกการยืนยัน', () => undoManualPayment(order.id), 'btn-manual-pay-undo'));
       } else if (getPaymentState(order) !== 'paid') {
-        manageCol.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
+        idActions.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
   }
@@ -3148,9 +3155,9 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   // Complete済みの注文は管理者しか直接更新できないため、専用の関数(set_payment_uncollected)経由で更新する。
   if (order.is_completed && order.order_type === 'delivery' && !order.is_wholesale && getPaymentState(order) !== 'paid') {
     if (order.payment_uncollected) {
-      manageCol.appendChild(makeButton('Undo Not Collected / ยกเลิก', () => setPaymentUncollected(order, false), 'btn-uncollected-undo'));
+      idActions.appendChild(makeButton('Undo Not Collected / ยกเลิก', () => setPaymentUncollected(order, false), 'btn-uncollected-undo'));
     } else {
-      manageCol.appendChild(makeButton('⚠️ Not Collected / ยังไม่ได้รับเงิน', () => setPaymentUncollected(order, true), 'btn-uncollected'));
+      idActions.appendChild(makeButton('⚠️ Not Collected / ยังไม่ได้รับเงิน', () => setPaymentUncollected(order, true), 'btn-uncollected'));
     }
   }
 
