@@ -725,7 +725,7 @@
         <option value="walk_in">Walk-in / หน้าร้าน</option>
       </select>
     </label>
-    <button class="btn btn-search" onclick="loadOrders()">Search / ค้นหา</button>
+    <button class="btn btn-search" onclick="loadOrders({resetScroll:true})">Search / ค้นหา</button>
     <button class="btn" onclick="resetToToday()">Today / วันนี้</button>
     <button class="btn" style="background:#6b4fa0;color:#fff;" onclick="openWholesaleModal()">🏢 Wholesale Entry / คีย์ขายส่ง</button>
   </div>
@@ -1188,7 +1188,7 @@ function showMain() {
   document.getElementById('filter-end').value = '';
   loadStaffLinks();
   loadShippingSettings();
-  loadStaffList().then(() => loadOrders());
+  loadStaffList().then(() => loadOrders({ resetScroll: true }));
   loadInboxBadge();
   checkReportsBadge();
   loadReceivablesBadge();
@@ -1454,7 +1454,7 @@ function resetToToday() {
   document.getElementById('filter-type').value = '';
   toggleSearchClearBtn('filter-tel', 'filter-tel-clear-btn');
   toggleSearchClearBtn('filter-name', 'filter-name-clear-btn');
-  loadOrders();
+  loadOrders({ resetScroll: true });
 }
 
 (async function init() {
@@ -2137,11 +2137,43 @@ function setAreaTab(btn, area) {
   document.getElementById('condo-summary-panel').style.display = 'none';
   document.getElementById('today-count-panel').style.display = 'none';
   document.getElementById('pickup-sheet-bar').style.display = 'none';
-  loadOrders();
+  loadOrders({ resetScroll: true });
 }
 
 // ---------------- Load orders ----------------
-async function loadOrders() {
+// 一覧の再読み込み(編集・重量確定・Complete等の操作後)で、画面が一覧の一番上に戻ってしまわないよう、
+// 再読み込み前に「画面の一番上に見えていた注文」とその位置を覚えておき、描画後に同じ位置へ戻す(2026-10-28)。
+// 検索ボタン・タブ切替・今日に戻す・初回表示では opts.resetScroll=true を渡し、従来通りスクロールは戻さない。
+function captureScrollAnchor() {
+  const rows = document.querySelectorAll('#orders-tbody tr[data-order-id], #orders-tbody tr[data-expr-id]');
+  for (const tr of rows) {
+    const r = tr.getBoundingClientRect();
+    if (r.bottom > 0) {
+      return { id: tr.dataset.orderId || tr.dataset.exprId, top: r.top };
+    }
+  }
+  return null;
+}
+function restoreScrollAnchor(anchor, prevY) {
+  if (anchor) {
+    const tr = Array.from(document.querySelectorAll('#orders-tbody tr[data-order-id], #orders-tbody tr[data-expr-id]'))
+      .find(el => (el.dataset.orderId || el.dataset.exprId) === anchor.id);
+    if (tr) {
+      window.scrollBy(0, tr.getBoundingClientRect().top - anchor.top);
+      return;
+    }
+  }
+  // 注文が見つからない(削除・キャンセル等で一覧から消えた)場合は、元のスクロール量に戻す
+  window.scrollTo(0, prevY);
+}
+async function loadOrders(opts) {
+  const keep = !(opts && opts.resetScroll);
+  const anchor = keep ? captureScrollAnchor() : null;
+  const prevY = window.scrollY;
+  await _loadOrdersInner();
+  if (keep) restoreScrollAnchor(anchor, prevY);
+}
+async function _loadOrdersInner() {
   // Plaa-Ta-Pianタブ選択中は、通常のordersではなくplaa_tapian_salesテーブルを表示する
   if (currentAreaFilter === '__PLAATAPIAN__') { return loadPlaaTapianSales(); }
   // Express入力タブ選択中は、Complete済み・未入力の注文/プラータピアン売上をまとめて表示する
@@ -3123,6 +3155,7 @@ async function resetDeparture(orderId) {
 
 function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const tr = document.createElement('tr');
+  tr.dataset.orderId = order.id;
   tr.style.background = getStatusColor(order);
   // 日付が変わる最初の行に印を付け、その行の上だけ太い罫線になるようにする(CSS参照)。
   if (showDate) tr.classList.add('date-start');
