@@ -208,8 +208,8 @@
       <input id="login-email" type="email" autocomplete="username" inputmode="email">
       <label for="login-password">Password</label>
       <div class="pw-wrap">
-        <input id="login-password" type="password" autocomplete="current-password">
-        <button type="button" id="pw-toggle" class="pw-toggle" aria-label="show password" aria-pressed="false">👁</button>
+        <input id="login-password" type="text" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false">
+        <button type="button" id="pw-toggle" class="pw-toggle" aria-label="hide password" aria-pressed="true">🙈</button>
       </div>
       <button class="btn" id="login-btn">เข้าสู่ระบบ</button>
       <div id="login-error" class="err"></div>
@@ -1305,13 +1305,14 @@ function enterMain() {
 
 $('login-btn').addEventListener('click', login);
 $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
-// 目のボタン: 押している間ではなく、押すたびに「見える/隠す」を切り替える
+// パスワードは最初から文字が見える状態。右のボタンを押すたびに「見える/隠す」を切り替える
 $('pw-toggle').addEventListener('click', () => {
   const inp = $('login-password');
-  const show = inp.type === 'password';
-  inp.type = show ? 'text' : 'password';
-  $('pw-toggle').setAttribute('aria-pressed', show ? 'true' : 'false');
-  $('pw-toggle').textContent = show ? '🙈' : '👁';
+  const hide = inp.type === 'text';
+  inp.type = hide ? 'password' : 'text';
+  $('pw-toggle').setAttribute('aria-pressed', hide ? 'false' : 'true');
+  $('pw-toggle').setAttribute('aria-label', hide ? 'show password' : 'hide password');
+  $('pw-toggle').textContent = hide ? '👁' : '🙈';
 });
 $('staff-ok-btn').addEventListener('click', chooseStaff);
 $('refresh-btn').addEventListener('click', loadOrders);
