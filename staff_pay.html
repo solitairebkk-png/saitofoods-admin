@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>配達報酬 | Saito Foods</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #1c3557; --navy-light: #2d4d7a; --red-accent: #d94f3d;
+    --bg: #f6f5f2; --panel: #ffffff; --border: #dcdad4;
+    --text: #23272f; --text-muted: #6b7280; --green: #2c6b45; --amber: #b8860b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Inter", "Noto Sans JP", sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--navy); color: white; padding: 12px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  header h1 { font-size: 15px; font-weight: 700; margin: 0; line-height: 1.4; }
+  header .nav-links { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header .user-right { font-size: 13px; color: #cdd8e6; display: flex; align-items: center; gap: 14px; margin-left: auto; }
+  header a { color: #cdd8e6; text-decoration: none; }
+  header a:hover { color: white; }
+
+  #login-panel, #denied-panel { max-width: 380px; margin: 80px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+  #denied-panel { display: none; font-size: 14px; line-height: 1.7; }
+  #login-panel h2 { margin-top: 0; font-size: 16px; }
+  #login-panel input { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; }
+  #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
+
+  .btn { background: var(--navy); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: var(--navy-light); }
+  .btn.light { background: var(--panel); color: var(--navy); border: 1px solid var(--border); }
+  .btn.light:hover { background: var(--bg); }
+  .btn.danger { background: var(--red-accent); }
+  .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  main { padding: 20px; max-width: 960px; margin: 0 auto; display: none; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs .btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .date-bar { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .date-bar label { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+  .date-bar input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; background: var(--panel); color: inherit; }
+
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .card .label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .card .amount { font-size: 22px; font-weight: 700; color: var(--navy); }
+  .card .amount.warn { color: var(--amber); }
+  .card .amount.bad { color: var(--red-accent); }
+
+  .banner { border-radius: 6px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; line-height: 1.6; }
+  .banner.lock { background: #e7f2ea; border: 1px solid #b8d8c2; color: var(--green); }
+  .banner.err { background: #fbe9e6; border: 1px solid #efb8b0; color: var(--red-accent); }
+  .banner.info { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); }
+
+  .action-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+  .grp { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+  .grp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 10px 14px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .grp-head .g-name { font-size: 15px; font-weight: 700; }
+  .grp-head .g-sum { font-size: 12px; color: var(--text-muted); }
+  .grp-head .g-sum b { font-size: 16px; color: var(--navy); }
+
+  .row { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: start; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .row:last-child { border-bottom: none; }
+  .row.review { background: #fffaf0; }
+  .row.undone { background: #fdf1ef; }
+  .row .nm { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .row .addr { font-size: 12px; color: var(--text-muted); line-height: 1.5; word-break: break-word; }
+  .row .meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .row .pts { font-size: 18px; font-weight: 700; color: var(--navy); white-space: nowrap; text-align: right; }
+  .row .pts small { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .row .quick { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .row.adj { background: #f2f6fb; }
+
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: 4px; vertical-align: middle; background: #e8edf4; color: var(--navy); }
+  .badge.review { background: #fdf0cf; color: var(--amber); }
+  .badge.undone { background: #f8d9d4; color: var(--red-accent); }
+  .badge.manual { background: #e5e5e5; color: #555; }
+  .badge.edited { background: #dfeee4; color: var(--green); }
+
+  .empty-state, .loading { text-align: center; color: var(--text-muted); padding: 30px; font-size: 13px; }
+
+  table.sum { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+  table.sum th { text-align: left; padding: 8px; font-size: 11px; color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.sum td { padding: 8px; border-bottom: 1px solid var(--border); }
+  table.sum td.num, table.sum th.num { text-align: right; white-space: nowrap; }
+  table.sum tr.total td { font-weight: 700; background: var(--bg); }
+  table.sum td a { color: var(--navy); text-decoration: underline; cursor: pointer; }
+  .sum-wrap { overflow-x: auto; }
+  h3.sec { font-size: 14px; margin: 18px 0 8px; }
+
+  #modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  #modal { background: var(--panel); border-radius: 10px; padding: 20px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
+  #modal h3 { margin: 0 0 12px; font-size: 15px; }
+  #modal label { display: block; font-size: 12px; color: var(--text-muted); margin: 10px 0 4px; }
+  #modal input, #modal select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; font-family: inherit; background: #fff; color: inherit; }
+  #modal .m-info { font-size: 12px; color: var(--text-muted); line-height: 1.6; background: var(--bg); border-radius: 6px; padding: 8px 10px; }
+  #modal .m-btns { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  #modal .m-btns .spacer { flex: 1; }
+  #modal .m-err { color: var(--red-accent); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+  @media (max-width: 600px) {
+    main { padding: 12px; }
+    header { padding: 10px 14px; gap: 12px; }
+    .row { grid-template-columns: 52px 1fr auto; padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>配達報酬 <span style="font-weight:500;color:#cdd8e6;font-size:12px;margin-left:6px;">Delivery Rewards</span></h1>
+  <div class="nav-links" id="nav-links" style="display:none;">
+    <a href="orders.html">注文一覧 / Orders</a>
+    <a href="sales_summary.html">📊 Sales Summary</a>
+  </div>
+  <div class="user-right" id="user-info" style="display:none;">
+    <span id="user-email"></span>
+    <a href="#" onclick="logout(); return false;">ログアウト</a>
+  </div>
+</header>
+
+<div id="login-panel">
+  <h2>スタッフログイン</h2>
+  <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+  <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+  <button class="btn" onclick="login()">ログイン</button>
+  <div id="login-error"></div>
+</div>
+
+<div id="denied-panel">
+  このページは管理者本人(makokunn@live.jp)専用です。<br>
+  <a href="#" onclick="logout(); return false;">ログアウト</a>
+</div>
+
+<main id="main">
+
+  <div class="tabs">
+    <button class="btn" id="tab-day" onclick="showTab('day')">日次</button>
+    <button class="btn light" id="tab-month" onclick="showTab('month')">月次</button>
+  </div>
+
+  <!-- ================= 日次 ================= -->
+  <section id="view-day">
+    <div class="date-bar">
+      <button class="btn light" onclick="shiftDay(-1)">◀</button>
+      <label>日付
+        <input type="date" id="day-input" onchange="onDayInput()">
+      </label>
+      <button class="btn light" onclick="shiftDay(1)">▶</button>
+      <button class="btn light" onclick="gotoToday()">今日</button>
+    </div>
+
+    <div class="banner err" id="day-error"></div>
+    <div class="banner lock" id="day-locked">🔒 この日は確定済みです。直すときは「確定を解除」を押してください。</div>
+
+    <div class="summary-cards" id="day-cards"></div>
+
+    <div class="action-bar">
+      <button class="btn" id="btn-add-adj" onclick="openAdj(null)">＋ ポイント追加</button>
+      <button class="btn light" id="btn-lock" onclick="toggleLock()">この日を確定</button>
+    </div>
+
+    <div id="day-body"><div class="loading">読み込み中…</div></div>
+  </section>
+
+  <!-- ================= 月次 ================= -->
+  <section id="view-month" style="display:none;">
+    <div class="date-bar">
+      <button class="btn light" onclick="shiftMonth(-1)">◀</button>
+      <label>月
+        <input type="month" id="month-input" onchange="loadMonth()">
+      </label>
+      <button class="btn light" onclick="shiftMonth(1)">▶</button>
+      <button class="btn light" onclick="gotoThisMonth()">今月</button>
+    </div>
+    <div class="banner err" id="month-error"></div>
+    <div class="banner info" id="month-warn"></div>
+    <div id="month-body"><div class="loading">読み込み中…</div></div>
+  </section>
+
+</main>
+
+<div id="modal-bg"><div id="modal"></div></div>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  // 他の管理画面と同じスタッフ用ストレージキー(ログインを共有する)
+  auth: { storageKey: 'sb-saitofoods-staff-auth' }
+});
+// このページを見られるのはこのアカウントだけ(DB側のRLSでも同じ制限をかけている)
+const PAY_ADMIN_EMAIL = 'makokunn@live.jp';
+const ZONE_PTS = { sukhumvit: 3, other: 5 };
+const ZONE_LABEL = { sukhumvit: 'スクンビット', other: 'その他' };
+
+let currentCustomer = null;
+let selDate = '';
+let dayRows = [];     // その日の配達ごとの報酬行
+let dayAdjs = [];     // その日の追加ポイント
+let dayLocked = false;
+let staffList = [];
+let monthData = null; // 月次の集計結果(CSV用)
+
+// ---------------- 共通 ----------------
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function one(x) { return Array.isArray(x) ? (x[0] || null) : (x || null); }
+function todayStr() { return new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10); }
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+function lastDayOfMonth(ym) {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+}
+function fmtTime(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' });
+}
+function custName(c) {
+  if (!c) return '(お客様不明)';
+  return [c.family_name, c.first_name].filter(Boolean).join(' ') || '(名前なし)';
+}
+function showBanner(id, msg) {
+  const el = document.getElementById(id);
+  if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// ---------------- ログイン ----------------
+async function fetchMe(userId) {
+  const { data } = await supabaseClient
+    .from('customers').select('id, family_name, first_name, email, role').eq('auth_user_id', userId).single();
+  return data || null;
+}
+function isPayAdmin(me) {
+  return !!me && me.role === 'admin' && String(me.email || '').toLowerCase() === PAY_ADMIN_EMAIL;
+}
+async function login() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = 'ログイン失敗: ' + error.message; return; }
+  const me = await fetchMe(data.user.id);
+  if (!isPayAdmin(me)) {
+    errEl.textContent = 'このページを開ける権限がありません。';
+    await supabaseClient.auth.signOut();
+    return;
+  }
+  currentCustomer = me;
+  showMain();
+}
+async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
+
+function showMain() {
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('denied-panel').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  document.getElementById('nav-links').style.display = 'flex';
+  document.getElementById('user-info').style.display = 'flex';
+  document.getElementById('user-email').textContent = [currentCustomer.family_name, currentCustomer.first_name].filter(Boolean).join(' ');
+  selDate = todayStr();
+  document.getElementById('day-input').value = selDate;
+  document.getElementById('month-input').value = selDate.slice(0, 7);
+  loadStaff().then(loadDay);
+}
+
+(async function init() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+  const me = await fetchMe(session.user.id);
+  if (isPayAdmin(me)) { currentCustomer = me; showMain(); return; }
+  // 他のスタッフでログイン中: ログアウトはせず(他の管理画面のログインを壊さない)、権限なしを表示
+  document.getElementById('login-panel').style.display = 'none';
+  document.getElementById('denied-panel').style.display = 'block';
+})();
+
+async function loadStaff() {
+  const { data } = await supabaseClient.from('staff').select('id, name, is_active').order('name', { ascending: true });
+  staffList = data || [];
+}
+
+// ---------------- タブ ----------------
+function showTab(t) {
+  document.getElementById('view-day').style.display = t === 'day' ? 'block' : 'none';
+  document.getElementById('view-month').style.display = t === 'month' ? 'block' : 'none';
+  document.getElementById('tab-day').className = 'btn' + (t === 'day' ? '' : ' light');
+  document.getElementById('tab-month').className = 'btn' + (t === 'month' ? '' : ' light');
+  if (t === 'month') loadMonth(); else loadDay();
+}
+
+// ================= 日次 =================
+function onDayInput() {
+  const v = document.getElementById('day-input').value;
+  if (!v) return;
+  selDate = v; loadDay();
+}
+function shiftDay(n) {
+  selDate = addDays(selDate, n);
+  document.getElementById('day-input').value = selDate;
+  loadDay();
+}
+function gotoToday() {
+  selDate = todayStr();
+  document.getElementById('day-input').value = selDate;
+  loadDay();
+}
+
+async function loadDay() {
+  const date = selDate;
+  showBanner('day-error', '');
+  document.getElementById('day-body').innerHTML = '<div class="loading">読み込み中…</div>';
+  document.getElementById('day-cards').innerHTML = '';
+  try {
+    // 出発済みの配達を報酬表に反映(確定済みの日は何もしない。何度呼んでも安全)
+    const { error: syncErr } = await supabaseClient.rpc('pay_sync', { p_date: date });
+    if (syncErr) throw syncErr;
+
+    const [rRows, rAdj, rLock] = await Promise.all([
+      supabaseClient.from('delivery_rewards')
+        .select('order_id, staff_id, customer_id, zone, auto_points, points, points_manual, needs_review, note, staff(name), customers(family_name, first_name, address1, address2), orders(delivered_at, departed_at, delivery_time_slot, area_name, legacy_order_no)')
+        .eq('reward_date', date),
+      supabaseClient.from('reward_adjustments').select('*').eq('adjust_date', date).order('created_at', { ascending: true }),
+      supabaseClient.from('reward_day_locks').select('lock_date').eq('lock_date', date),
+    ]);
+    if (rRows.error) throw rRows.error;
+    if (rAdj.error) throw rAdj.error;
+    if (rLock.error) throw rLock.error;
+    if (date !== selDate) return; // 読み込み中に日付が変わった
+    dayRows = (rRows.data || []).map(r => ({ ...r, staff: one(r.staff), customers: one(r.customers), orders: one(r.orders) }));
+    dayAdjs = rAdj.data || [];
+    dayLocked = (rLock.data || []).length > 0;
+    renderDay();
+  } catch (e) {
+    showBanner('day-error', '読み込みエラー: ' + (e.message || e));
+    document.getElementById('day-body').innerHTML = '';
+  }
+}
+
+function renderDay() {
+  // サマリー
+  const deliveryPts = dayRows.reduce((a, r) => a + r.points, 0);
+  const adjPts = dayAdjs.reduce((a, r) => a + r.points, 0);
+  const reviewN = dayRows.filter(r => r.needs_review).length;
+  const undoneN = dayRows.filter(r => !(r.orders && r.orders.delivered_at)).length;
+  document.getElementById('day-cards').innerHTML = `
+    <div class="card"><div class="label">合計ポイント</div><div class="amount">${deliveryPts + adjPts}</div></div>
+    <div class="card"><div class="label">配達件数</div><div class="amount">${dayRows.length}</div></div>
+    <div class="card"><div class="label">要確認(区分)</div><div class="amount ${reviewN ? 'warn' : ''}">${reviewN}</div></div>
+    <div class="card"><div class="label">完了未入力</div><div class="amount ${undoneN ? 'bad' : ''}">${undoneN}</div></div>`;
+
+  document.getElementById('day-locked').style.display = dayLocked ? 'block' : 'none';
+  const lockBtn = document.getElementById('btn-lock');
+  lockBtn.textContent = dayLocked ? '確定を解除' : 'この日を確定';
+  document.getElementById('btn-add-adj').disabled = dayLocked;
+
+  // グループ化(スタッフ別。外注など名前だけの追加ポイントは別グループ)
+  const groups = new Map();
+  const ensure = (key, name) => {
+    if (!groups.has(key)) groups.set(key, { key, name, rows: [], adjs: [] });
+    return groups.get(key);
+  };
+  dayRows.forEach(r => ensure('s:' + r.staff_id, (r.staff && r.staff.name) || '(不明)').rows.push(r));
+  dayAdjs.forEach(a => {
+    if (a.staff_id) {
+      const st = staffList.find(s => s.id === a.staff_id);
+      ensure('s:' + a.staff_id, st ? st.name : '(不明)').adjs.push(a);
+    } else {
+      ensure('x:' + (a.person_name || ''), (a.person_name || '(名前なし)') + '(外注・その他)').adjs.push(a);
+    }
+  });
+
+  if (!groups.size) {
+    document.getElementById('day-body').innerHTML = '<div class="empty-state">この日は出発済みの配達がありません。</div>';
+    return;
+  }
+
+  const ordered = [...groups.values()].sort((a, b) => {
+    const ax = a.key.startsWith('x:') ? 1 : 0, bx = b.key.startsWith('x:') ? 1 : 0;
+    if (ax !== bx) return ax - bx;
+    return a.name.localeCompare(b.name);
+  });
+
+  document.getElementById('day-body').innerHTML = ordered.map(g => {
+    g.rows.sort((a, b) => {
+      const at = (a.orders && (a.orders.delivered_at || a.orders.departed_at)) || '9';
+      const bt = (b.orders && (b.orders.delivered_at || b.orders.departed_at)) || '9';
+      return String(at).localeCompare(String(bt));
+    });
+    const dp = g.rows.reduce((a, r) => a + r.points, 0);
+    const ap = g.adjs.reduce((a, r) => a + r.points, 0);
+    const rowsHtml = g.rows.map(r => rowHtml(r)).join('');
+    const adjHtml = g.adjs.map(a => adjRowHtml(a)).join('');
+    return `
+      <section class="grp">
+        <div class="grp-head">
+          <div class="g-name">${escapeHtml(g.name)}</div>
+          <div class="g-sum">配達 ${g.rows.length}件 ${dp}pt${g.adjs.length ? ` + 追加 ${ap}pt` : ''} = <b>${dp + ap}pt</b></div>
+        </div>
+        ${rowsHtml}${adjHtml}
+      </section>`;
+  }).join('');
+}
+
+function rowHtml(r) {
+  const o = r.orders || {};
+  const c = r.customers;
+  const done = !!o.delivered_at;
+  const addr = c ? [c.address1, c.address2].filter(Boolean).join(' / ') : '';
+  let badges = '';
+  if (r.zone === 'sukhumvit' || r.zone === 'other') badges += `<span class="badge">${ZONE_LABEL[r.zone]}</span>`;
+  else badges += `<span class="badge manual">手動で付ける(${escapeHtml(o.area_name || '')})</span>`;
+  if (r.needs_review) badges += '<span class="badge review">要確認</span>';
+  if (!done) badges += '<span class="badge undone">完了未入力</span>';
+  if (r.points_manual) badges += '<span class="badge edited">手動編集</span>';
+  const cls = !done ? 'undone' : (r.needs_review ? 'review' : '');
+  const quick = (r.needs_review && !dayLocked && r.customer_id)
+    ? `<div class="quick">
+         <button class="btn light sm" data-act="zone" data-cust="${escapeHtml(r.customer_id)}" data-zone="sukhumvit">スクンビット 3pt にする</button>
+         <button class="btn light sm" data-act="zone" data-cust="${escapeHtml(r.customer_id)}" data-zone="other">その他 5pt のまま確定</button>
+       </div>` : '';
+  const metaParts = [];
+  if (done) metaParts.push('完了 ' + fmtTime(o.delivered_at));
+  else if (o.departed_at) metaParts.push('出発 ' + fmtTime(o.departed_at));
+  if (o.delivery_time_slot) metaParts.push(escapeHtml(o.delivery_time_slot));
+  if (o.legacy_order_no) metaParts.push('#' + escapeHtml(o.legacy_order_no));
+  if (r.note) metaParts.push('メモ: ' + escapeHtml(r.note));
+  return `
+    <div class="row ${cls}">
+      <div><button class="btn light sm" data-act="edit" data-id="${escapeHtml(r.order_id)}" ${dayLocked ? 'disabled' : ''}>編集</button></div>
+      <div>
+        <div class="nm">${escapeHtml(custName(c))}${badges}</div>
+        <div class="addr">${escapeHtml(addr)}</div>
+        <div class="meta">${metaParts.join(' · ')}</div>
+        ${quick}
+      </div>
+      <div class="pts">${r.points}<small>pt</small></div>
+    </div>`;
+}
+
+function adjRowHtml(a) {
+  return `
+    <div class="row adj">
+      <div><button class="btn light sm" data-act="adj" data-id="${escapeHtml(a.id)}" ${dayLocked ? 'disabled' : ''}>編集</button></div>
+      <div>
+        <div class="nm">追加ポイント<span class="badge">手動</span></div>
+        <div class="meta">${escapeHtml(a.note || '(メモなし)')}</div>
+      </div>
+      <div class="pts">${a.points > 0 ? '+' : ''}${a.points}<small>pt</small></div>
+    </div>`;
+}
+
+// 行のボタン(イベント委譲)
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b || b.disabled) return;
+  const act = b.dataset.act;
+  if (act === 'edit') openEdit(b.dataset.id);
+  else if (act === 'adj') openAdj(b.dataset.id);
+  else if (act === 'zone') setZone(b.dataset.cust, b.dataset.zone);
+});
+
+async function setZone(customerId, zone) {
+  try {
+    const { error } = await supabaseClient.rpc('pay_set_zone', { p_customer: customerId, p_zone: zone });
+    if (error) throw error;
+    await loadDay();
+  } catch (e) { showBanner('day-error', '区分の保存に失敗しました: ' + (e.message || e)); }
+}
+
+// ---------------- モーダル共通 ----------------
+function openModal(html) {
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('modal-bg').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-bg').style.display = 'none'; document.getElementById('modal').innerHTML = ''; }
+document.getElementById('modal-bg').addEventListener('mousedown', e => { if (e.target.id === 'modal-bg') closeModal(); });
+function mErr(msg) { const el = document.getElementById('m-err'); if (el) el.textContent = msg || ''; }
+
+// ---------------- 配達ポイントの編集 ----------------
+let editingOrderId = null;
+function openEdit(orderId) {
+  const r = dayRows.find(x => x.order_id === orderId);
+  if (!r) return;
+  editingOrderId = orderId;
+  const c = r.customers;
+  const zoneBtns = (r.zone === 'sukhumvit' || r.zone === 'other') && r.customer_id
+    ? `<label>このお客様の区分(変えると、このお客様の確定前の日の分も自動で直ります)</label>
+       <div style="display:flex;gap:8px;">
+         <button class="btn light sm" data-act="zone-m" data-zone="sukhumvit">スクンビット 3pt</button>
+         <button class="btn light sm" data-act="zone-m" data-zone="other">その他 5pt</button>
+       </div>` : '';
+  openModal(`
+    <h3>${escapeHtml(custName(c))}</h3>
+    <div class="m-info">${escapeHtml(c ? [c.address1, c.address2].filter(Boolean).join(' / ') : '')}<br>自動の値: ${r.auto_points}pt${r.zone ? '(' + ZONE_LABEL[r.zone] + ')' : '(手動で付ける対象)'}</div>
+    <label>ポイント</label>
+    <input type="number" id="m-points" inputmode="numeric" step="1" value="${r.points}">
+    <label>メモ(任意)</label>
+    <input type="text" id="m-note" value="${escapeHtml(r.note || '')}">
+    ${zoneBtns}
+    <div class="m-err" id="m-err"></div>
+    <div class="m-btns">
+      <button class="btn" onclick="saveEdit()">保存</button>
+      <button class="btn light" onclick="resetAuto()">自動の値に戻す</button>
+      <span class="spacer"></span>
+      <button class="btn light" onclick="closeModal()">閉じる</button>
+    </div>`);
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act="zone-m"]');
+  if (!b) return;
+  const r = dayRows.find(x => x.order_id === editingOrderId);
+  if (!r || !r.customer_id) return;
+  closeModal();
+  await setZone(r.customer_id, b.dataset.zone);
+});
+
+async function saveEdit() {
+  const val = parseInt(document.getElementById('m-points').value, 10);
+  if (!Number.isFinite(val)) { mErr('ポイントを数字で入力してください'); return; }
+  const note = document.getElementById('m-note').value.trim();
+  const { error } = await supabaseClient.from('delivery_rewards')
+    .update({ points: val, points_manual: true, note: note || null, updated_at: new Date().toISOString() })
+    .eq('order_id', editingOrderId);
+  if (error) { mErr('保存に失敗しました: ' + error.message); return; }
+  closeModal(); loadDay();
+}
+async function resetAuto() {
+  const { error } = await supabaseClient.from('delivery_rewards')
+    .update({ points_manual: false, note: null, updated_at: new Date().toISOString() })
+    .eq('order_id', editingOrderId);
+  if (error) { mErr('失敗しました: ' + error.message); return; }
+  closeModal(); loadDay(); // 読み込み時の同期で自動の値に戻る
+}
+
+// ---------------- 追加ポイント ----------------
+let editingAdjId = null;
+function openAdj(id) {
+  editingAdjId = id;
+  const a = id ? dayAdjs.find(x => x.id === id) : null;
+  const staffOpts = staffList.filter(s => s.is_active || (a && a.staff_id === s.id))
+    .map(s => `<option value="${escapeHtml(s.id)}" ${a && a.staff_id === s.id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
+  const isExt = a && !a.staff_id;
+  openModal(`
+    <h3>${a ? '追加ポイントを編集' : 'ポイント追加'}</h3>
+    <label>日付</label>
+    <input type="date" id="m-date" value="${escapeHtml(a ? a.adjust_date : selDate)}">
+    <label>誰に</label>
+    <select id="m-person" onchange="document.getElementById('m-name-wrap').style.display = this.value === '__ext' ? 'block' : 'none'">
+      ${staffOpts}
+      <option value="__ext" ${isExt ? 'selected' : ''}>外注・その他(名前を入力)</option>
+    </select>
+    <div id="m-name-wrap" style="display:${isExt ? 'block' : 'none'};">
+      <label>名前</label>
+      <input type="text" id="m-name" value="${escapeHtml(isExt ? (a.person_name || '') : '')}" placeholder="例: 外注A">
+    </div>
+    <label>ポイント(マイナスも可)</label>
+    <input type="number" id="m-points" inputmode="numeric" step="1" value="${a ? a.points : ''}" placeholder="例: 40">
+    <label>メモ(任意)</label>
+    <input type="text" id="m-note" value="${escapeHtml(a ? (a.note || '') : '')}" placeholder="例: シラチャ">
+    <div class="m-err" id="m-err"></div>
+    <div class="m-btns">
+      <button class="btn" onclick="saveAdj()">保存</button>
+      ${a ? '<button class="btn danger" onclick="deleteAdj()">削除</button>' : ''}
+      <span class="spacer"></span>
+      <button class="btn light" onclick="closeModal()">閉じる</button>
+    </div>`);
+}
+async function saveAdj() {
+  const date = document.getElementById('m-date').value;
+  const person = document.getElementById('m-person').value;
+  const name = (document.getElementById('m-name') || {}).value || '';
+  const pts = parseInt(document.getElementById('m-points').value, 10);
+  const note = document.getElementById('m-note').value.trim();
+  if (!date) { mErr('日付を入れてください'); return; }
+  if (!Number.isFinite(pts) || pts === 0) { mErr('ポイントを0以外の数字で入力してください'); return; }
+  if (person === '__ext' && !name.trim()) { mErr('名前を入力してください'); return; }
+  const row = {
+    adjust_date: date,
+    staff_id: person === '__ext' ? null : person,
+    person_name: person === '__ext' ? name.trim() : null,
+    points: pts,
+    note: note || null,
+  };
+  const q = editingAdjId
+    ? supabaseClient.from('reward_adjustments').update(row).eq('id', editingAdjId)
+    : supabaseClient.from('reward_adjustments').insert(row);
+  const { error } = await q;
+  if (error) { mErr('保存に失敗しました: ' + error.message); return; }
+  closeModal();
+  if (date !== selDate) { selDate = date; document.getElementById('day-input').value = date; }
+  loadDay();
+}
+async function deleteAdj() {
+  if (!editingAdjId) return;
+  if (!confirm('この追加ポイントを削除しますか?')) return;
+  const { error } = await supabaseClient.from('reward_adjustments').delete().eq('id', editingAdjId);
+  if (error) { mErr('削除に失敗しました: ' + error.message); return; }
+  closeModal(); loadDay();
+}
+
+// ---------------- 日ごとの確定 ----------------
+async function toggleLock() {
+  const btn = document.getElementById('btn-lock');
+  btn.disabled = true;
+  try {
+    if (dayLocked) {
+      const { error } = await supabaseClient.from('reward_day_locks').delete().eq('lock_date', selDate);
+      if (error) throw error;
+    } else {
+      const warn = dayRows.filter(r => r.needs_review).length;
+      const undone = dayRows.filter(r => !(r.orders && r.orders.delivered_at)).length;
+      let msg = `${selDate} を確定します。確定すると、この日の自動計算は止まります。`;
+      if (warn) msg += `\n\n⚠ 区分が「要確認」のままの配達が ${warn}件あります。`;
+      if (undone) msg += `\n⚠ 完了未入力の配達が ${undone}件あります(0ptのままです)。`;
+      if (!confirm(msg + '\n\nよろしいですか?')) { btn.disabled = false; return; }
+      const { error } = await supabaseClient.from('reward_day_locks').insert({ lock_date: selDate });
+      if (error) throw error;
+    }
+    await loadDay();
+  } catch (e) {
+    showBanner('day-error', '確定の切り替えに失敗しました: ' + (e.message || e));
+  } finally { btn.disabled = false; }
+}
+
+// ================= 月次 =================
+function shiftMonth(n) {
+  const ym = document.getElementById('month-input').value || todayStr().slice(0, 7);
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  document.getElementById('month-input').value = d.toISOString().slice(0, 7);
+  loadMonth();
+}
+function gotoThisMonth() { document.getElementById('month-input').value = todayStr().slice(0, 7); loadMonth(); }
+
+const PAGE = 500;
+async function fetchAll(buildQuery, orderCol) {
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await buildQuery().order(orderCol, { ascending: true }).range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) break;
+  }
+  return rows;
+}
+
+async function loadMonth() {
+  const ym = document.getElementById('month-input').value;
+  if (!ym) return;
+  showBanner('month-error', ''); showBanner('month-warn', '');
+  document.getElementById('month-body').innerHTML = '<div class="loading">集計中…(その月の配達を報酬表に反映しています)</div>';
+  const first = ym + '-01';
+  const last = lastDayOfMonth(ym);
+  try {
+    // 今日までの日を報酬表に反映(確定済みの日は変更されない)
+    const syncTo = last < todayStr() ? last : todayStr();
+    if (syncTo >= first) {
+      const { error: se } = await supabaseClient.rpc('pay_sync_range', { p_from: first, p_to: syncTo });
+      if (se) throw se;
+    }
+    const [rows, adjRes, lockRes] = await Promise.all([
+      fetchAll(() => supabaseClient.from('delivery_rewards')
+        .select('order_id, reward_date, staff_id, customer_id, zone, points, needs_review, points_manual, note, staff(name), customers(family_name, first_name), orders(delivered_at, legacy_order_no, area_name)')
+        .gte('reward_date', first).lte('reward_date', last), 'order_id'),
+      supabaseClient.from('reward_adjustments').select('*').gte('adjust_date', first).lte('adjust_date', last),
+      supabaseClient.from('reward_day_locks').select('lock_date').gte('lock_date', first).lte('lock_date', last),
+    ]);
+    if (adjRes.error) throw adjRes.error;
+    if (lockRes.error) throw lockRes.error;
+    if (document.getElementById('month-input').value !== ym) return;
+    const rws = rows.map(r => ({ ...r, staff: one(r.staff), customers: one(r.customers), orders: one(r.orders) }));
+    aggregateMonth(ym, rws, adjRes.data || [], (lockRes.data || []).map(l => l.lock_date));
+  } catch (e) {
+    showBanner('month-error', '読み込みエラー: ' + (e.message || e));
+    document.getElementById('month-body').innerHTML = '';
+  }
+}
+
+function aggregateMonth(ym, rows, adjs, lockedDates) {
+  const people = new Map(); // key -> {name, n, dp, ap, undone, review}
+  const ensure = (key, name) => {
+    if (!people.has(key)) people.set(key, { key, name, n: 0, dp: 0, ap: 0, undone: 0, review: 0 });
+    return people.get(key);
+  };
+  const byDay = new Map(); // date -> Map(key -> pts)
+  const addDay = (date, key, pts) => {
+    if (!byDay.has(date)) byDay.set(date, new Map());
+    const m = byDay.get(date);
+    m.set(key, (m.get(key) || 0) + pts);
+  };
+  rows.forEach(r => {
+    const key = 's:' + r.staff_id;
+    const p = ensure(key, (r.staff && r.staff.name) || '(不明)');
+    p.n++; p.dp += r.points;
+    if (!(r.orders && r.orders.delivered_at)) p.undone++;
+    if (r.needs_review) p.review++;
+    addDay(r.reward_date, key, r.points);
+  });
+  adjs.forEach(a => {
+    let key, name;
+    if (a.staff_id) {
+      key = 's:' + a.staff_id;
+      const st = staffList.find(s => s.id === a.staff_id);
+      name = st ? st.name : '(不明)';
+    } else {
+      key = 'x:' + (a.person_name || '');
+      name = (a.person_name || '(名前なし)') + '(外注・その他)';
+    }
+    const p = ensure(key, name);
+    p.ap += a.points;
+    addDay(a.adjust_date, key, a.points);
+  });
+  const list = [...people.values()].sort((a, b) => {
+    const ax = a.key.startsWith('x:') ? 1 : 0, bx = b.key.startsWith('x:') ? 1 : 0;
+    if (ax !== bx) return ax - bx;
+    return a.name.localeCompare(b.name);
+  });
+  monthData = { ym, rows, adjs, list, byDay, lockedDates };
+
+  const totalReview = list.reduce((a, p) => a + p.review, 0);
+  const totalUndone = list.reduce((a, p) => a + p.undone, 0);
+  const warns = [];
+  if (totalReview) warns.push(`区分が「要確認」の配達が ${totalReview}件あります(5ptで仮計算中)`);
+  if (totalUndone) warns.push(`完了未入力の配達が ${totalUndone}件あります(0ptで計算中)`);
+  showBanner('month-warn', warns.join(' / '));
+
+  if (!list.length) {
+    document.getElementById('month-body').innerHTML = '<div class="empty-state">この月のデータはありません。</div>';
+    return;
+  }
+
+  const t = list.reduce((a, p) => ({ n: a.n + p.n, dp: a.dp + p.dp, ap: a.ap + p.ap }), { n: 0, dp: 0, ap: 0 });
+  const sumRows = list.map(p => `
+    <tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td class="num">${p.n}</td>
+      <td class="num">${p.dp}</td>
+      <td class="num">${p.ap > 0 ? '+' : ''}${p.ap}</td>
+      <td class="num"><b>${p.dp + p.ap}</b></td>
+      <td class="num">${p.undone ? `<span class="badge undone">未完了 ${p.undone}</span>` : ''}${p.review ? `<span class="badge review">要確認 ${p.review}</span>` : ''}</td>
+    </tr>`).join('');
+
+  const days = [...byDay.keys()].sort();
+  const dayHead = list.map(p => `<th class="num">${escapeHtml(p.name)}</th>`).join('');
+  const dayRowsHtml = days.map(d => {
+    const m = byDay.get(d);
+    const cells = list.map(p => `<td class="num">${m.has(p.key) ? m.get(p.key) : ''}</td>`).join('');
+    const tot = [...m.values()].reduce((a, b) => a + b, 0);
+    return `<tr><td><a onclick="gotoDay('${d}')">${d.slice(5)}</a>${lockedDates.includes(d) ? ' 🔒' : ''}</td>${cells}<td class="num"><b>${tot}</b></td></tr>`;
+  }).join('');
+
+  document.getElementById('month-body').innerHTML = `
+    <div class="action-bar">
+      <button class="btn" onclick="exportSummaryCsv()">集計CSV</button>
+      <button class="btn light" onclick="exportDetailCsv()">明細CSV</button>
+    </div>
+    <h3 class="sec">スタッフ別の合計</h3>
+    <div class="sum-wrap"><table class="sum">
+      <thead><tr><th>名前</th><th class="num">配達件数</th><th class="num">配達pt</th><th class="num">追加pt</th><th class="num">合計pt</th><th></th></tr></thead>
+      <tbody>${sumRows}
+        <tr class="total"><td>全体</td><td class="num">${t.n}</td><td class="num">${t.dp}</td><td class="num">${t.ap > 0 ? '+' : ''}${t.ap}</td><td class="num">${t.dp + t.ap}</td><td></td></tr>
+      </tbody>
+    </table></div>
+    <h3 class="sec">日別の内訳(日付を押すと、その日の画面に移ります)</h3>
+    <div class="sum-wrap"><table class="sum">
+      <thead><tr><th>日付</th>${dayHead}<th class="num">計</th></tr></thead>
+      <tbody>${dayRowsHtml}</tbody>
+    </table></div>`;
+}
+
+function gotoDay(d) {
+  selDate = d;
+  document.getElementById('day-input').value = d;
+  showTab('day');
+}
+
+// ---------------- CSV ----------------
+function csvCell(v) {
+  const s = String(v == null ? '' : v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadCsv(filename, rows) {
+  const text = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function exportSummaryCsv() {
+  if (!monthData) return;
+  const rows = [['名前', '配達件数', '配達pt', '追加pt', '合計pt']];
+  monthData.list.forEach(p => rows.push([p.name, p.n, p.dp, p.ap, p.dp + p.ap]));
+  downloadCsv(`reward_summary_${monthData.ym}.csv`, rows);
+}
+function exportDetailCsv() {
+  if (!monthData) return;
+  const rows = [['日付', '名前', '種別', 'お客様/メモ', '区分', 'ポイント', '完了時刻', '手動編集']];
+  monthData.rows.slice().sort((a, b) => a.reward_date.localeCompare(b.reward_date)).forEach(r => {
+    rows.push([
+      r.reward_date, (r.staff && r.staff.name) || '', '配達', custName(r.customers),
+      r.zone ? ZONE_LABEL[r.zone] : '手動対象', r.points,
+      r.orders && r.orders.delivered_at ? fmtTime(r.orders.delivered_at) : '未完了',
+      r.points_manual ? '○' : '',
+    ]);
+  });
+  monthData.adjs.slice().sort((a, b) => a.adjust_date.localeCompare(b.adjust_date)).forEach(a => {
+    const st = a.staff_id ? staffList.find(s => s.id === a.staff_id) : null;
+    rows.push([a.adjust_date, st ? st.name : (a.person_name || ''), '追加ポイント', a.note || '', '', a.points, '', '']);
+  });
+  downloadCsv(`reward_detail_${monthData.ym}.csv`, rows);
+}
+</script>
+</body>
+</html>
