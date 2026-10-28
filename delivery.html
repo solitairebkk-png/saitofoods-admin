@@ -81,7 +81,12 @@
   .panel { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .panel h2 { font-size: 16px; margin: 0 0 10px; }
   label { display: block; font-size: 14px; color: var(--gray); margin: 10px 0 4px; }
-  input[type=email], input[type=password], select {
+  /* パスワード欄: 右端の目のボタンで文字の表示/非表示を切り替える */
+  .pw-wrap { position: relative; }
+  .pw-wrap input { padding-right: 56px; }
+  .pw-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 46px; height: 42px; border: 0; background: transparent; font-size: 22px; line-height: 1; opacity: .55; border-radius: 8px; }
+  .pw-toggle[aria-pressed="true"] { opacity: 1; background: var(--green-light); }
+  input[type=email], input[type=password], input#login-password, select {
     width: 100%; font-size: 17px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff;
   }
   .btn {
@@ -202,7 +207,10 @@
       <label for="login-email">Email</label>
       <input id="login-email" type="email" autocomplete="username" inputmode="email">
       <label for="login-password">Password</label>
-      <input id="login-password" type="password" autocomplete="current-password">
+      <div class="pw-wrap">
+        <input id="login-password" type="password" autocomplete="current-password">
+        <button type="button" id="pw-toggle" class="pw-toggle" aria-label="show password" aria-pressed="false">👁</button>
+      </div>
       <button class="btn" id="login-btn">เข้าสู่ระบบ</button>
       <div id="login-error" class="err"></div>
     </div>
@@ -1297,6 +1305,14 @@ function enterMain() {
 
 $('login-btn').addEventListener('click', login);
 $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+// 目のボタン: 押している間ではなく、押すたびに「見える/隠す」を切り替える
+$('pw-toggle').addEventListener('click', () => {
+  const inp = $('login-password');
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  $('pw-toggle').setAttribute('aria-pressed', show ? 'true' : 'false');
+  $('pw-toggle').textContent = show ? '🙈' : '👁';
+});
 $('staff-ok-btn').addEventListener('click', chooseStaff);
 $('refresh-btn').addEventListener('click', loadOrders);
 $('menu-btn').addEventListener('click', openMenu);
