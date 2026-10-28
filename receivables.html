@@ -79,6 +79,15 @@
   #save-msg.error { color: var(--red-accent); }
 
   .empty-note { color: var(--text-muted); font-size: 13px; }
+
+  .fuji-panel { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: #fafaf8; }
+  .fuji-panel h3 { font-size: 13px; margin: 0 0 8px; color: var(--navy); }
+  .fuji-panel h3 .th { font-weight: 500; color: var(--text-muted); font-size: 11.5px; }
+  .fuji-store { font-size: 13px; margin: 6px 0; line-height: 1.6; }
+  .fuji-store b { color: var(--navy); margin-right: 6px; }
+  .fuji-warn { margin-top: 8px; padding: 8px 10px; border-radius: 6px; background: #fff4e5; border: 1px solid #f0c987; color: #8a5200; font-size: 12.5px; line-height: 1.6; }
+  .fuji-ok { margin-top: 8px; font-size: 12px; color: var(--green); }
+  .fuji-actions { margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -321,6 +330,7 @@ function renderDetailPanel() {
         <button class="btn ghost" onclick="downloadFile('${selectedDate}')">📥 Download / ดาวน์โหลด</button>
         <button class="btn danger" onclick="deleteFile('${selectedDate}')">🗑️ Delete / ลบ</button>
       </div>
+      <div id="fuji-panel" class="fuji-panel"></div>
       <div class="detail-row" style="margin-top:14px;"><span class="label">Replace with a different PDF / แทนที่ด้วยไฟล์ PDF อื่น</span></div>
       <div class="upload-form">
         <input type="file" id="file-input-${selectedDate}" accept="application/pdf" onchange="detectTotal('${selectedDate}')">
@@ -353,6 +363,7 @@ function renderDetailPanel() {
       </div>
     `;
   }
+  if (row) renderFujiPanel(selectedDate);
 }
 
 // ---------------- Upload / Download / Delete ----------------
@@ -459,7 +470,16 @@ async function uploadFile(dateStr) {
 
   if (dbErr) { showSaveMsg('อัปโหลดไม่สำเร็จ (DB) / Upload failed (DB): ' + dbErr.message, true); return; }
 
-  showSaveMsg('อัปโหลดแล้ว / Uploaded successfully.');
+  // フジスーパー分の明細を抜き出して保存(失敗してもPDFのアップロード自体は成功のまま)
+  let fujiNote = '';
+  try {
+    const r = await extractAndSaveFuji(dateStr, file);
+    fujiNote = ` Fuji: ${r.entries.length} lines saved. / Fuji ${r.entries.length} รายการ`;
+  } catch (e) {
+    fujiNote = ' (Fuji lines could not be read: ' + e.message + ')';
+  }
+
+  showSaveMsg('อัปโหลดแล้ว / Uploaded successfully.' + fujiNote);
   selectedDate = dateStr;
   loadMonthUploads();
 }
@@ -507,8 +527,225 @@ async function deleteFile(dateStr) {
   const { error: dbErr } = await supabaseClient.from('receivables_uploads').delete().eq('upload_date', dateStr);
   if (dbErr) { showSaveMsg('ลบไม่สำเร็จ (DB) / Delete failed (DB): ' + dbErr.message, true); return; }
 
+  // そのPDFから抜き出したフジスーパー明細も一緒に消す
+  await supabaseClient.from('receivables_fuji_lines').delete().eq('upload_date', dateStr);
+  delete fujiResults[dateStr];
+
   showSaveMsg('ลบแล้ว / Deleted.');
   loadMonthUploads();
+}
+// ---------------- Fuji Super lines extraction from the receivables PDF ----------------
+// PDFの文字(pdf.js)を行に組み立て、FUJI1〜5の伝票の明細だけを抜き出す。
+// 商品名はFuji Super Sales(Product_Master)の名前に合わせる。合わないものは unmatched に回す(勝手に入れない)。
+
+// [判定用の正規表現, Product_Masterの名前]  ※上から順に判定
+var FUJI_PRODUCT_RULES = [
+  [/SABA\s*FILLET/i,              'saba fillet'],
+  [/MUKI\s*EBI/i,                 'muki ebi'],
+  [/SALTED\s*SALMON\s*KIRIMI/i,   'salted salmon kirimi'],
+  [/COHO/i,                       'coho'],
+  [/EBI\s*SHUMAI/i,               'ebi syumai'],
+  [/NIKU\s*SHUMAI/i,              'niku syumai'],
+  [/SHOROMPO/i,                   'shorompo'],
+  [/UME\s*SYRUP/i,                'ume syrup'],
+  [/UMEBOSHI/i,                   'umeboshi'],
+  [/\bRR01\b|JAP\.?\s*RICE.*\b1\s*KG/i, 'nihonmai 1kg'],
+  [/\bRR02\b|JAP\.?\s*RICE.*\b2\s*KG/i, 'nihonmai 2kg'],
+  [/\bRR05\b|JAP\.?\s*RICE.*\b5\s*KG/i, 'nihonmai 5kg']
+];
+
+function fujiMapProduct(text) {
+  for (var i = 0; i < FUJI_PRODUCT_RULES.length; i++) {
+    if (FUJI_PRODUCT_RULES[i][0].test(text)) return FUJI_PRODUCT_RULES[i][1];
+  }
+  return null;
+}
+
+// pdf.jsのテキスト項目を、位置(y座標)ごとに1行へまとめる
+function fujiBuildLines(items) {
+  var rows = [];
+  items.forEach(function (it) {
+    if (!it.str || !it.str.trim()) return;
+    var x = it.transform[4], y = it.transform[5];
+    var row = null;
+    for (var i = 0; i < rows.length; i++) { if (Math.abs(rows[i].y - y) < 2.5) { row = rows[i]; break; } }
+    if (!row) { row = { y: y, parts: [] }; rows.push(row); }
+    row.parts.push({ x: x, s: it.str });
+  });
+  rows.sort(function (a, b) { return b.y - a.y; }); // 上の行から
+  return rows.map(function (r) {
+    r.parts.sort(function (a, b) { return a.x - b.x; });
+    return r.parts.map(function (p) { return p.s; }).join(' ');
+  });
+}
+
+// 行の配列(全ページ分を順に連結したもの)から、フジスーパーの明細を取り出す
+function fujiParseLines(lines) {
+  var entries = [], unmatched = [], invoices = {};
+  var cur = null; // 現在の伝票(FUJIなら store が入り、それ以外は null)
+  lines.forEach(function (line) {
+    var l = line.replace(/\s+/g, ' ').trim();
+    if (!l) return;
+
+    // 伝票の先頭行: 「19/10/26 IV6905649 ...会社名... FUJI2 1 金額 ...」
+    var head = l.match(/^(\d{2})\/(\d{2})\/(\d{2})\s+(IV\d+)\s/);
+    if (head) {
+      var sm = l.match(/\bFUJI\s*([1-5])\b/i);
+      cur = sm ? {
+        store: 'Fuji ' + sm[1],
+        invoice: head[4],
+        date: '20' + head[3] + '-' + head[2] + '-' + head[1]
+      } : null;
+      if (cur) {
+        // 伝票金額(税込合計)= 先頭行の金額3つ「税抜 税 税込」の3つ目。照合用
+        var tail = l.slice(l.search(/\bFUJI\s*[1-5]\b/i));
+        var money = (tail.match(/\d[\d,]*\.\d{2}/g) || []).map(function (m) { return parseFloat(m.replace(/,/g, '')); });
+        invoices[cur.invoice] = { invoice: cur.invoice, store: cur.store, date: cur.date, total: money.length >= 3 ? money[2] : null, itemSum: 0, items: 0 };
+      }
+      return;
+    }
+    if (!cur) return;
+
+    // 明細行: 「1 SABA-AA ... 20.000แพค 119.00 2,380.00」(数量は小数3桁)
+    var item = l.match(/^(\d{1,2})\s+(.*?)\s(\d{1,3}(?:,\d{3})*\.\d{3})\s*\S+\s+\d[\d,]*\.\d{2}/);
+    if (!item) return;
+    var qty = parseFloat(item[3].replace(/,/g, ''));
+    var name = fujiMapProduct(item[2]);
+    var amtM = l.match(/(\d[\d,]*\.\d{2})\s*$/);
+    var inv = invoices[cur.invoice];
+    if (inv && amtM) { inv.itemSum += parseFloat(amtM[1].replace(/,/g, '')); inv.items++; }
+    var rec = { date: cur.date, store: cur.store, invoice: cur.invoice, product: name, qty: qty, raw: item[2].trim() };
+    if (name && qty > 0) entries.push(rec); else unmatched.push(rec);
+  });
+  // 伝票ごとに「明細の合計 = 伝票金額」を確認。合わない伝票は読み違いか読み漏れの可能性がある
+  var warnings = [];
+  Object.keys(invoices).forEach(function (k) {
+    var v = invoices[k];
+    if (v.total === null) { warnings.push({ invoice: k, store: v.store, reason: '伝票金額を読めませんでした' }); return; }
+    if (v.items === 0) { warnings.push({ invoice: k, store: v.store, reason: '明細が見つかりません(伝票金額 ' + v.total.toFixed(2) + ')' }); return; }
+    if (Math.abs(v.itemSum - v.total) > 0.05) warnings.push({ invoice: k, store: v.store, reason: '明細合計 ' + v.itemSum.toFixed(2) + ' と伝票金額 ' + v.total.toFixed(2) + ' が合いません' });
+  });
+  return { entries: entries, unmatched: unmatched, warnings: warnings, invoiceCount: Object.keys(invoices).length };
+}
+
+// 同じ 日付×店舗×商品 を合計する
+function fujiAggregate(entries) {
+  var map = {}, out = [];
+  entries.forEach(function (e) {
+    var k = e.date + '|' + e.store + '|' + e.product;
+    if (!map[k]) { map[k] = { date: e.date, store: e.store, product: e.product, qty: 0, invoices: [] }; out.push(map[k]); }
+    map[k].qty += e.qty;
+    if (map[k].invoices.indexOf(e.invoice) < 0) map[k].invoices.push(e.invoice);
+  });
+  return out;
+}
+
+// ---------------- Fuji Super: read PDF -> save lines -> show ----------------
+let fujiResults = {}; // 'YYYY-MM-DD' -> 直近の抜き出し結果(警告・未対応の表示用)
+
+async function fujiPdfToLines(arrayBuffer) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let lines = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    lines = lines.concat(fujiBuildLines(tc.items));
+  }
+  return lines;
+}
+
+async function extractAndSaveFuji(dateStr, fileOrBlob) {
+  if (!window.pdfjsLib) throw new Error('pdf.js not loaded');
+  const lines = await fujiPdfToLines(await fileOrBlob.arrayBuffer());
+  // 文字が1行も取れないPDF(スキャン画像など)のときは、既存の保存分を消さずに止める
+  if (lines.length === 0) throw new Error('no text in PDF');
+  const r = fujiParseLines(lines);
+
+  const { error: delErr } = await supabaseClient.from('receivables_fuji_lines').delete().eq('upload_date', dateStr);
+  if (delErr) throw new Error(delErr.message);
+  if (r.entries.length > 0) {
+    const rows = r.entries.map(e => ({
+      upload_date: dateStr, invoice_date: e.date, invoice_no: e.invoice,
+      store: e.store, product: e.product, quantity: e.qty
+    }));
+    const { error: insErr } = await supabaseClient.from('receivables_fuji_lines').insert(rows);
+    if (insErr) throw new Error(insErr.message);
+  }
+  fujiResults[dateStr] = r;
+  return r;
+}
+
+async function rereadFuji(dateStr) {
+  const row = uploadsMap.get(dateStr);
+  if (!row) return;
+  const { data, error } = await supabaseClient.storage.from(BUCKET).download(row.file_path);
+  if (error) { showSaveMsg('Failed to open file: ' + error.message, true); return; }
+  try {
+    const r = await extractAndSaveFuji(dateStr, data);
+    showSaveMsg(`Fuji: ${r.entries.length} lines saved. / อ่านรายการ Fuji ${r.entries.length} รายการ`);
+  } catch (e) {
+    showSaveMsg('Fuji lines could not be read: ' + e.message, true);
+  }
+  renderFujiPanel(dateStr);
+}
+
+async function renderFujiPanel(dateStr) {
+  const el = document.getElementById('fuji-panel');
+  if (!el) return;
+  el.innerHTML = '<div class="empty-note">Loading Fuji lines… / กำลังโหลด</div>';
+
+  const { data, error } = await supabaseClient.from('receivables_fuji_lines')
+    .select('store, product, quantity, invoice_date, invoice_no, synced_at').eq('upload_date', dateStr);
+  if (dateStr !== selectedDate || !document.getElementById('fuji-panel')) return; // 読み込み中に別の日へ移った
+  if (error) { el.innerHTML = `<div class="fuji-warn">Could not load Fuji lines: ${escapeHtml(error.message)}</div>`; return; }
+
+  // 店舗ごと・商品ごとに合計
+  const byStore = {};
+  (data || []).forEach(r => {
+    const s = byStore[r.store] || (byStore[r.store] = {});
+    s[r.product] = (s[r.product] || 0) + Number(r.quantity);
+  });
+  const stores = Object.keys(byStore).sort();
+
+  let html = `<h3>Fuji Super lines <span class="th">/ รายการ Fuji Super (ใช้ในแท็บ Fuji Input)</span></h3>`;
+  if (stores.length === 0) {
+    html += `<div class="empty-note">No Fuji Super lines saved for this PDF. / ยังไม่มีรายการ Fuji Super จาก PDF นี้</div>`;
+  } else {
+    stores.forEach(st => {
+      const items = Object.keys(byStore[st]).map(p => `${escapeHtml(p)} <b style="margin:0">${byStore[st][p]}</b>`).join(' / ');
+      html += `<div class="fuji-store"><b>${escapeHtml(st)}</b>${items}</div>`;
+    });
+    // Fuji Input(スプレッドシート)への自動入力の状態。GASが数分ごとに反映する
+    if ((data || []).some(r => !r.synced_at)) {
+      html += `<div class="fuji-warn" style="background:#eef4fb;border-color:#b9cde6;color:var(--navy)">⏳ Waiting to be entered into Fuji Input automatically (within ~5 min). / รอใส่ใน Fuji Input อัตโนมัติ (ภายใน ~5 นาที)</div>`;
+    } else {
+      html += `<div class="fuji-ok">✓ Entered into Fuji Input automatically. / ใส่ใน Fuji Input อัตโนมัติแล้ว</div>`;
+    }
+    const dates = [...new Set((data || []).map(r => r.invoice_date))];
+    if (dates.length !== 1 || dates[0] !== dateStr) {
+      html += `<div class="fuji-warn">Invoice date: ${escapeHtml(dates.join(', '))} (differs from the upload date / วันที่ในใบกำกับไม่ตรงกับวันที่อัปโหลด)</div>`;
+    }
+  }
+
+  // 直近の抜き出し結果(このページを開いている間だけ)の警告
+  const r = fujiResults[dateStr];
+  if (r) {
+    if (r.warnings.length) {
+      html += `<div class="fuji-warn"><b>Check these invoices / โปรดตรวจสอบใบกำกับเหล่านี้:</b><br>` +
+        r.warnings.map(w => `${escapeHtml(w.invoice)} (${escapeHtml(w.store)}): ${escapeHtml(w.reason)}`).join('<br>') + `</div>`;
+    }
+    if (r.unmatched.length) {
+      html += `<div class="fuji-warn"><b>Not added (unknown product) / ไม่ได้เพิ่ม (ไม่รู้จักสินค้า):</b><br>` +
+        r.unmatched.map(u => `${escapeHtml(u.invoice)} ${escapeHtml(u.store)}: ${escapeHtml(u.raw)} × ${u.qty}`).join('<br>') + `</div>`;
+    }
+    if (!r.warnings.length && !r.unmatched.length && r.invoiceCount > 0) {
+      html += `<div class="fuji-ok">✓ ${r.invoiceCount} Fuji invoice(s): item totals match the invoice amounts. / ยอดรวมรายการตรงกับยอดใบกำกับ</div>`;
+    }
+  }
+
+  html += `<div class="fuji-actions"><button class="btn ghost" onclick="rereadFuji('${dateStr}')">↻ Read Fuji lines from this PDF / อ่านรายการ Fuji จาก PDF นี้ใหม่</button></div>`;
+  el.innerHTML = html;
 }
 </script>
 

@@ -215,7 +215,7 @@ async function loadMonthUploads() {
 
   const { data, error } = await supabaseClient
     .from('rice_uploads')
-    .select('upload_date, file_path, file_name, file_size, uploaded_by_name, uploaded_at')
+    .select('upload_date, file_path, file_name, file_size, uploaded_by_name, uploaded_at, process_status, process_note, processed_at')
     .gte('upload_date', firstDay).lte('upload_date', lastDay);
 
   uploadsMap = new Map();
@@ -224,6 +224,35 @@ async function loadMonthUploads() {
   }
   renderCalendar();
   renderDetailPanel();
+
+  // 自動読み取り待ちの間は、30秒ごとに状態を見に行く
+  clearTimeout(riceRefreshTimer);
+  const sel = uploadsMap.get(selectedDate);
+  if (sel && sel.process_status === 'pending') riceRefreshTimer = setTimeout(loadMonthUploads, 30000);
+}
+let riceRefreshTimer = null;
+
+// 自動読み取りの状態表示(pending=待ち / done=完了 / error=失敗)
+function renderProcessStatus(row) {
+  if (row.process_status === 'pending') {
+    return `<div class="detail-row"><span class="label">Auto-reading / อ่านอัตโนมัติ</span>⏳ Waiting (within ~5 min) — it will be entered into the rice sheet automatically. / รอการอ่าน (ภายใน ~5 นาที) ระบบจะกรอกลงสเปรดชีตข้าวให้อัตโนมัติ</div>`;
+  }
+  if (row.process_status === 'done') {
+    return `<div class="detail-row"><span class="label">Auto-reading / อ่านอัตโนมัติ</span><span style="color:var(--green)">✓ Read and entered into the rice sheet. / อ่านและกรอกลงสเปรดชีตข้าวแล้ว</span><br><span style="font-size:12px;color:var(--text-muted)">${escapeHtml(row.process_note || '')}</span></div>`;
+  }
+  if (row.process_status === 'error') {
+    return `<div class="detail-row"><span class="label">Auto-reading / อ่านอัตโนมัติ</span><span style="color:var(--red-accent)">⚠ Could not read this file. Please use the Rice Input tab. / อ่านไฟล์นี้ไม่ได้ กรุณาใช้แท็บ Rice Input</span><br><span style="font-size:12px;color:var(--text-muted)">${escapeHtml(row.process_note || '')}</span>
+      <div style="margin-top:6px"><button class="btn ghost" onclick="retryRice('${row.upload_date}')">↻ Try again / ลองอีกครั้ง</button></div></div>`;
+  }
+  return '';
+}
+
+async function retryRice(dateStr) {
+  const { error } = await supabaseClient.from('rice_uploads')
+    .update({ process_status: 'pending', process_note: null, processed_at: null }).eq('upload_date', dateStr);
+  if (error) { showSaveMsg('Failed: ' + error.message, true); return; }
+  showSaveMsg('Queued for auto-reading. / ส่งเข้าคิวอ่านอัตโนมัติแล้ว');
+  loadMonthUploads();
 }
 
 function changeMonth(delta) {
@@ -310,6 +339,7 @@ function renderDetailPanel() {
       <div class="detail-row"><span class="label">Uploaded by / อัปโหลดโดย</span>${escapeHtml(row.uploaded_by_name || '-')}</div>
       <div class="detail-row"><span class="label">Uploaded at / เวลาอัปโหลด</span>${uploadedAtStr} (Bangkok time)</div>
       <div class="detail-row"><span class="label">Size / ขนาดไฟล์</span>${formatBytes(row.file_size)}</div>
+      ${renderProcessStatus(row)}
       <div id="preview-${selectedDate}" style="margin-top:10px;"></div>
       <div class="detail-actions">
         <button class="btn" onclick="viewFile('${selectedDate}')">👁️ View / ดูไฟล์</button>
@@ -434,6 +464,10 @@ async function uploadFile(dateStr) {
       uploaded_by: currentCustomer.id,
       uploaded_by_name: uploaderName,
       uploaded_at: new Date().toISOString(),
+      // 自動読み取りの対象にする(GASが数分ごとに見に来て、お米シートへ入力する)
+      process_status: 'pending',
+      process_note: null,
+      processed_at: null,
     }, { onConflict: 'upload_date' });
 
   if (dbErr) { showSaveMsg('อัปโหลดไม่สำเร็จ (DB) / Upload failed (DB): ' + dbErr.message, true); return; }
