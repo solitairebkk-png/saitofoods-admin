@@ -71,19 +71,6 @@
       <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
-      <g:id>1085</g:id>
-      <title>Hokkaido Nanatsuboshi Rinse-Free Rice 2kg</title>
-      <description>北海道産の無洗米 ななつぼし 2kg袋です。 定番商品になりました! ほどよい甘みと粘り。 甘みと粘りのバランスがよく、あっさりとした食感です。 · お弁当や和食に。 冷めてもおいしいという特長から、お弁当やお寿司に最適です</description>
-      <link>https://saitofoods.com/en/products/1085.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889219538_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>370.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
-    </item>
-    <item>
       <g:id>344</g:id>
       <title>Saito Frozen Kiri Mochi 6pcs</title>
       <description>キメ細やかな良く伸びる冷凍の切り餅です。 使いやすい個別包装にしました。 50g*6個 タイでありがちな、厚みの薄いお餅ではなくて、しっかりと日本人に合った厚みで作りました。原材料は・・もち米(タイ産)、水のみ。 防腐剤や味付けも行っておりません。 完全無添加! 安心して御利用くださいませ。防腐剤が入っておりませんので、冷凍保管していただくようお願いいたします。</description>
@@ -211,7 +198,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>On Promotion</g:product_type>
     </item>
     <item>
       <g:id>1351</g:id>
@@ -350,7 +337,7 @@
       <link>https://saitofoods.com/en/products/1185.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485691117_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05141105_6824167e7a189.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>48.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -369,7 +356,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>28</g:id>
@@ -455,7 +442,7 @@
       <description>豚肉を何枚も重ねて途中にチーズを挟んで衣付けした商品です。 油で揚げてお召し上がりください。 1枚約150g 冷凍のまま揚げて頂く事をオススメ致します。 解凍してしまうと、ドリップが出て、衣が剥がれやすくなってしまいます。 160度で4分揚げた後余熱を利用して1分置くイメージでお願いいたします。</description>
       <link>https://saitofoods.com/en/products/955.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487676889_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>128.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -482,7 +469,7 @@
       <link>https://saitofoods.com/en/products/750.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488983636_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12131459_5c12116e04a05.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>84.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -609,19 +596,6 @@
       <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
-      <g:id>1270</g:id>
-      <title>Additive-Free Mackerel Flakes 200g</title>
-      <description>ちょどよい塩加減のサバフレークです。 合成添加物 無添加の美味しいサバフレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
-      <link>https://saitofoods.com/en/products/1270.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883531100_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>95.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Good selling</g:product_type>
-    </item>
-    <item>
       <g:id>859</g:id>
       <title>Norwegian Boneless Frozen Saba Fillet 2pcs</title>
       <description>ノルウェー産骨なし冷凍サバフィーレ 100g 2枚入り。 ほんの少し塩味がついております。 味噌煮、照り焼き、ステーキ何でも来い!</description>
@@ -680,7 +654,7 @@
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
       <link>https://saitofoods.com/en/products/1366.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784789172165_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -719,7 +693,7 @@
       <description>優しい甘醤油味 サバ照り焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/en/products/1272.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884213892_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -823,7 +797,7 @@
       <description>ホテル等で提供されるねっとりしたタイプのスモークサーモンです。 チリ産トラウトを使用した本格的な商品です。 パンに挟んだりサラダやスパゲティに。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/reel/DIitpqJRM5T/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
       <link>https://saitofoods.com/en/products/934.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487152586_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>299.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -966,7 +940,7 @@
       <description>アルゼンチン牛のたん下、タン先を取り除きスライスしてます。熟成をかけ事によって柔らかくしております。100g</description>
       <link>https://saitofoods.com/en/products/1053.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874232649_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>196.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -992,7 +966,7 @@
       <description>Thai white pork ground meat. Fat content: 15%-20%. 200g</description>
       <link>https://saitofoods.com/en/products/602.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483113857_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>86.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1024,19 +998,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Original Products</g:product_type>
-    </item>
-    <item>
-      <g:id>1315</g:id>
-      <title>Pre-Boiled Cut Beef Tendon 250g</title>
-      <description>牛すじをボイルして適当な大きさにカットし冷凍した商品です。下処理が終わっておりますので、カレーに煮込みに入れるだけで牛筋を楽しめます。250g入り。</description>
-      <link>https://saitofoods.com/en/products/1315.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484970064_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>206.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen Meat</g:product_type>
     </item>
     <item>
       <g:id>1023</g:id>
@@ -1109,7 +1070,7 @@
       <description>日本人なら誰もが知っているトマトケチャップ。 カゴメトマトケチャップは、トマト・糖類・お酢・食塩・たまねぎ・香辛料だけでつくられています。着色料、保存料は使用していません。500g入り</description>
       <link>https://saitofoods.com/en/products/566.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888774435_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>160.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1179,7 +1140,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>sweets</g:product_type>
     </item>
     <item>
       <g:id>104</g:id>
@@ -1200,7 +1161,7 @@
       <description>Mirin-style seasoning from Asan Service Co. 1 liter.</description>
       <link>https://saitofoods.com/en/products/103.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889046767_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>225.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1239,7 +1200,7 @@
       <description>キッコーマンの空気に触れないタイプの美味しいお醤油です。 常温で保存できて、なおかつ常に薫り高いお醤油をお楽しみ頂け ます。是非お試しください。全く違います。200ml</description>
       <link>https://saitofoods.com/en/products/476.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888984256_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>145.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1500,12 +1461,12 @@
       <description>使用大豆:アメリカ産 有機小粒大豆、契約栽培大豆を100%使用。 有機栽培大豆とは… ①畑は、2年以上有機肥料で土作りをします ②農薬や化学肥料に頼らないことを基本としています ③遺伝子組換え技術を使用しません 大豆の栽培から納豆の製造まで有機認証を受けた納豆です。 有機しょうゆ使用たれとからし付。 40g * 3パック</description>
       <link>https://saitofoods.com/en/products/1358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201401_6a0d5c592fe48.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>309</g:id>
@@ -1630,7 +1591,7 @@
       <description>日本製造のコシの強い冷凍うどんです。 125g*5玉入りです。</description>
       <link>https://saitofoods.com/en/products/485.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889500007_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>142.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1872,6 +1833,20 @@
       <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
+      <g:id>1169</g:id>
+      <title>100% Japanese Soybean Firm Silken Tofu 300g</title>
+      <description>これは便利!常温保管できる日本から輸入の日本産大豆100%のお豆腐300g入りです。 Firmはお箸で挟んで持ち上げられる程度の硬さ。 煮崩れしにくいので、お鍋や麻婆豆腐におススメ! しっかりと豆の味がする美味しいお豆腐です。</description>
+      <link>https://saitofoods.com/en/products/1169.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883203421_slot2.jpg</g:image_link>
+      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07161052_6695ee853ad13.jpg</g:additional_image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>58.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Imported from Japan</g:product_type>
+    </item>
+    <item>
       <g:id>1320</g:id>
       <title>Yamaguchi Tofu Shop Premium Yose Tofu 450g</title>
       <description>The beloved tofu from Yamaguchi Tofu Shop is back! The soymilk used is the same as that in our Premium Silken Tofu. We use a different type of nigari (coagulant) than in our standard silken tofu. The nigari we use is produced in-house by Yamaguchi Tofu Shop using natural materials sourced directly from salt fields through our own unique procurement process. By using this nigari generously, our product is rich in natural minerals, primarily magnesium. With its deeper flavor and richer taste, this Premium Tofu boasts excellent nutrition and mineral content. Please note that depending on the timing of your cancellation request, we may have already completed the procurement, and we may be unable to accommodate cancellations. We appreciate your understanding in advance.</description>
@@ -1942,7 +1917,7 @@
       <description>牛タンのブロックがゴロゴロと入っている大満足な逸品です。 別に販売しておりますデミグラスソースを使用して作っているこだわりのシチューです。 調理済みですので、湯銭か容器にあけて電子レンジで加熱してお召し上がりください。200g</description>
       <link>https://saitofoods.com/en/products/964.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487947269_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2236,7 +2211,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>Frozen fish</g:product_type>
     </item>
     <item>
       <g:id>682</g:id>
@@ -2275,7 +2250,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1356</g:id>
@@ -2288,7 +2263,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>Imported from Japan</g:product_type>
     </item>
     <item>
       <g:id>1086</g:id>
@@ -2375,7 +2350,7 @@
       <description>加熱調理用のむきエビです。プリプリでサイズも大きくエビチリ、サラダ、炒め物などに最適です。 冷凍品。250g入り。タイ産。</description>
       <link>https://saitofoods.com/en/products/79.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489471997_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>210.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2428,7 +2403,7 @@
       <description>ハマグリをほんの少しボイルし冷凍しました。 砂も既に吐いており、口も開きます。 500gパック</description>
       <link>https://saitofoods.com/en/products/742.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868720355_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>170.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3014,32 +2989,6 @@
       <g:product_type>Mae Kanom</g:product_type>
     </item>
     <item>
-      <g:id>1257</g:id>
-      <title>4-Mix Fruits &amp; Nuts 140g Pink Bag</title>
-      <description>タイらしい4種のドライフルーツ(マンゴー/ココナツ/パイナップル/パパイヤ)と4種のナッツが織りなすハーモニー! ドライフルーツのやさしい甘みとナッツの香ばしさ&amp;塩気が絶妙にマッチしポリポリが止まりませーん!一時帰国のたびに日本からのリクエストが止まらない我が家の定番タイ土産です! ※乾燥剤を封入しています。開封後お捨ていただきお子様やペットの誤飲にご注意下さい※ 賞味期限 30/Aug/2026 パッキングサイズ 縦20cm横12cm **画像クリックでクローズアップ!** 原材料:ピーナッツ、グリーンピース、ソラマメ、カシューナッツ、マンゴー、ココナツ果肉、パイナップル、パパイヤ、砂糖、塩</description>
-      <link>https://saitofoods.com/en/products/1257.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07151736_68762f10aa323.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>85.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>local products</g:product_type>
-    </item>
-    <item>
-      <g:id>1256</g:id>
-      <title>4-Mix Fruits &amp; Nuts 65g Green Bag</title>
-      <description>タイらしい4種のドライフルーツ(マンゴー/ココナツ/パイナップル/パパイヤ)と4種のナッツが織りなすハーモニー! ドライフルーツのやさしい甘みとナッツの香ばしさ&amp;塩気が絶妙にマッチしポリポリが止まりませーん!一時帰国のたびに日本からのリクエストが止まらない我が家の定番タイ土産です! ※乾燥剤を封入しています。開封後お捨ていただきお子様やペットの誤飲にご注意下さい※ パッキングサイズ 縦15cm横10cm 賞味期限 30/Aug/2026 **画像クリックでクローズアップ!** 原材料:ピーナッツ、グリーンピース、ソラマメ、カシューナッツ、マンゴー、ココナツ果肉、パイナップル、パパイヤ、砂糖、塩</description>
-      <link>https://saitofoods.com/en/products/1256.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07151736_68762f349bc6f.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>45.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>local products</g:product_type>
-    </item>
-    <item>
       <g:id>1395</g:id>
       <title>Black Tiger Peanuts from Mae Hong Son Province</title>
       <description>Mae Hong Son Tiger Peanuts Vibrant tiger-striped peanuts grown in the rich climate of Mae Hong Son Province in northern Thailand. With a subtle, mild saltiness and delightfully crispy texture paired with a wonderful roasted aroma, these peanuts are absolutely delicious! Offering a distinctly different taste and texture compared to the black-striped variety, we encourage you to enjoy tasting both and comparing them.</description>
@@ -3064,7 +3013,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>sweets</g:product_type>
     </item>
     <item>
       <g:id>1363</g:id>
@@ -3077,7 +3026,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>New Products</g:product_type>
+      <g:product_type>sweets</g:product_type>
     </item>
     <item>
       <g:id>1207</g:id>
@@ -3275,19 +3224,6 @@
       <g:product_type>Mae Kanom</g:product_type>
     </item>
     <item>
-      <g:id>548</g:id>
-      <title>Arau Baby Foaming Body Soap Bottle 450ml</title>
-      <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
-      <link>https://saitofoods.com/en/products/548.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483940749_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>325.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Saraya Brand</g:product_type>
-    </item>
-    <item>
       <g:id>549</g:id>
       <title>Arau Baby Foaming Soap Refill 400ml</title>
       <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。詰め替え用。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
@@ -3321,19 +3257,6 @@
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485089889_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>70.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Imported from Japan</g:product_type>
-    </item>
-    <item>
-      <g:id>830</g:id>
-      <title>Danitorize Dust Mite Sheets 3pcs (Insecticide-Free)</title>
-      <description>Just lay it under your sheet to trap dust mites. A handy item when you need it.</description>
-      <link>https://saitofoods.com/en/products/830.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486078182_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
-      <g:price>598.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
