@@ -434,6 +434,18 @@ function renderCustomerRow(c) {
   return tr;
 }
 
+// SMSの送信先として使えるタイの携帯番号(0から始まる10桁、または+66/66始まり)を、tel1→tel2の順で探す。
+// 使える番号が無ければ null(その場合SMSは送られない)。
+function thaiMobileOf(c) {
+  for (const raw of [c.tel1, c.tel2]) {
+    const d = String(raw || '').replace(/[^\d+]/g, '');
+    if (/^0[689]\d{8}$/.test(d)) return d;
+    const m = d.match(/^\+?66([689]\d{8})$/);
+    if (m) return '0' + m[1];
+  }
+  return null;
+}
+
 function toggleEdit(customerId) {
   const existing = document.querySelector(`tr.edit-row[data-editing="${customerId}"]`);
   if (existing) { existing.remove(); return; }
@@ -464,6 +476,14 @@ function toggleEdit(customerId) {
         <label>県 / Province<input type="text" class="e-province" value="${escapeHtml(c.province || '')}"></label>
         <label>住所1 / Address 1<input type="text" class="e-addr1" value="${escapeHtml(c.address1 || '')}"></label>
         <label>住所2 / Address 2<input type="text" class="e-addr2" value="${escapeHtml(c.address2 || '')}"></label>
+        <label>📱 配達完了SMS / Delivery SMS
+          <select class="e-sms">
+            <option value="" ${!c.sms_notify ? 'selected' : ''}>なし / None</option>
+            <option value="ja" ${c.sms_notify === 'ja' ? 'selected' : ''}>日本語 / Japanese</option>
+            <option value="en" ${c.sms_notify === 'en' ? 'selected' : ''}>English</option>
+          </select>
+          <span style="font-size:10.5px;color:${thaiMobileOf(c) ? '#166534' : '#b45309'};">${thaiMobileOf(c) ? '送信先 / To: ' + escapeHtml(thaiMobileOf(c)) : 'タイの携帯番号が見つかりません(送信されません) / No Thai mobile number'}</span>
+        </label>
         <label class="checkbox-field"><input type="checkbox" class="e-active" ${c.is_active !== false ? 'checked' : ''}> 有効 / Active</label>
       </div>
       <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:12px;">備考 / Notes
@@ -493,6 +513,7 @@ async function saveCustomer(customerId) {
     address1: g('.e-addr1').value.trim() || null,
     address2: g('.e-addr2').value.trim() || null,
     is_active: g('.e-active').checked,
+    sms_notify: g('.e-sms').value || null,
     notes: g('.e-notes').value.trim() || null,
   };
 
