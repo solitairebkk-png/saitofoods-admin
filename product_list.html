@@ -719,7 +719,7 @@ function handleQuickViewFromQuery() {
   const params = new URLSearchParams(location.search);
   const viewId = params.get('view');
   const searchQuery = params.get('search');
-  const categoryId = params.get('category_id');
+  const categoryId = params.get('category_id') || params.get('category'); // ?category= は設定画面のお知らせリンク用(古い形式も受け付ける)
   const favoritesParam = params.get('favorites');
 
   if (favoritesParam === '1') {

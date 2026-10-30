@@ -1170,14 +1170,14 @@ async function saveAnnouncementOrder() {
 }
 
 // カテゴリを選ぶと、そのカテゴリ一覧へのリンクURLを自動でリンク先URL欄に入れる
-// (product_list.htmlは「?category=カテゴリID」を見て、そのカテゴリで自動的に絞り込み表示する)
+// (product_list.htmlは「?category_id=カテゴリID」を見て、そのカテゴリで自動的に絞り込み表示する)
 function applyAnnouncementCategoryLink(selectEl) {
   const catId = selectEl.value;
   if (!catId) return;
   const card = selectEl.closest('.entry-card');
   const linkInput = card.querySelector('.ann-link');
   const linkTextInput = card.querySelector('.ann-link-text');
-  linkInput.value = `product_list.html?category=${catId}`;
+  linkInput.value = `product_list.html?category_id=${catId}`;
   if (!linkTextInput.value.trim()) {
     const opt = selectEl.selectedOptions[0];
     linkTextInput.value = (opt?.dataset.name || 'この商品') + 'を見る';
