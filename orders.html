@@ -2201,7 +2201,7 @@ async function _loadOrdersInner() {
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       payment_uncollected, payment_uncollected_at, payment_uncollected_by,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
-      delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_handed_over, delivery_photo_skipped,
+      delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_sms_sent_at, delivery_handed_over, delivery_photo_skipped,
       delivery_lat, delivery_lng, delivery_accuracy_m,
       order_delivery_memos ( memo, memo_by, memo_at ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
@@ -2997,9 +2997,14 @@ function renderDispatchBlock(order) {
         const mailLabel = order.delivery_photo_email_sent_at
           ? '✉️ Email sent / ส่งอีเมลแล้ว'
           : (order.customers?.email ? '⚠️ Email NOT sent / ยังไม่ส่งอีเมล' : 'No email / ไม่มีอีเมล');
+        // 配達完了SMSを依頼した時刻(お客様がSMSを希望し、依頼が通ったときだけ表示する)
+        const smsLabel = order.delivery_sms_sent_at
+          ? `<div style="color:#1f6f43;font-weight:700;">📱SMS ${new Date(order.delivery_sms_sent_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })}</div>`
+          : '';
         deliveryProofHtml = `
         <div style="margin-top:4px;color:#1f6f43;font-weight:700;">📷 Delivered ${dTime} / ส่งของแล้ว</div>
         <div style="color:var(--text-muted);">${mailLabel}</div>
+        ${smsLabel}
         ${deliveryMapLinkHtml(order)}
         ${(order.delivery_photo_paths || []).length
           ? `<button class="btn-undo-dispatch" onclick="viewDeliveryPhotos('${order.id}')">📷 View photo / ดูรูป</button>`
