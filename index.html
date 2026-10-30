@@ -262,6 +262,12 @@
   .rank-badge.r3 { background: linear-gradient(135deg,#D9996B,#A8602F); }
   .promo-sold { font-size: 12px; font-weight: 800; color: #C2410C; margin-top: 4px; }
   .promo-comment { font-size: 11px; color: #8A6B1E; font-weight: 700; margin-top: 5px; line-height: 1.4; }
+  /* 「只今プロモーション中」見出しを大きく目立たせる */
+  .section-title.promo-headline { font-size: 22px; font-weight: 900; line-height: 1.3; color: #fff; background: linear-gradient(135deg, var(--red) 0%, #F97316 100%); padding: 12px 16px; border-radius: 14px; box-shadow: 0 4px 12px rgba(220,38,38,0.28); gap: 10px; margin-bottom: 14px; letter-spacing: 0.02em; }
+  .section-title.promo-headline .ttl-icon { width: 28px; height: 28px; animation: promo-twinkle 1.6s ease-in-out infinite; }
+  @keyframes promo-twinkle { 0%,100% { transform: scale(1) rotate(0deg); opacity: 1; } 50% { transform: scale(1.18) rotate(12deg); opacity: 0.85; } }
+  @media (prefers-reduced-motion: reduce) { .section-title.promo-headline .ttl-icon { animation: none; } }
+  @media (max-width: 480px) { .section-title.promo-headline { font-size: 19px; padding: 11px 13px; } .section-title.promo-headline .ttl-icon { width: 24px; height: 24px; } }
 
   /* announcements */
   .announce-item { background: #fff; border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
@@ -565,7 +571,7 @@ function closeMigrationGuideModal() {
     <main>
 
       <div class="section-block">
-        <div class="section-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"></path></svg> <span data-i18n="section.promotion">只今プロモーション中 / Currently on Promotion</span></div>
+        <div class="section-title promo-headline"><svg class="ttl-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9z"></path></svg> <span data-i18n="section.promotion">只今プロモーション中 / Currently on Promotion</span></div>
         <div class="promo-scroll" id="promo-scroll">
           <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
           <div class="skeleton-promo-card"><div class="skeleton-box" style="width:100%;aspect-ratio:1/1;"></div><div style="padding:8px 10px 10px;"><div class="skeleton-box" style="width:80%;height:11px;margin-bottom:6px;"></div><div class="skeleton-box" style="width:50%;height:11px;"></div></div></div>
