@@ -544,6 +544,12 @@ var FUJI_PRODUCT_RULES = [
   [/MUKI\s*EBI/i,                 'muki ebi'],
   [/SALTED\s*SALMON\s*KIRIMI/i,   'salted salmon kirimi'],
   [/COHO/i,                       'coho'],
+  [/MARUCHAN/i,                   'maruchan'],
+  [/EBI\s*GY?OU?ZA/i,             'ebi gyouza'],
+  [/GYUDON/i,                     'gyudon'],
+  [/SMOKE[D]?\s*SALMON/i,         'smoke salmon'],
+  [/TOMATO\s*HAMBURG/i,           'tomato hamburg'],
+  [/GY?OU?ZA/i,                   'standerd gyouza'],   // ebi gyouza を先に判定済みなので、残りの餃子
   [/EBI\s*SHUMAI/i,               'ebi syumai'],
   [/NIKU\s*SHUMAI/i,              'niku syumai'],
   [/SHOROMPO/i,                   'shorompo'],
@@ -554,9 +560,21 @@ var FUJI_PRODUCT_RULES = [
   [/\bRR05\b|JAP\.?\s*RICE.*\b5\s*KG/i, 'nihonmai 5kg']
 ];
 
+// Fuji Inputの商品リスト(Product_Master)の名前。上のルールで決まらなかったときの予備の照合に使う
+var FUJI_MASTER_NAMES = [
+  'coho', 'ebi gyouza', 'ebi syumai', 'gyudon', 'maruchan', 'muki ebi', 'niku syumai', 'saba fillet',
+  'salted salmon kirimi', 'shorompo', 'smoke salmon', 'standerd gyouza', 'tomato hamburg', 'ume syrup',
+  'umeboshi', 'nihonmai 1kg', 'nihonmai 2kg', 'nihonmai 5kg'
+];
+
 function fujiMapProduct(text) {
   for (var i = 0; i < FUJI_PRODUCT_RULES.length; i++) {
     if (FUJI_PRODUCT_RULES[i][0].test(text)) return FUJI_PRODUCT_RULES[i][1];
+  }
+  // 予備: 商品リストの名前(スペースや記号を無視)がPDFの商品名にそのまま含まれていれば採用
+  var norm = String(text).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  for (var j = 0; j < FUJI_MASTER_NAMES.length; j++) {
+    if (norm.indexOf(FUJI_MASTER_NAMES[j].toUpperCase().replace(/[^A-Z0-9]/g, '')) >= 0) return FUJI_MASTER_NAMES[j];
   }
   return null;
 }
