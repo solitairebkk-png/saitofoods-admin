@@ -481,7 +481,16 @@
           </div>
           <div class="form-group">
             <label data-i18n="my.telLabel">電話番号</label>
-            <input type="text" class="form-input" id="profile-tel1">
+            <input type="text" class="form-input" id="profile-tel1" oninput="updateSmsHint()">
+          </div>
+          <div class="form-group" id="profile-sms-group" style="background:#fff8e1;border:2px solid #f0b400;border-radius:12px;padding:12px 14px;">
+            <label data-i18n="my.smsLabel">📱 配達完了SMS</label>
+            <select class="form-input" id="profile-sms" onchange="saveSmsNotify()">
+              <option value="" data-i18n="my.smsNone">SMSは受け取らない</option>
+              <option value="ja" data-i18n="my.smsJa">日本語でSMSを受け取る</option>
+              <option value="en" data-i18n="my.smsEn">English でSMSを受け取る</option>
+            </select>
+            <div class="form-hint" id="profile-sms-hint"></div>
           </div>
           <div class="form-group">
             <label data-i18n="my.address1Label">住所1</label>
@@ -910,7 +919,7 @@ async function loadMyPage(user) {
   await supabaseClient.rpc('sync_own_email');
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name')
+    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify')
     .eq('auth_user_id', user.id)
     .single();
   if ((error || !customerRow) && user.email) {
@@ -944,7 +953,7 @@ async function loadMyPage(user) {
       if (attempt > 0) await sleep(500 * attempt);
       const retry = await supabaseClient
         .from('customers')
-        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name')
+        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify')
         .eq('auth_user_id', user.id)
         .single();
       customerRow = retry.data;
@@ -998,6 +1007,8 @@ async function loadMyPage(user) {
   document.getElementById('profile-family-name').value = customerRow.family_name || '';
   document.getElementById('profile-first-name').value = customerRow.first_name || '';
   document.getElementById('profile-tel1').value = customerRow.tel1 || '';
+  document.getElementById('profile-sms').value = customerRow.sms_notify || '';
+  updateSmsHint();
   document.getElementById('profile-address1').value = customerRow.address1 || '';
   document.getElementById('profile-address2').value = customerRow.address2 || '';
   originalAreaId = customerRow.area_id || null;
@@ -1567,6 +1578,31 @@ async function loadCondoOptions(currentCondo) {
   } catch (e) {
     select.innerHTML = notSelected;
   }
+}
+// 配達完了SMS: 入力中の電話番号がタイの携帯番号か判定し、案内文を出す(SMSはタイの携帯番号のみ対象)
+function thaiMobileOfText(raw) {
+  const d = String(raw || '').replace(/[^\d+]/g, '');
+  if (/^0[689]\d{8}$/.test(d)) return d;
+  const m = d.match(/^\+?66([689]\d{8})$/);
+  return m ? '0' + m[1] : null;
+}
+function updateSmsHint() {
+  const hint = document.getElementById('profile-sms-hint');
+  const sel = document.getElementById('profile-sms');
+  if (!hint || !sel) return;
+  const num = thaiMobileOfText(document.getElementById('profile-tel1').value);
+  if (num) { hint.textContent = i18nText('my.smsHintOk') + num; sel.disabled = false; }
+  else { hint.textContent = i18nText('my.smsHintNoNumber'); sel.disabled = true; }
+}
+document.addEventListener('saitofoods-langchange', function () { if (document.getElementById('profile-sms-hint')) updateSmsHint(); });
+// 選んだ瞬間に保存する(別の「保存する」ボタンを押し忘れても反映されるように)
+async function saveSmsNotify() {
+  const sel = document.getElementById('profile-sms');
+  const lang = sel.value || null;
+  const { error } = await supabaseClient.rpc('set_my_sms_notify', { p_lang: lang });
+  if (error) { showProfileMsg(i18nText('my.smsSaveFailed') + error.message, true); return; }
+  if (currentCustomer) currentCustomer.sms_notify = lang;
+  showProfileMsg(i18nText('my.smsSaved'));
 }
 async function saveProfile() {
   const familyName = document.getElementById('profile-family-name').value.trim();

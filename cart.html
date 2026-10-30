@@ -174,6 +174,12 @@
   .delivery-opt-item { display: flex; align-items: flex-start; gap: 9px; border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
   .delivery-opt-item input { width: 17px; height: 17px; margin-top: 1px; flex-shrink: 0; accent-color: var(--brand); }
   .delivery-opt-item span { font-size: 13px; line-height: 1.4; }
+  .sms-opt-box { background: #fff8e1; border: 2px solid #f0b400; border-radius: 12px; padding: 12px 14px; margin: 4px 0 16px; }
+  .sms-opt-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; line-height: 1.5; }
+  .sms-opt-label { display: flex; align-items: flex-start; gap: 10px; background: #fff; border: 1.5px solid var(--line); border-radius: 10px; padding: 12px; cursor: pointer; }
+  .sms-opt-label input { width: 22px; height: 22px; margin-top: 0; flex-shrink: 0; accent-color: var(--brand); }
+  .sms-opt-label span { font-size: 13.5px; line-height: 1.5; }
+  .sms-opt-hint { font-size: 12px; color: #666; line-height: 1.7; }
   .leave-group { display: flex; flex-direction: column; gap: 8px; }
   .leave-title { font-size: 13px; font-weight: 700; color: #333; }
   .leave-opt { display: flex; align-items: flex-start; gap: 9px; border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
@@ -469,11 +475,15 @@
             <input type="checkbox" id="opt-no-change">
             <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
           </label>
-          <label class="delivery-opt-item" id="opt-sms-wrap" style="display:none;">
-            <input type="checkbox" id="opt-sms">
-            <span><span data-i18n="cart.optSms">配達完了をSMSでも受け取る(写真付きメールとあわせてお知らせします) / Also notify me by SMS when delivered</span><br><small id="opt-sms-to" style="color:#888;"></small></span>
-          </label>
         </div>
+      </div>
+      <div class="sms-opt-box" id="opt-sms-box" style="display:none;">
+        <div class="sms-opt-title" data-i18n="cart.smsBoxTitle">📱 配達完了のお知らせをSMSでも受け取りますか? / Get a delivery SMS too?</div>
+        <label class="sms-opt-label" id="opt-sms-wrap" style="display:none;">
+          <input type="checkbox" id="opt-sms">
+          <span><span data-i18n="cart.optSms">配達完了をSMSでも受け取る(写真付きメールとあわせてお知らせします) / Also notify me by SMS when delivered</span><br><small id="opt-sms-to" style="color:#888;"></small></span>
+        </label>
+        <div class="sms-opt-hint" id="opt-sms-nonum" style="display:none;" data-i18n="cart.smsNoThaiNumber">SMSはタイの携帯番号(06・08・09から始まる10桁)にお送りします。ご希望の方は、マイページで電話番号をご登録ください。 / SMS is sent to Thai mobile numbers (10 digits starting with 06, 08 or 09). To receive it, please register your number in My Page.</div>
       </div>
       <div class="field">
         <label data-i18n="cart.commentLabel">備考 / Comment</label>
@@ -663,9 +673,13 @@ function thaiMobileOf(c) {
 // 配達完了SMSのチェックボックス: タイの携帯番号があるお客様にだけ出し、前回の選択を引き継ぐ
 function initSmsOption() {
   const wrap = document.getElementById('opt-sms-wrap');
+  const noNum = document.getElementById('opt-sms-nonum');
   if (!wrap || !currentCustomer) return;
+  const box = document.getElementById('opt-sms-box');
+  if (box) box.style.display = 'block';
   const num = thaiMobileOf(currentCustomer);
-  if (!num) { wrap.style.display = 'none'; return; }
+  if (!num) { wrap.style.display = 'none'; if (noNum) noNum.style.display = 'block'; return; }
+  if (noNum) noNum.style.display = 'none';
   wrap.style.display = 'flex';
   document.getElementById('opt-sms').checked = !!currentCustomer.sms_notify;
   document.getElementById('opt-sms-to').textContent = '→ ' + num;
