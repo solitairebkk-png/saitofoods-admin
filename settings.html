@@ -672,8 +672,10 @@ async function loadMonthlyPromotions() {
   listEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
 
   const { data, error } = await supabaseClient
-    .from('products').select('id, name_ja, name_en, price, promotion_price, promotion_comment')
-    .eq('is_monthly_promotion', true);
+    .from('products').select('id, name_ja, name_en, price, promotion_price, promotion_comment, promotion_sort_order')
+    .eq('is_monthly_promotion', true)
+    .order('promotion_sort_order', { ascending: true, nullsFirst: false })
+    .order('name_ja', { ascending: true });
 
   if (error) { listEl.innerHTML = '<div style="color:var(--red-accent);font-size:13px;">Error: ' + error.message + '</div>'; return; }
 
@@ -682,8 +684,14 @@ async function loadMonthlyPromotions() {
     return;
   }
 
-  listEl.innerHTML = data.map(p => `
+  const promoIds = data.map(p => p.id);
+  const moveBtnStyle = 'width:32px;height:28px;border:1px solid var(--border);border-radius:5px;background:#fff;font-size:14px;line-height:1;cursor:pointer;padding:0;';
+  listEl.innerHTML = data.map((p, i) => `
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fffdf5;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button type="button" style="${moveBtnStyle}${i === 0 ? 'opacity:.3;cursor:default;' : ''}" ${i === 0 ? 'disabled' : ''} onclick="moveMonthlyPromotion('${p.id}', -1)" aria-label="上へ / Move up">▲</button>
+        <button type="button" style="${moveBtnStyle}${i === data.length - 1 ? 'opacity:.3;cursor:default;' : ''}" ${i === data.length - 1 ? 'disabled' : ''} onclick="moveMonthlyPromotion('${p.id}', 1)" aria-label="下へ / Move down">▼</button>
+      </div>
       <div style="flex:1;min-width:160px;">
         <div style="font-size:13px;font-weight:600;">${p.name_ja}</div>
         <div style="font-size:11px;color:var(--text-muted);">${p.name_en || ''} — 通常価格 ${p.price} THB</div>
@@ -698,6 +706,28 @@ async function loadMonthlyPromotions() {
       <button class="btn-delete-row" onclick="removeMonthlyPromotion('${p.id}')">削除 / Remove</button>
     </div>
   `).join('');
+}
+
+async function moveMonthlyPromotion(productId, delta) {
+  const { data, error } = await supabaseClient
+    .from('products').select('id')
+    .eq('is_monthly_promotion', true)
+    .order('promotion_sort_order', { ascending: true, nullsFirst: false })
+    .order('name_ja', { ascending: true });
+  if (error || !data) { showSaveMsg('並び替えに失敗しました / Reorder failed', true); return; }
+
+  const ids = data.map(r => r.id);
+  const from = ids.indexOf(productId);
+  const to = from + delta;
+  if (from < 0 || to < 0 || to >= ids.length) return;
+  [ids[from], ids[to]] = [ids[to], ids[from]];
+
+  const results = await Promise.all(ids.map((id, i) =>
+    supabaseClient.from('products').update({ promotion_sort_order: i + 1 }).eq('id', id)));
+  const failed = results.find(r => r.error);
+  if (failed) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + failed.error.message, true); return; }
+  showSaveMsg('並び順を保存しました / Order saved');
+  loadMonthlyPromotions();
 }
 
 async function savePromotionPrice(productId) {
@@ -717,7 +747,7 @@ async function savePromotionPrice(productId) {
 
 async function removeMonthlyPromotion(productId) {
   if (!confirm('プロモーションから外しますか？ / Remove this product from monthly promotion?')) return;
-  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: false, promotion_price: null, promotion_comment: null }).eq('id', productId);
+  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: false, promotion_price: null, promotion_comment: null, promotion_sort_order: null }).eq('id', productId);
   if (error) { showSaveMsg('บันทึกไม่สำเร็จ / Save failed: ' + error.message, true); return; }
   showSaveMsg('บันทึกแล้ว / Saved');
   loadMonthlyPromotions();
@@ -753,7 +783,7 @@ async function addMonthlyPromotion(productId) {
     return;
   }
 
-  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: true }).eq('id', productId);
+  const { error } = await supabaseClient.from('products').update({ is_monthly_promotion: true, promotion_sort_order: (count || 0) + 1 }).eq('id', productId);
   document.getElementById('promo-search-input').value = '';
   document.getElementById('promo-search-result').style.display = 'none';
   toggleSearchClearBtn('promo-search-input', 'promo-search-clear-btn');
