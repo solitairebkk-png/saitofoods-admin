@@ -469,6 +469,10 @@
             <input type="checkbox" id="opt-no-change">
             <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
           </label>
+          <label class="delivery-opt-item" id="opt-sms-wrap" style="display:none;">
+            <input type="checkbox" id="opt-sms">
+            <span><span data-i18n="cart.optSms">配達完了をSMSでも受け取る(写真付きメールとあわせてお知らせします) / Also notify me by SMS when delivered</span><br><small id="opt-sms-to" style="color:#888;"></small></span>
+          </label>
         </div>
       </div>
       <div class="field">
@@ -646,10 +650,31 @@ async function login() {
   await loadCustomerAndInit(data.user.id);
 }
 
+// SMSの送信先にできるタイの携帯番号(0から始まる10桁、または+66/66始まり)をtel1→tel2の順で探す
+function thaiMobileOf(c) {
+  for (const raw of [c.tel1, c.tel2]) {
+    const d = String(raw || '').replace(/[^\d+]/g, '');
+    if (/^0[689]\d{8}$/.test(d)) return d;
+    const m = d.match(/^\+?66([689]\d{8})$/);
+    if (m) return '0' + m[1];
+  }
+  return null;
+}
+// 配達完了SMSのチェックボックス: タイの携帯番号があるお客様にだけ出し、前回の選択を引き継ぐ
+function initSmsOption() {
+  const wrap = document.getElementById('opt-sms-wrap');
+  if (!wrap || !currentCustomer) return;
+  const num = thaiMobileOf(currentCustomer);
+  if (!num) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  document.getElementById('opt-sms').checked = !!currentCustomer.sms_notify;
+  document.getElementById('opt-sms-to').textContent = '→ ' + num;
+}
+
 async function loadCustomerAndInit(userId) {
   const { data: rows, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance, condo_name')
+    .select('id, family_name, first_name, tel1, tel2, email, address1, address2, area_id, point_balance, condo_name, sms_notify')
     .eq('auth_user_id', userId);
 
   if (error || !rows || rows.length === 0) {
@@ -663,6 +688,7 @@ async function loadCustomerAndInit(userId) {
   await Promise.all([loadShippingSettings(), loadCartItems()]);
   onPaymentChange();
   initPointsUI();
+  initSmsOption();
   await checkAddToOrderMode();
 }
 
@@ -1870,6 +1896,19 @@ async function submitOrder() {
     if (appliedPoints > 0) {
       currentCustomer.point_balance = Math.max(0, (currentCustomer.point_balance || 0) - appliedPoints);
     }
+
+    // 配達完了SMSの希望を保存する(言語は注文時のサイト表示言語)。失敗しても注文には影響させない
+    try {
+      const smsWrap = document.getElementById('opt-sms-wrap');
+      if (smsWrap && smsWrap.style.display !== 'none') {
+        const want = document.getElementById('opt-sms').checked;
+        const lang = want ? (window.i18nGetLang ? window.i18nGetLang() : 'ja') : null;
+        if ((currentCustomer.sms_notify || null) !== lang) {
+          await supabaseClient.rpc('set_my_sms_notify', { p_lang: lang });
+          currentCustomer.sms_notify = lang;
+        }
+      }
+    } catch (e) { /* 無視 */ }
 
     sendOrderConfirmationEmail({ orderId }).catch(() => {});
 

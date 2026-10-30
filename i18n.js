@@ -276,6 +276,7 @@
     'cart.leaveNoCallText': { ja: '置き配OK。到着時の電話・メッセージ等のご連絡は一切いたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。配達完了後に写真付きのメールをお送りしますので、ご自身でお受け取りをご確認ください / Leave at the table. We will NOT call or message you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. We will email you a photo after delivery, so please check for your items yourself', en: 'Leave at the table. We will NOT call or message you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. We will email you a photo after delivery, so please check for your items yourself' },
     'cart.optLeaveAtFront': { ja: 'フロント(管理人室)に預けてください / Leave with front desk', en: 'Leave with front desk' },
     'cart.optPaymentAtFront': { ja: '代金はフロントに預けてあります / Payment left with front desk', en: 'Payment left with front desk' },
+    'cart.optSms': { ja: '配達完了をSMSでも受け取る(写真付きメールとあわせてお知らせします) / Also notify me by SMS when delivered', en: 'Also notify me by SMS when delivered (we will email you a photo too)' },
     'cart.optNoChange': { ja: 'お釣りは不要です / No change needed', en: 'No change needed' },
     'cart.commentLabel': { ja: '備考 / Comment', en: 'Comment' },
     'cart.commentPlaceholder': { ja: '例: 玄関前に置いてください', en: 'e.g. Please leave it by the front door' },
