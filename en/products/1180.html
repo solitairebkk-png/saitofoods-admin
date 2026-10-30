@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Frozen Buri Daikon (Yellowtail Collar with Radish) approx. 200g","sku":"1180","url":"https://saitofoods.com/en/products/1180.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg"],"description":"鹿児島県産のブリのカマを大根とショウガと炊いて鰤大根を作りました。 懐かしい味のする鰤大根を是非!お試しください! 鰤に脂乗ってます! 合成保存料、調味料不使用です。 原材料: ブリ、大根、ショウガ、醤油、みりん、酒、砂糖","category":"Non Preservative Products","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1180.html","priceCurrency":"THB","price":"172.00","availability":"https://schema.org/OutOfStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Frozen Buri Daikon (Yellowtail Collar with Radish) approx. 200g","sku":"1180","url":"https://saitofoods.com/en/products/1180.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg"],"description":"鹿児島県産のブリのカマを大根とショウガと炊いて鰤大根を作りました。 懐かしい味のする鰤大根を是非!お試しください! 鰤に脂乗ってます! 合成保存料、調味料不使用です。 原材料: ブリ、大根、ショウガ、醤油、みりん、酒、砂糖","category":"Non Preservative Products","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1180.html","priceCurrency":"THB","price":"172.00","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://saitofoods.com/"},{"@type":"ListItem","position":2,"name":"Products","item":"https://saitofoods.com/product_list.html"},{"@type":"ListItem","position":3,"name":"Frozen Buri Daikon (Yellowtail Collar with Radish) approx. 200g","item":"https://saitofoods.com/en/products/1180.html"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -82,6 +82,8 @@
   .share-btn:hover { border-color:var(--brand); }
   .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
   .share-row .share-btn { margin-top:0; }
+  .list-link { display:block; margin-top:14px; padding:11px 16px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; text-align:center; text-decoration:none; }
+  .list-link:hover { border-color:var(--brand); }
   .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
   .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
   .share-x { background:#000; }
@@ -152,12 +154,12 @@
     <div class="subname">冷凍 ブリ大根 約200g　カマ使用</div>
     <div class="price" id="price">฿172</div>
     
-    <div class="stock out" id="stock">Out of stock</div>
+    <div class="stock" id="stock">In stock</div>
     <div class="buy">
-      <div class="stepper" id="stepper" style="display:none">
+      <div class="stepper" id="stepper">
         <button type="button" onclick="chg(-1)" aria-label="-">−</button><span id="qty">1</span><button type="button" onclick="chg(1)" aria-label="+">+</button>
       </div>
-      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()" disabled>Out of stock</button>
+      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()">Add to cart</button>
     </div>
     <div class="added" id="added">Added to cart<a href="/cart.html">View cart ›</a></div>
     
@@ -165,6 +167,7 @@
     
     <div class="note">We deliver to Bangkok, Sriracha and Pattaya.</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 Share this item</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">Link copied ✓</span></div>
+    <a class="list-link" href="/product_list.html?view=a9c87319-dcc7-4ec2-9585-0bf3856ed7ba" onclick="try{localStorage.setItem('saitofoods_lang','en')}catch(e){}">View in product list (favorites & frequently bought together) ›</a>
   </div>
 </section>
 
@@ -210,7 +213,7 @@
 
 <script>
 (function () {
-  var P = {"id":"a9c87319-dcc7-4ec2-9585-0bf3856ed7ba","lang":"en","max":0,"limit":null,"price":172,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg"],"url":"https://saitofoods.com/en/products/1180.html","title":"Frozen Buri Daikon (Yellowtail Collar with Radish) approx. 200g","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","maxedLimit":"Order limit reached ({n} per order).","unavailable":"This item is currently unavailable."}};
+  var P = {"id":"a9c87319-dcc7-4ec2-9585-0bf3856ed7ba","lang":"en","max":13,"limit":null,"price":172,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg"],"url":"https://saitofoods.com/en/products/1180.html","title":"Frozen Buri Daikon (Yellowtail Collar with Radish) approx. 200g","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","maxedLimit":"Order limit reached ({n} per order).","unavailable":"This item is currently unavailable."}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   try { if (!localStorage.getItem('saitofoods_lang')) localStorage.setItem('saitofoods_lang', 'en'); } catch (e) {}

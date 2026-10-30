@@ -241,6 +241,11 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://saitofoods.com/products/1270.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://saitofoods.com/products/859.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -257,6 +262,11 @@
   </url>
   <url>
     <loc>https://saitofoods.com/products/358.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://saitofoods.com/products/1367.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -1531,6 +1541,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://saitofoods.com/en/products/1270.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://saitofoods.com/en/products/859.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -1547,6 +1562,11 @@
   </url>
   <url>
     <loc>https://saitofoods.com/en/products/358.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://saitofoods.com/en/products/1367.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>

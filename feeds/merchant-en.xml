@@ -198,7 +198,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>On Promotion</g:product_type>
+      <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
       <g:id>1351</g:id>
@@ -228,7 +228,7 @@
     </item>
     <item>
       <g:id>1331</g:id>
-      <title>Ishii Additive-Free Chicken Hamburg (Shelf-Stable)</title>
+      <title>Ishii Additive-Free Chicken Hamburg (Shelf-Stable)=CK HAM</title>
       <description>遂に入荷! イシイのチキンハンバーグ 90g 食品添加物不使用!常温保存可!</description>
       <link>https://saitofoods.com/en/products/1331.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01291347_697b027679828.jpg</g:image_link>
@@ -254,7 +254,7 @@
     </item>
     <item>
       <g:id>135</g:id>
-      <title>Delicious Pepper Hamburg Steak</title>
+      <title>Delicious Pepper Hamburg Steak 220g</title>
       <description>牛肉・豚肉・鶏肉使用 乳製品・卵 使用 この商品はすでに加熱調理済みで御座います。 お召し上がりの際は別な容器に移してからお好みの温度 に電子レンジ等で加熱してお召し上がりくださいませ。 湯銭の場合は15分ほど湯銭してお召し上がりくださいませ。</description>
       <link>https://saitofoods.com/en/products/135.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484740713_slot1.jpg</g:image_link>
@@ -267,7 +267,7 @@
     </item>
     <item>
       <g:id>126</g:id>
-      <title>Mini Hamburg Steak</title>
+      <title>Mini Hamburg Steak 39gx3pcs</title>
       <description>Saito Foods' original frozen mini hamburger steaks in tomato sauce flavor. A handy size for lunch boxes.</description>
       <link>https://saitofoods.com/en/products/126.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485024543_slot1.jpg</g:image_link>
@@ -280,7 +280,7 @@
     </item>
     <item>
       <g:id>734</g:id>
-      <title>Additive-Free Cabbage Rolls 50g x8</title>
+      <title>Additive-Free Cabbage Rolls 50gx8pcs</title>
       <description>保存料、着色料、味の素不使用の豚肉を使用したロールキャベツです。 1つ50gで8個入り。プリマハム様に特別に作って頂きました! 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/p/DFNACw2PczG/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
       <link>https://saitofoods.com/en/products/734.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489081845_slot1.jpg</g:image_link>
@@ -293,7 +293,7 @@
     </item>
     <item>
       <g:id>1159</g:id>
-      <title>Frozen Ham &amp; Cheese Spring Rolls 20g x7</title>
+      <title>Frozen Ham &amp; Cheese Spring Rolls 20gx7pcs</title>
       <description>約20gの冷凍ハムチーズ春巻きです。 たっぷり入ったチーズがとろけます。 味は、日本のブリトーを思い出す味です。 7本入り!! *この商品に卵は含まれておりません。</description>
       <link>https://saitofoods.com/en/products/1159.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868771046_slot1.jpg</g:image_link>
@@ -346,7 +346,7 @@
     </item>
     <item>
       <g:id>1348</g:id>
-      <title>Frozen Breaded White Fish 60g x2</title>
+      <title>Frozen Breaded White Fish 60g x2pcs</title>
       <description>白身魚フライ(60g × 2枚入り) *タルタルソースは付属しません* 外はサクサク、中はふんわり。 手軽に使える白身魚フライです。 冷凍のまま揚げるだけで、 約3分でプロのような仕上がり。 衣は薄く仕上げているため、 白身魚本来の旨味をしっかり楽しめます。 カレーのトッピングやフィッシュバーガー、 定食メニューやお弁当にも最適。 内容量 60g × 2枚 パン粉付けをする粉に卵パウダーが含まれております。アレルギー卵が該当します。</description>
       <link>https://saitofoods.com/en/products/1348.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg</g:image_link>
@@ -373,7 +373,7 @@
     </item>
     <item>
       <g:id>174</g:id>
-      <title>French Fries</title>
+      <title>French Fries Shoestring 7mm</title>
       <description>タイ産じゃがいもを使用した製品に変更になりました。 原材料は、タイ産じゃがいもとパームオイルのみ。 無添加です。(500g入) *写真は調理例となります。* この商品は油調理が必要です。 凍ったままの商品をつめたい油に入れ強火で加熱し、 商品が浮いてきて狐色になればOK! 同時に調理する個数により加熱時間が変わりますので、 ご注意くださいませ。</description>
       <link>https://saitofoods.com/en/products/174.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484837216_slot1.jpg</g:image_link>
@@ -492,7 +492,7 @@
     </item>
     <item>
       <g:id>1205</g:id>
-      <title>Frozen Fried Burdock Root 250g Ready to Cook</title>
+      <title>Fz. Fried Burdock Root 250g Ready to Cook</title>
       <description>The wholesale price was quite high, so I was hesitant about selling it... but after trying a sample, I thought 'I want to eat this even if it's expensive!!' So we've made an emergency restock. Children will munch away happily! Adults be warned - you won't be able to stop drinking beer. 250g per package Pairs perfectly with mayo-shichimi spice blend and noodle broth! While the powder itself contains no egg-related ingredients, it is manufactured in a facility that uses egg powder, so the product label notes possible traces of eggs and soybeans. The photo shows the plating for 250g. Cooking methods and recipe ideas are featured on our Instagram!</description>
       <link>https://saitofoods.com/en/products/1205.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555612912_slot1.jpg</g:image_link>
@@ -519,7 +519,7 @@
     </item>
     <item>
       <g:id>1210</g:id>
-      <title>Delicious Ebi Fry 10pcs</title>
+      <title>Delicious Ebi Fry L 10pcs</title>
       <description>Extra-large frozen fried shrimp specially made by umios, 10 pieces per pack. Just deep-fry for an easy meal.</description>
       <link>https://saitofoods.com/en/products/1210.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11141737_6735d2cd5435c.jpg</g:image_link>
@@ -558,7 +558,7 @@
     </item>
     <item>
       <g:id>1142</g:id>
-      <title>Frozen Okonomiyaki 2pcs</title>
+      <title>Frozen Okonomiyaki 200gx2pcs</title>
       <description>Two large frozen okonomiyaki per pack. Heat in the microwave before eating.</description>
       <link>https://saitofoods.com/en/products/1142.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487434690_slot1.jpg</g:image_link>
@@ -594,6 +594,19 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>For lunch box</g:product_type>
+    </item>
+    <item>
+      <g:id>1270</g:id>
+      <title>Additive-Free Mackerel Flakes 200g</title>
+      <description>ちょどよい塩加減のサバフレークです。 合成添加物 無添加の美味しいサバフレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
+      <link>https://saitofoods.com/en/products/1270.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883531100_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>95.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Good selling</g:product_type>
     </item>
     <item>
       <g:id>859</g:id>
@@ -649,6 +662,19 @@
       <g:product_type>Good selling</g:product_type>
     </item>
     <item>
+      <g:id>1367</g:id>
+      <title>Okamura Kitchen Boneless Saba Misoni 2pcs</title>
+      <description>骨取りノルウェーサバをお味噌と少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 ご飯がすすみます。</description>
+      <link>https://saitofoods.com/en/products/1367.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06151522_6a2fb63882be4.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>68.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Frozen Foods</g:product_type>
+    </item>
+    <item>
       <g:id>1366</g:id>
       <title>Okamura Kitchen Boneless Saba in Grated Daikon 2pcs</title>
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
@@ -672,15 +698,15 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen fish</g:product_type>
+      <g:product_type>On Promotion</g:product_type>
     </item>
     <item>
       <g:id>1273</g:id>
-      <title>Additive-Free Grilled Saba 20g x10</title>
+      <title>Additive-Free Grilled Saba Shio 20gx10pcs</title>
       <description>優しい塩味のサバ塩焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/en/products/1273.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884156393_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -689,7 +715,7 @@
     </item>
     <item>
       <g:id>1272</g:id>
-      <title>Additive-Free Saba Teriyaki 20g x10</title>
+      <title>Additive-Free Saba Teriyaki 20g x10pcs.</title>
       <description>優しい甘醤油味 サバ照り焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/en/products/1272.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884213892_slot1.jpg</g:image_link>
@@ -702,7 +728,7 @@
     </item>
     <item>
       <g:id>133</g:id>
-      <title>Salted Salmon Kirimi 60g x2pcs</title>
+      <title>Salted Salmon Kirimi 60g x2pcs=</title>
       <description>サイズが変更となりました。 塩鮭切り身の原料が変って美味しくなりました。 脂乗りも、柔らかい身質も最高です。 *チリ産 トラウト 60g*2切入 オーブントースター等で10分から15分加熱してお召し上がりください。</description>
       <link>https://saitofoods.com/en/products/133.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884046679_slot1.jpg</g:image_link>
@@ -927,7 +953,7 @@
       <description>甘めのつけダレにマリネしたUSビーフスライスです。 焼くだけ簡単!</description>
       <link>https://saitofoods.com/en/products/985.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489640350_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -940,7 +966,7 @@
       <description>アルゼンチン牛のたん下、タン先を取り除きスライスしてます。熟成をかけ事によって柔らかくしております。100g</description>
       <link>https://saitofoods.com/en/products/1053.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874232649_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>196.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1027,7 +1053,7 @@
     </item>
     <item>
       <g:id>1301</g:id>
-      <title>New Bacon Cut-Offs 200g</title>
+      <title>New Bacon Cut-Offs 200g.</title>
       <description>新しい工場のベーコン切り落とし200gです。従来の物と比べると半生状態なのでしっかり火を通してお召し上がりください。優しい塩味でカリッと仕上げてサラダにも!</description>
       <link>https://saitofoods.com/en/products/1301.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/09171515_68ca6e3ea1ff4.jpg</g:image_link>
@@ -1131,7 +1157,7 @@
     </item>
     <item>
       <g:id>104</g:id>
-      <title>Asahi Shoyu Soy Sauce</title>
+      <title>Asahi Shoyu Soy Sauce 1L</title>
       <description>小麦使用</description>
       <link>https://saitofoods.com/en/products/104.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888924757_slot1.jpg</g:image_link>
@@ -1144,7 +1170,7 @@
     </item>
     <item>
       <g:id>103</g:id>
-      <title>Mirin Moto</title>
+      <title>Mirin Moto 1L</title>
       <description>Mirin-style seasoning from Asan Service Co. 1 liter.</description>
       <link>https://saitofoods.com/en/products/103.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889046767_slot1.jpg</g:image_link>
@@ -1379,7 +1405,7 @@
     </item>
     <item>
       <g:id>479</g:id>
-      <title>Yondan Natto 4-Pack</title>
+      <title>Yondan Natto 4pc/pack</title>
       <description>日本から輸入の冷凍納豆です。 4パック入りで、タレ付です。 朝ごはんに食べたくなりますね。</description>
       <link>https://saitofoods.com/en/products/479.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889743888_slot1.jpg</g:image_link>
@@ -1392,7 +1418,7 @@
     </item>
     <item>
       <g:id>1176</g:id>
-      <title>Hokkaido Natto Small Bean 3-Pack</title>
+      <title>Hokkaido Natto Small Bean Pack3</title>
       <description>北海道大豆を使用した小粒の納豆です。3パックセット タレ、からし付き</description>
       <link>https://saitofoods.com/en/products/1176.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868855340_slot1.jpg</g:image_link>
@@ -1418,7 +1444,7 @@
     </item>
     <item>
       <g:id>978</g:id>
-      <title>Frozen Mizkan Natto with Plum Black Vinegar Sauce 3p</title>
+      <title>Frozen Mizkan Natto with Plum Black Vinegar Sauce pack3</title>
       <description>ミツカン 金のつぶ納豆の 梅酢タレ納豆です。 納得の味、品質です。</description>
       <link>https://saitofoods.com/en/products/978.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555498929_slot1.jpg</g:image_link>
@@ -1431,7 +1457,7 @@
     </item>
     <item>
       <g:id>1175</g:id>
-      <title>Kin no Tsubu Natto with Egg Soy Sauce 3-Pack</title>
+      <title>Kin no Tsubu Natto with Egg Soy Sauce Pack3</title>
       <description>ミツカン金の粒シリーズのたまご醤油たれ納豆 3パックセットです。付属のたれを使用すると生卵を混ぜたような出来上がりになります。タレに卵黄が入っております。</description>
       <link>https://saitofoods.com/en/products/1175.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg</g:image_link>
@@ -1600,7 +1626,7 @@
     </item>
     <item>
       <g:id>817</g:id>
-      <title>Akagi Joshu Soba 90g x3</title>
+      <title>Akagi Joshu Soba 90gx3</title>
       <description>こしが強く、なめらかな美味しい蕎麦です。ゆで時間4分。</description>
       <link>https://saitofoods.com/en/products/817.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486236591_slot1.jpg</g:image_link>
@@ -1613,7 +1639,7 @@
     </item>
     <item>
       <g:id>820</g:id>
-      <title>Akagi Joshu Somen 90g x3</title>
+      <title>Akagi Joshu Somen 90gx3</title>
       <description>こしが強く、なめらかな美味しいそうめんです。ゆで時間3分。</description>
       <link>https://saitofoods.com/en/products/820.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486219651_slot1.jpg</g:image_link>
@@ -1626,7 +1652,7 @@
     </item>
     <item>
       <g:id>50</g:id>
-      <title>Frozen Ramen 150g x2</title>
+      <title>Frozen Ramen 150gx2</title>
       <description>冷凍の状態から沸騰しているお湯の中で約2分程度茹で直す。ソースなどはついておりません。麺だけです。今回名前を変更いたしました。旧名称は「冷凍焼きそば」です。 (150g*2) *原料に卵を含みます。</description>
       <link>https://saitofoods.com/en/products/50.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889649522_slot1.jpg</g:image_link>
@@ -1639,7 +1665,7 @@
     </item>
     <item>
       <g:id>513</g:id>
-      <title>Maruchan Frozen Yakisoba 160g x3 with Sauce</title>
+      <title>Maruchan Frozen Yakisoba 160gx3 with Sauce</title>
       <description>まるちゃんの冷凍焼きそば麺、生めんタイプです。 粉末ソースもついてます。 スパゲティソースをかけても美味しくお召し上がりいただけます。 160g*3玉入り 解凍後の賞味期限はチルド5度の温度帯で3週間(解凍後)です。</description>
       <link>https://saitofoods.com/en/products/513.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889610185_slot1.jpg</g:image_link>
@@ -1769,7 +1795,7 @@
     </item>
     <item>
       <g:id>1188</g:id>
-      <title>Japanese Black Konjac 250g (Chilled)</title>
+      <title>Japanese Black Konjac 250g.(Chilled)</title>
       <description>水洗いでそのまま使える黒こんにゃく250gです。 食べてみるとタイ産の物とは違って柔らかく弾力があります。 コチラの商品はチルド品です。</description>
       <link>https://saitofoods.com/en/products/1188.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882696924_slot1.jpg</g:image_link>
@@ -1904,7 +1930,7 @@
       <description>牛タンのブロックがゴロゴロと入っている大満足な逸品です。 別に販売しておりますデミグラスソースを使用して作っているこだわりのシチューです。 調理済みですので、湯銭か容器にあけて電子レンジで加熱してお召し上がりください。200g</description>
       <link>https://saitofoods.com/en/products/964.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487947269_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1984,7 +2010,7 @@
       <link>https://saitofoods.com/en/products/1198.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486836393_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10031448_66fe4c378a547.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>200.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2037,7 +2063,7 @@
       <link>https://saitofoods.com/en/products/1180.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>172.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2115,7 +2141,7 @@
       <description>骨なしのメダイを20g程度にダイスカットした物を西京みそに漬け込んだ商品です。 焼くだけ簡単。お弁当にも。骨なしなので安心。</description>
       <link>https://saitofoods.com/en/products/995.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555963929_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>90.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2540,7 +2566,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen fish</g:product_type>
+      <g:product_type>On Promotion</g:product_type>
     </item>
     <item>
       <g:id>1128</g:id>
@@ -3049,6 +3075,7 @@
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785556145501_slot1.jpeg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>320.00 THB</g:price>
+      <g:sale_price>240.00 THB</g:sale_price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
@@ -3056,7 +3083,7 @@
     </item>
     <item>
       <g:id>764</g:id>
-      <title>Oi Ocha Green Tea 500ml Bottle</title>
+      <title>ITOEN-Unsweetened Oi Ocha Green Tea 500ml 1 Bttle</title>
       <description>言わずと知れた、安心して飲める無糖のお茶です。 ジャパンクオリティ! 500ml</description>
       <link>https://saitofoods.com/en/products/764.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883104529_slot1.jpg</g:image_link>
@@ -3069,7 +3096,7 @@
     </item>
     <item>
       <g:id>765</g:id>
-      <title>Oi Ocha Green Tea 500ml Case of 24</title>
+      <title>ITOEN-Unsweetened Oi Ocha Green Tea 500ml (24btls/ctn) =TEA001(</title>
       <description>言わずと知れた、安心して飲める無糖のお茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/en/products/765.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484198912_slot1.jpg</g:image_link>
@@ -3082,7 +3109,7 @@
     </item>
     <item>
       <g:id>766</g:id>
-      <title>Mugicha Barley Tea 500ml Bottle</title>
+      <title>ITOEN-Unsweetened Mugicha Barley Tea 500ml (Bottle)</title>
       <description>安心して飲める無糖のむぎ茶です。 ジャパンクオリティ! 500ml</description>
       <link>https://saitofoods.com/en/products/766.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883146874_slot1.jpg</g:image_link>
@@ -3095,7 +3122,7 @@
     </item>
     <item>
       <g:id>767</g:id>
-      <title>Mugicha Barley Tea 500ml Case of 24</title>
+      <title>ITOEN-Mugicha Barley Tea 500ml (24btls/ctn)</title>
       <description>言わずと知れた、安心して飲める無糖のむぎ茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/en/products/767.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486283135_slot1.jpg</g:image_link>
@@ -3108,7 +3135,7 @@
     </item>
     <item>
       <g:id>850</g:id>
-      <title>Itoen Mugicha Barley Tea 54 Teabags</title>
+      <title>ITOEN-Mugicha Barley Tea 54 sachets</title>
       <description>伊藤園さんからブレンドではない麦茶の54袋入りパックが入荷しました。 水出し、お湯だし可能。</description>
       <link>https://saitofoods.com/en/products/850.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883008984_slot1.jpg</g:image_link>
@@ -3121,7 +3148,7 @@
     </item>
     <item>
       <g:id>768</g:id>
-      <title>Jasmine Tea Unsweetened 500ml Bottle</title>
+      <title>ITOEN-Unsweetened Jasmine Tea 500ml (Bottle)</title>
       <description>安心して飲める無糖のジャスミン茶です。 ジャパンクオリティ! 500ml</description>
       <link>https://saitofoods.com/en/products/768.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883074084_slot1.jpg</g:image_link>
@@ -3134,7 +3161,7 @@
     </item>
     <item>
       <g:id>769</g:id>
-      <title>Jasmine Tea 500ml Case of 24</title>
+      <title>ITOEN-Unsweetened Jasmine Tea 500ml (24btls/ctn)</title>
       <description>言わずと知れた、安心して飲める無糖のジャスミン茶です。 ジャパンクオリティ! 500ml*24</description>
       <link>https://saitofoods.com/en/products/769.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485917000_slot1.jpg</g:image_link>
@@ -3186,7 +3213,7 @@
     </item>
     <item>
       <g:id>1307</g:id>
-      <title>Chiku Chiku Ton Ton Natural Coffee Bag</title>
+      <title>Chiku Chiku Ton Ton Natural Coffee Bag 10g</title>
       <description>Single-origin coffee grown around Doi Inthanon, Thailand's highest peak, where temperatures swing widely. Comes in easy-to-use bags.</description>
       <link>https://saitofoods.com/en/products/1307.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10090913_68e71a5931fa2.jpg</g:image_link>

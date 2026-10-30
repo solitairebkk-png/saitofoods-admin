@@ -198,7 +198,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>セール中!!</g:product_type>
+      <g:product_type>お弁当にピッタリ!</g:product_type>
     </item>
     <item>
       <g:id>1351</g:id>
@@ -596,6 +596,19 @@
       <g:product_type>お弁当にピッタリ!</g:product_type>
     </item>
     <item>
+      <g:id>1270</g:id>
+      <title>無添加 サバフレーク 200g</title>
+      <description>ちょどよい塩加減のサバフレークです。 合成添加物 無添加の美味しいサバフレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
+      <link>https://saitofoods.com/products/1270.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883531100_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>95.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>売れ筋商品</g:product_type>
+    </item>
+    <item>
       <g:id>859</g:id>
       <title>ノルウェー産 骨なし 冷凍サバフィレ 2p</title>
       <description>ノルウェー産骨なし冷凍サバフィーレ 100g 2枚入り。 ほんの少し塩味がついております。 味噌煮、照り焼き、ステーキ何でも来い!</description>
@@ -649,6 +662,19 @@
       <g:product_type>売れ筋商品</g:product_type>
     </item>
     <item>
+      <g:id>1367</g:id>
+      <title>オカムラキッチン 骨取り サバ味噌煮 2切れ=S-07</title>
+      <description>骨取りノルウェーサバをお味噌と少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 ご飯がすすみます。</description>
+      <link>https://saitofoods.com/products/1367.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06151522_6a2fb63882be4.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>68.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>冷凍食品</g:product_type>
+    </item>
+    <item>
       <g:id>1366</g:id>
       <title>オカムラキッチン 骨取り サバみぞれ煮 2切れ=S-07</title>
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
@@ -672,7 +698,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>冷凍魚</g:product_type>
+      <g:product_type>セール中!!</g:product_type>
     </item>
     <item>
       <g:id>1273</g:id>
@@ -680,7 +706,7 @@
       <description>優しい塩味のサバ塩焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1273.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884156393_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -927,7 +953,7 @@
       <description>甘めのつけダレにマリネしたUSビーフスライスです。 焼くだけ簡単!</description>
       <link>https://saitofoods.com/products/985.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489640350_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -940,7 +966,7 @@
       <description>アルゼンチン牛のたん下、タン先を取り除きスライスしてます。熟成をかけ事によって柔らかくしております。100g</description>
       <link>https://saitofoods.com/products/1053.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874232649_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>196.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1904,7 +1930,7 @@
       <description>牛タンのブロックがゴロゴロと入っている大満足な逸品です。 別に販売しておりますデミグラスソースを使用して作っているこだわりのシチューです。 調理済みですので、湯銭か容器にあけて電子レンジで加熱してお召し上がりください。200g</description>
       <link>https://saitofoods.com/products/964.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487947269_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1984,7 +2010,7 @@
       <link>https://saitofoods.com/products/1198.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486836393_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10031448_66fe4c378a547.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>200.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2037,7 +2063,7 @@
       <link>https://saitofoods.com/products/1180.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487718328_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08061108_66b1a1ae91677.jpg</g:additional_image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>172.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2115,7 +2141,7 @@
       <description>骨なしのメダイを20g程度にダイスカットした物を西京みそに漬け込んだ商品です。 焼くだけ簡単。お弁当にも。骨なしなので安心。</description>
       <link>https://saitofoods.com/products/995.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555963929_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>90.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2540,7 +2566,7 @@
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>冷凍魚</g:product_type>
+      <g:product_type>セール中!!</g:product_type>
     </item>
     <item>
       <g:id>1128</g:id>
@@ -3049,6 +3075,7 @@
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785556145501_slot1.jpeg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>320.00 THB</g:price>
+      <g:sale_price>240.00 THB</g:sale_price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
@@ -3277,7 +3304,7 @@
     </item>
     <item>
       <g:id>562</g:id>
-      <title>Silky wash hand soap green apple refill</title>
+      <title>Silky wash hand soap green apple refill=BB-08</title>
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/products/562.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310708_630f08ec0ade2.jpg</g:image_link>

@@ -82,6 +82,8 @@
   .share-btn:hover { border-color:var(--brand); }
   .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
   .share-row .share-btn { margin-top:0; }
+  .list-link { display:block; margin-top:14px; padding:11px 16px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; text-align:center; text-decoration:none; }
+  .list-link:hover { border-color:var(--brand); }
   .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
   .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
   .share-x { background:#000; }
@@ -165,6 +167,7 @@
     
     <div class="note">バンコク・シラチャ・パタヤへお届けします。</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 この商品を共有</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">リンクをコピーしました ✓</span></div>
+    <a class="list-link" href="/product_list.html?view=16cdb2db-70c7-48b0-a6b2-0df9239520d4" onclick="try{localStorage.setItem('saitofoods_lang','ja')}catch(e){}">商品一覧で見る(お気に入り・一緒に買われている商品) ›</a>
   </div>
 </section>
 

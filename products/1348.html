@@ -82,6 +82,8 @@
   .share-btn:hover { border-color:var(--brand); }
   .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
   .share-row .share-btn { margin-top:0; }
+  .list-link { display:block; margin-top:14px; padding:11px 16px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; text-align:center; text-decoration:none; }
+  .list-link:hover { border-color:var(--brand); }
   .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
   .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
   .share-x { background:#000; }
@@ -149,7 +151,7 @@
   </div>
   <div class="info">
     <h1>冷凍　白身フライ 60g*2個 =SHIROMI</h1>
-    <div class="subname">Frozen Breaded White Fish 60g x2</div>
+    <div class="subname">Frozen Breaded White Fish 60g x2pcs</div>
     <div class="price" id="price">฿62</div>
     
     <div class="stock" id="stock">在庫あり</div>
@@ -165,6 +167,7 @@
     
     <div class="note">バンコク・シラチャ・パタヤへお届けします。</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">🔗 この商品を共有</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">リンクをコピーしました ✓</span></div>
+    <a class="list-link" href="/product_list.html?view=422b696b-0ff7-4a4d-b740-c4eb98bec152" onclick="try{localStorage.setItem('saitofoods_lang','ja')}catch(e){}">商品一覧で見る(お気に入り・一緒に買われている商品) ›</a>
   </div>
 </section>
 
@@ -224,7 +227,7 @@
 
 <script>
 (function () {
-  var P = {"id":"422b696b-0ff7-4a4d-b740-c4eb98bec152","lang":"ja","max":8,"limit":null,"price":62,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884584491_slot2.jpg"],"url":"https://saitofoods.com/products/1348.html","title":"冷凍　白身フライ 60g*2個 =SHIROMI","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","maxedLimit":"ご注文の上限に達しました(1回のご注文 {n}個まで)","unavailable":"この商品は現在お取り扱いしておりません。"}};
+  var P = {"id":"422b696b-0ff7-4a4d-b740-c4eb98bec152","lang":"ja","max":5,"limit":null,"price":62,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg","https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884584491_slot2.jpg"],"url":"https://saitofoods.com/products/1348.html","title":"冷凍　白身フライ 60g*2個 =SHIROMI","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","maxedLimit":"ご注文の上限に達しました(1回のご注文 {n}個まで)","unavailable":"この商品は現在お取り扱いしておりません。"}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   
