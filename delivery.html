@@ -1167,6 +1167,20 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
   if (json.status !== 'ok') throw new Error(json.message || 'mail failed');
 }
 
+// 配達完了SMS(お客様がSMSを希望している場合のみ、GAS側がMacroDroid経由で送る)。
+// 写真メールの送信が成功したあとに呼ぶ。希望の有無・タイの番号か・二重送信かの判定はすべてGAS側で行う。
+// SMSは補助の通知なので、失敗しても配達完了の記録やメールには影響させない(画面にもエラーは出さない)。
+async function requestDeliverySms(orderId) {
+  try {
+    const { data: sess } = await supabaseClient.auth.getSession();
+    const access_token = sess && sess.session ? sess.session.access_token : '';
+    await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'sendDeliverySms', access_token, order_id: orderId }),
+    });
+  } catch (_) { /* SMSの失敗は無視する */ }
+}
+
 // 直接お客様に渡した注文: 写真もメールもなしで完了にする(一覧から「送信済み」欄へ移す)
 async function markHandedOver(orderId) {
   if (busy[orderId]) return;
@@ -1274,6 +1288,7 @@ async function submitDelivery(orderId) {
         }
         await sendDeliveryEmail(order, deliveredIso, blobs);
         await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
+        await requestDeliverySms(orderId);
       } catch (e) {
         mailMsg = 'บันทึกรูปแล้ว แต่ส่งอีเมลไม่สำเร็จ กดส่งอีกครั้งในรายการ "ส่งแล้ววันนี้"\nPhoto saved, but the email failed. Use "Resend email" in the Done list.\n(' + (e.message || e) + ')';
       }
