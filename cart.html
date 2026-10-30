@@ -468,7 +468,7 @@
             </label>
             <label class="leave-opt nocall">
               <input type="radio" name="leave-opt" id="opt-leave-no-contact">
-              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 到着時の連絡は一切なし</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。到着時の電話・メッセージ等のご連絡は一切いたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。お届け後に、お荷物の写真つきメールをお送りします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will NOT call or message you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. After delivery, we will email you a photo of your items (and send an SMS too, if you choose to receive one)</span></span>
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 電話連絡なし(メールでお知らせ)</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。到着時のお電話でのご連絡はいたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。お届け後に、お荷物の写真つきメールでお知らせします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will NOT call you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. After delivery, we will notify you by email with a photo of your items (and by SMS too, if you choose to receive one)</span></span>
             </label>
           </div>
           <label class="delivery-opt-item">
@@ -1845,7 +1845,7 @@ async function submitOrder() {
   const noContactSelected = !!document.getElementById('opt-leave-no-contact')?.checked;
   // 置き配(連絡なし)は到着時にお支払いをお受けできないため、代金引換とは両立しない(2026-10-30)
   if (noContactSelected && paymentMethod === 'cash') {
-    msgEl.textContent = '置き配(到着時の連絡なし)をご希望の場合、代金引換はご利用いただけません。QRコード決済または銀行振込をお選びください / Cash on delivery is not available with "no contact" leave-at-table delivery. Please choose QR payment or bank transfer.';
+    msgEl.textContent = '置き配(電話連絡なし)をご希望の場合、代金引換はご利用いただけません。QRコード決済または銀行振込をお選びください / Cash on delivery is not available with "no phone call" leave-at-table delivery. Please choose QR payment or bank transfer.';
     msgEl.className = 'error';
     return;
   }
@@ -2160,7 +2160,7 @@ function initFooterMap() {
 
 <div id="noc-consent-overlay" role="dialog" aria-modal="true" aria-labelledby="noc-consent-title">
   <div class="noc-box">
-    <h3 id="noc-consent-title">📦 置き配(連絡なし)のお客様へ / Notice for "no contact" delivery</h3>
+    <h3 id="noc-consent-title">📦 置き配(電話連絡なし)のお客様へ / Notice for "no phone call" delivery</h3>
     <div class="noc-main">お届けの際にお客様とお会いすることができないため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。</div>
     <div class="noc-warn">
       ⚠️ スリップのアップロードが確認できない場合は、恐れ入りますが、お荷物をお持ち帰りすることがあります。
