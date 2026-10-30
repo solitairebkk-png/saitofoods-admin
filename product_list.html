@@ -1159,13 +1159,25 @@ function openPModal(productId, fromBack) {
 }
 
 // この商品を人に紹介するためのリンクを作る。
-// 商品ページ(products/商品番号.html)があればそれを使う(LINEやFacebookに貼ると写真と商品名が出る)。
-// 商品ページがまだ無い商品は、この一覧で商品を開くリンク(?view=)にする。
-function productShareUrl(p, lang) {
+// 商品ページ(products/商品番号.html)が実際にあればそれを使う(LINEやFacebookに貼ると写真と商品名が出る)。
+// 商品ページは毎朝まとめて作られるため、登録したばかりの商品にはまだ無いことがある。
+// その場合は、この一覧で商品を開くリンク(?view=)にする(壊れたリンクを共有しないため)。
+const _sharePageExists = {};
+async function productShareUrl(p, lang) {
   const base = location.origin;
+  const listUrl = `${base}/product_list.html?view=${encodeURIComponent(p.id)}`;
   const hasPage = Number.isInteger(p.legacy_product_id) && p.description_ja && String(p.description_ja).trim();
-  if (hasPage) return `${base}${lang === 'en' ? '/en' : ''}/products/${p.legacy_product_id}.html`;
-  return `${base}/product_list.html?view=${encodeURIComponent(p.id)}`;
+  if (!hasPage) return listUrl;
+  const pageUrl = `${base}${lang === 'en' ? '/en' : ''}/products/${p.legacy_product_id}.html`;
+  if (_sharePageExists[pageUrl] === undefined) {
+    try {
+      const res = await fetch(pageUrl, { method: 'HEAD', cache: 'no-store' });
+      _sharePageExists[pageUrl] = res.ok;
+    } catch (e) {
+      _sharePageExists[pageUrl] = false;
+    }
+  }
+  return _sharePageExists[pageUrl] ? pageUrl : listUrl;
 }
 
 // X / Instagram / LINE への共有。Instagramにはリンク付き投稿の共有URLが無いため、リンクをコピーして貼り付けてもらう。
@@ -1174,7 +1186,7 @@ async function sharePModalTo(kind) {
   const p = allProducts.find(x => x.id === productId);
   if (!p) return;
   const lang = i18nGetLang();
-  const url = productShareUrl(p, lang);
+  const url = await productShareUrl(p, lang);
   const title = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
   if (kind === 'x') {
     window.open('https://x.com/intent/post?text=' + encodeURIComponent(title) + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
@@ -1193,7 +1205,7 @@ async function sharePModalProduct() {
   const p = allProducts.find(x => x.id === productId);
   if (!p) return;
   const lang = i18nGetLang();
-  const url = productShareUrl(p, lang);
+  const url = await productShareUrl(p, lang);
   const title = lang === 'en' && p.name_en ? p.name_en : p.name_ja;
   if (navigator.share) {
     try { await navigator.share({ title, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -1311,4 +1323,4 @@ function initFooterMap() {
 </div>
 <script src="contact.js?v=20261005a"></script>
 </body>
-</html>
+</html>

@@ -100,7 +100,7 @@ const T = {
     companyTitle: '会社情報・直売店のご案内', addressNote: '※ 直売店も同住所で営業しております。店頭でも商品をお買い求めいただけます。',
     terms: '利用規約', titleSuffix: 'サイトウフーズ Saito Foods — バンコクの日本食通販',
     tag: 'サイトウフーズ(バンコク)の日本食通販・宅配',
-    share: '🔗 この商品を共有', shareCopied: 'リンクをコピーしました ✓', shareIgCopied: 'リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください', shareCopyManual: 'このリンクをコピーしてください',
+    viewInList: '商品一覧で見る(お気に入り・一緒に買われている商品)', share: '🔗 この商品を共有', shareCopied: 'リンクをコピーしました ✓', shareIgCopied: 'リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください', shareCopyManual: 'このリンクをコピーしてください',
   },
   en: {
     htmlLang: 'en', home: 'Home', products: 'Products', mypage: 'My Page', langLabel: '日本語',
@@ -114,7 +114,7 @@ const T = {
     companyTitle: 'Company & Store', addressNote: '* Our store is at the same address. You can also buy in person.',
     terms: 'Terms of Service', titleSuffix: 'Saito Foods — Japanese food delivery in Bangkok',
     tag: 'Japanese food delivery in Bangkok by Saito Foods',
-    share: '🔗 Share this item', shareCopied: 'Link copied ✓', shareIgCopied: 'Link copied. Paste it into your Instagram Story or DM.', shareCopyManual: 'Copy this link',
+    viewInList: 'View in product list (favorites & frequently bought together)', share: '🔗 Share this item', shareCopied: 'Link copied ✓', shareIgCopied: 'Link copied. Paste it into your Instagram Story or DM.', shareCopyManual: 'Copy this link',
   },
 };
 
@@ -259,6 +259,8 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
   .share-btn:hover { border-color:var(--brand); }
   .share-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:14px; }
   .share-row .share-btn { margin-top:0; }
+  .list-link { display:block; margin-top:14px; padding:11px 16px; border:1.5px solid var(--line); border-radius:22px; background:#fff; color:var(--brand-dark); font-size:13.5px; font-weight:700; text-align:center; text-decoration:none; }
+  .list-link:hover { border-color:var(--brand); }
   .share-sns { color:#fff; border-color:transparent; padding:0 16px; }
   .share-sns:hover { filter:brightness(1.08); border-color:transparent; }
   .share-x { background:#000; }
@@ -342,6 +344,7 @@ ${main ? `<meta property="og:image" content="${esc(main)}">\n` : ''}<meta proper
     ${orderLimit(p) !== null ? `<div class="note">${t.limitNote.replace('{n}', orderLimit(p))}</div>` : ''}
     <div class="note">${t.delivery}</div>
     <div class="share-row"><button type="button" class="share-btn" onclick="shareItem()">${t.share}</button><button type="button" class="share-btn share-sns share-x" onclick="shareTo('x')" aria-label="X">X</button><button type="button" class="share-btn share-sns share-ig" onclick="shareTo('instagram')" aria-label="Instagram">Instagram</button><button type="button" class="share-btn share-sns share-line" onclick="shareTo('line')" aria-label="LINE">LINE</button><span class="share-msg" id="share-msg">${t.shareCopied}</span></div>
+    <a class="list-link" href="/product_list.html?view=${encodeURIComponent(p.id)}" onclick="try{localStorage.setItem('saitofoods_lang','${lang}')}catch(e){}">${t.viewInList} ›</a>
   </div>
 </section>
 
