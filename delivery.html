@@ -101,6 +101,11 @@
   button.slip-btn.again { background: #fff; color: #7c3aed; border: 2px solid #7c3aed; font-size: 14px; padding: 8px 12px; }
   button.slip-btn:disabled { opacity: .5; }
   .slip-ok { font-size: 14px; color: #166534; font-weight: 700; }
+  /* 置き配(連絡なし)の注文: 事前振込み・スリップが届いているかを大きく表示(2026-10-30) */
+  .prepay { margin: 8px 0; padding: 12px 14px; border-radius: 12px; font-size: 17px; font-weight: 800; line-height: 1.5; text-align: center; }
+  .prepay small { display: block; font-size: 12.5px; font-weight: 600; margin-top: 2px; }
+  .prepay.ok { background: #dcfce7; color: #166534; border: 2px solid #4ade80; }
+  .prepay.none { background: #fee2e2; color: #991b1b; border: 3px solid #dc2626; }
   .rice-box { margin-top: 10px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 10px 12px; font-size: 20px; font-weight: 800; color: #78350f; }
   @keyframes deli-spin { to { transform: rotate(360deg); } }
   #refresh-btn.spin { animation: deli-spin .8s linear infinite; }
@@ -728,6 +733,20 @@ function callBadge(o) {
   return main + cash + pay;
 }
 
+// 置き配(連絡なし)の注文は、お客様に事前振込み+スリップのアップロードをお願いしている。
+// スリップが届いていない場合は荷物を持ち帰ることがあるため、届いているかどうかを大きく表示する。
+function prepayBanner(o) {
+  if (!(o.delivery_leave_at_table && o.delivery_no_contact)) return '';
+  if (o.payment_method === 'cash') return '';
+  if (o.payment_status === 'paid') {
+    return '<div class="prepay ok">💰 ชำระเงินแล้ว ✅<small>入金確認済み / Payment confirmed</small></div>';
+  }
+  if (o.slip_state === 'customer' || o.slip_state === 'staff') {
+    return '<div class="prepay ok">📄 ได้รับสลิปแล้ว ✅ วางของได้<small>スリップ受領済み / Slip received</small></div>';
+  }
+  return '<div class="prepay none">❌ ยังไม่มีสลิปโอนเงิน!<br>ห้ามวางของไว้ → นำของกลับ<small>スリップ未着: 置き配せず持ち帰り(迷ったらマネージャーに確認) / No slip: do not leave the items, take them back</small></div>';
+}
+
 function renderTodo(list) {
   $('todo-count').textContent = list.length;
   const el = $('todo-list');
@@ -746,6 +765,7 @@ function renderTodo(list) {
       ${navHtml(o)}
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
+      ${prepayBanner(o)}
       ${riceHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
       <div class="btn-row">
