@@ -294,7 +294,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2
 
 const STAFF_KEY = 'delivery-staff-id';
 const PHOTO_BUCKET = 'delivery-photos';
-const MAX_PHOTOS = 3;
+const MAX_PHOTOS = 2;
 const MAX_EDGE = 1280;      // 写真の長辺の最大px(縮小して容量とメール添付サイズを抑える)
 const JPEG_QUALITY = 0.8;
 // 一覧に出すのは、そのスタッフが今日(バンコク時間)出発した配送の注文すべて。翌日以降は出ない。
@@ -506,6 +506,7 @@ async function loadOrders(background) {
     if (/^โหลดไม่สำเร็จ/.test($('main-error').textContent)) $('main-error').textContent = '';
     restoreSavedPhotos(all.filter(o => !o.delivered_at));   // 開き直したあとも、サーバーに保存済みの写真を呼び戻す
     retryFailedUploads();                                    // 電波が悪くて保存できなかった写真を、自動でやり直す
+    autoResendMissedEmails(all);                             // メールの送信済み記録がない完了済み注文を、自動で送り直す
   } catch (e) {
     if (background !== true) $('main-error').textContent = 'โหลดไม่สำเร็จ: ' + (e.message || e);
   } finally {
@@ -1156,15 +1157,27 @@ async function sendDeliveryEmail(order, deliveredIso, blobs) {
       data: await blobToBase64(blobs[i]),
     });
   }
-  // ログイン中のスタッフの「通行証」(アクセストークン)を一緒に送る。GAS側でSupabaseに照会して本人確認する。
-  const { data: sess } = await supabaseClient.auth.getSession();
-  const access_token = sess && sess.session ? sess.session.access_token : '';
-  const res = await fetch(GAS_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'sendStaffEmail', access_token, order_id: order.id, subject, body, attachments }),
-  });
-  const json = await res.json();
-  if (json.status !== 'ok') throw new Error(json.message || 'mail failed');
+  // 電波の揺れやGoogle側の一時的な失敗に備えて、失敗したら少し待って最大3回までやり直す。
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      // ログイン中のスタッフの「通行証」(アクセストークン)を一緒に送る。GAS側でSupabaseに照会して本人確認する。
+      // やり直しのたびに取り直す(待っている間に期限が切れても大丈夫なように)
+      const { data: sess } = await supabaseClient.auth.getSession();
+      const access_token = sess && sess.session ? sess.session.access_token : '';
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'sendStaffEmail', access_token, order_id: order.id, subject, body, attachments }),
+      });
+      const json = await res.json();
+      if (json.status !== 'ok') throw new Error(json.message || 'mail failed');
+      return;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 2) await new Promise(r => setTimeout(r, 3000 * (attempt + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 // 配達完了SMS(お客様がSMSを希望している場合のみ、GAS側がMacroDroid経由で送る)。
@@ -1307,22 +1320,56 @@ async function submitDelivery(orderId) {
 }
 
 // 記録済み写真を保管庫から取り直してメールだけ再送する
+async function resendEmailCore(orderId) {
+  const order = await fetchOrder(orderId);
+  if (order.delivery_photo_email_sent_at) return;   // 別の端末などで送信済みなら何もしない(二重送信を避ける)
+  if (!order.delivered_at || !(order.delivery_photo_paths || []).length) throw new Error('ไม่พบรูป');
+  const blobs = [];
+  for (const path of order.delivery_photo_paths) {
+    const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).download(path);
+    if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ: ' + error.message);
+    blobs.push(data);
+  }
+  await sendDeliveryEmail(order, order.delivered_at, blobs);
+  await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
+  await requestDeliverySms(orderId);   // 通常の完了時と同じく、メール成功のあとにSMS依頼(二重送信の判定はGAS側)
+}
+
+// 「写真あり・メールあり・送信済みの記録なし」の注文を、スタッフが何もしなくても自動で送り直す。
+// 完了直後は通常の送信中かもしれないので2分待つ。1注文につき3分おき・最大3回まで。
+// 失敗してもエラーは出さない(「ยังไม่ได้ส่งอีเมล」の表示と手動の再送ボタンはそのまま残る)。
+const mailAutoTried = {};
+let autoResending = false;
+async function autoResendMissedEmails(all) {
+  if (autoResending) return;
+  autoResending = true;
+  let sentAny = false;
+  try {
+    for (const o of all) {
+      if (!o.delivered_at || o.delivery_handed_over || o.delivery_photo_skipped || o.delivery_photo_email_sent_at || !o.has_email) continue;
+      if (!(o.delivery_photo_paths || []).length || busy[o.id]) continue;
+      const now = Date.now();
+      if (now - new Date(o.delivered_at).getTime() < 2 * 60 * 1000) continue;
+      const t = mailAutoTried[o.id] || { n: 0, at: 0 };
+      if (t.n >= 3 || now - t.at < 3 * 60 * 1000) continue;
+      mailAutoTried[o.id] = { n: t.n + 1, at: now };
+      busy[o.id] = true;
+      try { await resendEmailCore(o.id); sentAny = true; } catch (_) { /* 次の更新でもう一度試す */ }
+      finally { delete busy[o.id]; }
+    }
+  } finally {
+    autoResending = false;
+  }
+  if (sentAny) loadOrders(true);
+}
+
 async function resendEmail(orderId) {
   if (busy[orderId]) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
   await loadOrders();
   try {
-    const order = await fetchOrder(orderId);
-    if (!order.delivered_at || !(order.delivery_photo_paths || []).length) throw new Error('ไม่พบรูป');
-    const blobs = [];
-    for (const path of order.delivery_photo_paths) {
-      const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).download(path);
-      if (error) throw new Error('ดาวน์โหลดรูปไม่สำเร็จ: ' + error.message);
-      blobs.push(data);
-    }
-    await sendDeliveryEmail(order, order.delivered_at, blobs);
-    await supabaseClient.rpc('delivery_app_mark_email_sent', { p_order_id: orderId });
+    await resendEmailCore(orderId);
   } catch (e) {
     $('main-error').textContent = 'ส่งอีเมลไม่สำเร็จ: ' + (e.message || e);
   } finally {
