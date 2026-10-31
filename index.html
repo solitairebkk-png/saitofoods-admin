@@ -885,16 +885,20 @@ async function loadAnnouncements() {
     const rows = await supabase('GET', 'announcements?is_active=eq.true&order=sort_order.asc.nullslast,published_at.desc&limit=10');
     if (!rows.length) { listEl.innerHTML = '<div class="empty-note">現在お知らせはありません / No announcements right now</div>'; return; }
 
+    // English表示のときは英語の内容を出す。英語が未入力の項目は日本語のまま(お知らせごとに、項目ごとに切り替わる)。
+    const isEn = typeof window.i18nGetLang === 'function' && window.i18nGetLang() === 'en';
     listEl.innerHTML = rows.map(a => {
       const hasLink = !!a.link_url;
-      const linkLabel = a.link_text || '詳しく見る';
+      const title = (isEn && a.title_en) ? a.title_en : a.title;
+      const body = (isEn && a.body_en) ? a.body_en : a.body;
+      const linkLabel = isEn ? (a.link_text_en || 'See details') : (a.link_text || '詳しく見る');
       const isExternal = hasLink && /^https?:\/\//i.test(a.link_url);
       const linkAttrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
       return `
         <div class="announce-item">
           <div class="announce-date">${a.published_at || ''}</div>
-          <div class="announce-title">${a.title}</div>
-          ${a.body ? `<div class="announce-body">${a.body}</div>` : ''}
+          <div class="announce-title">${title}</div>
+          ${body ? `<div class="announce-body">${body}</div>` : ''}
           ${hasLink ? `<a class="announce-link-btn" href="${a.link_url}" ${linkAttrs}>${linkLabel} →</a>` : ''}
         </div>
       `;
@@ -950,7 +954,12 @@ function changeCalendarMonth(delta) {
 function renderCalendar() {
   const labelEl = document.getElementById('calendar-month-label');
   const gridEl = document.getElementById('calendar-grid');
-  labelEl.textContent = `${calendarYear}年 ${calendarMonth + 1}月`;
+  // 月の見出し: 日本語は「2026年 11月」、英語は「November 2026」(言語切り替えに合わせる)
+  const EN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const isEn = typeof window.i18nGetLang === 'function' && window.i18nGetLang() === 'en';
+  labelEl.textContent = isEn
+    ? `${EN_MONTHS[calendarMonth]} ${calendarYear}`
+    : `${calendarYear}年 ${calendarMonth + 1}月`;
 
   const firstDay = new Date(calendarYear, calendarMonth, 1);
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
@@ -1014,6 +1023,8 @@ document.addEventListener('saitofoods-langchange', function () {
   loadTop3();
   loadPromotions();
   loadBargainProducts();
+  if (calendarYear !== undefined) renderCalendar();   // 配送カレンダーの月の見出しも言語に合わせて描き直す
+  loadAnnouncements();                                 // お知らせも言語に合わせて描き直す
 });
 
 // フッターの地図(ホテル等のPOIアイコンを非表示にするカスタムスタイル)
