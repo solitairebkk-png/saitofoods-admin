@@ -889,7 +889,7 @@ async function initDeliveryArea() {
 
   // 店舗受け取りはバンコクのお客様のみ選べる(2026-11-02)
   const pickupLabel = document.getElementById('opt-store-pickup-label');
-  if (pickupLabel) pickupLabel.style.display = customerAreaType === 'bangkok' ? 'flex' : 'none';
+  if (pickupLabel) pickupLabel.style.display = customerAreaType !== 'other' ? 'flex' : 'none'; // バンコク・シラチャ・パタヤ(エリア外は別のチェック欄)
   // 配送エリア外のお客様も店舗受け取りを選べる(選ぶと、日時・支払い方法の選択に切り替わる)
   const otherPickupWrap = document.getElementById('other-pickup-wrap');
   if (otherPickupWrap) otherPickupWrap.style.display = customerAreaType === 'other' ? 'block' : 'none';
@@ -1749,21 +1749,22 @@ async function onReceiveMethodChange() {
   const was = storePickupMode;
   const el = document.getElementById('opt-store-pickup');
   const elOther = document.getElementById('opt-store-pickup-other');
-  storePickupMode = (customerAreaType === 'bangkok' && !!(el && el.checked))
+  storePickupMode = (customerAreaType !== 'other' && !!(el && el.checked))
                  || (customerAreaType === 'other' && !!(elOther && elOther.checked));
   document.body.classList.toggle('pickup-mode', storePickupMode);
   if (was === storePickupMode) return;
   document.getElementById('nichada-note').style.display = useNichadaRules() ? 'block' : 'none';
   document.getElementById('bangkok-closed-note').style.display = useNichadaRules() ? 'none' : 'block';
-  if (customerAreaType === 'other') {
-    // 配送エリア外: 店舗受け取りを選んだ時だけ、日時・支払い方法・合計の欄を出す(通常は受注のみ)
-    const on = storePickupMode;
-    document.getElementById('delivery-fields-bangkok').style.display = on ? 'block' : 'none';
-    document.getElementById('delivery-fields-other').style.display = on ? 'none' : 'block';
-    document.getElementById('shipping-card').style.display = on ? 'block' : 'none';
-    document.getElementById('payment-card').style.display = on ? 'block' : 'none';
-  }
-  if (customerAreaType === 'bangkok' || (customerAreaType === 'other' && storePickupMode)) await initDeliveryDatePicker(); // 日付・時間帯の候補を、選んだ方法のルールで作り直す
+  // どのエリアのお客様でも店舗受け取りを選べる。選んだ間は、配送用の入力欄(コンド・配送日など)の代わりに
+  // 受け取り日時・支払い方法の欄を出す(エリア外は通常「受注のみ」のため、日時・支払い・合計欄も出す)
+  const on = storePickupMode;
+  document.getElementById('delivery-fields-bangkok').style.display = (on || customerAreaType === 'bangkok') ? 'block' : 'none';
+  document.getElementById('delivery-fields-sriracha').style.display = (!on && customerAreaType === 'sriracha') ? 'block' : 'none';
+  document.getElementById('delivery-fields-pattaya').style.display = (!on && customerAreaType === 'pattaya') ? 'block' : 'none';
+  document.getElementById('delivery-fields-other').style.display = (!on && customerAreaType === 'other') ? 'block' : 'none';
+  document.getElementById('shipping-card').style.display = (customerAreaType !== 'other' || on) ? 'block' : 'none';
+  document.getElementById('payment-card').style.display = (customerAreaType !== 'other' || on) ? 'block' : 'none';
+  if (customerAreaType === 'bangkok' || on) await initDeliveryDatePicker(); // 日付・時間帯の候補を、選んだ方法のルールで作り直す
   updateTotals();
 }
 document.querySelectorAll('input[name=leave-opt]').forEach(r => r.addEventListener('change', onReceiveMethodChange));
@@ -1921,7 +1922,7 @@ async function submitOrder() {
   }
 
   // 山口豆腐店など、届け先コンドミニアム・配送日の制限がある商品の確認(サーバー側でも必ず再チェックされる)
-  if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
+  if ((customerAreaType === 'sriracha' || customerAreaType === 'pattaya') && !storePickupMode) { // 店舗受け取りは配送先の制限・前日締切の対象外
     const blockedItems = cartItemsBlockedForCondo(condoName);
     if (blockedItems.length) {
       msgEl.textContent = `「${blockedItems.map(i => i.name).join('、')}」は${condoName}へはお届けできません。カートから外してください / ${blockedItems.map(i => i.name_en || i.name).join(', ')} cannot be delivered to ${condoName}. Please remove it from your cart.`;
@@ -2166,7 +2167,7 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
     noteEl.innerHTML += `<br>🏪 ご指定の日時に店舗へお越しください。 / Please come to our store at your chosen time. <a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:700;text-decoration:underline;">📍 店舗の地図 / Store map</a>`;
   }
 
-  if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {
+  if ((customerAreaType === 'sriracha' || customerAreaType === 'pattaya') && !isStorePickup) {
     showGpsInfoBox();
     showLineGroupBox(condoName);
   }
