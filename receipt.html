@@ -151,6 +151,11 @@
   }
   .paid-stamp .th { display: block; font-size: 15px; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
   .paid-stamp .en { display: block; font-size: 22px; font-weight: 800; letter-spacing: 0.12em; }
+  /* PAIDの下に、入金の確認日時と金額を小さく表示する(2026-11-02 要望)。
+     日時が取れない注文(ほとんどの銀行振込・現金)は金額のみ。 */
+  .paid-stamp .pay-info { display: block; margin-top: 4px; padding-top: 3px; border-top: 2px solid var(--red); }
+  .paid-stamp .pay-info .pi-time { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
+  .paid-stamp .pay-info .pi-amt { display: block; font-size: 15px; font-weight: 800; }
 
   /* キャンセル済み注文の判子。支払い済みスタンプと同じ位置・仕組みだが、色をグレーにして
      一目でPAIDと区別できるようにする(同時に両方表示されることはない)。 */
@@ -338,6 +343,10 @@
           <div class="paid-stamp" id="f-paid-stamp" style="display:none;">
             <span class="th">ชำระเงินแล้ว</span>
             <span class="en">PAID</span>
+            <span class="pay-info" id="f-paid-info" style="display:none;">
+              <span class="pi-time" id="f-paid-info-time"></span>
+              <span class="pi-amt" id="f-paid-info-amt"></span>
+            </span>
           </div>
           <div class="cancelled-stamp" id="f-cancelled-stamp" style="display:none;">
             <span class="th">ยกเลิกแล้ว</span>
@@ -527,7 +536,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
-      manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount, slip_checked_at, slip_amount_detected,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, staff_message_ja, staff_message_th, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
@@ -639,6 +648,41 @@ function renderStatusStamps(order) {
   paidEl.style.display = 'block';
   paidEl.style.transform = transform;
   paidEl.style.left = left;
+  renderPaidInfo(order, paid);
+}
+
+// PAIDスタンプの下に表示する「確認日時」と「金額」。
+// 日時: 手動入力の振込み時刻(manual_payment_time、入力された文字列のまま)を優先し、
+//       なければスリップ自動照合の日時(slip_checked_at)をバンコク時間で表示する。
+//       どちらも無い注文(ほとんどの銀行振込・現金)は日時の行を出さず、金額のみ表示する。
+// 金額: 手動入力の金額 → スリップから読み取った金額 → paid_amount の順。
+function renderPaidInfo(order, paid) {
+  const infoEl = document.getElementById('f-paid-info');
+  const timeEl = document.getElementById('f-paid-info-time');
+  const amtEl = document.getElementById('f-paid-info-amt');
+
+  let timeStr = '';
+  if (order.manual_payment_time && String(order.manual_payment_time).trim()) {
+    timeStr = String(order.manual_payment_time).trim();
+  } else if (order.slip_checked_at) {
+    const d = new Date(order.slip_checked_at);
+    if (!isNaN(d.getTime())) {
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(d).reduce((a, p) => { a[p.type] = p.value; return a; }, {});
+      timeStr = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    }
+  }
+
+  const amount = [order.manual_payment_amount, order.slip_amount_detected, paid]
+    .map(v => Number(v) || 0).find(v => v > 0) || 0;
+
+  timeEl.textContent = timeStr ? 'Confirmed ' + timeStr : '';
+  timeEl.style.display = timeStr ? 'block' : 'none';
+  amtEl.textContent = amount > 0 ? '฿' + amount.toLocaleString('en-US') : '';
+  amtEl.style.display = amount > 0 ? 'block' : 'none';
+  infoEl.style.display = (timeStr || amount > 0) ? 'block' : 'none';
 }
 
 function renderReceipt(order) {
