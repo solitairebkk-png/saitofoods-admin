@@ -387,6 +387,42 @@
       <div style="font-size:11px;color:#999;margin-top:6px;" data-i18n="cart.weightNote">※ 量り売り商品は概算価格×数量の目安金額で合計に含まれます。実際の金額は重量確定後に確定します(送料は注文時点で決まったものが適用され、後から追加請求されることはありません)</div>
     </div>
 
+    <div class="card" id="receive-card">
+      <div class="field" id="delivery-opts-field">
+        <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
+        <div class="delivery-opts-list">
+          <div class="leave-group">
+            <div class="leave-title" data-i18n="cart.leaveTitle">お受け取り方法 / How would you like to receive your order?</div>
+            <label class="leave-opt hand">
+              <input type="radio" name="leave-opt" id="opt-leave-none" checked>
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoneBadge">🤝 お荷物を手渡し</span><span class="lo-text" data-i18n="cart.leaveNone">置き配しない(直接お渡し) / No — hand it to me</span></span>
+            </label>
+            <label class="leave-opt call">
+              <input type="radio" name="leave-opt" id="opt-leave-with-contact">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveCallBadge">📞 置き配で電話連絡</span><span class="lo-text" data-i18n="cart.leaveCallText">置き配OK。到着したらお電話にてご連絡します。配達完了後に写真付きのメールもお送りします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will call you when we arrive. After delivery, we will also email you a photo (and send an SMS too, if you choose to receive one)</span></span>
+            </label>
+            <label class="leave-opt nocall">
+              <input type="radio" name="leave-opt" id="opt-leave-no-contact">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 置き配で電話連絡不要</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。到着時のお電話でのご連絡はいたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。お届け後に、お荷物の写真つきメールでお知らせします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will NOT call you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. After delivery, we will notify you by email with a photo of your items (and by SMS too, if you choose to receive one)</span></span>
+            </label>
+            <label class="leave-opt pickup" id="opt-store-pickup-label" style="display:none;">
+              <input type="radio" name="leave-opt" id="opt-store-pickup">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.pickupBadge">🏪 店舗受け取り</span><span class="lo-text" data-i18n="cart.pickupText">ご指定の日時に店舗へお越しください。送料・最低購入金額なし(ポイントの利用・付与はできません) / Pick up at our store at your chosen time. No shipping fee, no minimum order (points cannot be used or earned)</span></span>
+            </label>
+            <div class="pickup-note pickup-only">
+              <b style="color:#b71c1c;" data-i18n="cart.pickupNoPoints">⚠️ 店舗受け取りのご注文には、ポイントは付きません(ポイントのご利用もできません)。 / Points are NOT earned on store pickup orders (and points cannot be used).</b><br>
+              <span data-i18n="cart.pickupNote">下の「受け取り日時」でお越しになる日時をお選びください。お支払いは店頭、または事前のQR・銀行振込のどちらでも可能です。 / Please choose the date and time you will come to the store below. You can pay at the store, or in advance by QR / bank transfer.</span><br>
+              <a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" data-i18n="cart.pickupMapLink">📍 店舗の地図を開く / Open store map</a>
+            </div>
+          </div>
+          <label class="delivery-opt-item">
+            <input type="checkbox" id="opt-no-change">
+            <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
     <div class="card" id="delivery-card">
       <h2><span class="delivery-only" data-i18n="cart.deliveryTitle">🚚 配送日時 / Delivery date &amp; schedule</span><span class="pickup-only" data-i18n="cart.pickupTitle">🏪 受け取り日時 / Pickup date &amp; time</span></h2>
 
@@ -475,39 +511,6 @@
     </div>
 
     <div class="card">
-      <div class="field" id="delivery-opts-field">
-        <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
-        <div class="delivery-opts-list">
-          <div class="leave-group">
-            <div class="leave-title" data-i18n="cart.leaveTitle">お受け取り方法 / How would you like to receive your order?</div>
-            <label class="leave-opt hand">
-              <input type="radio" name="leave-opt" id="opt-leave-none" checked>
-              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoneBadge">🤝 お荷物を手渡し</span><span class="lo-text" data-i18n="cart.leaveNone">置き配しない(直接お渡し) / No — hand it to me</span></span>
-            </label>
-            <label class="leave-opt call">
-              <input type="radio" name="leave-opt" id="opt-leave-with-contact">
-              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveCallBadge">📞 置き配で電話連絡</span><span class="lo-text" data-i18n="cart.leaveCallText">置き配OK。到着したらお電話にてご連絡します。配達完了後に写真付きのメールもお送りします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will call you when we arrive. After delivery, we will also email you a photo (and send an SMS too, if you choose to receive one)</span></span>
-            </label>
-            <label class="leave-opt nocall">
-              <input type="radio" name="leave-opt" id="opt-leave-no-contact">
-              <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 置き配で電話連絡不要</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。到着時のお電話でのご連絡はいたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。お届け後に、お荷物の写真つきメールでお知らせします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will NOT call you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. After delivery, we will notify you by email with a photo of your items (and by SMS too, if you choose to receive one)</span></span>
-            </label>
-            <label class="leave-opt pickup" id="opt-store-pickup-label" style="display:none;">
-              <input type="radio" name="leave-opt" id="opt-store-pickup">
-              <span class="lo-body"><span class="lo-badge" data-i18n="cart.pickupBadge">🏪 店舗受け取り</span><span class="lo-text" data-i18n="cart.pickupText">ご指定の日時に店舗へお越しください。送料・最低購入金額なし(ポイントの利用・付与はできません) / Pick up at our store at your chosen time. No shipping fee, no minimum order (points cannot be used or earned)</span></span>
-            </label>
-            <div class="pickup-note pickup-only">
-              <b style="color:#b71c1c;" data-i18n="cart.pickupNoPoints">⚠️ 店舗受け取りのご注文には、ポイントは付きません(ポイントのご利用もできません)。 / Points are NOT earned on store pickup orders (and points cannot be used).</b><br>
-              <span data-i18n="cart.pickupNote">下の「受け取り日時」でお越しになる日時をお選びください。お支払いは店頭、または事前のQR・銀行振込のどちらでも可能です。 / Please choose the date and time you will come to the store below. You can pay at the store, or in advance by QR / bank transfer.</span><br>
-              <a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" data-i18n="cart.pickupMapLink">📍 店舗の地図を開く / Open store map</a>
-            </div>
-          </div>
-          <label class="delivery-opt-item">
-            <input type="checkbox" id="opt-no-change">
-            <span data-i18n="cart.optNoChange">お釣りは不要です / No change needed</span>
-          </label>
-        </div>
-      </div>
       <div class="sms-opt-box" id="opt-tax-box" style="display:none;">
         <label class="sms-opt-label">
           <input type="checkbox" id="opt-tax">
@@ -886,6 +889,7 @@ async function initDeliveryArea() {
   // 配送エリア外は外部の配送業者が届けるため、置き配・フロント預けなどの
   // 自社配送スタッフ向けの選択肢は意味が無い。備考欄だけ残す。
   document.getElementById('delivery-opts-field').style.display = customerAreaType === 'other' ? 'none' : 'block';
+  document.getElementById('receive-card').style.display = customerAreaType === 'other' ? 'none' : 'block'; // 受け取り方法の欄(エリア外は日時欄の中のチェックで選ぶ)
 
   // 店舗受け取りはバンコクのお客様のみ選べる(2026-11-02)
   const pickupLabel = document.getElementById('opt-store-pickup-label');
