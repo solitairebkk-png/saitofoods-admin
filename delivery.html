@@ -106,6 +106,8 @@
   .prepay small { display: block; font-size: 12.5px; font-weight: 600; margin-top: 2px; }
   .prepay.ok { background: #dcfce7; color: #166534; border: 2px solid #4ade80; }
   .prepay.none { background: #fee2e2; color: #991b1b; border: 3px solid #dc2626; }
+  .taxinv { margin: 8px 0; padding: 10px 14px; border-radius: 12px; font-size: 16px; font-weight: 800; line-height: 1.5; text-align: center; background: #e0efff; color: #0b3d91; border: 3px solid #2f6fd6; }
+  .taxinv small { display: block; font-size: 12.5px; font-weight: 600; margin-top: 2px; }
   .rice-box { margin-top: 10px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 10px 12px; font-size: 20px; font-weight: 800; color: #78350f; }
   @keyframes deli-spin { to { transform: rotate(360deg); } }
   #refresh-btn.spin { animation: deli-spin .8s linear infinite; }
@@ -736,6 +738,12 @@ function callBadge(o) {
 
 // 置き配(連絡なし)の注文は、お客様に事前振込み+スリップのアップロードをお願いしている。
 // スリップが届いていない場合は荷物を持ち帰ることがあるため、届いているかどうかを大きく表示する。
+// TAXインボイスが必要なお客様の目印(2026-11-02)。書類は経理が作成する。会社情報そのものは配送アプリには渡さない。
+function taxInvoiceBanner(o) {
+  if (!o.tax_invoice_needed) return '';
+  return '<div class="taxinv">🧾 ลูกค้าต้องการใบกำกับภาษี (TAX INVOICE)<small>TAXインボイスが必要なお客様です(経理が作成)</small></div>';
+}
+
 function prepayBanner(o) {
   if (!(o.delivery_leave_at_table && o.delivery_no_contact)) return '';
   if (o.payment_method === 'cash') return '';
@@ -767,6 +775,7 @@ function renderTodo(list) {
       <div class="meta">${escapeHtml(o.delivery_date || '')} ${escapeHtml(o.delivery_time_slot || '')} · ออก ${escapeHtml(fmtTimeBkk(o.departed_at))}</div>
       ${callBadge(o)}
       ${prepayBanner(o)}
+      ${taxInvoiceBanner(o)}
       ${riceHtml(o)}
       ${hasEmail ? '' : '<span class="badge warn">✉️ ไม่มีอีเมล (บันทึกรูปอย่างเดียว)</span>'}
       <div class="btn-row">

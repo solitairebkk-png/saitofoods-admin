@@ -2206,7 +2206,7 @@ async function _loadOrdersInner() {
       order_delivery_memos ( memo, memo_by, memo_at ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -3170,6 +3170,20 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     : (order.customers
       ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
       : 'หน้าร้าน / Walk-in');
+  // TAXインボイスが必要なお客様の目印(2026-11-02)。書類は経理が作成するため、会社名・納税者番号・
+  // 本店/支店・住所を一覧に添えて、そのまま経理へ渡せるようにする。
+  const taxCust = order.is_wholesale ? null : order.customers;
+  const taxInvoiceHtml = (taxCust && taxCust.tax_invoice_needed)
+    ? (() => {
+        const branch = taxCust.tax_branch_type === 'branch' ? `Branch ${taxCust.tax_branch_no || ''}` : 'Head Office';
+        const detail = [taxCust.tax_company_name, taxCust.tax_id ? `Tax ID ${taxCust.tax_id}` : '', branch].filter(Boolean).join(' / ');
+        return `<div style="margin-top:6px;padding:6px 10px;border:2px solid #2f6fd6;border-radius:8px;background:#e0efff;color:#0b3d91;font-weight:700;font-size:13px;">`
+          + `🧾 TAX INVOICE / ต้องการใบกำกับภาษี`
+          + `<div style="font-weight:600;font-size:12px;">${escapeHtml(detail)}</div>`
+          + (taxCust.tax_company_address ? `<div style="font-weight:500;font-size:11.5px;">${escapeHtml(taxCust.tax_company_address)}</div>` : '')
+          + `</div>`;
+      })()
+    : '';
   const tel = escapeHtml([order.customers?.tel1, order.customers?.tel2].filter(Boolean).join(' / '));
   const email = escapeHtml(order.customers?.email || '');
   const addressParts = [order.customers?.address1, order.customers?.address2].filter(Boolean);
@@ -3262,6 +3276,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
           <div class="customer-name">${customerName}</div>
           ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
           ${callFlagHtml ? `<div style="margin-top:6px;">${callFlagHtml}</div>` : ''}
+          ${taxInvoiceHtml}
         </div>
         <div class="customer-side">
           <div class="customer-tel">📞 ${tel || '-'}</div>

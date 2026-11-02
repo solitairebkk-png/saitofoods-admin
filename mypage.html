@@ -514,6 +514,41 @@
           <button class="submit-btn" onclick="saveProfile()" data-i18n="my.saveProfileBtn">お名前・住所・電話番号を保存する</button>
           <div class="profile-msg" id="profile-msg"></div>
         </div>
+        <div class="card" id="tax-card">
+          <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="12" x2="15" y2="12"></line></svg> <span data-i18n="my.taxTitle">領収書・TAXインボイス / Tax Invoice</span></div>
+          <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;font-weight:700;cursor:pointer;">
+            <input type="checkbox" id="tax-needed" onchange="onTaxNeededChange()" style="margin-top:3px;width:18px;height:18px;flex:0 0 auto;">
+            <span data-i18n="my.taxNeeded">会社名での領収書(TAXインボイス)が必要です</span>
+          </label>
+          <div class="form-hint" data-i18n="my.taxHint">ご登録いただくと、ご注文のたびにコメント欄へご記入いただかなくても、当店の経理がTAXインボイスを作成します。</div>
+          <div id="tax-fields" style="display:none;margin-top:14px;">
+            <div class="form-group">
+              <label data-i18n="my.taxCompanyLabel">会社名 / Company Name</label>
+              <input type="text" class="form-input" id="tax-company-name" maxlength="200" placeholder="ABC CO., LTD.">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.taxAddressLabel">会社の住所 / Company Address</label>
+              <input type="text" class="form-input" id="tax-company-address" maxlength="400">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.taxIdLabel">納税者番号(13桁) / Tax ID (13 digits)</label>
+              <input type="text" class="form-input" id="tax-id" inputmode="numeric" maxlength="17" placeholder="0105565201666">
+            </div>
+            <div class="form-group">
+              <label data-i18n="my.taxBranchLabel">本店・支店 / Head Office or Branch</label>
+              <select class="form-input" id="tax-branch-type" onchange="onTaxBranchChange()">
+                <option value="head" data-i18n="my.taxHead">本店 / Head Office</option>
+                <option value="branch" data-i18n="my.taxBranch">支店 / Branch</option>
+              </select>
+            </div>
+            <div class="form-group" id="tax-branch-no-group" style="display:none;">
+              <label data-i18n="my.taxBranchNoLabel">支店番号(5桁) / Branch No. (5 digits)</label>
+              <input type="text" class="form-input" id="tax-branch-no" inputmode="numeric" maxlength="5" placeholder="00001">
+            </div>
+          </div>
+          <button class="submit-btn" onclick="saveTaxInfo()" data-i18n="my.taxSaveBtn">領収書の情報を保存する</button>
+          <div class="profile-msg" id="tax-msg"></div>
+        </div>
         <div class="card">
           <div class="card-title"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><line x1="12" y1="13" x2="12" y2="21"></line></svg> <span data-i18n="my.orderHistoryTitle">ご注文履歴 / Order History</span></div>
           <div id="order-list">
@@ -927,7 +962,7 @@ async function loadMyPage(user) {
   await supabaseClient.rpc('sync_own_email');
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify')
+    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
     .eq('auth_user_id', user.id)
     .single();
   if ((error || !customerRow) && user.email) {
@@ -961,7 +996,7 @@ async function loadMyPage(user) {
       if (attempt > 0) await sleep(500 * attempt);
       const retry = await supabaseClient
         .from('customers')
-        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify')
+        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
         .eq('auth_user_id', user.id)
         .single();
       customerRow = retry.data;
@@ -1019,6 +1054,7 @@ async function loadMyPage(user) {
   updateSmsHint();
   document.getElementById('profile-address1').value = customerRow.address1 || '';
   document.getElementById('profile-address2').value = customerRow.address2 || '';
+  fillTaxForm(customerRow);
   originalAreaId = customerRow.area_id || null;
   await loadCondoOptions(customerRow.condo_name);
   await loadAreaOptions(customerRow.area_id);
@@ -1532,6 +1568,63 @@ function reorderOrder(index) {
   }
   localStorage.setItem('saitofoods_cart', JSON.stringify(map));
   location.href = 'cart.html';
+}
+// ===== 領収書・TAXインボイス用の情報(2026-11-02) =====
+// TAXインボイスの書類は当店の経理が作成する。ここでは情報を保存し、スタッフが配送時に
+// 「TAXインボイスが必要なお客様」と分かるようにするための目印として使う。
+function fillTaxForm(c) {
+  document.getElementById('tax-needed').checked = !!c.tax_invoice_needed;
+  document.getElementById('tax-company-name').value = c.tax_company_name || '';
+  document.getElementById('tax-company-address').value = c.tax_company_address || '';
+  document.getElementById('tax-id').value = c.tax_id || '';
+  document.getElementById('tax-branch-type').value = c.tax_branch_type === 'branch' ? 'branch' : 'head';
+  document.getElementById('tax-branch-no').value = (c.tax_branch_type === 'branch' && c.tax_branch_no) ? c.tax_branch_no : '';
+  onTaxNeededChange();
+}
+function onTaxNeededChange() {
+  const on = document.getElementById('tax-needed').checked;
+  document.getElementById('tax-fields').style.display = on ? 'block' : 'none';
+  onTaxBranchChange();
+}
+function onTaxBranchChange() {
+  const isBranch = document.getElementById('tax-branch-type').value === 'branch';
+  document.getElementById('tax-branch-no-group').style.display = isBranch ? 'block' : 'none';
+}
+function showTaxMsg(msg, isError) {
+  const el = document.getElementById('tax-msg');
+  el.textContent = msg;
+  el.className = 'profile-msg ' + (isError ? 'error' : 'success');
+  setTimeout(() => { el.textContent = ''; el.className = 'profile-msg'; }, 5000);
+}
+async function saveTaxInfo() {
+  const needed = document.getElementById('tax-needed').checked;
+  const branchType = document.getElementById('tax-branch-type').value;
+  const args = {
+    p_needed: needed,
+    p_company_name: needed ? document.getElementById('tax-company-name').value.trim() : null,
+    p_company_address: needed ? document.getElementById('tax-company-address').value.trim() : null,
+    p_tax_id: needed ? document.getElementById('tax-id').value.trim() : null,
+    p_branch_type: needed ? branchType : null,
+    p_branch_no: (needed && branchType === 'branch') ? document.getElementById('tax-branch-no').value.trim() : null,
+  };
+  const { error } = await supabaseClient.rpc('set_my_tax_info', args);
+  if (error) {
+    const key = {
+      TAX_INFO_INCOMPLETE: 'my.taxErrIncomplete',
+      TAX_ID_INVALID: 'my.taxErrTaxId',
+      BRANCH_NO_REQUIRED: 'my.taxErrBranchNo',
+      BRANCH_NO_INVALID: 'my.taxErrBranchNo',
+    };
+    const code = Object.keys(key).find(k => (error.message || '').includes(k));
+    showTaxMsg(code ? i18nText(key[code]) : i18nText('my.taxErrGeneric') + ' ' + (error.message || ''), true);
+    return;
+  }
+  // 5桁にそろえた支店番号などを画面に反映するため、保存後の値を読み直す
+  const { data } = await supabaseClient.from('customers')
+    .select('tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
+    .eq('id', currentCustomer.id).single();
+  if (data) { Object.assign(currentCustomer, data); fillTaxForm(data); }
+  showTaxMsg(i18nText('my.taxSaved'));
 }
 function showProfileMsg(msg, isError) {
   const el = document.getElementById('profile-msg');
