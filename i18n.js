@@ -140,6 +140,7 @@
     'my.recoverPasswordHint': { ja: 'パスワードを忘れた方は、下に新しいパスワードを入力してください(確認だけの方は空欄のままで構いません)。', en: 'If you forgot your password, enter a new one below. If you only need your account confirmed, leave it blank.' },
     'my.recoverBtn': { ja: 'この内容で手続きする', en: 'Submit' },
     'my.recoverNeedAll': { ja: 'メールアドレス・お名前(姓・名)・電話番号をすべて入力してください。', en: 'Please enter your email address, name (family and first) and phone number.' },
+    'my.forgotIcloudRedirect': { ja: 'iCloud(@icloud.com / @me.com / @mac.com)のメールアドレスは、再設定メールが届かないため、メールなしのお手続きに切り替えました。下の内容をご入力ください。', en: 'Password reset emails do not reach iCloud addresses (@icloud.com / @me.com / @mac.com), so we switched you to the no-email process. Please fill in the form below.' },
     'my.recoverNotApple': { ja: 'この手続きはiCloud(@icloud.com / @me.com / @mac.com)のメールアドレス専用です。', en: 'This process is only for iCloud addresses (@icloud.com / @me.com / @mac.com).' },
     'my.recoverDone': { ja: '手続きが完了しました。「ログイン」から、登録時のパスワードでログインしてください。', en: 'Done. Please log in with the password you set when you signed up.' },
     'my.recoverDonePassword': { ja: '手続きとパスワードの更新が完了しました。「ログイン」から、新しいパスワードでログインしてください。', en: 'Done. Your password has been updated. Please log in with your new password.' },

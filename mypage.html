@@ -799,6 +799,14 @@ async function requestPasswordReset() {
   const email = document.getElementById('forgot-email').value.trim();
   hideAuthMsg();
   if (!email) { showAuthMsg('メールアドレスを入力してください。', true); return; }
+  // iCloud系(icloud.com / me.com / mac.com)は再設定メールが届かず、送るとResend側でバウンスして
+  // 送信ドメインの評価も下げてしまうため、メールは送らずメールなしの手続き(recover)に切り替える(2026-11-02)。
+  if (isIcloudAddress(email)) {
+    document.getElementById('recover-email').value = email;
+    switchAuthTab('recover');
+    showAuthMsg(i18nText('my.forgotIcloudRedirect'));
+    return;
+  }
   const btn = document.getElementById('forgot-btn');
   btn.disabled = true;
   const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
