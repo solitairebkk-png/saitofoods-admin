@@ -460,10 +460,10 @@
         <span class="delivery-only" data-i18n="cart.codNote">配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。</span><span class="pickup-only" data-i18n="cart.storeNote">お受け取りの際に、店頭でお支払いください。 / Please pay at the store when you pick up your order.</span>
       </div>
       <div class="qr-info-box" id="qr-info-box">
-        <b>⚠️ ご注文当日中に、必ずお支払いをお済ませください。</b><br>
-        ご注文確定後に表示される画面から、そのままお支払いいただけます。メールの確認が遅れて、お支払いを忘れてしまうケースが多くなっています。<br>
-        お支払いが確認できない場合は、ご登録のメールアドレスへお支払いのご確認メールをお送りすることがあります。メールのご確認をお願いいたします。<br>
-        <span style="font-size:11.5px;">⚠️ Please complete your payment on the same day you place your order. You can pay right away from the screen shown after you confirm your order. If we cannot confirm your payment, we may send a payment reminder to your registered email address.</span>
+        <b>⚠️ ご注文当日中に、お支払い(QR・銀行振込)をお願いいたします。</b><br>
+        ご注文確定後に表示される画面から、そのままお支払いいただけます。<br>
+        ご確認が取れない場合は、念のためご登録のメールアドレスにお知らせをお送りすることがあります。<br>
+        <span style="font-size:11.5px;">⚠️ We would appreciate it if you could complete your payment (QR / bank transfer) on the same day you place your order. You can pay right away from the screen shown after you confirm your order. If we cannot confirm your payment, we may send a notice to your registered email address.</span>
       </div>
     </div>
 
@@ -2275,14 +2275,14 @@ function initFooterMap() {
 <div id="qr-remind-overlay" role="dialog" aria-modal="true" aria-labelledby="qr-remind-title">
   <div class="qr-remind-box">
     <h3 id="qr-remind-title">⚠️ お支払いについて / Payment reminder</h3>
-    <div class="qr-remind-main">ご注文当日中に、必ずお支払い(QR・銀行振込)をお済ませください。</div>
-    <div class="qr-remind-sub">ご注文確定後に表示される画面から、そのままお支払いいただけます。後回しにされると、メールの確認が遅れてお支払いを忘れてしまうことがあります。</div>
-    <div class="qr-remind-sub">お支払いが確認できない場合は、ご登録のメールアドレスへお支払いのご確認メールをお送りすることがあります。</div>
+    <div class="qr-remind-main">ご注文当日中に、お支払い(QR・銀行振込)をお願いいたします。</div>
+    <div class="qr-remind-sub">ご注文確定後に表示される画面から、そのままお支払いいただけます。</div>
+    <div class="qr-remind-sub">ご確認が取れない場合は、念のためご登録のメールアドレスにお知らせをお送りすることがあります。</div>
     <div class="qr-remind-door" id="qr-remind-door">
       🚪 置き配をご希望の場合は、お届け時にお支払いをお受けできません。できるだけお届け前にお支払いをお済ませください。<br>
       <span style="font-weight:400;font-size:12px;">For leave-at-table delivery we cannot take payment on arrival. Please pay before delivery.</span>
     </div>
-    <div class="qr-remind-sub" style="font-size:12px;">Please complete your payment (QR / bank transfer) on the same day you place your order. You can pay right away from the screen shown after you confirm. If we cannot confirm your payment, we may send a payment reminder to your registered email address.</div>
+    <div class="qr-remind-sub" style="font-size:12px;">We would appreciate it if you could complete your payment (QR / bank transfer) on the same day you place your order. You can pay right away from the screen shown after you confirm. If we cannot confirm your payment, we may send a notice to your registered email address.</div>
     <div class="qr-remind-actions">
       <button type="button" id="qr-remind-ok">了解して注文する / I understand, place order</button>
       <button type="button" id="qr-remind-back">戻る / Back</button>
