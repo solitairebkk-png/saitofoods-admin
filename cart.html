@@ -204,6 +204,7 @@
   body.pickup-mode #shipping-banner,
   body.pickup-mode #totals-shipping-row,
   body.pickup-mode #points-field,
+  body.pickup-mode #qr-info-box,
   body.pickup-mode #opt-sms-box,
   body.pickup-mode label.delivery-opt-item { display: none !important; }
 
@@ -1928,7 +1929,8 @@ async function submitOrder() {
     // 置き配(連絡なし)の場合は、事前振込みの同意ポップアップ(当日中のお支払いの注意も含む)を出す
     const ok = await confirmNoContactPrepay(cart.some(i => i.sale_type === 'weight'));
     if (!ok) return;
-  } else if (paymentMethod === 'qr') {
+  } else if (paymentMethod === 'qr' && !storePickupMode) {
+    // (店舗受け取りは当日中のお支払いを求めないため、この確認は出さない)
     // QR/銀行振込の場合は、当日中にお支払いいただくよう確認ポップアップを出す(後回しによる支払い忘れ対策)
     const leaveAtTable = !!document.getElementById('opt-leave-with-contact')?.checked;
     const ok = await confirmQrPaymentReminder(leaveAtTable);
