@@ -697,7 +697,7 @@
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
-    <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in & Pickup / หน้าร้าน</button>
+    <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in & Pickup / หน้าร้าน<span class="tab-badge" id="walkin-badge" style="display:none;">0</span></button>
     <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">Out-of-area / นอกพื้นที่จัดส่ง<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
     <button data-area="__PLAATAPIAN__" onclick="setAreaTab(this,'__PLAATAPIAN__')">Plaa-Ta-Pian / ปลาตะเพียน</button>
     <button data-area="__EXPRESS__" onclick="setAreaTab(this,'__EXPRESS__')">Express Input / คีย์ Express</button>
@@ -2253,6 +2253,14 @@ async function _loadOrdersInner() {
     badgeEl.style.display = 'inline-block';
   } else {
     badgeEl.style.display = 'none';
+  }
+
+  // 店舗受け取り(お客様がサイトで注文した分)の未完了件数を、Walk-inタブにバッジで表示する(2026-11-02)
+  const pickupPendingCount = (data || []).filter(o => o.is_store_pickup && !o.is_cancelled && !o.is_completed).length;
+  const walkinBadgeEl = document.getElementById('walkin-badge');
+  if (walkinBadgeEl) {
+    if (pickupPendingCount > 0) { walkinBadgeEl.textContent = pickupPendingCount; walkinBadgeEl.style.display = 'inline-block'; }
+    else walkinBadgeEl.style.display = 'none';
   }
 
   // walk_in注文は delivery_date が無いため、表示・グループ分けには取引日時(created_at)

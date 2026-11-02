@@ -442,6 +442,13 @@
           <span data-i18n="cart.otherAreaNote2">ご注文後、スタッフより配送業者の送料を確認のうえ、商品代金と送料を合わせた合計金額をご案内いたします。ご入金確認後に発送を手配いたします。</span>
         </div>
       </div>
+
+      <div id="other-pickup-wrap" style="display:none;margin-top:12px;">
+        <label class="leave-opt pickup">
+          <input type="checkbox" id="opt-store-pickup-other">
+          <span class="lo-body"><span class="lo-badge" data-i18n="cart.pickupBadge">🏪 店舗受け取り</span><span class="lo-text"><span data-i18n="cart.pickupOtherText">店舗での受け取りをご希望の方はこちら。ご指定の日時に店舗へお越しください。送料・最低購入金額なし。 / If you would like to pick up at our store, check here. No shipping fee, no minimum order.</span><br><b style="color:#b71c1c;" data-i18n="cart.pickupNoPoints">⚠️ 店舗受け取りのご注文には、ポイントは付きません(ポイントのご利用もできません)。 / Points are NOT earned on store pickup orders (and points cannot be used).</b><br><a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:700;text-decoration:underline;" data-i18n="cart.pickupMapLink">📍 店舗の地図を開く / Open store map</a></span></span>
+        </label>
+      </div>
     </div>
 
     <div class="card" id="payment-card">
@@ -883,6 +890,9 @@ async function initDeliveryArea() {
   // 店舗受け取りはバンコクのお客様のみ選べる(2026-11-02)
   const pickupLabel = document.getElementById('opt-store-pickup-label');
   if (pickupLabel) pickupLabel.style.display = customerAreaType === 'bangkok' ? 'flex' : 'none';
+  // 配送エリア外のお客様も店舗受け取りを選べる(選ぶと、日時・支払い方法の選択に切り替わる)
+  const otherPickupWrap = document.getElementById('other-pickup-wrap');
+  if (otherPickupWrap) otherPickupWrap.style.display = customerAreaType === 'other' ? 'block' : 'none';
 
   if (customerAreaType === 'bangkok') {
     await initDeliveryDatePicker();
@@ -1738,15 +1748,27 @@ function populateTimeSlots(slots) {
 async function onReceiveMethodChange() {
   const was = storePickupMode;
   const el = document.getElementById('opt-store-pickup');
-  storePickupMode = !!(el && el.checked) && customerAreaType === 'bangkok';
+  const elOther = document.getElementById('opt-store-pickup-other');
+  storePickupMode = (customerAreaType === 'bangkok' && !!(el && el.checked))
+                 || (customerAreaType === 'other' && !!(elOther && elOther.checked));
   document.body.classList.toggle('pickup-mode', storePickupMode);
   if (was === storePickupMode) return;
   document.getElementById('nichada-note').style.display = useNichadaRules() ? 'block' : 'none';
   document.getElementById('bangkok-closed-note').style.display = useNichadaRules() ? 'none' : 'block';
-  if (customerAreaType === 'bangkok') await initDeliveryDatePicker(); // 日付・時間帯の候補を、選んだ方法のルールで作り直す
+  if (customerAreaType === 'other') {
+    // 配送エリア外: 店舗受け取りを選んだ時だけ、日時・支払い方法・合計の欄を出す(通常は受注のみ)
+    const on = storePickupMode;
+    document.getElementById('delivery-fields-bangkok').style.display = on ? 'block' : 'none';
+    document.getElementById('delivery-fields-other').style.display = on ? 'none' : 'block';
+    document.getElementById('shipping-card').style.display = on ? 'block' : 'none';
+    document.getElementById('payment-card').style.display = on ? 'block' : 'none';
+  }
+  if (customerAreaType === 'bangkok' || (customerAreaType === 'other' && storePickupMode)) await initDeliveryDatePicker(); // 日付・時間帯の候補を、選んだ方法のルールで作り直す
   updateTotals();
 }
 document.querySelectorAll('input[name=leave-opt]').forEach(r => r.addEventListener('change', onReceiveMethodChange));
+const _otherPickupChk = document.getElementById('opt-store-pickup-other');
+if (_otherPickupChk) _otherPickupChk.addEventListener('change', onReceiveMethodChange);
 
 function onPaymentChange() {
   const method = document.querySelector('input[name=payment]:checked')?.value;
@@ -1844,7 +1866,7 @@ async function submitOrder() {
 
   // 配送エリア外(Other Provinces等)は、配送日時・支払い方法を選ばせず
   // 受注だけを行う専用RPCへ分岐する(送料確定・入金確認・配送手配はスタッフが手動対応)
-  if (customerAreaType === 'other') {
+  if (customerAreaType === 'other' && !storePickupMode) {
     await submitOutOfAreaOrder();
     return;
   }
@@ -1858,7 +1880,7 @@ async function submitOrder() {
     deliveryDate = addToOrderInfo.delivery_date;
     deliveryTimeSlot = addToOrderInfo.delivery_time_slot;
     condoName = addToOrderInfo.condo_name;
-  } else if (customerAreaType === 'bangkok') {
+  } else if (customerAreaType === 'bangkok' || storePickupMode) {
     deliveryDate = document.getElementById('delivery-date').value;
     deliveryTimeSlot = document.getElementById('delivery-time-slot').value;
     if (!deliveryDate || !deliveryTimeSlot) { msgEl.textContent = '配送日時を選択してください(日曜以外) / Please choose a valid delivery date and time.'; msgEl.className = 'error'; return; }
@@ -2018,7 +2040,7 @@ async function submitOrder() {
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     sessionStorage.removeItem(ADDTO_STORAGE_KEY);
-    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-no-change', 'opt-store-pickup'].forEach(id => {
+    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-no-change', 'opt-store-pickup', 'opt-store-pickup-other'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.checked = false;
     });

@@ -299,6 +299,7 @@
     'cart.pickupBadge': { ja: '🏪 店舗受け取り', en: '🏪 Store pickup' },
     'cart.pickupText': { ja: 'ご指定の日時に店舗へお越しください。送料・最低購入金額なし(ポイントの利用・付与はできません) / Pick up at our store at your chosen time. No shipping fee, no minimum order (points cannot be used or earned)', en: 'Pick up at our store at your chosen time. No shipping fee, no minimum order (points cannot be used or earned)' },
     'cart.pickupNoPoints': { ja: '⚠️ 店舗受け取りのご注文には、ポイントは付きません(ポイントのご利用もできません)。 / Points are NOT earned on store pickup orders (and points cannot be used).', en: '⚠️ Points are NOT earned on store pickup orders (and points cannot be used).' },
+    'cart.pickupOtherText': { ja: '店舗での受け取りをご希望の方はこちら。ご指定の日時に店舗へお越しください。送料・最低購入金額なし。 / If you would like to pick up at our store, check here. No shipping fee, no minimum order.', en: 'If you would like to pick up at our store, check here. No shipping fee, no minimum order.' },
     'cart.pickupNote': { ja: '下の「受け取り日時」でお越しになる日時をお選びください。お支払いは店頭、または事前のQR・銀行振込のどちらでも可能です。 / Please choose the date and time you will come to the store below. You can pay at the store, or in advance by QR / bank transfer.', en: 'Please choose the date and time you will come to the store below. You can pay at the store, or in advance by QR / bank transfer.' },
     'cart.pickupMapLink': { ja: '📍 店舗の地図を開く / Open store map', en: '📍 Open store map' },
     'cart.pickupTitle': { ja: '🏪 受け取り日時 / Pickup date & time', en: '🏪 Pickup date & time' },
