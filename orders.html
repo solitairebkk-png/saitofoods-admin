@@ -2200,6 +2200,7 @@ async function _loadOrdersInner() {
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       manual_payment_confirmed, manual_payment_time, manual_payment_amount, manual_payment_confirmed_at,
       payment_uncollected, payment_uncollected_at, payment_uncollected_by,
+      tax_invoice_requested,
       assigned_staff_id, departed_at, staff:assigned_staff_id ( name ),
       delivered_at, delivery_photo_paths, delivery_photo_email_sent_at, delivery_sms_sent_at, delivery_handed_over, delivery_photo_skipped,
       delivery_lat, delivery_lng, delivery_accuracy_m,
@@ -3170,10 +3171,10 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     : (order.customers
       ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
       : 'หน้าร้าน / Walk-in');
-  // TAXインボイスが必要なお客様の目印(2026-11-02)。書類は経理が作成するため、会社名・納税者番号・
+  // この注文でTAXインボイスが必要(orders.tax_invoice_requested)の目印(2026-11-02)。書類は経理が作成するため、会社名・納税者番号・
   // 本店/支店・住所を一覧に添えて、そのまま経理へ渡せるようにする。
   const taxCust = order.is_wholesale ? null : order.customers;
-  const taxInvoiceHtml = (taxCust && taxCust.tax_invoice_needed)
+  const taxInvoiceHtml = (taxCust && order.tax_invoice_requested)
     ? (() => {
         const branch = taxCust.tax_branch_type === 'branch' ? `Branch ${taxCust.tax_branch_no || ''}` : 'Head Office';
         const detail = [taxCust.tax_company_name, taxCust.tax_id ? `Tax ID ${taxCust.tax_id}` : '', branch].filter(Boolean).join(' / ');
@@ -3395,6 +3396,16 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
         idActions.appendChild(makeButton('💰 Confirm Payment / ยืนยันการโอนเงิน', () => openManualPayModal(order), 'btn-manual-pay'));
       }
     }
+  }
+
+  // TAXインボイスの要否の切り替え(2026-11-02): 会社情報を登録済みのお客様の注文だけ。電話注文や、
+  // 注文後に必要と分かった場合にスタッフが切り替える。お客様自身は注文画面で選べる。
+  if (!order.is_wholesale && !order.is_cancelled && order.order_type === 'delivery' && order.customers
+      && (order.customers.tax_invoice_needed || order.tax_invoice_requested)) {
+    idActions.appendChild(makeButton(
+      order.tax_invoice_requested ? '🧾 TAX INVOICE ✓ (Undo)' : '🧾 TAX INVOICE',
+      () => setTaxInvoice(order, !order.tax_invoice_requested),
+      'btn-check'));
   }
 
   // 「未回収」ボタン(2026-10-26): 配送済み(Complete済み)なのに代金を回収できていない注文に、
@@ -4485,6 +4496,15 @@ async function sendWeightConfirmedEmail(order) {
 
 // ---------------- Update / Delete ----------------
 // 「未回収」の印を付ける/外す。付けると、メールアドレスのあるお客様へ未入金リマインドメールが自動で届く。
+async function setTaxInvoice(order, flag) {
+  const { error } = await supabaseClient.rpc('set_order_tax_invoice', { p_order_id: order.id, p_requested: !!flag });
+  if (error) {
+    const notRegistered = (error.message || '').includes('TAX_INFO_NOT_REGISTERED');
+    alert('อัปเดตไม่สำเร็จ / Update failed: ' + (notRegistered ? 'The customer has not registered company information in My Page.' : error.message));
+    return;
+  }
+  loadOrders();
+}
 async function setPaymentUncollected(order, flag) {
   if (flag) {
     const noEmail = !(order.customers && order.customers.email);

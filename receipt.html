@@ -541,7 +541,7 @@ async function loadReceipt() {
     .select(`
       id, order_type, customer_id, delivery_date, delivery_time_slot, condo_name,
       has_weight_items, is_weight_confirmed, payment_method, payment_status,
-      manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount, slip_checked_at, slip_amount_detected,
+      manual_payment_confirmed, manual_payment_time, manual_payment_amount, paid_amount, slip_checked_at, slip_amount_detected, tax_invoice_requested,
       subtotal, shipping_cost, coupon_code, discount_amount, points_used, total_amount, comment, staff_message_ja, staff_message_th, created_at, area_name,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       is_cancelled, is_wholesale, wholesale_restaurant_name,
@@ -844,7 +844,7 @@ function renderReceipt(order) {
   }
 
   // TAXインボイスが必要なお客様の目印(スタッフ表示のみ)。会社名・納税者番号・本店/支店を経理が控えやすいように添える。
-  if (isStaffView && c.tax_invoice_needed && !isWholesale) {
+  if (isStaffView && order.tax_invoice_requested && !isWholesale) {
     const branch = c.tax_branch_type === 'branch' ? ('Branch ' + (c.tax_branch_no || '')) : 'Head Office';
     const el = document.getElementById('f-tax-note');
     el.textContent = '';

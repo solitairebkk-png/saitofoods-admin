@@ -478,6 +478,12 @@
           </label>
         </div>
       </div>
+      <div class="sms-opt-box" id="opt-tax-box" style="display:none;">
+        <label class="sms-opt-label">
+          <input type="checkbox" id="opt-tax">
+          <span><span data-i18n="cart.optTax">この注文はTAXインボイスが必要です / I need a tax invoice for this order</span><br><small id="opt-tax-company" style="color:#888;"></small></span>
+        </label>
+      </div>
       <div class="sms-opt-box" id="opt-sms-box" style="display:none;">
         <div class="sms-opt-title" data-i18n="cart.smsBoxTitle">📱 配達完了のお知らせをSMSでも受け取りますか? / Get a delivery SMS too?</div>
         <label class="sms-opt-label" id="opt-sms-wrap" style="display:none;">
@@ -672,6 +678,25 @@ function thaiMobileOf(c) {
   return null;
 }
 // 配達完了SMSのチェックボックス: タイの携帯番号があるお客様にだけ出し、前回の選択を引き継ぐ
+// TAXインボイスのチェックボックス: マイページに会社情報を登録済みのお客様にだけ出す(2026-11-02)。
+// 書類は当店の経理が作成する。選択内容は注文確定後に set_order_tax_invoice で保存する。
+function initTaxOption() {
+  const box = document.getElementById('opt-tax-box');
+  if (!box || !currentCustomer) return;
+  const registered = !!(currentCustomer.tax_invoice_needed && currentCustomer.tax_company_name);
+  box.style.display = registered ? 'block' : 'none';
+  document.getElementById('opt-tax-company').textContent = registered ? currentCustomer.tax_company_name : '';
+  if (!registered) document.getElementById('opt-tax').checked = false;
+}
+// 注文の保存後に呼ぶ。通信の不調に備えて1回だけやり直す。保存できたかどうかを返す。
+async function saveOrderTaxInvoice(orderId) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { error } = await supabaseClient.rpc('set_order_tax_invoice', { p_order_id: orderId, p_requested: true });
+    if (!error) return true;
+    await new Promise(r => setTimeout(r, 600));
+  }
+  return false;
+}
 function initSmsOption() {
   const wrap = document.getElementById('opt-sms-wrap');
   const noNum = document.getElementById('opt-sms-nonum');
@@ -689,7 +714,7 @@ function initSmsOption() {
 async function loadCustomerAndInit(userId) {
   const { data: rows, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, tel1, tel2, email, address1, address2, area_id, point_balance, condo_name, sms_notify')
+    .select('id, family_name, first_name, tel1, tel2, email, address1, address2, area_id, point_balance, condo_name, sms_notify, tax_invoice_needed, tax_company_name')
     .eq('auth_user_id', userId);
 
   if (error || !rows || rows.length === 0) {
@@ -704,6 +729,7 @@ async function loadCustomerAndInit(userId) {
   onPaymentChange();
   initPointsUI();
   initSmsOption();
+  initTaxOption();
   await checkAddToOrderMode();
 }
 
@@ -1925,9 +1951,17 @@ async function submitOrder() {
       }
     } catch (e) { /* 無視 */ }
 
+    // TAXインボイスのご希望(会社情報を登録済みのお客様のみ)。保存できなかった場合は、注文完了画面で知らせる。
+    let taxSaveFailed = false;
+    const taxBox = document.getElementById('opt-tax-box');
+    if (taxBox && taxBox.style.display !== 'none' && document.getElementById('opt-tax').checked) {
+      taxSaveFailed = !(await saveOrderTaxInvoice(orderId));
+    }
+
     sendOrderConfirmationEmail({ orderId }).catch(() => {});
 
     showSuccess({ orderId, amount: total, hasWeightItems: result.has_weight_items, paymentMethod, pointsUsed: appliedPoints, condoName, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
+    if (taxSaveFailed) { document.getElementById('success-note').innerHTML += '<br><b style="color:#c62828;">' + i18nText('cart.taxSaveFailed') + '</b>'; }
 
     cart = [];
     appliedCoupon = null;
