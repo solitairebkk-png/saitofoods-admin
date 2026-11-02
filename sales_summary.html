@@ -238,7 +238,7 @@ function resetToToday() {
 const ORDER_SELECT = `
   id, order_type, delivery_date, created_at, total_amount, points_used, subtotal, shipping_cost, area_name,
   is_cancelled, has_weight_items, is_weight_confirmed,
-  payment_method, payment_status, slip_image_url, manual_payment_confirmed,
+  payment_method, payment_status, slip_image_url, manual_payment_confirmed, is_store_pickup,
   assigned_staff_id, departed_at, staff:assigned_staff_id ( name ), delivery_sms_sent_at,
   order_items ( product_id, product_name_snapshot, quantity, unit_price, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
@@ -327,7 +327,7 @@ function renderSummary(orders, plaaTapianRows) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
-    walk_in: { label: 'Walk-in', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0, unsetAmount: 0, unsetOrders: 0 },
+    walk_in: { label: 'Walk-in / Pickup', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0, unsetAmount: 0, unsetOrders: 0 },
     Bangkok: { label: 'Bangkok', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
     Sriracha: { label: 'Sriracha', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
     Pattaya: { label: 'Pattaya', orders: 0, amount: 0, pointsUsed: 0, cashAmount: 0, cashOrders: 0 },
@@ -340,7 +340,8 @@ function renderSummary(orders, plaaTapianRows) {
 
   orders.forEach(order => {
     let bucketKey;
-    if (order.order_type === 'walk_in') {
+    // 店舗受け取り(is_store_pickup)はWalk-inのカードに合算する(2026-11-02)
+    if (order.order_type === 'walk_in' || order.is_store_pickup) {
       bucketKey = 'walk_in';
     } else {
       const areaName = order.area_name;
@@ -360,7 +361,7 @@ function renderSummary(orders, plaaTapianRows) {
     // 「手動の集金済みボタン(manual_payment_confirmed)も押されていない」注文の合計。
     // 手動の集金済みは、メール添付でスリップが届いたお客様を手動で入金確認したもののため、現金集金には含めない。
     // 卸売り(請求書払い)と店頭(Walk-in)は対象外。
-    if (order.order_type === 'delivery' && !order._isWholesale &&
+    if (order.order_type === 'delivery' && !order.is_store_pickup && !order._isWholesale &&
         order.payment_status !== 'paid' && !order.slip_image_url && !order.manual_payment_confirmed) {
       buckets[bucketKey].cashAmount += Number(order.total_amount) || 0;
       buckets[bucketKey].cashOrders += 1;
@@ -370,7 +371,7 @@ function renderSummary(orders, plaaTapianRows) {
     // orders.htmlのWalk-inタブで、スタッフが押した「Cash / QR」ボタンの結果(payment_method)を使う。
     //   'cash' → 現金として集計 / 'qr'・'transfer' → 現金には含めない /
     //   それ以外('現金'・未設定) → まだスタッフが選んでいないので「未選択」として別に表示する。
-    if (order.order_type === 'walk_in') {
+    if (order.order_type === 'walk_in' || order.is_store_pickup) {
       const pm = order.payment_method;
       if (pm === 'cash') {
         buckets.walk_in.cashAmount += Number(order.total_amount) || 0;

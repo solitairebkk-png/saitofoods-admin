@@ -193,6 +193,19 @@
   .leave-opt.nocall { border-color: #81a889; background: #f3f9f4; }
   .leave-opt.nocall .lo-badge { background: #2e7d32; color: #fff; }
   .leave-opt:has(input:checked) { box-shadow: 0 0 0 3px rgba(0,0,0,0.18); }
+  /* 店舗受け取り(2026-11-02) */
+  .leave-opt.pickup { border-color: #e0a030; background: #fffaf0; }
+  .leave-opt.pickup .lo-badge { background: #b26a00; color: #fff; }
+  .pickup-note { font-size: 12.5px; line-height: 1.7; background: #fff8e8; border: 1px solid #f0dda8; border-radius: 8px; padding: 8px 10px; color: #6b4a00; }
+  .pickup-note a { color: var(--brand-dark); font-weight: 700; text-decoration: underline; }
+  .pickup-only { display: none !important; }
+  body.pickup-mode .pickup-only { display: revert !important; }
+  body.pickup-mode .delivery-only,
+  body.pickup-mode #shipping-banner,
+  body.pickup-mode #totals-shipping-row,
+  body.pickup-mode #points-field,
+  body.pickup-mode #opt-sms-box,
+  body.pickup-mode label.delivery-opt-item { display: none !important; }
 
   .btn-primary { background: var(--brand); color: #fff; border: none; padding: 13px; border-radius: 12px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -374,17 +387,17 @@
     </div>
 
     <div class="card" id="delivery-card">
-      <h2 data-i18n="cart.deliveryTitle">🚚 配送日時 / Delivery date &amp; schedule</h2>
+      <h2><span class="delivery-only" data-i18n="cart.deliveryTitle">🚚 配送日時 / Delivery date &amp; schedule</span><span class="pickup-only" data-i18n="cart.pickupTitle">🏪 受け取り日時 / Pickup date &amp; time</span></h2>
 
       <div id="delivery-fields-bangkok" style="display:none;">
         <div class="row-2">
           <div class="field">
-            <label data-i18n="cart.deliveryDateLabel">配送日 / Delivery date</label>
+            <label><span class="delivery-only" data-i18n="cart.deliveryDateLabel">配送日 / Delivery date</span><span class="pickup-only" data-i18n="cart.pickupDateLabel">受け取り日 / Pickup date</span></label>
             <input type="date" id="delivery-date" onchange="onDeliveryDateChange()">
             <div class="date-note" id="delivery-date-note"></div>
           </div>
           <div class="field">
-            <label data-i18n="cart.timeSlotLabel">時間帯 / Time slot</label>
+            <label><span class="delivery-only" data-i18n="cart.timeSlotLabel">時間帯 / Time slot</span><span class="pickup-only" data-i18n="cart.pickupTimeLabel">受け取り時間帯 / Pickup time</span></label>
             <select id="delivery-time-slot"></select>
           </div>
         </div>
@@ -439,11 +452,11 @@
         </label>
         <label class="pay-option" id="pay-option-cod">
           <input type="radio" name="payment" value="cash" onchange="onPaymentChange()">
-          <div><div class="pay-label" data-i18n="cart.payCodLabel">💵 代金引換 / Cash on delivery</div><div class="pay-sub" data-i18n="cart.payCodSub">配達員にお支払い</div></div>
+          <div><div class="pay-label"><span class="delivery-only" data-i18n="cart.payCodLabel">💵 代金引換 / Cash on delivery</span><span class="pickup-only" data-i18n="cart.payStoreLabel">🏪 店頭でお支払い / Pay at the store</span></div><div class="pay-sub"><span class="delivery-only" data-i18n="cart.payCodSub">配達員にお支払い</span><span class="pickup-only" data-i18n="cart.payStoreSub">お受け取りの際に店頭で</span></div></div>
         </label>
       </div>
       <div class="cod-info-box" id="cod-info-box" style="display:none;">
-        <span data-i18n="cart.codNote">配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。</span>
+        <span class="delivery-only" data-i18n="cart.codNote">配達時に配達員へ直接お支払いください。おつりは必ず準備してお伺いします。</span><span class="pickup-only" data-i18n="cart.storeNote">お受け取りの際に、店頭でお支払いください。 / Please pay at the store when you pick up your order.</span>
       </div>
       <div class="qr-info-box" id="qr-info-box">
         <b>⚠️ ご注文当日中に、必ずお支払いをお済ませください。</b><br>
@@ -458,7 +471,7 @@
         <label data-i18n="cart.deliveryOptsLabel">配送に関するご希望 / Delivery preferences</label>
         <div class="delivery-opts-list">
           <div class="leave-group">
-            <div class="leave-title" data-i18n="cart.leaveTitle">置き配(デリバリー用テーブルに置く)について / Leave at delivery table?</div>
+            <div class="leave-title" data-i18n="cart.leaveTitle">お受け取り方法 / How would you like to receive your order?</div>
             <label class="leave-opt hand">
               <input type="radio" name="leave-opt" id="opt-leave-none" checked>
               <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoneBadge">🤝 お荷物を手渡し</span><span class="lo-text" data-i18n="cart.leaveNone">置き配しない(直接お渡し) / No — hand it to me</span></span>
@@ -471,6 +484,15 @@
               <input type="radio" name="leave-opt" id="opt-leave-no-contact">
               <span class="lo-body"><span class="lo-badge" data-i18n="cart.leaveNoCallBadge">🔕 置き配で電話連絡不要</span><span class="lo-text" data-i18n="cart.leaveNoCallText">置き配OK。到着時のお電話でのご連絡はいたしません。そのため、必ずお届け前にお代金のお振込み(QR・銀行振込)をお済ませのうえ、スリップのアップロードをお願いいたします。スリップのアップロードが確認できない場合は、お荷物をお持ち帰りすることがあります。お届け後に、お荷物の写真つきメールでお知らせします(ご希望の方には、SMSでもお知らせします) / Leave at the table. We will NOT call you on arrival, so please be sure to pay in advance (QR / bank transfer) before delivery and upload your payment slip. If we cannot confirm your slip upload, we may take the items back. After delivery, we will notify you by email with a photo of your items (and by SMS too, if you choose to receive one)</span></span>
             </label>
+            <label class="leave-opt pickup" id="opt-store-pickup-label" style="display:none;">
+              <input type="radio" name="leave-opt" id="opt-store-pickup">
+              <span class="lo-body"><span class="lo-badge" data-i18n="cart.pickupBadge">🏪 店舗受け取り</span><span class="lo-text" data-i18n="cart.pickupText">ご指定の日時に店舗へお越しください。送料・最低購入金額なし(ポイントの利用・付与はできません) / Pick up at our store at your chosen time. No shipping fee, no minimum order (points cannot be used or earned)</span></span>
+            </label>
+            <div class="pickup-note pickup-only">
+              <b style="color:#b71c1c;" data-i18n="cart.pickupNoPoints">⚠️ 店舗受け取りのご注文には、ポイントは付きません(ポイントのご利用もできません)。 / Points are NOT earned on store pickup orders (and points cannot be used).</b><br>
+              <span data-i18n="cart.pickupNote">下の「受け取り日時」でお越しになる日時をお選びください。お支払いは店頭、または事前のQR・銀行振込のどちらでも可能です。 / Please choose the date and time you will come to the store below. You can pay at the store, or in advance by QR / bank transfer.</span><br>
+              <a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" data-i18n="cart.pickupMapLink">📍 店舗の地図を開く / Open store map</a>
+            </div>
           </div>
           <label class="delivery-opt-item">
             <input type="checkbox" id="opt-no-change">
@@ -645,6 +667,7 @@ let appliedCoupon = null;
 let pointsToUse = 0; // お客様が使用を選択したポイント数(1pt = ฿1割引)
 let customerAreaType = 'bangkok'; // 'bangkok' | 'sriracha' | 'pattaya'
 let customerIsNichada = false; // ニチャダタニエリアのお客様(毎週水曜13:00-15:00のみ、当日朝8:00締切。注文のarea_nameはBangkokのまま保存する)
+let storePickupMode = false; // 「店舗受け取り」を選んでいる間はtrue(送料・ポイント・配送エリアの規則を使わない、2026-11-02)
 let customerAreaName = 'Bangkok'; // areas.nameそのもの。注文時にorders.area_nameとして保存し、後でお客様がエリアを変更しても伝票の表示が変わらないようにする
 let addToOrderId = null; // マイページの「追加注文する」から来た場合、元の注文ID
 const ADDTO_STORAGE_KEY = 'saitofoods_addto_order'; // 商品一覧などへ移動しても追加注文モードを覚えておくためのキー
@@ -841,8 +864,8 @@ async function initDeliveryArea() {
   }
 
   document.getElementById('delivery-fields-bangkok').style.display = customerAreaType === 'bangkok' ? 'block' : 'none';
-  document.getElementById('nichada-note').style.display = customerIsNichada ? 'block' : 'none';
-  document.getElementById('bangkok-closed-note').style.display = customerIsNichada ? 'none' : 'block';
+  document.getElementById('nichada-note').style.display = useNichadaRules() ? 'block' : 'none';
+  document.getElementById('bangkok-closed-note').style.display = useNichadaRules() ? 'none' : 'block';
   document.getElementById('delivery-fields-sriracha').style.display = customerAreaType === 'sriracha' ? 'block' : 'none';
   document.getElementById('delivery-fields-pattaya').style.display = customerAreaType === 'pattaya' ? 'block' : 'none';
   document.getElementById('delivery-fields-other').style.display = customerAreaType === 'other' ? 'block' : 'none';
@@ -855,6 +878,10 @@ async function initDeliveryArea() {
   // 配送エリア外は外部の配送業者が届けるため、置き配・フロント預けなどの
   // 自社配送スタッフ向けの選択肢は意味が無い。備考欄だけ残す。
   document.getElementById('delivery-opts-field').style.display = customerAreaType === 'other' ? 'none' : 'block';
+
+  // 店舗受け取りはバンコクのお客様のみ選べる(2026-11-02)
+  const pickupLabel = document.getElementById('opt-store-pickup-label');
+  if (pickupLabel) pickupLabel.style.display = customerAreaType === 'bangkok' ? 'flex' : 'none';
 
   if (customerAreaType === 'bangkok') {
     await initDeliveryDatePicker();
@@ -1352,10 +1379,11 @@ function updateTotals() {
       shippingCost = -Math.min(addToOrderInfo.shipping_cost, subtotal);
     }
   }
+  if (storePickupMode) shippingCost = 0; // 店舗受け取りは送料なし(最低購入金額の縛りもなし)
   const preDiscountTotal = subtotal + shippingCost;
   const discount = appliedCoupon ? Math.min(appliedCoupon.discount_amount, preDiscountTotal) : 0;
   const afterDiscount = preDiscountTotal - discount;
-  const appliedPoints = Math.min(pointsToUse, afterDiscount, currentCustomer?.point_balance || 0);
+  const appliedPoints = storePickupMode ? 0 : Math.min(pointsToUse, afterDiscount, currentCustomer?.point_balance || 0); // 店舗受け取りはポイント利用不可
   const total = afterDiscount - appliedPoints;
 
   document.getElementById('totals-subtotal').textContent = `฿${subtotal}`;
@@ -1560,25 +1588,29 @@ function bangkokNow() {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
 }
 
+// ニチャダタニ専用の配送ルール(水曜13:00-15:00のみ等)を使うか。店舗受け取りには適用しない(2026-11-02)
+function useNichadaRules() { return customerIsNichada && !storePickupMode; }
+
 // その日付で(現在時刻を考慮して)まだ選べる時間帯があるかを判定
 function slotsRemainingForDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dayOfWeek = new Date(y, m - 1, d).getDay();
   if (dayOfWeek === 0 || holidaySet.has(dateStr)) return false;
-  if (customerIsNichada) {
+  if (useNichadaRules()) {
     // ニチャダタニ: 水曜のみ。当日分は朝8:00で締め切り
     if (dayOfWeek !== 3) return false;
     if (dateStr === formatDateLocal(bangkokNow()) && isSameDayCutoffPassed()) return false;
     return true;
   }
   // 並び順: 午前 → 何時でも可 → 午後の枠(「何時でも可」が先頭だと、何となく選ばれてしまうため)。土曜は午前のみ
-  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat([ANYTIME_SLOT], AFTERNOON_SLOTS);
+  // 店舗受け取りは「時間を指定して取りに来る」ため、「何時でも可」は出さない
+  let slots = dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(storePickupMode ? [] : [ANYTIME_SLOT], AFTERNOON_SLOTS);
   return filterPastSlots(slots, dateStr).length > 0;
 }
 
 // 選択日が「今日(バンコク時間)」の場合、すでに過ぎた時間帯を除外する
 function filterPastSlots(slots, dateStr) {
-  if (customerIsNichada) return slots; // ニチャダタニは締切(朝8:00)を日付側で判定済み
+  if (useNichadaRules()) return slots; // ニチャダタニは締切(朝8:00)を日付側で判定済み
   const now = bangkokNow();
   const todayStr = formatDateLocal(now);
   if (dateStr !== todayStr) return slots;
@@ -1639,7 +1671,7 @@ async function onDeliveryDateChange() {
   let val = dateInput.value;
   if (!val) return;
   let snapNote = '';
-  if (customerIsNichada) {
+  if (useNichadaRules()) {
     const snapped = nichadaSnapDate(val);
     if (snapped !== val) {
       dateInput.value = snapped;
@@ -1663,9 +1695,9 @@ async function onDeliveryDateChange() {
   }
 
   noteEl.textContent = snapNote;
-  let slots = customerIsNichada
+  let slots = useNichadaRules()
     ? [{ value: '13:00-15:00', label: '13:00-15:00' }]
-    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat([ANYTIME_SLOT], AFTERNOON_SLOTS)); // 午前 → 何時でも可 → 午後の枠(土曜は午前のみ)
+    : (dayOfWeek === 6 ? MORNING_SLOTS : MORNING_SLOTS.concat(storePickupMode ? [] : [ANYTIME_SLOT], AFTERNOON_SLOTS)); // 午前 → 何時でも可 → 午後の枠(土曜は午前のみ。店舗受け取りは「何時でも可」なし)
 
   // その日だけ受付停止にされている時間帯を除外する(settings.htmlの「時間帯ブロック」設定)
   try {
@@ -1700,6 +1732,21 @@ function populateTimeSlots(slots) {
 }
 
 // ---------------- 支払い方法 ----------------
+// ---------------- 受け取り方法の切り替え(店舗受け取り / 配送) ----------------
+// 「店舗受け取り」を選ぶと、送料・ポイント・置き配などの配送向け表示を隠し、受け取り日時の選択に切り替える(2026-11-02)
+async function onReceiveMethodChange() {
+  const was = storePickupMode;
+  const el = document.getElementById('opt-store-pickup');
+  storePickupMode = !!(el && el.checked) && customerAreaType === 'bangkok';
+  document.body.classList.toggle('pickup-mode', storePickupMode);
+  if (was === storePickupMode) return;
+  document.getElementById('nichada-note').style.display = useNichadaRules() ? 'block' : 'none';
+  document.getElementById('bangkok-closed-note').style.display = useNichadaRules() ? 'none' : 'block';
+  if (customerAreaType === 'bangkok') await initDeliveryDatePicker(); // 日付・時間帯の候補を、選んだ方法のルールで作り直す
+  updateTotals();
+}
+document.querySelectorAll('input[name=leave-opt]').forEach(r => r.addEventListener('change', onReceiveMethodChange));
+
 function onPaymentChange() {
   const method = document.querySelector('input[name=payment]:checked')?.value;
   document.querySelectorAll('.pay-option').forEach(el => el.classList.remove('selected'));
@@ -1787,7 +1834,7 @@ async function submitOrder() {
   const missingProfileFields = [];
   if (!currentCustomer?.family_name || !currentCustomer?.first_name) missingProfileFields.push('お名前 / Name');
   if (!currentCustomer?.tel1) missingProfileFields.push('電話番号 / Phone number');
-  if (!currentCustomer?.address1) missingProfileFields.push('ご住所 / Address');
+  if (!storePickupMode && !currentCustomer?.address1) missingProfileFields.push('ご住所 / Address');
   if (missingProfileFields.length > 0) {
     msgEl.innerHTML = `ご注文の前に、マイページでプロフィール情報(${missingProfileFields.join('・')})の入力をお願いします。 / Please complete your profile (${missingProfileFields.join(', ')}) on My Page before placing an order.<br><a href="mypage.html" style="color:inherit;text-decoration:underline;font-weight:700;">→ マイページへ / Go to My Page</a>`;
     msgEl.className = 'error';
@@ -1916,7 +1963,7 @@ async function submitOrder() {
       p_condo_name: condoName,
       p_payment_method: paymentMethod,
       p_coupon_code: appliedCoupon ? appliedCoupon.code : null,
-      p_points_to_use: pointsToUse || 0,
+      p_points_to_use: storePickupMode ? 0 : (pointsToUse || 0),
       p_related_order_id: addToOrderId || null,
       p_comment: comment || null,
       p_leave_at_table: document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked,
@@ -1924,6 +1971,7 @@ async function submitOrder() {
       p_leave_at_front: false, // 「フロントに預ける」選択肢は廃止(2026-09-29)
       p_payment_at_front: false, // 「代金はフロントに」選択肢は廃止(2026-09-29)
       p_no_change: document.getElementById('opt-no-change').checked,
+      p_store_pickup: storePickupMode, // 店舗受け取り(送料・ポイントなし。サーバー側でも強制される)
     });
 
     if (rpcErr) throw rpcErr;
@@ -1960,7 +2008,7 @@ async function submitOrder() {
 
     sendOrderConfirmationEmail({ orderId }).catch(() => {});
 
-    showSuccess({ orderId, amount: total, hasWeightItems: result.has_weight_items, paymentMethod, pointsUsed: appliedPoints, condoName, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
+    showSuccess({ orderId, amount: total, hasWeightItems: result.has_weight_items, paymentMethod, pointsUsed: appliedPoints, condoName, isStorePickup: !!result.is_store_pickup, customerName: `${currentCustomer.family_name || ''} ${currentCustomer.first_name || ''}`.trim() });
     if (taxSaveFailed) { document.getElementById('success-note').innerHTML += '<br><b style="color:#c62828;">' + i18nText('cart.taxSaveFailed') + '</b>'; }
 
     cart = [];
@@ -1968,7 +2016,7 @@ async function submitOrder() {
     pointsToUse = 0;
     localStorage.removeItem('saitofoods_cart');
     sessionStorage.removeItem(ADDTO_STORAGE_KEY);
-    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-no-change'].forEach(id => {
+    ['opt-leave-no-contact', 'opt-leave-with-contact', 'opt-no-change', 'opt-store-pickup'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.checked = false;
     });
@@ -1993,6 +2041,8 @@ async function submitOrder() {
     else if (raw.includes('BANGKOK_SAME_DAY_CLOSED')) friendly = '申し訳ございません、本日分のご注文受付は終了しました(当日17:00まで)。ページを再読み込みして、別の配送日をお選びください / Sorry, orders for same-day delivery closed at 5:00 PM. Please reload the page and choose another delivery date.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
+    else if (raw.includes('PICKUP_CLOSED_DAY')) friendly = 'ご指定の日は店舗がお休みです。別の日をお選びください / The store is closed on the selected date. Please choose another date.';
+    else if (raw.includes('PICKUP_DATE_PAST') || raw.includes('PICKUP_DATE_REQUIRED')) friendly = '受け取り日時を選び直してください / Please choose a valid pickup date and time.';
     else if (raw) friendly += ': ' + raw;
 
     msgEl.textContent = friendly;
@@ -2039,6 +2089,8 @@ async function submitOutOfAreaOrder() {
     else if (raw.includes('PRODUCT_NOT_FOUND')) friendly = '現在ご購入いただけない商品がカートに含まれています / Your cart contains an item that is no longer available.';
     else if (raw.includes('NOT_LOGGED_IN')) friendly = 'ログインの有効期限が切れました。お手数ですが再度ログインしてください / Your session expired. Please log in again.';
     else if (raw.includes('EMPTY_CART')) friendly = 'カートが空です / Your cart is empty.';
+    else if (raw.includes('PICKUP_CLOSED_DAY')) friendly = 'ご指定の日は店舗がお休みです。別の日をお選びください / The store is closed on the selected date. Please choose another date.';
+    else if (raw.includes('PICKUP_DATE_PAST') || raw.includes('PICKUP_DATE_REQUIRED')) friendly = '受け取り日時を選び直してください / Please choose a valid pickup date and time.';
     else if (raw) friendly += ': ' + raw;
 
     msgEl.textContent = friendly;
@@ -2063,7 +2115,7 @@ function showOutOfAreaSuccess({ orderId }) {
   receiptBtn.onclick = () => window.open('receipt.html?order_id=' + encodeURIComponent(orderId), '_blank');
 }
 
-function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUsed, customerName, condoName }) {
+function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUsed, customerName, condoName, isStorePickup }) {
   const panel = document.getElementById('success-panel');
   const noteEl = document.getElementById('success-note');
   panel.style.display = 'block';
@@ -2074,6 +2126,8 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
 
   if (hasWeightItems) {
     noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>量り売り商品が含まれるため、重量確定後に正式な金額とお支払い方法のご案内をいたします。${pointsLine}`;
+  } else if (paymentMethod === 'cash' && isStorePickup) {
+    noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>お受け取りの際に、店頭でお支払いください。合計 ฿${amount}<br><span style="font-size:11.5px;color:#999;">Please pay at the store when you pick up. Total ฿${amount}</span>`;
   } else if (paymentMethod === 'cash') {
     noteEl.innerHTML = `ご注文番号: <b>#${orderId.slice(0, 8)}</b><br>配達時に代金引換にてお支払いください。合計 ฿${amount}${pointsLine}`;
   } else {
@@ -2082,6 +2136,10 @@ function showSuccess({ orderId, amount, hasWeightItems, paymentMethod, pointsUse
     const params = new URLSearchParams({ amount: amount, name: customerName || '', ref: orderId, email: (currentCustomer && currentCustomer.email) || '' });
     document.getElementById('slip-link-input').value = SLIP_UPLOAD_BASE_URL + '?' + params.toString();
     document.getElementById('slip-link-row').style.display = 'flex';
+  }
+
+  if (isStorePickup) {
+    noteEl.innerHTML += `<br>🏪 ご指定の日時に店舗へお越しください。 / Please come to our store at your chosen time. <a href="https://www.google.com/maps/search/?api=1&query=13.7225193,100.5741505" target="_blank" rel="noopener" style="color:var(--brand-dark);font-weight:700;text-decoration:underline;">📍 店舗の地図 / Store map</a>`;
   }
 
   if (customerAreaType === 'sriracha' || customerAreaType === 'pattaya') {

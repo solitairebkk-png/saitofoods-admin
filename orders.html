@@ -697,7 +697,7 @@
     <button data-area="" onclick="setAreaTab(this,'')">Total / ทั้งหมด</button>
     <button class="active" data-area="Bangkok" onclick="setAreaTab(this,'Bangkok')">Bangkok</button>
     <button data-area="Sriracha,Pattaya" onclick="setAreaTab(this,'Sriracha,Pattaya')">Sriracha / Pattaya</button>
-    <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in / หน้าร้าน</button>
+    <button data-area="__WALKIN__" onclick="setAreaTab(this,'__WALKIN__')">Walk-in & Pickup / หน้าร้าน</button>
     <button id="tab-outofarea" onclick="setAreaTab(this,'__OUTOFAREA__')">Out-of-area / นอกพื้นที่จัดส่ง<span class="tab-badge" id="outofarea-badge" style="display:none;">0</span></button>
     <button data-area="__PLAATAPIAN__" onclick="setAreaTab(this,'__PLAATAPIAN__')">Plaa-Ta-Pian / ปลาตะเพียน</button>
     <button data-area="__EXPRESS__" onclick="setAreaTab(this,'__EXPRESS__')">Express Input / คีย์ Express</button>
@@ -2206,6 +2206,7 @@ async function _loadOrdersInner() {
       delivery_lat, delivery_lng, delivery_accuracy_m,
       order_delivery_memos ( memo, memo_by, memo_at ),
       walkin_nationality, walkin_age_bracket, walkin_gender,
+      is_store_pickup,
       is_wholesale, wholesale_restaurant_name,
       customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
@@ -2242,7 +2243,7 @@ async function _loadOrdersInner() {
   // 完了済み(is_completed)になった注文は処理が終わっているため件数から除く(2026-10-05)。
   // 一覧(タブの中身)には引き続き表示される。
   const outOfAreaCount = (data || []).filter(o =>
-    o.order_type !== 'walk_in' && !o.is_cancelled &&
+    o.order_type !== 'walk_in' && !o.is_store_pickup && !o.is_cancelled &&
     !o.is_slip_printed && !o.is_completed &&
     !KNOWN_AREAS.includes(o.area_name)
   ).length;
@@ -2260,12 +2261,15 @@ async function _loadOrdersInner() {
 
   let rows = data || [];
   if (currentAreaFilter === '__WALKIN__') {
-    rows = rows.filter(o => o.order_type === 'walk_in');
+    // 店舗受け取り(お客様がサイトで注文し、店に取りに来る注文)もこのタブに入れる(2026-11-02)。
+    // 日付は取引日時ではなく「受け取り日」(delivery_date)で扱う(上のDBクエリで範囲絞り込み済み)。
+    rows = rows.filter(o => o.order_type === 'walk_in' || o.is_store_pickup);
     // walk_in注文はdelivery_dateが常にnullで日付フィルターの対象外になり、
     // いつまでも一覧に残り続けてしまうため、代わりに取引日時(created_at)を
     // Bangkok時間の日付に変換して絞り込む(2026-09-27)。
     if (start || end) {
       rows = rows.filter(o => {
+        if (o.is_store_pickup) return true; // 受け取り日はDBクエリ側で絞り込み済み
         const d = toBkkDateStr(o.created_at);
         if (start && d < start) return false;
         if (end && d > end) return false;
@@ -2274,7 +2278,7 @@ async function _loadOrdersInner() {
     }
     rows.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
   } else if (currentAreaFilter === '__OUTOFAREA__') {
-    rows = rows.filter(o => o.order_type !== 'walk_in' && !KNOWN_AREAS.includes(o.area_name));
+    rows = rows.filter(o => o.order_type !== 'walk_in' && !o.is_store_pickup && !KNOWN_AREAS.includes(o.area_name));
   } else if (currentAreaFilter) {
     const filterList = currentAreaFilter.split(',');
     rows = rows.filter(o => o.order_type !== 'walk_in' && filterList.includes(o.area_name));
@@ -2311,7 +2315,7 @@ async function _loadOrdersInner() {
   // 見た目上その注文だけ勝手に下に移動してしまう不具合が発覚した(2026-09-28)。
   // 常に注文が入った時刻(created_at)を最終的なタイブレークに使うことで、印刷などの更新操作を
   // 挟んでも表示順が変わらないようにする。
-  if (currentAreaFilter !== '__WALKIN__') {
+  {
     rows.sort((a, b) => {
       const da = rowDisplayDate(a) || '';
       const db = rowDisplayDate(b) || '';
@@ -2970,7 +2974,7 @@ function deliveryMapLinkHtml(order) {
   return `<div style="margin-top:2px;"><a href="${url}" target="_blank" rel="noopener" style="color:#1a5fb4;font-weight:700;">📍 Map / ดูแผนที่</a><span style="color:var(--text-muted);">${acc}</span></div>`;
 }
 function renderDispatchBlock(order) {
-  if (order.order_type !== 'delivery' || order.is_cancelled) return '';
+  if (order.order_type !== 'delivery' || order.is_store_pickup || order.is_cancelled) return '';
 
   if (order.departed_at) {
     const staffName = order.staff?.name || ((order.area_name === 'Sriracha' || order.area_name === 'Pattaya') ? '—' : '(unknown)');
@@ -3215,6 +3219,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   if (order.is_wholesale) paymentBadges.push('<span class="badge wholesale-badge">🏢 Wholesale / ขายส่ง</span>');
   if (order.is_cancelled) paymentBadges.push('<span class="badge badge-cancelled">ยกเลิกแล้ว / Cancelled</span>');
   if (order.order_type === 'walk_in') paymentBadges.push('<span class="badge badge-walkin">Walk-in</span>');
+  if (order.is_store_pickup) paymentBadges.push('<span class="badge" style="background:#fff3d6;color:#7a4b00;border:1px solid #e0a030;">🏪 Store Pickup / รับที่ร้าน</span>');
   if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ Additional Order / คำสั่งซื้อเพิ่มเติม #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
   if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
@@ -3260,7 +3265,11 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     { key: 'delivery_no_change', en: 'No change needed', th: 'ไม่ต้องทอนเงิน' },
   ];
   const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
-  const deliveryFlagsHtml = (activeDeliveryFlags.length
+  // 店舗受け取り(2026-11-02): お客様が店に取りに来る。配達はしない。ポイントは付与されない
+  const pickupFlagHtml = order.is_store_pickup
+    ? `<div class="delivery-flags-note" style="background:#fff3d6;color:#7a4b00;border-color:#e0a030;font-size:13px;">🏪 STORE PICKUP — customer collects at the store ${escapeHtml(order.delivery_time_slot || '')} / ลูกค้ามารับสินค้าที่ร้าน (ไม่มีการจัดส่ง ไม่ได้แต้ม)</div>`
+    : '';
+  const deliveryFlagsHtml = pickupFlagHtml + (activeDeliveryFlags.length
     ? `<div class="delivery-flags-note">📦 ${activeDeliveryFlags.map(f => `${f.en} / ${f.th}`).join(' ・ ')}</div>`
     : '');
 
@@ -3412,7 +3421,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   // キャッシャー等のスタッフが印を付ける。印が付いた注文には、お客様へ未入金リマインドメールが自動で届く
   // (配送日の19:00以降と、その翌朝9:00以降。送信はGAS側)。入金を確認して「Confirm Payment」を押すと止まる。
   // Complete済みの注文は管理者しか直接更新できないため、専用の関数(set_payment_uncollected)経由で更新する。
-  if (order.is_completed && order.order_type === 'delivery' && !order.is_wholesale && getPaymentState(order) !== 'paid') {
+  if (order.is_completed && order.order_type === 'delivery' && !order.is_store_pickup && !order.is_wholesale && getPaymentState(order) !== 'paid') {
     if (order.payment_uncollected) {
       idActions.appendChild(makeButton('Undo Not Collected / ยกเลิก', () => setPaymentUncollected(order, false), 'btn-uncollected-undo'));
     } else {
@@ -3455,6 +3464,7 @@ async function completeOrder(order) {
 // ウォークイン等、紐づく顧客がいない注文には付与しない。
 async function awardPointsForOrder(order) {
   if (!order.customer_id || !order.delivery_date) return;
+  if (order.is_store_pickup) return; // 店舗受け取りはポイント付与なし(2026-11-02)
 
   try {
     const dow = new Date(order.delivery_date + 'T00:00:00').getDay(); // 0=日曜 ... 6=土曜

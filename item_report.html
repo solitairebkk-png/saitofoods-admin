@@ -265,7 +265,7 @@ function quickRange(kind) {
 // ---------------- データ取得 ----------------
 // Supabaseの1回あたり1000行上限を避けるため、ページ分けして全件取得する
 const ORDER_SELECT = `
-  id, order_type, delivery_date, created_at, area_name, is_cancelled, is_weight_confirmed,
+  id, order_type, delivery_date, created_at, area_name, is_cancelled, is_weight_confirmed, is_store_pickup,
   order_items ( product_id, product_name_snapshot, quantity, unit_price, sale_type, total_price, products ( name_en, name_th, unit_label ) )
 `;
 const PAGE = 500;
@@ -328,7 +328,7 @@ function aggregate(orders) {
 
   orders.forEach(order => {
     let grp;
-    if (order.order_type === 'walk_in') grp = 'walk';
+    if (order.order_type === 'walk_in' || order.is_store_pickup) grp = 'walk'; // 店舗受け取りは店頭に含める(2026-11-02)
     else if (KNOWN_AREAS.includes(order.area_name)) grp = 'sp';
     else grp = 'bkk';
 
