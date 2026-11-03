@@ -989,15 +989,27 @@ function retryFailedUploads() {
 
 // アプリを開き直したとき(メモリの写真が消えたとき)に、サーバーに保存済みの写真を呼び戻して、サムネイルとして並べ直す
 const restoreDone = {};   // orderId -> true(この画面で、保存済み写真の確認が済んだ注文)
+// 確認が失敗したときの再試行は、注文ごとに最大3回まで、間隔を空けて行う
+// (以前は失敗するたびに15秒ごとに全注文を確認し直し、サーバーに負荷をかけ続けていた。この確認は写真の呼び戻しだけの補助機能)
+const restoreTries = {};  // orderId -> { n: 失敗回数, next: 次に試してよい時刻(ms) }
+const RESTORE_MAX_TRIES = 3;
+function restoreFailed(id) {
+  const t = restoreTries[id] || { n: 0, next: 0 };
+  t.n += 1;
+  t.next = Date.now() + 30000 * Math.pow(2, t.n - 1);   // 30秒 → 60秒 → 120秒
+  restoreTries[id] = t;
+  restoreDone[id] = t.n >= RESTORE_MAX_TRIES;           // 3回失敗したらあきらめる(撮影・保存・完了には影響しない)
+}
 async function restoreSavedPhotos(todoList) {
   let added = false;
-  await Promise.all(todoList.map(async o => {
-    if (restoreDone[o.id] || busy[o.id]) return;
-    if ((staged[o.id] || []).some(p => p.state === 'saving')) return;   // 保存中の写真と二重にならないよう、次の更新で確認する
+  for (const o of todoList) {   // 同時に大量の確認を投げず、1件ずつ順番に確認する
+    if (restoreDone[o.id] || busy[o.id]) continue;
+    if (restoreTries[o.id] && Date.now() < restoreTries[o.id].next) continue;   // 失敗直後は少し待つ
+    if ((staged[o.id] || []).some(p => p.state === 'saving')) continue;   // 保存中の写真と二重にならないよう、次の更新で確認する
     restoreDone[o.id] = true;
     try {
       const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).list(o.id, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
-      if (error || !data) { restoreDone[o.id] = false; return; }   // 次の更新でもう一度確認する
+      if (error || !data) { restoreFailed(o.id); continue; }   // 間隔を空けて、最大3回までもう一度確認する
       const files = data.filter(f => f && f.name && /\.jpe?g$/i.test(f.name)).slice(0, MAX_PHOTOS);
       for (const f of files) {
         const path = `${o.id}/${f.name}`;
@@ -1008,8 +1020,8 @@ async function restoreSavedPhotos(todoList) {
         (staged[o.id] = staged[o.id] || []).push({ blob: null, url: s.signedUrl, path, state: 'saved', pending: null });
         added = true;
       }
-    } catch (_) { restoreDone[o.id] = false; }
-  }));
+    } catch (_) { restoreFailed(o.id); }
+  }
   if (added) renderFromCache();
 }
 
