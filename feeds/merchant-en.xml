@@ -271,7 +271,7 @@
       <description>Saito Foods' original frozen mini hamburger steaks in tomato sauce flavor. A handy size for lunch boxes.</description>
       <link>https://saitofoods.com/en/products/126.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485024543_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>93.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -337,7 +337,7 @@
       <link>https://saitofoods.com/en/products/1185.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485691117_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05141105_6824167e7a189.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>48.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -351,7 +351,7 @@
       <link>https://saitofoods.com/en/products/1348.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884584491_slot2.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>62.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -390,7 +390,7 @@
       <description>Due to manufacturer stock shortage, we have switched to a similar product. Size increased, now comes in a pack of 8. Perfect for lunch boxes and snacks! Fry in 177-degree oil for approximately 2 minutes, or dip in oil and cook in an air fryer while monitoring, flipping occasionally until golden brown. While it may not be as crispy, you can also cook it in an air fryer without dipping in oil beforehand. Simple and gentle salt flavor. Pack of 8.</description>
       <link>https://saitofoods.com/en/products/1399.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790421890304_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>72.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -680,7 +680,7 @@
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
       <link>https://saitofoods.com/en/products/1366.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784789172165_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -810,25 +810,12 @@
       <description>ちょどよい塩加減の鮭フレークです。 合成添加物 無添加の美味しい鮭フレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
       <link>https://saitofoods.com/en/products/1271.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883907569_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Non Preservative Products</g:product_type>
-    </item>
-    <item>
-      <g:id>934</g:id>
-      <title>Premium Smoked Salmon Slices 200g</title>
-      <description>ホテル等で提供されるねっとりしたタイプのスモークサーモンです。 チリ産トラウトを使用した本格的な商品です。 パンに挟んだりサラダやスパゲティに。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/reel/DIitpqJRM5T/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
-      <link>https://saitofoods.com/en/products/934.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487152586_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>299.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Original Products</g:product_type>
     </item>
     <item>
       <g:id>278</g:id>
@@ -1018,7 +1005,7 @@
       <description>タイ和牛/和牛のウチモモ部分(脂少な目)の部位の切り落としです。 ローストビーフを作る過程でトリミングした物になります。 煮込み、カレー等にご利用ください。200g入りです。 多少スジも含みます。</description>
       <link>https://saitofoods.com/en/products/1231.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874691735_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1122,7 +1109,7 @@
       <description>キッコーマン白だし 500ml</description>
       <link>https://saitofoods.com/en/products/1009.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484315436_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>158.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1161,7 +1148,7 @@
       <description>小麦使用</description>
       <link>https://saitofoods.com/en/products/104.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888924757_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>95.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1292,7 +1279,7 @@
       <link>https://saitofoods.com/en/products/561.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485838440_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01161021_587c3c20b188a.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1392,7 +1379,7 @@
     </item>
     <item>
       <g:id>1208</g:id>
-      <title>Cocobless Small Packs 30g x5</title>
+      <title>Cocobless Small Packs 30gx5</title>
       <description>バンコクの西南に位置する、アンパワー近くの畑で採れたココナッツの花の蜜月を、小さな工場で昔ながらの製法にこだわりをもちながら作っているココナッツシュガーです。保存料を一切使っておらずお砂糖の中でも一番GI値が低く糖尿病の方でも召し上がれます。いつものお砂糖の代わりに同じ分量でお使いください。ポータブルや30g*5のバラマキ用です!</description>
       <link>https://saitofoods.com/en/products/1208.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483477612_slot1.jpg</g:image_link>
@@ -1970,7 +1957,7 @@
       <description>Frozen hijiki stew, an original Saito Foods product.</description>
       <link>https://saitofoods.com/en/products/965.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487736071_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2019,7 +2006,7 @@
     </item>
     <item>
       <g:id>1372</g:id>
-      <title>3-Star Chef Tuna Confit in Olive Oil 120g</title>
+      <title>3-Star Chef Tuna Confit in Olive Oil 120g=TUNA OIL</title>
       <description>The fatty belly (toro) of tuna, slowly simmered in olive oil. It is tender, and when broken up it is like canned tuna.</description>
       <link>https://saitofoods.com/en/products/1372.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06301107_6a43411b94a19.jpg</g:image_link>
@@ -2115,7 +2102,7 @@
       <description>ベシャメルソースから手作りしている逸品です。 鶏もも、ニンジン、しめじ、玉ねぎ、小麦粉、バター、生クリーム、牛乳、チキンスープを使用してます。調理済みの商品です。 湯銭または電子レンジで加熱してお召し上がりください。300g入り</description>
       <link>https://saitofoods.com/en/products/958.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487763339_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2623,7 +2610,7 @@
     </item>
     <item>
       <g:id>18</g:id>
-      <title>Nikuman Steamed Pork Bun</title>
+      <title>Nikuman Steamed Pork Bun 8pcs</title>
       <description>小麦粉・醤油・魚肉スープ使用 原料に卵・乳製品を含みません。 この商品は加熱調理済みの商品です。 電子レンジ等でお好みの暖かさに暖めてお召し上がりください。</description>
       <link>https://saitofoods.com/en/products/18.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884454402_slot1.jpg</g:image_link>
@@ -2654,7 +2641,7 @@
       <description>遼寧餃子館 謹製〜三鮮水餃〜 遼寧餃子館シーナカリンの本格中華水餃子! 冷凍のまま茹でるだけで肉汁ブシャーのジューシー水餃子が味わえます。いくらでも食べられます。豚肉、ニラ、卵の具を包む皮は手作りならではの美味しさ。もちもちツルツルいくらでもいただけます!焼き餃子もっちりボリューミーな皮とジューシーな具が美味! 沸騰したたっぷりのお湯に冷凍のままの餃子を投入し3分前後で浮いてきたら出来上がり。 皮が破けないようアツアツの肉汁をとくと満喫して下さい。 ①凍ったままの餃子を油を引いたフライパンに並べる ②強火で焼き色がつくまで加熱 ③餃子の高さの1/3〜1/2程度までお湯を注ぐ。約100ml〜。 ④蓋をして、中強火で水分がほぼなくなるまで蒸す。水分が多ければ最後に捨てる。 ⑤蓋を取り、強火で残りの水分を飛ばして焼き色がついたら出来上がり です。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/p/DHunJ3sPAa5/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
       <link>https://saitofoods.com/en/products/1250.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487276016_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>130.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2858,7 +2845,7 @@
     </item>
     <item>
       <g:id>770</g:id>
-      <title>Frozen Sweet Potato Cakes 55g x5</title>
+      <title>Frozen Sweet Potato Cakes 55gx5</title>
       <description>タイ産の冷凍スイートポテトです。タイ国内生産なのでお手頃価格になりました!55g*5個入りです。解凍してお召し上がりください。*トランス脂肪酸は含まれません。ねっとり濃厚な食べ応えです。 原材料: 芋、砂糖、ホイップクリーム、バター、牛乳、卵、食塩、保存料、増粘剤、着色料 110kcal/pc</description>
       <link>https://saitofoods.com/en/products/770.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884400868_slot1.jpg</g:image_link>
@@ -2884,7 +2871,7 @@
     </item>
     <item>
       <g:id>1279</g:id>
-      <title>Dried Marian Plum 100g</title>
+      <title>Dried Marian Plum 100g.</title>
       <description>マヨンチットの名産地 ナコンナヨック発。 たわわに実ったマヨンチットで丁寧に手作りしています。 タイの高級フルーツの魅力をぎゅっと閉じ込めた上品な甘酸っぱさは日本へのお土産にもピッタリ! タイ各地の美味しい食品やOTOP認定製品の中から 選りすぐりをお届けする【メー・カノム(ตรา แม่ขนม)】からのセレクト品です。 香料/着色料/保存料不使用 開封後は賞味期限に関わらずお早めにお召し上がりください。 ※原料の種の茶色い外皮が混じることがありますが、品質に問題はなく風味や安全性を損なうものではありません。 価格: 134B 賞味期限(未開封): 製造日より12ヶ月</description>
       <link>https://saitofoods.com/en/products/1279.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07041610_68679a8553227.jpg</g:image_link>
@@ -2911,7 +2898,7 @@
     </item>
     <item>
       <g:id>1280</g:id>
-      <title>Marian Plum Jam 110g</title>
+      <title>Marian Plum Jam 110g.</title>
       <description>Sweet and sour marian plum (mayongchid) makes excellent jam too. A great souvenir for Japan.</description>
       <link>https://saitofoods.com/en/products/1280.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07041611_68679abc6e120.jpg</g:image_link>
@@ -3000,20 +2987,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Mae Kanom</g:product_type>
-    </item>
-    <item>
-      <g:id>1395</g:id>
-      <title>Black Tiger Peanuts from Mae Hong Son Province</title>
-      <description>Mae Hong Son Tiger Peanuts Vibrant tiger-striped peanuts grown in the rich climate of Mae Hong Son Province in northern Thailand. With a subtle, mild saltiness and delightfully crispy texture paired with a wonderful roasted aroma, these peanuts are absolutely delicious! Offering a distinctly different taste and texture compared to the black-striped variety, we encourage you to enjoy tasting both and comparing them.</description>
-      <link>https://saitofoods.com/en/products/1395.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790422280329_slot1.jpg</g:image_link>
-      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790422294975_slot2.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>60.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>local products</g:product_type>
     </item>
     <item>
       <g:id>1360</g:id>

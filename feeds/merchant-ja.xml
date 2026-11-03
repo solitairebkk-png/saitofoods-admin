@@ -271,7 +271,7 @@
       <description>サイトウフーズオリジナルの冷凍ミニハンバーグです。トマトソース味でお弁当に入れやすいサイズ。</description>
       <link>https://saitofoods.com/products/126.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485024543_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>93.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -337,7 +337,7 @@
       <link>https://saitofoods.com/products/1185.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485691117_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05141105_6824167e7a189.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>48.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -351,7 +351,7 @@
       <link>https://saitofoods.com/products/1348.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/03110934_69b0d4b918f2b.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884584491_slot2.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>62.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -390,7 +390,7 @@
       <description>メーカー欠品の為に類似した製品に切り替え。 サイズが大きくなったので、8個入りに。 お弁当やおやつにカワイイですね! 177度の油で約2分揚げるまたは、油にくぐらせてからエアフライヤーで様子を見ながらひっくり返して薄きつね色になったら出来上がり。 カラッと感は劣りますが、油にくぐらせないままエアフライヤーでもいけました。 シンプルな優しい塩味です。8個入り</description>
       <link>https://saitofoods.com/products/1399.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790421890304_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>72.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -680,7 +680,7 @@
       <description>骨取りノルウェーサバを大根おろしと少し甘めに煮た商品です。 以前のシーマルシェの商品とは違います。 でも、美味しいですよ!</description>
       <link>https://saitofoods.com/products/1366.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784789172165_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>68.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -810,25 +810,12 @@
       <description>ちょどよい塩加減の鮭フレークです。 合成添加物 無添加の美味しい鮭フレーク。 200g 若干解凍後に袋の上から包丁で使用したい分だけ切って使用すると便利です。</description>
       <link>https://saitofoods.com/products/1271.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784883907569_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>無添加の商品</g:product_type>
-    </item>
-    <item>
-      <g:id>934</g:id>
-      <title>本格スモークサーモン スライス　200g</title>
-      <description>ホテル等で提供されるねっとりしたタイプのスモークサーモンです。 チリ産トラウトを使用した本格的な商品です。 パンに挟んだりサラダやスパゲティに。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/reel/DIitpqJRM5T/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
-      <link>https://saitofoods.com/products/934.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487152586_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>299.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>サイトウフーズオリジナル商品</g:product_type>
     </item>
     <item>
       <g:id>278</g:id>
@@ -1018,7 +1005,7 @@
       <description>タイ和牛/和牛のウチモモ部分(脂少な目)の部位の切り落としです。 ローストビーフを作る過程でトリミングした物になります。 煮込み、カレー等にご利用ください。200g入りです。 多少スジも含みます。</description>
       <link>https://saitofoods.com/products/1231.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874691735_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1122,7 +1109,7 @@
       <description>キッコーマン白だし 500ml</description>
       <link>https://saitofoods.com/products/1009.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484315436_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>158.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1161,7 +1148,7 @@
       <description>小麦使用</description>
       <link>https://saitofoods.com/products/104.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784888924757_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>95.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1292,7 +1279,7 @@
       <link>https://saitofoods.com/products/561.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485838440_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01161021_587c3c20b188a.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>98.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1970,7 +1957,7 @@
       <description>サイトウフーズオリジナル商品の冷凍ひじき煮です。</description>
       <link>https://saitofoods.com/products/965.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487736071_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2115,7 +2102,7 @@
       <description>ベシャメルソースから手作りしている逸品です。 鶏もも、ニンジン、しめじ、玉ねぎ、小麦粉、バター、生クリーム、牛乳、チキンスープを使用してます。調理済みの商品です。 湯銭または電子レンジで加熱してお召し上がりください。300g入り</description>
       <link>https://saitofoods.com/products/958.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487763339_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2654,7 +2641,7 @@
       <description>遼寧餃子館 謹製〜三鮮水餃〜 遼寧餃子館シーナカリンの本格中華水餃子! 冷凍のまま茹でるだけで肉汁ブシャーのジューシー水餃子が味わえます。いくらでも食べられます。豚肉、ニラ、卵の具を包む皮は手作りならではの美味しさ。もちもちツルツルいくらでもいただけます!焼き餃子もっちりボリューミーな皮とジューシーな具が美味! 沸騰したたっぷりのお湯に冷凍のままの餃子を投入し3分前後で浮いてきたら出来上がり。 皮が破けないようアツアツの肉汁をとくと満喫して下さい。 ①凍ったままの餃子を油を引いたフライパンに並べる ②強火で焼き色がつくまで加熱 ③餃子の高さの1/3〜1/2程度までお湯を注ぐ。約100ml〜。 ④蓋をして、中強火で水分がほぼなくなるまで蒸す。水分が多ければ最後に捨てる。 ⑤蓋を取り、強火で残りの水分を飛ばして焼き色がついたら出来上がり です。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/p/DHunJ3sPAa5/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
       <link>https://saitofoods.com/products/1250.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487276016_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>130.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2663,7 +2650,7 @@
     </item>
     <item>
       <g:id>1321</g:id>
-      <title>レンジで簡単! じっくり煮込んだボロネーゼ 1人前=SP001</title>
+      <title>レンジで簡単! じっくり煮込んだボロネーゼ 1人前</title>
       <description>レンジで簡単に出来上がるお手軽パスタです。</description>
       <link>https://saitofoods.com/products/1321.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11111435_6912e756b84fa.jpg</g:image_link>
@@ -2767,7 +2754,7 @@
     </item>
     <item>
       <g:id>1254</g:id>
-      <title>オクラおかか和え 1kg=OKURA</title>
+      <title>オクラおかか和え 1kg</title>
       <description>オクラおかか和え たっぷり使えるお買い得1kgパック登場! 解凍するだけ超便利! とろとろのオクラにかつお節の優しい出汁風味がしみじみ〜〜。 ほかほかご飯、冷奴、そうめん、そば、納豆などに山盛りにすると止まりません! 必要な分だけを手で割りお皿に移し、電子レンジ解凍モードで簡単OK!</description>
       <link>https://saitofoods.com/products/1254.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784869166159_slot1.jpg</g:image_link>
@@ -2871,7 +2858,7 @@
     </item>
     <item>
       <g:id>1202</g:id>
-      <title>クッキー・シンガポール from サラブリー県=C-00</title>
+      <title>クッキー・シンガポール from サラブリー県</title>
       <description>一度食べだしたら止まらないサクサクのクッキー。日本へのお土産にも！</description>
       <link>https://saitofoods.com/products/1202.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07041609_68679a5f8ba27.jpg</g:image_link>
@@ -2950,7 +2937,7 @@
     </item>
     <item>
       <g:id>1334</g:id>
-      <title>〈チェンライ PAPA PINEAPPLE〉プーレー種 パイナップルクッキー プチギフトパック=P-APP84</title>
+      <title>〈チェンライ PAPA PINEAPPLE〉プーレー種 パイナップルクッキー プチギフトパック</title>
       <description>酸味の少ないパイナップル プーレ種のペーストが入ったサクサククッキー。お土産に。</description>
       <link>https://saitofoods.com/products/1334.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784788906253_slot1.jpg</g:image_link>
@@ -2978,7 +2965,7 @@
     </item>
     <item>
       <g:id>1379</g:id>
-      <title>ノンカイ パイナップルパイ ボックス 6pcs=KN-004</title>
+      <title>ノンカイ パイナップルパイ ボックス 6pcs</title>
       <description>ころんとしたパイナップル型の可愛らしいフォルムの外側はホロっとほどけるタルト生地♡♡ 中にはタイで最も多く流通しているパイナップル「パタウィア種」を使った餡がたっぷり。</description>
       <link>https://saitofoods.com/products/1379.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790828619314_slot1.jpg</g:image_link>
@@ -3000,20 +2987,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>メー・カノム /🇹🇭の美味</g:product_type>
-    </item>
-    <item>
-      <g:id>1395</g:id>
-      <title>黒とら柄 ピーナッツ メーホンソン県</title>
-      <description>メーホンソン県〈タイガーピーナッツ〉 タイ北部メーホンソン県の豊かな気候風土で育った、鮮やかなトラ模様のピーナッツ。 クセのないほんのり塩味と、カリッとした歯ごたえ&amp;香ばしさが満点です! 黒トラ模様とはまた違った食感とお味なので、ぜひ食べ比べもお楽しみください。</description>
-      <link>https://saitofoods.com/products/1395.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790422280329_slot1.jpg</g:image_link>
-      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790422294975_slot2.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>60.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>日本へのお土産に!</g:product_type>
     </item>
     <item>
       <g:id>1360</g:id>
