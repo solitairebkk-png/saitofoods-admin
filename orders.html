@@ -22,6 +22,7 @@
     --status-printed: #ffffff;      /* 白 = 伝票印刷済み */
     --status-weight: #e6f0f8;       /* 青 = 量り売り商品の重量未入力 */
     --status-complete: #f9d9d2;     /* 赤 = Complete押下後(以降変更不可) */
+    --status-uncollected: #e4d4f7;  /* 紫 = 配送済みだが代金未回収(入金確認でCompleteが押せる) */
     --status-cancelled: #eaeaea;    /* グレー = まるごとキャンセル済み */
   }
 
@@ -2757,6 +2758,8 @@ async function markSelectedExpressEntered() {
 // (印刷前に支払い済みになると緑色になってしまい、印刷有無が背景色から分からなくなっていたため分離)。
 function getStatusColor(order) {
   if (order.is_cancelled) return 'var(--status-cancelled)';
+  // 未回収かつ未入金は、Complete済みも含めて他のどの状態よりも優先して紫にする(2026-11-04)
+  if (order.payment_uncollected && getPaymentState(order) !== 'paid') return 'var(--status-uncollected)';
   if (order.is_completed) return 'var(--status-complete)';
   if (order.has_weight_items && !order.weight_email_sent) return 'var(--status-weight)';
   if (order.is_slip_printed) return 'var(--status-printed)';
@@ -3362,7 +3365,15 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
         manageCol.appendChild(makeButton('Edit / แก้ไข', () => openWholesaleModal(order), 'btn-reorder'));
       }
       // Complete(受け渡し・入金完了の確認)はスタッフ全員が押せる
-      idActions.appendChild(makeButton('Complete / เสร็จสิ้น', () => completeOrder(order), 'btn-complete'));
+      // 未回収かつ未入金の間は押せない(入金確認 or スリップ自動照合で解除。DB側のトリガーでも止まる)
+      const completeBlocked = order.payment_uncollected && getPaymentState(order) !== 'paid';
+      const completeBtn = makeButton(completeBlocked ? '🔒 Not Collected / ยังไม่ได้รับเงิน' : 'Complete / เสร็จสิ้น',
+        () => {
+          if (completeBlocked) { alert('ยังไม่ได้รับเงิน กรุณายืนยันการชำระเงินก่อน\n未回収のためCompleteできません。入金確認(Confirm Payment)かスリップ到着後に押してください'); return; }
+          completeOrder(order);
+        }, 'btn-complete');
+      if (completeBlocked) { completeBtn.disabled = true; completeBtn.style.opacity = '.5'; completeBtn.title = 'Not collected'; }
+      idActions.appendChild(completeBtn);
       // シラチャの配送注文は、配送当日になったらキャンセル不可(現地への手配が既に進んでいるため)
       const isSrirachaToday = order.area_name === 'Sriracha' && order.delivery_date === todayStr();
       // Cancel(キャンセル処理)はmakokunn@live.jpのみ(2026-09-26変更): 従来からキャンセルは
