@@ -159,6 +159,19 @@
   .hint { font-size: 13px; color: var(--gray); margin-top: 6px; }
   .hidden { display: none !important; }
   input[type=file] { display: none; }
+  #cam-ov { position: fixed; inset: 0; z-index: 9999; background: #000; display: flex; flex-direction: column; }
+  #cam-v { flex: 1 1 auto; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+  #cam-msg { color: #fff; text-align: center; font-size: 15px; padding: 8px 12px; min-height: 22px; }
+  #cam-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 28px 32px; gap: 40px; }
+  #cam-bar button { border: 0; color: #fff; background: rgba(255,255,255,.16); border-radius: 16px; font-size: 26px; min-width: 84px; min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; }
+  #cam-bar button small { font-size: 12px; }
+  #cam-bar #cam-shot { width: 92px; height: 92px; min-width: 92px; border-radius: 50%; background: #fff; border: 6px solid #9ca3af; }
+  #cam-bar #cam-shot:disabled { opacity: .5; }
+  .gal-row { margin-top: 10px; text-align: center; }
+  .gal-btn { border: 0; background: transparent; color: #475569; text-decoration: underline; font-size: 14px; padding: 10px 12px; line-height: 1.4; }
+  .gal-btn:disabled { opacity: .5; }
+  /* Androidは「カメラで撮ってからカメラロールで選ぶ」使い方が多いので、目立つボタンにする */
+  .gal-row.prom .gal-btn { width: 100%; min-height: 56px; background: #eff6ff; color: #1e40af; border: 2px solid #93c5fd; border-radius: 12px; text-decoration: none; font-size: 16px; font-weight: 700; }
   .badge.paid { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
   .tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
   .tab { flex: 1 1 0; border: 2px solid #d1d5db; background: #fff; color: #374151; font-weight: 700; font-size: 15px; padding: 12px 6px; border-radius: 12px; }
@@ -200,6 +213,9 @@
   .unsent { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fff4d6; border: 2px solid #f59e0b; color: #78350f; font-size: 15px; font-weight: 700; line-height: 1.4; }
   .unsent small { display: block; font-weight: 600; opacity: .85; }
   .unsent.bad { background: var(--red-light); border-color: var(--red); color: var(--red); }
+  #line-banner { background: #dbeafe; color: #1e3a8a; font-weight: 700; font-size: 14px; padding: 10px 14px; text-align: center; line-height: 1.4; }
+  #line-banner a { display: inline-block; margin-top: 6px; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-size: 15px; }
+  #line-banner small { display: block; font-weight: 600; font-size: 12px; }
   #pending-banner { background: #f59e0b; color: #fff; font-weight: 800; font-size: 15px; padding: 10px 14px; text-align: center; cursor: pointer; line-height: 1.35; }
   #pending-banner small { display: block; font-weight: 600; font-size: 12px; opacity: .95; }
 </style>
@@ -263,6 +279,7 @@
     <a class="sub" href="tel:0656189906"><span>06-5618-9906</span><small>สำรอง</small></a>
   </div>
   <!-- 写真を撮ったのに「ส่งของแล้ว」をまだ押していない注文があるときだけ出る警告(タップでその注文へ移動) -->
+  <div id="line-banner" class="hidden"></div>
   <div id="pending-banner" class="hidden" onclick="jumpToPending()"></div>
   </div>
   <main>
@@ -302,6 +319,19 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbwhV5IKDbadgS7-nAEo8At2
 const STAFF_KEY = 'delivery-staff-id';
 const PHOTO_BUCKET = 'delivery-photos';
 const MAX_PHOTOS = 2;
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+// LINEアプリの中のブラウザ(LINE内蔵ブラウザ)では、カメラが直接開かないことがある。外部ブラウザ(Chrome等)で開き直してもらう案内を出す。
+const IS_LINE_IAB = /\bLine\//i.test(navigator.userAgent);
+window.addEventListener('DOMContentLoaded', () => {
+  if (!IS_LINE_IAB) return;
+  const el = document.getElementById('line-banner');
+  if (!el) return;
+  const url = location.origin + location.pathname + '?openExternalBrowser=1';
+  el.innerHTML = '📷 เปิดในแอป LINE อาจถ่ายรูปไม่ได้ กดปุ่มด้านล่างเพื่อเปิดด้วย Chrome / เบราว์เซอร์'
+    + '<small>Opened inside LINE: the camera may not work. Tap below to open in your browser.</small>'
+    + '<a href="' + url + '">เปิดด้วยเบราว์เซอร์ / Open in browser</a>';
+  el.classList.remove('hidden');
+});
 const MAX_EDGE = 1280;      // 写真の長辺の最大px(縮小して容量とメール添付サイズを抑える)
 const JPEG_QUALITY = 0.8;
 // 一覧に出すのは、そのスタッフが今日(バンコク時間)出発した配送の注文すべて。翌日以降は出ない。
@@ -819,11 +849,16 @@ function renderTodo(list) {
         ${callCell(o)}
         ${photos.length >= MAX_PHOTOS ? '<span style="flex:1 1 0"></span>' : `
         <button class="btn" ${isBusy ? 'disabled' : ''}
-          onclick="document.getElementById('file-${escapeHtml(o.id)}').click()">
-          📷 ${photos.length ? 'เพิ่มรูป' : (o.delivery_leave_at_table ? 'ถ่ายรูป' : 'ไม่อยู่ วางไว้ ถ่ายรูป')}
+          onclick="takePhoto('${escapeHtml(o.id)}')">
+          📷${photos.length ? 'เพิ่มรูป' : (o.delivery_leave_at_table ? 'ถ่ายรูป' : 'ไม่อยู่ วางไว้ ถ่ายรูป')}
         </button>`}
       </div>
       ${callExtra(o)}
+      ${photos.length >= MAX_PHOTOS ? '' : `
+      <div class="gal-row${IS_ANDROID ? ' prom' : ''}">
+        <button class="gal-btn" ${isBusy ? 'disabled' : ''}
+          onclick="document.getElementById('gal-${escapeHtml(o.id)}').click()">🖼️ เลือกรูปจากเครื่อง (ถ่ายด้วยกล้องมือถือก่อน)</button>
+      </div>`}
       <div class="thumbs">
         ${photos.map((p, i) => `
           <div class="th"><img src="${p.url}" alt="">
@@ -840,6 +875,8 @@ function renderTodo(list) {
       ${o.comment ? `<div class="note">${escapeHtml(o.comment)}<div class="note-th" data-tr="${escapeHtml(o.id)}"></div></div>` : ''}
       ${memoHtml(o)}
       <input type="file" accept="image/*" capture="environment" id="file-${escapeHtml(o.id)}"
+             onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
+      <input type="file" accept="image/*" id="gal-${escapeHtml(o.id)}"
              onchange="onPhotoPicked('${escapeHtml(o.id)}', this)">
       <div class="btn-row row2">
         ${slipCell(o)}
@@ -1068,6 +1105,78 @@ async function onPhotoPicked(orderId, input) {
   const file = input.files && input.files[0];
   input.value = '';
   if (!file) return;
+  return addPhotoFile(orderId, file);
+}
+
+// ---- アプリ内カメラ(Android用) ----
+// Androidで「撮影」ボタンから別のカメラアプリを開く方式だと、端末のメモリが少ないときにブラウザごと閉じられて写真が届かないことがある。
+// そこで、別アプリを開かず、この画面の中でそのまま撮影する。撮った写真は、これまでと同じ流れ(縮小→すぐサーバーへ保存)に乗せる。
+let camStream = null, camOrderId = null;
+function takePhoto(orderId) {
+  const fileInput = document.getElementById('file-' + orderId);
+  if (IS_ANDROID && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { openInAppCamera(orderId); return; }
+  pickerUntil = Date.now() + 180000;   // 従来どおり、端末のカメラアプリを開く(iPhoneなど)
+  if (fileInput) fileInput.click();
+}
+async function openInAppCamera(orderId) {
+  if (camStream) return;
+  camOrderId = orderId;
+  const ov = document.createElement('div');
+  ov.id = 'cam-ov';
+  ov.innerHTML = `
+    <video id="cam-v" autoplay playsinline muted></video>
+    <div id="cam-msg"></div>
+    <div id="cam-bar">
+      <button id="cam-x" type="button">✕<small>ปิด</small></button>
+      <button id="cam-shot" type="button" aria-label="shutter"></button>
+      <button id="cam-g" type="button">🖼️<small>เลือกรูป</small></button>
+    </div>`;
+  document.body.appendChild(ov);
+  $('cam-x').onclick = closeInAppCamera;
+  $('cam-g').onclick = () => { const id = camOrderId; closeInAppCamera(); pickerUntil = Date.now() + 180000; const g = document.getElementById('gal-' + id); if (g) g.click(); };
+  $('cam-shot').onclick = shootInAppCamera;
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false
+    });
+    const v = $('cam-v');
+    v.srcObject = camStream;
+    await v.play().catch(() => {});
+  } catch (e) {
+    closeInAppCamera();
+    $('main-error').textContent = 'เปิดกล้องในแอปไม่ได้ กรุณากดปุ่ม “🖼️ เลือกรูปจากเครื่อง” (ถ่ายด้วยกล้องมือถือก่อน)\nCould not open the in-app camera. Please use the “Choose from phone” button.\n' + errMsg(e);
+  }
+}
+function closeInAppCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => { try { t.stop(); } catch (_) {} }); camStream = null; }
+  const ov = $('cam-ov');
+  if (ov) ov.remove();
+}
+async function shootInAppCamera() {
+  const v = $('cam-v');
+  if (!camStream || !v || !v.videoWidth) { $('cam-msg').textContent = 'กล้องยังไม่พร้อม รอสักครู่ / Camera not ready'; return; }
+  const orderId = camOrderId;
+  const btn = $('cam-shot'); btn.disabled = true;
+  try {
+    const c = document.createElement('canvas');
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+    const blob = await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error('capture failed')), 'image/jpeg', 0.92));
+    pickerUntil = 0;
+    await addPhotoFile(orderId, new File([blob], 'cam.jpg', { type: 'image/jpeg' }));
+    const n = (staged[orderId] || []).length;
+    if (n >= MAX_PHOTOS) { closeInAppCamera(); return; }
+    $('cam-msg').textContent = '✅ ถ่ายแล้ว ' + n + '/' + MAX_PHOTOS + ' — ถ่ายเพิ่มได้ หรือกด ✕ ปิด';
+  } catch (e) {
+    $('cam-msg').textContent = 'ถ่ายไม่สำเร็จ: ' + errMsg(e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+// 別のアプリに切り替えたらカメラを止める(止めないと、戻ったときに映像が固まる)
+document.addEventListener('visibilitychange', () => { if (document.hidden) closeInAppCamera(); });
+
+async function addPhotoFile(orderId, file) {
   $('main-error').textContent = '';
   let item;
   try {
@@ -1458,13 +1567,14 @@ $('pw-toggle').addEventListener('click', () => {
 $('staff-ok-btn').addEventListener('click', chooseStaff);
 $('refresh-btn').addEventListener('click', loadOrders);
 $('menu-btn').addEventListener('click', openMenu);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff) loadOrders(true); });
+// カメラから戻った直後に一覧を作り直すと、撮った写真の受け取り前にボタンが入れ替わって写真が届かないことがある(特にAndroid)ので、カメラ起動中は更新を待つ
+document.addEventListener('visibilitychange', () => { if (!document.hidden && currentStaff && Date.now() > pickerUntil) loadOrders(true); });
 // 2台で1つの一覧を共有するので、相手の完了が早く反映されるよう15秒ごとに更新する。
 // ただしカメラ(写真選択)を開いている間は、画面を作り直すと撮った写真が消えることがあるので更新しない(最大90秒)。
 let pickerUntil = 0;
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('button');
-  if (b && /\.click\(\)/.test(b.getAttribute('onclick') || '')) pickerUntil = Date.now() + 90000;
+  if (b && /\.click\(\)/.test(b.getAttribute('onclick') || '')) pickerUntil = Date.now() + 180000;
 }, true);
 // メモを書いている間も更新しない(書きかけの文字が消えないように)
 setInterval(() => { if (!document.hidden && currentStaff && Date.now() > pickerUntil && !Object.keys(memoEditing).length) loadOrders(true); }, 15000);
