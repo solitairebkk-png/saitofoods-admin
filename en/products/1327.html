@@ -18,7 +18,7 @@
 <meta property="og:image" content="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12190942_6944bb9c6be80.jpg">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)","sku":"1327","url":"https://saitofoods.com/en/products/1327.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12190942_6944bb9c6be80.jpg"],"description":"自然解凍で飛び切り美味しい冷凍大学芋が出来上がりました! 茨城県産の紅ハルカを使用して、外側カリッ、中は甘くて柔らかい大学芋です。 200g入り。","category":"sweets","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1327.html","priceCurrency":"THB","price":"128.00","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)","sku":"1327","url":"https://saitofoods.com/en/products/1327.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12190942_6944bb9c6be80.jpg"],"description":"自然解凍で飛び切り美味しい冷凍大学芋が出来上がりました! 茨城県産の紅ハルカを使用して、外側カリッ、中は甘くて柔らかい大学芋です。 200g入り。","category":"sweets","offers":{"@type":"Offer","url":"https://saitofoods.com/en/products/1327.html","priceCurrency":"THB","price":"128.00","availability":"https://schema.org/OutOfStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://saitofoods.com/"},{"@type":"ListItem","position":2,"name":"Products","item":"https://saitofoods.com/product_list.html"},{"@type":"ListItem","position":3,"name":"Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)","item":"https://saitofoods.com/en/products/1327.html"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -154,12 +154,12 @@
     <div class="subname">冷凍 大学芋 200g (紅ハルカ使用)</div>
     <div class="price" id="price">฿128</div>
     
-    <div class="stock" id="stock">In stock</div>
+    <div class="stock out" id="stock">Out of stock</div>
     <div class="buy">
-      <div class="stepper" id="stepper">
+      <div class="stepper" id="stepper" style="display:none">
         <button type="button" onclick="chg(-1)" aria-label="-">−</button><span id="qty">1</span><button type="button" onclick="chg(1)" aria-label="+">+</button>
       </div>
-      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()">Add to cart</button>
+      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()" disabled>Out of stock</button>
     </div>
     <div class="added" id="added">Added to cart<a href="/cart.html">View cart ›</a></div>
     
@@ -207,7 +207,7 @@
 
 <script>
 (function () {
-  var P = {"id":"1aecd36a-3d2f-405f-b861-343acfe35136","lang":"en","max":999,"limit":null,"price":128,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12190942_6944bb9c6be80.jpg"],"url":"https://saitofoods.com/en/products/1327.html","title":"Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","maxedLimit":"Order limit reached ({n} per order).","unavailable":"This item is currently unavailable."}};
+  var P = {"id":"1aecd36a-3d2f-405f-b861-343acfe35136","lang":"en","max":0,"limit":null,"price":128,"unitPrice":null,"unitLabel":"","weight":false,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12190942_6944bb9c6be80.jpg"],"url":"https://saitofoods.com/en/products/1327.html","title":"Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)","t":{"copyManual":"Copy this link","igCopied":"Link copied. Paste it into your Instagram Story or DM.","copied":"Link copied ✓","inStock":"In stock","outOfStock":"Out of stock","add":"Add to cart","added":"Added to cart","maxed":"You have reached the stock limit.","maxedLimit":"Order limit reached ({n} per order).","unavailable":"This item is currently unavailable."}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   try { if (!localStorage.getItem('saitofoods_lang')) localStorage.setItem('saitofoods_lang', 'en'); } catch (e) {}
