@@ -360,7 +360,8 @@
     <div id="manual-discount-row" style="display:none;margin-top:8px;background:#fdecea;border:1px solid #e57373;border-radius:6px;padding:8px 10px;">
       <label style="display:block;font-size:12px;font-weight:700;color:#b71c1c;">🏷️ Extra discount (THB) / ส่วนลดเพิ่มเติม (บาท)</label>
       <input type="number" id="manual-discount" min="0" step="1" value="0" oninput="renderCart()" style="width:140px;margin-top:4px;">
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Optional. Deducted from the order total (in addition to any coupon/points already applied). Enter 0 to remove. / ไม่บังคับ หักจากยอดรวม ใส่ 0 เพื่อยกเลิก</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Optional. Deducted from the order total (in addition to any coupon/points already applied). Enter 0 to remove. / ไม่บังคับ หักจากยอดรวม ใส่ 0 เพื่อยกเลิก
+      <div id="discount-total-preview" style="margin-top:6px;font-size:13px;font-weight:700;color:#b71c1c;"></div></div>
     </div>
     <div id="shipping-override-row" style="display:none;margin-top:6px;font-size:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:8px 10px;">
       <div style="font-weight:700;color:#1b5e20;">✅ This order already qualified for free shipping — shipping is not added even if the total drops below the minimum. / ออเดอร์นี้ได้ส่งฟรีแล้ว จึงไม่คิดค่าส่งเพิ่มแม้ยอดลดลง</div>
@@ -1189,10 +1190,21 @@ function renderCart() {
     : '';
 
   const discRow = document.getElementById('manual-discount-row');
-  if (discRow) discRow.style.display = (editingOrderId && !isWalkin) ? 'block' : 'none';
-  const md = (editingOrderId && !isWalkin) ? getManualDiscount() : 0;
+  // 値引き欄は新規・編集、配送・Walk-inのすべてで表示する(カートに商品がある時のみ)
+  if (discRow) discRow.style.display = cart.length > 0 ? 'block' : 'none';
+  const md = getManualDiscount();
   const discNote = md > 0 ? ` − discount ${md} THB / ส่วนลด ${md} THB` : '';
   document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote + discNote;
+  // 値引き後の支払い金額のプレビュー(クーポン・ポイント使用分も差し引いた最終額)
+  const previewEl = document.getElementById('discount-total-preview');
+  if (previewEl) {
+    const pre = subtotal + computeShipping(subtotal, isWalkin);
+    const capped = Math.min(editingOrderBaseDiscount + md, pre);
+    const finalAmt = Math.max(0, pre - capped - editingOrderPointsUsed);
+    previewEl.textContent = md > 0
+      ? `Total to pay / ยอดที่ต้องชำระ: ${finalAmt} THB` + (md > pre ? ' (discount capped / ส่วนลดถูกจำกัดไม่เกินยอดรวม)' : '')
+      : '';
+  }
 }
 
 function updateQty(index, value) {
@@ -1710,7 +1722,7 @@ async function submitOrder() {
   // (2026-08-20発覚: 以前はこの計算式が単純に「小計+送料」だけだったため、
   //  クーポン・ポイントを使ったオンライン注文をスタッフが編集すると割引が消えていた)
   const preDiscount = subtotal + shippingCost;
-  const manualDiscount = (editingOrderId && !isWalkin) ? getManualDiscount() : 0;
+  const manualDiscount = getManualDiscount();
   const cappedDiscount = Math.min(editingOrderBaseDiscount + manualDiscount, preDiscount);
   const finalTotal = Math.max(0, preDiscount - cappedDiscount - editingOrderPointsUsed);
 
@@ -1723,7 +1735,7 @@ async function submitOrder() {
     subtotal: subtotal,
     shipping_cost: shippingCost,
     total_amount: finalTotal,
-    ...(editingOrderId && !isWalkin ? { discount_amount: cappedDiscount } : {}),
+    discount_amount: cappedDiscount,
     comment: comment || null,
     // Walk-in(店頭受け渡し)には配送は発生しないため、フォームが隠れていても値を送らない
     delivery_leave_at_table: !isWalkin && (document.getElementById('opt-leave-no-contact').checked || document.getElementById('opt-leave-with-contact').checked),
@@ -1947,7 +1959,7 @@ async function submitOrder() {
   if (paymentMethod === 'qr') {
     showSlipLink({
       orderId: orderRow.id,
-      amount: subtotal + shippingCost,
+      amount: finalTotal,
       hasWeightItems: hasWeightItems,
       customerName: isWalkin ? '' : customerName,
       customerEmail: isWalkin ? '' : (selectedCustomer?.email || ''),
@@ -1955,6 +1967,7 @@ async function submitOrder() {
   }
 
   cart = [];
+  document.getElementById('manual-discount').value = 0;
   renderCart();
   document.getElementById('order-comment').value = '';
   document.getElementById('existing-payment-note').style.display = 'none';
