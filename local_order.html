@@ -424,6 +424,16 @@
           <input type="checkbox" id="opt-no-change">
           <span>ไม่ต้องทอนเงิน / No change needed</span>
         </label>
+        <!-- 配達完了SMS(編集時のみ表示)。設定はお客様(customers.sms_notify)に保存され、今後の注文にも引き継がれる -->
+        <div class="delivery-opt-item" id="edit-sms-box" style="display:none; flex-direction:column; gap:6px; cursor:default; background:#fff8e1; border-color:#f0b400;">
+          <span><strong>📱 SMS เมื่อส่งของเสร็จ / Delivery SMS</strong></span>
+          <select id="edit-sms-select" style="width:100%; padding:6px 8px; font-size:13px;">
+            <option value="">ไม่ส่ง SMS / No SMS</option>
+            <option value="ja">ส่ง SMS ภาษาญี่ปุ่น / SMS in Japanese</option>
+            <option value="en">ส่ง SMS ภาษาอังกฤษ / SMS in English</option>
+          </select>
+          <span id="edit-sms-hint" style="font-size:11.5px; color:#666;"></span>
+        </div>
       </div>
     </div>
   </div>
@@ -1270,6 +1280,37 @@ function hidePromptPayQr() {
 }
 
 // ---------------- Edit mode: load existing order into the form ----------------
+// ---------------- 配達完了SMS(編集画面) ----------------
+// SMSの送信先にできるタイの携帯番号(0から始まる10桁、または+66/66始まり)をtel1→tel2の順で探す。無ければnull。
+function thaiMobileOf(c) {
+  for (const raw of [c.tel1, c.tel2]) {
+    const d = String(raw || '').replace(/[^\d+]/g, '');
+    if (/^0[689]\d{8}$/.test(d)) return d;
+    const m = d.match(/^\+?66([689]\d{8})$/);
+    if (m) return '0' + m[1];
+  }
+  return null;
+}
+let editSmsOriginal = '';   // 編集開始時のcustomers.sms_notify('' / 'ja' / 'en')
+function initEditSms(customer) {
+  const box = document.getElementById('edit-sms-box');
+  const sel = document.getElementById('edit-sms-select');
+  const hint = document.getElementById('edit-sms-hint');
+  if (!box || !customer) return;
+  editSmsOriginal = customer.sms_notify || '';
+  sel.value = editSmsOriginal;
+  const num = thaiMobileOf(customer);
+  if (num) {
+    sel.disabled = false;
+    hint.textContent = `→ ${num} ・ บันทึกที่ข้อมูลลูกค้า มีผลกับออเดอร์ถัดไปด้วย / Saved to the customer, applies to future orders too`;
+  } else {
+    // タイの携帯番号が無いとSMSは送れないので選べないようにする
+    sel.disabled = true;
+    hint.textContent = 'ไม่มีเบอร์มือถือไทย จึงส่ง SMS ไม่ได้ / No Thai mobile number, SMS cannot be sent';
+  }
+  box.style.display = 'flex';
+}
+
 async function loadOrderForEdit(orderId) {
   const { data: order, error } = await supabaseClient
     .from('orders')
@@ -1278,7 +1319,7 @@ async function loadOrderForEdit(orderId) {
       subtotal, total_amount, paid_amount, payment_status, coupon_code, discount_amount, points_used,
       delivery_leave_at_table, delivery_no_contact, delivery_leave_at_front, delivery_payment_at_front, delivery_no_change,
       walkin_nationality, walkin_age_bracket, walkin_gender,
-      customers!customer_id ( id, family_name, first_name, tel1, email, address1, address2, area_id, point_balance ),
+      customers!customer_id ( id, family_name, first_name, tel1, tel2, email, address1, address2, area_id, point_balance, sms_notify ),
       order_items ( product_id, product_name_snapshot, sale_type, quantity, unit_price, price, total_price, products ( unit_label, name_en, name_th ) )
     `)
     .eq('id', orderId)
@@ -1362,6 +1403,7 @@ async function loadOrderForEdit(orderId) {
     const resultEl = document.getElementById('customer-result');
     resultEl.style.display = 'block';
     resultEl.innerHTML = selectedCustomerHtml(order.customers, order.condo_name || '');
+    initEditSms(order.customers);
 
     document.getElementById('delivery-date').value = order.delivery_date || '';
     onDeliveryDateChange();
@@ -1832,6 +1874,16 @@ async function submitOrder() {
       msgEl.textContent = 'บันทึกการแก้ไขไม่สำเร็จ / Failed to update order: ' + updErr.message;
       msgEl.className = 'error';
       return;
+    }
+
+    // 配達完了SMSの希望が変わっていれば、お客様の設定(customers.sms_notify)を更新する。
+    // 注文自体は保存済みのため、失敗してもアラートで知らせるのみで保存フローは止めない。
+    const smsSel = document.getElementById('edit-sms-select');
+    if (!isWalkin && selectedCustomer && smsSel && !smsSel.disabled && smsSel.value !== editSmsOriginal) {
+      const { error: smsErr } = await supabaseClient
+        .from('customers').update({ sms_notify: smsSel.value || null }).eq('id', selectedCustomer.id);
+      if (smsErr) alert('คำสั่งซื้อบันทึกแล้ว แต่บันทึกการตั้งค่า SMS ไม่สำเร็จ / Order saved, but SMS setting failed: ' + smsErr.message);
+      else editSmsOriginal = smsSel.value;
     }
 
     // 商品構成は一旦全削除して作り直す(シンプルさ優先。差分更新はしない)
