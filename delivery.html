@@ -206,6 +206,7 @@
   .cfm-btns { display: flex; gap: 28px; }
   .cfm-btns button { flex: 1 1 0; min-height: 64px; border-radius: 12px; font-size: 16px; font-weight: 700; border: 2px solid var(--green); background: #fff; color: var(--green); }
   .cfm-btns button.cfm-yes { background: var(--green); color: #fff; }
+  .cfm-btns.col { flex-direction: column; gap: 14px; }
   /* ---- 写真の保存状態・未送信の警告 ---- */
   .thumbs .th .st { position: absolute; left: 3px; bottom: 3px; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 999px; background: rgba(255,255,255,.92); color: #166534; }
   .thumbs .th .st.saving { color: #92400e; }
@@ -358,6 +359,22 @@ function askConfirm(text) {
     const done = v => { ov.remove(); resolve(v); };
     ov.querySelector('.cfm-no').onclick = () => done(false);
     ov.querySelector('.cfm-yes').onclick = () => done(true);
+    document.body.appendChild(ov);
+  });
+}
+// 2択の確認(縦に大きなボタンを並べる)。戻り値: 'hand'(手渡し) / 'left'(不在で置いた) / null(キャンセル)
+function askChoice(text) {
+  return new Promise(resolve => {
+    if (document.querySelector('.cfm-ov')) { resolve(null); return; }
+    const ov = document.createElement('div');
+    ov.className = 'cfm-ov';
+    ov.innerHTML = '<div class="cfm-box"><div class="cfm-msg"></div><div class="cfm-btns col">' +
+      '<button type="button" class="cfm-yes" data-v="left">📦 ไม่อยู่ วางไว้ (ส่งอีเมลพร้อมรูป)<br><small>不在で置いた(写真つきメールを送る)</small></button>' +
+      '<button type="button" class="cfm-yes" data-v="hand">🤝 ส่งมอบให้ลูกค้าโดยตรง (ไม่ส่งอีเมล)<br><small>お客様に手渡しした(写真・メールなし)</small></button>' +
+      '<button type="button" class="cfm-no" data-v="">ยกเลิก / Cancel</button></div></div>';
+    ov.querySelector('.cfm-msg').textContent = text;
+    const done = v => { ov.remove(); resolve(v || null); };
+    ov.querySelectorAll('button').forEach(b => { b.onclick = () => done(b.dataset.v); });
     document.body.appendChild(ov);
   });
 }
@@ -1274,12 +1291,12 @@ function buildEmail(order, deliveredIso, photoCount) {
     : `${name}様
 
 毎度当店をご利用いただきまして誠にありがとうございます。
-ご注文${orderNo}の商品をお届けにお伺いしましたが、ご不在でしたため、お届け先に商品を置かせていただきました。
+ご注文${orderNo}の商品のお届けが完了いたしました。
 
 ■ お届け日時: ${when} (バンコク時間)
 ■ お届けの様子: ${photoJa}
 
-お受け取りの際は、お早めに商品をお取りください。
+置き配の場合は、お早めに商品をお受け取りください。
 お届けの状況について、ご不明な点がございましたらお気軽にご連絡ください。`;
   const en = atTable
     ? `Dear ${name},
@@ -1296,12 +1313,12 @@ If you have any questions about this delivery, please contact us anytime.`
     : `Dear ${name},
 
 Thank you for your order${orderNo}.
-We visited to deliver your items, but you were not available, so we left them at your address.
+Your items have been delivered.
 
 - Delivered at: ${when} (Bangkok time)
 - Photo: ${photoEn}
 
-Please collect your items as soon as possible.
+If your items were left at your door, please collect them as soon as possible.
 If you have any questions about this delivery, please contact us anytime.`;
   const sig =
 `サイトウフーズ株式会社 / Saito Foods Co., Ltd.
@@ -1366,9 +1383,15 @@ async function requestDeliverySms(orderId) {
 async function markHandedOver(orderId) {
   if (busy[orderId]) return;
   if (!(await confirmDone(orderId, '🤝 ส่งมอบให้ลูกค้าโดยตรงแล้วใช่หรือไม่?'))) return;
+  await completeHandedOver(orderId);
+}
+// 手渡し完了の本体(確認のあとに呼ぶ)。成功したら true
+async function completeHandedOver(orderId) {
+  if (busy[orderId]) return false;
   busy[orderId] = true;
   $('main-error').textContent = '';
   const locPromise = getCompletionLocation();
+  let ok = false;
   try {
     const loc = await locPromise;
     const { error } = await supabaseClient.rpc('delivery_app_complete',
@@ -1376,12 +1399,14 @@ async function markHandedOver(orderId) {
         p_lat: loc ? loc.lat : null, p_lng: loc ? loc.lng : null, p_accuracy_m: loc ? loc.acc : null });
     if (error) throw new Error(String(error.message).includes('ORDER_NOT_AVAILABLE') ? 'ออเดอร์นี้ถูกปิดงานไปแล้ว (อาจเป็นอีกเครื่องหนึ่ง)' : 'บันทึกไม่สำเร็จ: ' + error.message);
     doneToast();
+    ok = true;
   } catch (e) {
     $('main-error').textContent = errMsg(e) || String(e);
   } finally {
     delete busy[orderId];
     await loadOrders();
   }
+  return ok;
 }
 
 // 写真なしで完了にする(朝の注文など、写真を撮れなかった/撮る必要がなくなったもの)。
@@ -1422,7 +1447,26 @@ async function skipPhoto(orderId) {
 
 async function submitDelivery(orderId) {
   if (!(staged[orderId] || []).length || busy[orderId]) return;
-  if (!(await confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที'))) return;
+  const oc = orderCache[orderId];
+  if (oc && oc.delivery_leave_at_table) {
+    // テーブル置き配の指定がある注文は、これまでどおり1回の確認だけ
+    if (!(await confirmDone(orderId, '✅ ส่งของแล้วใช่หรือไม่?\nระบบจะส่งรูปให้ลูกค้าทางอีเมลทันที'))) return;
+  } else {
+    // 通常の配達: お客様に会えたか(手渡し)/不在で置いたかを必ず選ばせる(2026-11-07。手渡しなのに「ご不在でした」メールが届いた件の再発防止)
+    const who = oc ? `${customerLabel(oc)}\n${addressLabel(oc)}` : '';
+    const choice = await askChoice(`${who}\n\nส่งของให้ลูกค้าอย่างไร?\nどのように届けましたか?`);
+    if (!choice) return;
+    if (choice === 'hand') {
+      // 手渡しは写真もメールもなしで完了にする(撮影済みの写真は使わない)
+      const okHand = await completeHandedOver(orderId);
+      if (okHand) {
+        (staged[orderId] || []).forEach(it => { if (it.blob && it.url) URL.revokeObjectURL(it.url); });
+        delete staged[orderId];
+        await loadOrders();
+      }
+      return;
+    }
+  }
   busy[orderId] = true;
   $('main-error').textContent = '';
   // ボタンを押した瞬間の位置を取り始める(写真のアップロードと並行して待つので、追加の待ち時間はほぼ出ない)
