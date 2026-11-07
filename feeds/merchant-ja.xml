@@ -496,7 +496,7 @@
       <description>ちょっと仕入れ値がお高かったので販売はどうかな〜と思いながらサンプルを試させていただいたら…高くても食べたい!!となり緊急入荷です。 子供もポリポリパクパク!大人はビールが止まりませんのでご注意ください。 250g入り マヨ七味や麺つゆにも相性抜群! 粉自体に卵関連の原料はありませんが卵パウダーの使用がある工場で製造されておりますので製品の裏面に一応、卵や大豆の可能性ありの記載がございます。</description>
       <link>https://saitofoods.com/products/1205.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555612912_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>193.00 THB</g:price>
       <g:sale_price>128.00 THB</g:sale_price>
       <g:condition>new</g:condition>
@@ -522,7 +522,7 @@
       <title>デリシャス エビフライ10尾</title>
       <description>umios特製の大きいサイズの冷凍エビフライ１０尾入り。簡単揚げるだけ。</description>
       <link>https://saitofoods.com/products/1210.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11141737_6735d2cd5435c.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947706241_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>129.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -914,7 +914,7 @@
       <description>タイ産の白豚のスライスです。 豚しゃぶ、豚しゃぶサラダなどにぴったりの厚みに スライスしてあります。200g入り</description>
       <link>https://saitofoods.com/products/1112.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489115964_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>133.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -992,7 +992,7 @@
       <description>タイ和牛のブロック肉切り落とし約５００gです。量り売りです。</description>
       <link>https://saitofoods.com/products/1019.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483339244_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>300.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2388,7 +2388,7 @@
       <title>骨取り　赤魚の塩麹漬</title>
       <description>プリプリの骨なし赤魚のフィレを塩麹漬けにしました。解凍後に焼くだけでお召し上がりいただけます。</description>
       <link>https://saitofoods.com/products/343.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555892668_slot1.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793948067034_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06061535_53917d5423be2.jpg</g:additional_image_link>
       <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
@@ -2441,7 +2441,7 @@
       <title>北海道産 加熱用 冷凍蒸し水タコ頭 カット 約180g</title>
       <description>北海道の巨大な水ダコの頭部分です。蒸してあるので味が抜けておらず美味！</description>
       <link>https://saitofoods.com/products/1162.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486544503_slot1.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947997594_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05161411_6645b1a9ea25e.jpg</g:additional_image_link>
       <g:availability>in_stock</g:availability>
       <g:price>198.00 THB</g:price>
@@ -2521,7 +2521,7 @@
       <description>豊洲から直送の本マグロ赤身サクです。 超低温で保管しておりますので、配送後は再冷凍せず冷蔵庫にて解凍後にスライスしてお召し上がりください。マグロの王様 本マグロの独特の食感と濃い味をお楽しみいただけます。カットは大体300gとなっておりまして重さは多少前後します。 245baht/100g -&gt; 195baht/100g 届いたロットにより赤身でも中トロ寄りの部位になる場合がございます。恐れ入りますが予めご了承くださいませ。よろしくお願い致します。 **ご注文の翌日配送となります! 解凍する際は、袋に入ったままのマグロを氷水を入れたボウルに入れ、そのまま冷蔵庫で半日ほどかけて解凍します。解凍後はドリップをキッチンペーパーで拭き取り、冷蔵庫でしばらく休ませると、より美味しく仕上がります。</description>
       <link>https://saitofoods.com/products/1303.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10011158_68dcb4efb3c7c.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>585.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2534,7 +2534,7 @@
       <description>豊洲から直送の本マグロ中とろサクです。 超低温で保管しておりますので、配送後は冷凍保管せず冷蔵庫にて解凍後スライスしてお召し上がりください。マグロの王様 本マグロの独特の食感ととろける中トロをお楽しみいただけます。カットは大体200gとなっておりまして重さは多少前後します。 300baht/100g **ご注文の翌日配送となります! 解凍する際は、袋に入ったままのマグロを氷水を入れたボウルに入れ、そのまま冷蔵庫で半日ほどかけて解凍します。解凍後はドリップをキッチンペーパーで拭き取り、冷蔵庫でしばらく休ませると、より美味しく仕上がります。</description>
       <link>https://saitofoods.com/products/1304.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10011157_68dcb4ceafabd.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>600.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2941,7 +2941,7 @@
       <description>チェンライ産プーレー種パイナップルのペーストを入れ込んだ美味しいクッキーです。お土産にどうぞ。</description>
       <link>https://saitofoods.com/products/1330.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01141609_69675d2e90631.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>190.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3229,7 +3229,7 @@
       <title>アラウベビー 泡全身ソープ 詰め替え 400ml</title>
       <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。詰め替え用。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
       <link>https://saitofoods.com/products/549.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11251726_583811eb58daf.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947764758_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>215.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3281,7 +3281,7 @@
       <title>Silky wash hand soap peach refill=BB-10</title>
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/products/565.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310707_630f08a926ddf.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947331246_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>53.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3294,7 +3294,7 @@
       <title>Silky wash hand soap green apple refill=BB-08</title>
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/products/562.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310708_630f08ec0ade2.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947353772_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>53.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3320,7 +3320,7 @@
       <title>タイ柄 お土産バッグ 10枚入 アソート=BAG</title>
       <description>お土産を渡すのに丁度良いタイパターンの紙バッグ。大人気！</description>
       <link>https://saitofoods.com/products/1235.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12132116_675c41d9f18a8.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793950131668_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>

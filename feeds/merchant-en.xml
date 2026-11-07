@@ -496,7 +496,7 @@
       <description>The wholesale price was quite high, so I was hesitant about selling it... but after trying a sample, I thought 'I want to eat this even if it's expensive!!' So we've made an emergency restock. Children will munch away happily! Adults be warned - you won't be able to stop drinking beer. 250g per package Pairs perfectly with mayo-shichimi spice blend and noodle broth! While the powder itself contains no egg-related ingredients, it is manufactured in a facility that uses egg powder, so the product label notes possible traces of eggs and soybeans. The photo shows the plating for 250g. Cooking methods and recipe ideas are featured on our Instagram!</description>
       <link>https://saitofoods.com/en/products/1205.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555612912_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>193.00 THB</g:price>
       <g:sale_price>128.00 THB</g:sale_price>
       <g:condition>new</g:condition>
@@ -522,7 +522,7 @@
       <title>Delicious Ebi Fry L 10pcs</title>
       <description>Extra-large frozen fried shrimp specially made by umios, 10 pieces per pack. Just deep-fry for an easy meal.</description>
       <link>https://saitofoods.com/en/products/1210.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11141737_6735d2cd5435c.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947706241_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>129.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -914,7 +914,7 @@
       <description>タイ産の白豚のスライスです。 豚しゃぶ、豚しゃぶサラダなどにぴったりの厚みに スライスしてあります。200g入り</description>
       <link>https://saitofoods.com/en/products/1112.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489115964_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>133.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -992,7 +992,7 @@
       <description>Thai wagyu beef block cuts (trimmings), approx. 500g. Sold by weight.</description>
       <link>https://saitofoods.com/en/products/1019.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483339244_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>300.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2388,7 +2388,7 @@
       <title>Boneless Akauo Rockfish in Shio Koji</title>
       <description>Plump, boneless rockfish fillet marinated in shio koji. Just thaw and grill, then enjoy.</description>
       <link>https://saitofoods.com/en/products/343.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555892668_slot1.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793948067034_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/06061535_53917d5423be2.jpg</g:additional_image_link>
       <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
@@ -2441,7 +2441,7 @@
       <title>Hokkaido Frozen Octopus Head Cut approx. 180g (For Cooking)</title>
       <description>The head of a huge Hokkaido octopus. It is steamed, so the flavor is still there. Delicious!</description>
       <link>https://saitofoods.com/en/products/1162.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486544503_slot1.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947997594_slot1.jpg</g:image_link>
       <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05161411_6645b1a9ea25e.jpg</g:additional_image_link>
       <g:availability>in_stock</g:availability>
       <g:price>198.00 THB</g:price>
@@ -2521,7 +2521,7 @@
       <description>豊洲から直送の本マグロ赤身サクです。 超低温で保管しておりますので、配送後は再冷凍せず冷蔵庫にて解凍後にスライスしてお召し上がりください。マグロの王様 本マグロの独特の食感と濃い味をお楽しみいただけます。カットは大体300gとなっておりまして重さは多少前後します。 245baht/100g -&gt; 195baht/100g 届いたロットにより赤身でも中トロ寄りの部位になる場合がございます。恐れ入りますが予めご了承くださいませ。よろしくお願い致します。 **ご注文の翌日配送となります! 解凍する際は、袋に入ったままのマグロを氷水を入れたボウルに入れ、そのまま冷蔵庫で半日ほどかけて解凍します。解凍後はドリップをキッチンペーパーで拭き取り、冷蔵庫でしばらく休ませると、より美味しく仕上がります。</description>
       <link>https://saitofoods.com/en/products/1303.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10011158_68dcb4efb3c7c.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>585.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2534,7 +2534,7 @@
       <description>豊洲から直送の本マグロ中とろサクです。 超低温で保管しておりますので、配送後は冷凍保管せず冷蔵庫にて解凍後スライスしてお召し上がりください。マグロの王様 本マグロの独特の食感ととろける中トロをお楽しみいただけます。カットは大体200gとなっておりまして重さは多少前後します。 300baht/100g **ご注文の翌日配送となります! 解凍する際は、袋に入ったままのマグロを氷水を入れたボウルに入れ、そのまま冷蔵庫で半日ほどかけて解凍します。解凍後はドリップをキッチンペーパーで拭き取り、冷蔵庫でしばらく休ませると、より美味しく仕上がります。</description>
       <link>https://saitofoods.com/en/products/1304.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/10011157_68dcb4ceafabd.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>600.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2941,7 +2941,7 @@
       <description>Delicious cookies made with Chiang Rai-grown Phu Lae pineapple paste. Perfect as a gift or souvenir.</description>
       <link>https://saitofoods.com/en/products/1330.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01141609_69675d2e90631.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>190.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3229,7 +3229,7 @@
       <title>Arau Baby Foaming Soap Refill 400ml</title>
       <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。詰め替え用。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
       <link>https://saitofoods.com/en/products/549.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/11251726_583811eb58daf.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947764758_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>215.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3281,7 +3281,7 @@
       <title>Silky Wash Hand Soap Peach Refill</title>
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/en/products/565.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310707_630f08a926ddf.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947331246_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>53.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3294,7 +3294,7 @@
       <title>Silky Wash Hand Soap Green Apple Refill</title>
       <description>手を洗うと同時に、殺菌・消毒できる薬用石けん。 殺菌成分IPM(イソプロピルメチルフェノール)配合。 天然のヤシ油を原料にした植物性石けんで、手肌にやさしく地球環境にもやさしい。 泡がきめ細かく、泡切れが早い!サッパリします。 290ml入り</description>
       <link>https://saitofoods.com/en/products/562.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/08310708_630f08ec0ade2.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793947353772_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>53.00 THB</g:price>
       <g:condition>new</g:condition>
@@ -3320,7 +3320,7 @@
       <title>Thai Pattern Souvenir Bags 10pcs Assorted</title>
       <description>Thai-pattern paper bags, just right for handing over souvenirs. Very popular!</description>
       <link>https://saitofoods.com/en/products/1235.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/12132116_675c41d9f18a8.jpg</g:image_link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1793950131668_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
