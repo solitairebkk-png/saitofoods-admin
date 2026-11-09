@@ -3299,7 +3299,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   const deliveryFlagDefs = [
     { key: 'delivery_leave_at_front', en: 'Leave with front desk', th: 'ฝากไว้ที่ Front / นิติบุคคล' },
     { key: 'delivery_payment_at_front', en: 'Payment left at front desk', th: 'ฝากเงินค่าสินค้าไว้ที่ Front' },
-    { key: 'delivery_no_change', en: 'No change needed', th: 'ไม่ต้องทอนเงิน' },
+    { key: 'delivery_no_change', en: 'Exact payment — no change needed', th: 'ชำระเงินพอดี ไม่ต้องเตรียมเงินทอน' },
   ];
   const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
   // 店舗受け取り(2026-11-02): お客様が店に取りに来る。配達はしない。ポイントは付与されない

@@ -320,7 +320,7 @@
     'cart.optTax': { ja: 'この注文はTAXインボイスが必要です(マイページに登録した会社情報で作成します) / I need a tax invoice for this order', en: 'I need a tax invoice for this order (prepared from the company information in My Page)' },
     'cart.taxSaveFailed': { ja: '⚠️ TAXインボイスのご希望を保存できませんでした。お手数ですが、店舗までご連絡ください。', en: '⚠️ We could not save your tax invoice request. Please contact us.' },
     'cart.optSms': { ja: '配達完了をSMSでも受け取る(写真付きメールとあわせてお知らせします) / Also notify me by SMS when delivered', en: 'Also notify me by SMS when delivered (we will email you a photo too)' },
-    'cart.optNoChange': { ja: 'お釣りは不要です / No change needed', en: 'No change needed' },
+    'cart.optNoChange': { ja: 'ちょうどお支払いします(お釣りの準備は不要です) / I will pay the exact amount (no need to bring change)', en: 'I will pay the exact amount (no need to bring change)' },
     'cart.commentLabel': { ja: '備考 / Comment', en: 'Comment' },
     'cart.commentPlaceholder': { ja: '例: 玄関前に置いてください', en: 'e.g. Please leave it by the front door' },
     'cart.translateHint': { ja: '日本語のままでも大丈夫です。配送スタッフに直接伝わりやすくしたい場合は、お好みで「タイ語に翻訳」をお試しください(翻訳は必須ではありません)。', en: 'Japanese is fine as-is. If you\'d like it to come across more clearly to our delivery staff, feel free to try "Translate to Thai" — it\'s completely optional.' },

@@ -851,7 +851,7 @@ function renderReceipt(order) {
   const deliveryFlagDefs = [
     { key: 'delivery_leave_at_front', th: 'ฝากไว้ที่ Front / นิติบุคคล' },
     { key: 'delivery_payment_at_front', th: 'ฝากเงินค่าสินค้าไว้ที่ Front' },
-    { key: 'delivery_no_change', th: 'ไม่ต้องทอนเงิน' },
+    { key: 'delivery_no_change', th: 'ชำระเงินพอดี ไม่ต้องเตรียมเงินทอน' },
   ];
   const activeDeliveryFlags = deliveryFlagDefs.filter(f => order[f.key]);
   if (activeDeliveryFlags.length > 0) {
