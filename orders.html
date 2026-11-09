@@ -504,6 +504,18 @@
     font-size: 10.5px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
     background: white; cursor: pointer; font-family: inherit; color: var(--text); text-decoration: none;
   }
+  /* ✉️メールの添付ファイル(2026-11-09) */
+  .sns-att-list { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+  .sns-att { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #faf9f6; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 11.5px; }
+  .sns-att-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: zoom-in; background: #eee; }
+  .sns-att-name { color: var(--text-muted); word-break: break-all; }
+  .sns-att button, .sns-att a.sns-att-link { font-size: 10.5px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: white; cursor: pointer; font-family: inherit; color: var(--text); text-decoration: none; }
+  .sns-att-done { color: #1f6b34; font-weight: 600; }
+  #inbox-slip-picker { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 12px; }
+  #inbox-slip-picker .picker-box { background: white; border-radius: 10px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 14px; font-size: 12.5px; }
+  #inbox-slip-picker .picker-order { display: block; width: 100%; text-align: left; margin-top: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-family: inherit; font-size: 12px; }
+  #inbox-slip-picker .picker-order:hover { background: #f4f8f4; border-color: #9cc3a4; }
+  #inbox-slip-picker .picker-order.recommended { border-color: #1f6b34; background: #f4f8f4; }
   .autopost-item { padding: 10px 8px; border-bottom: 1px solid #f0efec; font-size: 12.5px; }
   .autopost-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 3px; }
   .autopost-item-product { font-weight: 700; }
@@ -2916,10 +2928,12 @@ async function uploadWalkinSlip(order, file) {
       supabaseClient.storage.from(WALKIN_SLIP_BUCKET).remove([order.slip_image_url.slice(WALKIN_SLIP_PREFIX.length)]);
     }
     loadOrders();
+    return true;
   } catch (e) {
     // 画像は保存できたのに注文への記録に失敗した場合、使われない画像が残らないように消す
     if (uploadedPath) supabaseClient.storage.from(WALKIN_SLIP_BUCKET).remove([uploadedPath]);
     alert('Upload failed / อัปโหลดไม่สำเร็จ: ' + ((e && e.message) || e));
+    return false;
   }
 }
 
@@ -4654,6 +4668,7 @@ async function loadInboxList() {
            </div>
          </div>`
       : `<div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>`;
+    const attachmentsHtml = isEmail ? renderInboxAttachments(item) : '';
     const readBtn = item.is_read
       ? ''
       : `<button onclick="markInboxRead('${item.id}')">Mark as read / อ่านแล้ว</button>`;
@@ -4677,10 +4692,158 @@ async function loadInboxList() {
           <span class="sns-item-time">${timeStr}</span>
         </div>
         ${bodyHtml}
+        ${attachmentsHtml}
         ${repliedHtml}
         <div class="sns-item-actions">${replyBtn}${readBtn}${permalinkBtn}</div>
       </div>`;
   }).join('');
+  hydrateInboxAttachments(listEl);
+}
+
+// ===== ✉️メールの添付ファイル(2026-11-09) =====
+// GAS(gmail_inbox_watch.gs)が、メールの添付(画像・PDF)を非公開の保存先 inbox-attachments に保存し、
+// sns_inbox.attachments に [{name, path, type, size}] を記録する。ここでは一時的な閲覧用URLで表示する。
+const INBOX_ATTACH_BUCKET = 'inbox-attachments';
+
+function renderInboxAttachments(item) {
+  const list = Array.isArray(item.attachments) ? item.attachments : [];
+  if (list.length === 0) return '';
+  const done = item.slip_order_id
+    ? `<div class="sns-att-done">✅ Set as slip for order #${escapeHtml(String(item.slip_order_id).slice(0, 8))} by ${escapeHtml(item.slip_set_by || '(unknown)')} / ใช้เป็นสลิปแล้ว</div>` : '';
+  const rows = list.map((att, idx) => {
+    const isImage = /^image\//.test(att.type || '');
+    const previewable = /^image\/(jpeg|png|gif|webp)$/.test(att.type || '');
+    const name = escapeHtml(att.name || 'attachment');
+    const thumb = previewable
+      ? `<img class="sns-att-thumb" data-att-path="${escapeHtml(att.path)}" alt="${name}">`
+      : '';
+    const openLink = `<a class="sns-att-link" data-att-link="${escapeHtml(att.path)}" target="_blank" rel="noopener">${isImage ? '🖼' : '📄'} Open / เปิด</a>`;
+    const slipBtn = isImage
+      ? `<button onclick="openInboxSlipPicker('${item.id}', ${idx})">📎 Set as slip / ใช้เป็นสลิป</button>` : '';
+    return `<div class="sns-att">${thumb}<span class="sns-att-name">${name}</span>${openLink}${slipBtn}</div>`;
+  }).join('');
+  return `<div class="sns-att-list"><div class="sns-bilingual-label">ATTACHMENTS / ไฟล์แนบ</div>${rows}${done}</div>`;
+}
+
+// 一覧の中の添付に、一時的な閲覧用URL(1時間有効)を付ける
+async function hydrateInboxAttachments(rootEl) {
+  const thumbs = rootEl.querySelectorAll('img[data-att-path]');
+  const links = rootEl.querySelectorAll('a[data-att-link]');
+  const paths = new Set();
+  thumbs.forEach(el => paths.add(el.getAttribute('data-att-path')));
+  links.forEach(el => paths.add(el.getAttribute('data-att-link')));
+  if (paths.size === 0) return;
+  const { data, error } = await supabaseClient.storage.from(INBOX_ATTACH_BUCKET)
+    .createSignedUrls(Array.from(paths), 3600);
+  if (error || !data) return;
+  const urlByPath = {};
+  data.forEach(d => { if (d.path && d.signedUrl) urlByPath[d.path] = d.signedUrl; });
+  thumbs.forEach(el => {
+    const u = urlByPath[el.getAttribute('data-att-path')];
+    if (u) { el.src = u; el.onclick = () => openSlipModal(u); }
+  });
+  links.forEach(el => {
+    const u = urlByPath[el.getAttribute('data-att-link')];
+    if (u) el.href = u; else el.style.display = 'none';
+  });
+}
+
+function closeInboxSlipPicker() {
+  const el = document.getElementById('inbox-slip-picker');
+  if (el) el.remove();
+}
+
+// 添付画像を「どの注文のスリップにするか」選ぶ画面。送信元アドレスからお客様と直近の注文を探して候補を出す。
+async function openInboxSlipPicker(itemId, attIdx) {
+  const item = inboxItemCache[itemId];
+  const att = item && Array.isArray(item.attachments) ? item.attachments[attIdx] : null;
+  if (!item || !att) return;
+  closeInboxSlipPicker();
+  const wrap = document.createElement('div');
+  wrap.id = 'inbox-slip-picker';
+  wrap.onclick = (e) => { if (e.target === wrap) closeInboxSlipPicker(); };
+  wrap.innerHTML = '<div class="picker-box"><div class="loading">Loading...</div></div>';
+  document.body.appendChild(wrap);
+  const box = wrap.querySelector('.picker-box');
+  const closeBtn = '<div style="margin-top:10px;text-align:right;"><button onclick="closeInboxSlipPicker()" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:white;cursor:pointer;">Close / ปิด</button></div>';
+  const head = `<div style="font-weight:700;font-size:13px;">Set as slip / ใช้เป็นสลิป</div>
+    <div style="color:var(--text-muted);margin-top:2px;">From: ${escapeHtml(item.sender_name || '')} ${item.sender_email ? '&lt;' + escapeHtml(item.sender_email) + '&gt;' : ''}</div>`;
+  try {
+    const email = (item.sender_email || '').trim();
+    if (!email) {
+      box.innerHTML = head + '<div style="margin-top:8px;">The sender\'s email address is unknown, so orders can\'t be suggested. Open the attachment and use "Attach slip" on the order instead.<br>ไม่ทราบอีเมลผู้ส่ง จึงแนะนำออเดอร์ไม่ได้ กรุณาเปิดไฟล์แล้วใช้ปุ่มแนบสลิปที่ออเดอร์</div>' + closeBtn;
+      return;
+    }
+    // メールアドレスは大文字小文字の違いを無視して探す(_ と % は検索の記号なのでエスケープ)
+    const pattern = email.replace(/[\\%_]/g, '\\$&');
+    const { data: custs, error: cErr } = await supabaseClient.from('customers').select('id').ilike('email', pattern);
+    if (cErr) throw cErr;
+    let orders = [];
+    if (custs && custs.length) {
+      const { data, error: oErr } = await supabaseClient.from('orders')
+        .select('id, order_type, payment_method, payment_status, slip_image_url, total_amount, paid_amount, created_at, delivery_date, is_cancelled, is_completed')
+        .in('customer_id', custs.map(c => c.id)).eq('is_cancelled', false)
+        .order('created_at', { ascending: false }).limit(8);
+      if (oErr) throw oErr;
+      orders = data || [];
+    }
+    if (orders.length === 0) {
+      box.innerHTML = head + `<div style="margin-top:8px;">No order found for this email address. The customer may have used a different address — open the attachment and use "Attach slip" on the order instead.<br>ไม่พบออเดอร์ของอีเมลนี้ ลูกค้าอาจใช้อีเมลอื่น กรุณาเปิดไฟล์แล้วใช้ปุ่มแนบสลิปที่ออเดอร์</div>` + closeBtn;
+      return;
+    }
+    // 「スリップ未添付」かつ「未入金」の注文が1件だけなら、それをおすすめとして目立たせる
+    const needs = o => !o.slip_image_url && !(Number(o.paid_amount) > 0) && o.payment_status !== 'paid';
+    const needing = orders.filter(needs);
+    const recommendedId = needing.length === 1 ? needing[0].id : null;
+    const fmtDate = v => v ? new Date(v).toLocaleString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '-';
+    const rowsHtml = orders.map(o => `
+      <button class="picker-order ${o.id === recommendedId ? 'recommended' : ''}" onclick="assignInboxSlip('${item.id}', ${attIdx}, '${o.id}')">
+        <b>#${escapeHtml(o.id.slice(0, 8))}</b> · ordered ${escapeHtml(fmtDate(o.created_at))} · delivery ${escapeHtml(o.delivery_date || '-')} · <b>฿${escapeHtml(String(o.total_amount ?? '-'))}</b>
+        <br><span style="color:var(--text-muted);">payment: ${escapeHtml(o.payment_status || '-')}${Number(o.paid_amount) > 0 ? ' (paid ฿' + escapeHtml(String(o.paid_amount)) + ')' : ''} · slip: ${o.slip_image_url ? 'already attached' : 'none'}</span>
+        ${o.id === recommendedId ? '<br><span style="color:#1f6b34;font-weight:700;">★ Suggested — the only order without a slip or payment / แนะนำ</span>' : ''}
+      </button>`).join('');
+    box.innerHTML = head + `<div style="margin-top:8px;">Choose the order this slip belongs to. Payment is <b>not</b> confirmed automatically — confirm it as usual after checking the slip.<br>เลือกออเดอร์ที่สลิปนี้เป็นของ (ระบบไม่ยืนยันการชำระเงินให้อัตโนมัติ)</div>${rowsHtml}` + closeBtn;
+  } catch (e) {
+    box.innerHTML = head + `<div style="margin-top:8px;color:var(--red-accent);">Error: ${escapeHtml((e && e.message) || String(e))}</div>` + closeBtn;
+  }
+}
+
+// 選んだ注文のスリップとして保存する(既存の「スリップを添付」と同じ保存処理を使う)
+async function assignInboxSlip(itemId, attIdx, orderId) {
+  const item = inboxItemCache[itemId];
+  const att = item && Array.isArray(item.attachments) ? item.attachments[attIdx] : null;
+  if (!item || !att) return;
+  const box = document.querySelector('#inbox-slip-picker .picker-box');
+  if (box) box.innerHTML = '<div class="loading">Saving... / กำลังบันทึก</div>';
+  try {
+    const { data: order, error: oErr } = await supabaseClient.from('orders')
+      .select('id, order_type, payment_method, slip_image_url').eq('id', orderId).single();
+    if (oErr) throw oErr;
+    // 既にスリップが付いている注文に付けるときは、確認してから差し替える
+    if (order.slip_image_url && !confirm('This order already has a slip. Replace it?\nออเดอร์นี้มีสลิปอยู่แล้ว ต้องการแทนที่หรือไม่?')) {
+      closeInboxSlipPicker();
+      return;
+    }
+    const { data: blob, error: dErr } = await supabaseClient.storage.from(INBOX_ATTACH_BUCKET).download(att.path);
+    if (dErr) throw dErr;
+    const file = new File([blob], att.name || 'slip.jpg', { type: att.type || blob.type || 'image/jpeg' });
+    const ok = await uploadWalkinSlip(order, file);
+    if (!ok) { closeInboxSlipPicker(); return; }
+    // どの注文に付けたかをメール側に記録し、既読にする
+    const { error: uErr } = await supabaseClient.from('sns_inbox').update({
+      slip_order_id: orderId,
+      slip_set_by: (currentCustomer && currentCustomer.email) || null,
+      slip_set_at: new Date().toISOString(),
+      is_read: true
+    }).eq('id', itemId);
+    if (uErr) throw uErr;
+    closeInboxSlipPicker();
+    loadInboxList();
+    loadInboxBadge();
+  } catch (e) {
+    closeInboxSlipPicker();
+    alert('Failed / ไม่สำเร็จ: ' + ((e && e.message) || e));
+  }
 }
 
 async function markInboxRead(id) {
