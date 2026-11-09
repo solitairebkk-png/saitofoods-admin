@@ -180,6 +180,9 @@
   .customer-info { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border); }
   .customer-name-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .customer-name { font-weight: 600; }
+  /* 顧客名をクリックすると、Customersページへ移動してその顧客名で検索された状態で表示する(2026-11-09) */
+  .customer-name a.customer-name-link { color: var(--navy); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; cursor: pointer; }
+  .customer-name a.customer-name-link:hover { color: var(--navy-light); text-decoration-style: solid; }
   .customer-info { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .customer-main { flex: 1 1 0; min-width: 0; }
   .customer-side { flex: 0 1 auto; text-align: right; max-width: 45%; }
@@ -3200,6 +3203,15 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
     : (order.customers
       ? escapeHtml(`${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim())
       : 'หน้าร้าน / Walk-in');
+  // 顧客名をクリックすると、上部メニューの「Customers」ページ(customer_control.html)へ移動し、
+  // その顧客名が検索欄に入って検索された状態で表示する(2026-11-09)。
+  // 卸売(wholesale)とWalk-in(紐づく顧客がいない注文)は顧客ページに該当者がいないため、リンクにしない。
+  const customerSearchText = (!order.is_wholesale && order.customers)
+    ? `${order.customers.family_name || ''} ${order.customers.first_name || ''}`.trim()
+    : '';
+  const customerNameHtml = customerSearchText
+    ? `<a class="customer-name-link" href="customer_control.html?q=${encodeURIComponent(customerSearchText)}&nameonly=1" title="Customers / ข้อมูลลูกค้า">${customerName}</a>`
+    : customerName;
   // この注文でTAXインボイスが必要(orders.tax_invoice_requested)の目印(2026-11-02)。書類は経理が作成するため、会社名・納税者番号・
   // 本店/支店・住所を一覧に添えて、そのまま経理へ渡せるようにする。
   const taxCust = order.is_wholesale ? null : order.customers;
@@ -3308,7 +3320,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
       ${deliveryFlagsHtml}
       <div class="customer-info">
         <div class="customer-main">
-          <div class="customer-name">${customerName}</div>
+          <div class="customer-name">${customerNameHtml}</div>
           ${address ? `<div class="customer-address">📍 ${address}</div>` : ''}
           ${callFlagHtml ? `<div style="margin-top:6px;">${callFlagHtml}</div>` : ''}
           ${taxInvoiceHtml}

@@ -184,6 +184,9 @@ function escapeHtml(v) {
 let currentCustomer = null;
 let allCustomers = [];
 let allAreas = [];
+// orders.htmlの顧客名リンク(?q=氏名&nameonly=1)で開いたとき、最初の読み込みでだけ検索欄に反映する(2026-11-09)。
+// 保存後の再読み込み(loadCustomers)で、利用者が変えた検索条件を上書きしないための印。
+let urlSearchApplied = false;
 
 function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function scrollToBottom() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); }
@@ -270,6 +273,18 @@ async function loadCustomers() {
   }
 
   allCustomers = all;
+
+  // orders.htmlの顧客名をクリックして来たときは、その顧客名が検索された状態で表示する(最初の読み込みのみ)
+  if (!urlSearchApplied) {
+    urlSearchApplied = true;
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      document.getElementById('filter-search').value = q;
+      document.getElementById('filter-nameonly').checked = params.get('nameonly') === '1';
+    }
+  }
+
   applyFilters();
 }
 
