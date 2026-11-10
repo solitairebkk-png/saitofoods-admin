@@ -490,20 +490,6 @@
       <g:product_type>For lunch box</g:product_type>
     </item>
     <item>
-      <g:id>1281</g:id>
-      <title>Boneless Small Aji Tatsuta-Age 10pcs</title>
-      <description>原料に卵は不使用です。</description>
-      <link>https://saitofoods.com/en/products/1281.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487211007_slot1.jpg</g:image_link>
-      <g:additional_image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/07030940_6865ed882b69c.jpg</g:additional_image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>100.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Frozen fish</g:product_type>
-    </item>
-    <item>
       <g:id>1205</g:id>
       <title>Fz. Fried Burdock Root 250g Ready to Cook</title>
       <description>The wholesale price was quite high, so I was hesitant about selling it... but after trying a sample, I thought 'I want to eat this even if it's expensive!!' So we've made an emergency restock. Children will munch away happily! Adults be warned - you won't be able to stop drinking beer. 250g per package Pairs perfectly with mayo-shichimi spice blend and noodle broth! While the powder itself contains no egg-related ingredients, it is manufactured in a facility that uses egg powder, so the product label notes possible traces of eggs and soybeans. The photo shows the plating for 250g. Cooking methods and recipe ideas are featured on our Instagram!</description>
@@ -732,7 +718,7 @@
       <description>優しい甘醤油味 サバ照り焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/en/products/1272.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884213892_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1435,7 +1421,7 @@
       <description>An unexpected pairing: natto with wasabi. Try something different once in a while.</description>
       <link>https://saitofoods.com/en/products/1359.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201407_6a0d5db534a8c.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1878,7 +1864,7 @@
       <description>牛丼が美味しくバージョンアップしました! 内容量を130gにアップし、使用している牛肉はUSビーフ に変更、玉ねぎも増量しました。なのに価格は据え置き! この商品は加熱調理済みの商品です。 お好みの暖かさに加熱してお召し上がりくださいませ。</description>
       <link>https://saitofoods.com/en/products/271.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489318988_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>110.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
