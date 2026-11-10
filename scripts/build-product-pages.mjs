@@ -179,6 +179,13 @@ function buildPage(p, lang, cats) {
   return `<!DOCTYPE html>
 <html lang="${t.htmlLang}">
 <head>
+<!-- Google tag (GA4 via GTM container) -->
+<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-MGBSQXCQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(title)}</title>
