@@ -3259,8 +3259,11 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
   if (order.is_store_pickup) paymentBadges.push('<span class="badge" style="background:#fff3d6;color:#7a4b00;border:1px solid #e0a030;">🏪 Store Pickup / รับที่ร้าน</span>');
   if (order.related_order_id) paymentBadges.push(`<span class="badge badge-walkin" style="background:#fdece0;color:#b0592f;">➕ Additional Order / คำสั่งซื้อเพิ่มเติม #${order.related_order_id.slice(0, 8).toUpperCase()}</span>`);
   if (order.payment_method === 'cash') paymentBadges.push('<span class="badge badge-cash">เงินสด / Cash</span>');
-  if (order.payment_method === 'qr' && order.payment_status === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
-  if (order.payment_method === 'qr' && order.payment_status !== 'paid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
+  // QRの支払い表示は、PAIDスタンプと同じ判定(getPaymentState)に揃える(2026-11-10)。
+  // 以前は生のpayment_statusだけを見ていたため、手動確認済み・入金済みなのに「QR Pending」が残り、PAIDスタンプと矛盾していた。
+  // 一部入金(partial)は専用の「ยอดค้างชำระ」バッジがあるので、QR Pendingは完全な未入金のときだけ出す。
+  if (order.payment_method === 'qr' && getPaymentState(order) === 'paid') paymentBadges.push('<span class="badge badge-qr">โอนแล้ว / QR Paid</span>');
+  if (order.payment_method === 'qr' && getPaymentState(order) === 'unpaid') paymentBadges.push('<span class="badge badge-pending">รอยืนยัน / QR Pending</span>');
   if (order.manual_payment_confirmed) paymentBadges.push(renderManualPaidBadge(order));
   // 「未回収」の印(2026-10-26): 配送済みなのに代金を回収できていない注文。入金が確認できると自動で表示されなくなる
   if (order.payment_uncollected && getPaymentState(order) !== 'paid') {
@@ -3797,7 +3800,7 @@ function openReceiptModal(order) {
   }).join('');
 
   const paymentLabel = order.payment_method === 'qr'
-    ? (order.payment_status === 'paid' ? 'โอน QR (ยืนยันแล้ว) / QR Transfer (Confirmed)' : 'โอน QR (รอยืนยัน) / QR Transfer (Pending)')
+    ? (isOrderPaid(order) ? 'โอน QR (ยืนยันแล้ว) / QR Transfer (Confirmed)' : 'โอน QR (รอยืนยัน) / QR Transfer (Pending)')
     : 'เงินสด / Cash';
 
   const walkinLine = order.order_type === 'walk_in'
