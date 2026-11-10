@@ -76,7 +76,7 @@
       <description>キメ細やかな良く伸びる冷凍の切り餅です。 使いやすい個別包装にしました。 50g*6個 タイでありがちな、厚みの薄いお餅ではなくて、しっかりと日本人に合った厚みで作りました。原材料は・・もち米(タイ産)、水のみ。 防腐剤や味付けも行っておりません。 完全無添加! 安心して御利用くださいませ。防腐剤が入っておりませんので、冷凍保管していただくようお願いいたします。</description>
       <link>https://saitofoods.com/en/products/344.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484344354_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>110.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -227,12 +227,25 @@
       <g:product_type>Frozen Foods</g:product_type>
     </item>
     <item>
+      <g:id>1251</g:id>
+      <title>Ishii Additive-Free Meatballs 10pcs</title>
+      <description>遂に入荷! イシイのミートボール 10個入り 食品添加物不使用!常温保存可!</description>
+      <link>https://saitofoods.com/en/products/1251.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483964537_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>91.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Good selling</g:product_type>
+    </item>
+    <item>
       <g:id>1331</g:id>
       <title>Ishii Additive-Free Chicken Hamburg (Shelf-Stable)=CK HAM</title>
       <description>遂に入荷! イシイのチキンハンバーグ 90g 食品添加物不使用!常温保存可!</description>
       <link>https://saitofoods.com/en/products/1331.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/01291347_697b027679828.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>88.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -455,7 +468,7 @@
       <description>オーソドックスなトンカツですが迫力のサイズ!140g</description>
       <link>https://saitofoods.com/en/products/990.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555992646_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>79.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -496,7 +509,7 @@
       <description>The wholesale price was quite high, so I was hesitant about selling it... but after trying a sample, I thought 'I want to eat this even if it's expensive!!' So we've made an emergency restock. Children will munch away happily! Adults be warned - you won't be able to stop drinking beer. 250g per package Pairs perfectly with mayo-shichimi spice blend and noodle broth! While the powder itself contains no egg-related ingredients, it is manufactured in a facility that uses egg powder, so the product label notes possible traces of eggs and soybeans. The photo shows the plating for 250g. Cooking methods and recipe ideas are featured on our Instagram!</description>
       <link>https://saitofoods.com/en/products/1205.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555612912_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>193.00 THB</g:price>
       <g:sale_price>128.00 THB</g:sale_price>
       <g:condition>new</g:condition>
@@ -1109,7 +1122,7 @@
       <description>キッコーマン白だし 500ml</description>
       <link>https://saitofoods.com/en/products/1009.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785484315436_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>158.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1656,7 +1669,7 @@
       <description>まるちゃんの冷凍焼きそば麺、生めんタイプです。 粉末ソースもついてます。 スパゲティソースをかけても美味しくお召し上がりいただけます。 160g*3玉入り 解凍後の賞味期限はチルド5度の温度帯で3週間(解凍後)です。</description>
       <link>https://saitofoods.com/en/products/513.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889610185_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>113.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1970,7 +1983,7 @@
       <description>Frozen hijiki stew, an original Saito Foods product.</description>
       <link>https://saitofoods.com/en/products/965.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487736071_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>75.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2036,7 +2049,7 @@
       <description>豚の小腸をこてっちゃん風に白味噌で味付けしてます。 湯銭もしくは袋から出して電子レンジで加熱してお召し上がりください。 120g</description>
       <link>https://saitofoods.com/en/products/970.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488074920_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>125.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2844,6 +2857,19 @@
       <g:product_type>Non Preservative Products</g:product_type>
     </item>
     <item>
+      <g:id>1353</g:id>
+      <title>Hokkaido Baked Cheese Truffle Flavor 45g</title>
+      <description>芳醇な香りがほどける、上品な焼きチーズ。 ひと口食べた瞬間に広がる、濃厚なチーズのコクと香ばしさ。そして後からふわりと漂うトリュフの芳醇な香り──「トリュフ香る Baked Cheese」は、家飲みのレベルを軽々と超えてくる贅沢なチーズスナックです。 魚のすり身シートにチーズをのせ、トリュフオイルで風味づけしてから丁寧に焼き上げることで、チーズの旨みを最大限に引き出しつつ、トリュフのリッチな余韻が重なる奥深い味わいに仕上げました。シンプルな素材ながら、ひと口ごとに広がる香りとコクはまさに“大人のご褒美”。 https://kitanohako.shop/items/61d699a10020fc062cdf6d39</description>
+      <link>https://saitofoods.com/en/products/1353.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/04061021_69d326a9d4987.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>140.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>New Products</g:product_type>
+    </item>
+    <item>
       <g:id>1327</g:id>
       <title>Frozen Daigaku Imo Candied Sweet Potato 200g (Beni Haruka)</title>
       <description>自然解凍で飛び切り美味しい冷凍大学芋が出来上がりました! 茨城県産の紅ハルカを使用して、外側カリッ、中は甘くて柔らかい大学芋です。 200g入り。</description>
@@ -3073,9 +3099,8 @@
       <description>Handmade granola by Deco Craft. Made with low-GI coconut sugar, a good choice for those watching their blood sugar.</description>
       <link>https://saitofoods.com/en/products/924.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785556145501_slot1.jpeg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>320.00 THB</g:price>
-      <g:sale_price>240.00 THB</g:sale_price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
@@ -3191,7 +3216,7 @@
       <description>忙しい朝、移動の間、運動の前後に手軽に栄養を補給できる商品です。この商品は、人口甘味料と着色料を使用していません。ピーチストロベリー味。コラーゲン1000㎎、ビタミンC配合!</description>
       <link>https://saitofoods.com/en/products/1248.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784882637842_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>14.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
