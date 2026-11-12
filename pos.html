@@ -1029,7 +1029,7 @@ async function ensurePrinter() {
   return false;
 }
 async function writeBytes(data) {
-  var ch = prn.ch, n = Math.min(100, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100));
+  var ch = prn.ch, n = Math.min(512, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100));
   var useNoResp = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === "function";
   for (var i = 0; i < data.length; i += n) {
     var part = data.slice(i, i + n);
@@ -1076,7 +1076,7 @@ function printReceipt(rec, withDrawer) {
   });
 }
 function openSettings() {
-  var chunk = h("input", { type: "number", value: lsGet("pos_chunk", "100"), min: "20", max: "100" });
+  var chunk = h("input", { type: "number", value: lsGet("pos_chunk", "100"), min: "20", max: "512" });
   var pin = h("input", { type: "number", value: lsGet("pos_pin", "0"), min: "0", max: "1" });
   var auto = h("input", { type: "checkbox" });
   auto.checked = lsGet("pos_autodrawer", "1") === "1";
@@ -1108,7 +1108,7 @@ function openSettings() {
     h("div", { text: me ? (me.first_name || me.family_name || "") + " (" + me.role + ")" : "", style: "color:#6a737d;font-size:13px" }),
     h("label", { text: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E01\u0E32\u0E23\u0E4C\u0E14\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E15\u0E48\u0E2D\u0E41\u0E16\u0E27 / \u5546\u54C1\u30AB\u30FC\u30C9\u306E\u6A2A\u306E\u4E26\u3073\u6570(\u5C11\u306A\u3044\u307B\u3069\u5927\u304D\u3044)" }),
     cols,
-    h("label", { text: "\u0E02\u0E19\u0E32\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E48\u0E2D\u0E04\u0E23\u0E31\u0E49\u0E07 (byte) / 1\u56DE\u306E\u9001\u4FE1\u30B5\u30A4\u30BA" }),
+    h("label", { text: "\u0E02\u0E19\u0E32\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E48\u0E2D\u0E04\u0E23\u0E31\u0E49\u0E07 (byte) / 1\u56DE\u306E\u9001\u4FE1\u30B5\u30A4\u30BA(100\u306F\u52D5\u4F5C\u78BA\u8A8D\u6E08\u3002\u5927\u304D\u3059\u304E\u308B\u3068\u6587\u5B57\u5316\u3051)" }),
     chunk,
     h("label", { text: "\u0E02\u0E32\u0E25\u0E34\u0E49\u0E19\u0E0A\u0E31\u0E01 0 \u0E2B\u0E23\u0E37\u0E2D 1 / \u30C9\u30ED\u30A2\u30FC\u306E\u30D4\u30F3(0=\u6A19\u6E96,1=\u5225\u30D4\u30F3)" }),
     pin,
@@ -1118,7 +1118,7 @@ function openSettings() {
     h("div", { cls: "acts" }, [h("button", { cls: "ok", text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01", onclick: function() {
       lsSet("pos_cols", String(parseInt(cols.value, 10) || 3));
       renderGrid();
-      lsSet("pos_chunk", String(Math.min(100, Math.max(20, parseInt(chunk.value, 10) || 100))));
+      lsSet("pos_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
       lsSet("pos_pin", pin.value === "1" ? "1" : "0");
       lsSet("pos_autodrawer", auto.checked ? "1" : "0");
       closeModal();
