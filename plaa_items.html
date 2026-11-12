@@ -55,6 +55,10 @@ input,select,textarea{font-family:inherit;font-size:17px;padding:10px 12px;borde
 .acts{display:flex;margin-top:14px;} .acts button{flex:1;margin-right:8px;} .acts button:last-child{margin-right:0;}
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#26221d;color:#fff;padding:10px 18px;border-radius:12px;font-size:16px;z-index:40;max-width:90vw;text-align:center;}
 #toast.bad{background:#b32;}
+.sthelp{font-size:13px;color:var(--mut);margin:8px 0;}
+.stl{margin-top:8px;} .stl .row input{width:84px;flex:none;margin:0 8px 0 8px;text-align:center;padding:10px 6px;} .stl .row button{flex:none;min-width:64px;}
+.mb input[type=search]{width:100%;}
+#top{flex-wrap:wrap;} #top button{white-space:nowrap;min-height:42px;padding:0 12px;font-size:15px;margin-bottom:0;} #top .brand{margin-right:auto;} #top #q{order:9;flex:1 1 100%;margin:8px 0 0 0;min-width:0;}
 </style>
 </head>
 <body>
@@ -74,6 +78,7 @@ input,select,textarea{font-family:inherit;font-size:17px;padding:10px 12px;borde
     <span class="brand">商品登録</span>
     <input id="q" type="search" placeholder="商品名で検索" autocomplete="off">
     <button id="add">＋ 新規登録</button>
+    <button id="stk" class="sec">入荷・棚卸し</button>
     <button id="logout" class="sec">ログアウト</button>
   </div>
   <div id="chips"></div>
@@ -142,7 +147,8 @@ var ERR = {
   BAD_GROUP: "\u4ED5\u5165\u308C\u533A\u5206\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044",
   BAD_CATEGORY: "\u30AB\u30C6\u30B4\u30EA\u3092\u9078\u3093\u3067\u304F\u3060\u3055\u3044",
   BAD_IMAGES: "\u5199\u771F\u306E\u30C7\u30FC\u30BF\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093",
-  PRODUCT_NOT_FOUND: "\u3053\u306E\u5546\u54C1\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093(\u5E97\u982D\u5546\u54C1\u306E\u307F\u7DE8\u96C6\u3067\u304D\u307E\u3059)"
+  PRODUCT_NOT_FOUND: "\u3053\u306E\u5546\u54C1\u306F\u898B\u3064\u304B\u308A\u307E\u305B\u3093(\u5E97\u982D\u5546\u54C1\u306E\u307F\u7DE8\u96C6\u3067\u304D\u307E\u3059)",
+  BAD_MODE: "\u64CD\u4F5C\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093"
 };
 function errText(e) {
   var m = e && e.message || String(e);
@@ -310,6 +316,80 @@ function renderList() {
       h("div", { cls: "pr" }, ["\u0E3F" + fmt(p.price), h("small", { text: "\u5728\u5EAB " + (p.stock || 0) })])
     ]));
   });
+}
+var stockMode = "add";
+var stockQuery = "";
+function openStock(mode) {
+  if (mode) stockMode = mode;
+  var seg = h("div", { cls: "seg" }, [
+    h("button", { cls: stockMode === "add" ? "act" : "", text: "\u5165\u8377(\u8DB3\u3059)", onclick: function() {
+      stockMode = "add";
+      openStock();
+    } }),
+    h("button", { cls: stockMode === "set" ? "act" : "", text: "\u68DA\u5378\u3057(\u5B9F\u6570\u306B\u5408\u308F\u305B\u308B)", onclick: function() {
+      stockMode = "set";
+      openStock();
+    } })
+  ]);
+  var help = h("div", { text: stockMode === "add" ? "\u5165\u3063\u3066\u304D\u305F\u500B\u6570\u3092\u5165\u308C\u3066\u300C\u8FFD\u52A0\u300D\u3002\u3044\u307E\u306E\u5728\u5EAB\u306B\u8DB3\u3055\u308C\u307E\u3059\u3002" : "\u6570\u3048\u305F\u5B9F\u969B\u306E\u500B\u6570\u3092\u5165\u308C\u3066\u300C\u66F4\u65B0\u300D\u3002\u5728\u5EAB\u304C\u305D\u306E\u6570\u306B\u306A\u308A\u307E\u3059\u3002", cls: "sthelp" });
+  var qin = h("input", { type: "search", placeholder: "\u5546\u54C1\u540D\u3067\u7D5E\u308A\u8FBC\u307F", autocomplete: "off" });
+  qin.value = stockQuery;
+  var box = h("div", { cls: "stl" });
+  function draw() {
+    box.innerHTML = "";
+    var q = stockQuery.toLowerCase();
+    var rows = items.filter(function(p) {
+      return !q || [p.name_th, p.name_jp, p.name_en].some(function(x) {
+        return x && String(x).toLowerCase().indexOf(q) >= 0;
+      });
+    });
+    if (!rows.length) {
+      box.appendChild(h("div", { text: "\u8A72\u5F53\u3059\u308B\u5546\u54C1\u304C\u3042\u308A\u307E\u305B\u3093", style: "padding:20px;color:#6a737d;text-align:center" }));
+      return;
+    }
+    rows.forEach(function(p) {
+      var th = h("div", { cls: "th" });
+      var u = safeImg(p.images[0]);
+      if (u) {
+        var im = h("img", { alt: "" });
+        im.src = u;
+        th.appendChild(im);
+      } else th.textContent = "\u{1F4F7}";
+      var cur = h("small", { text: "\u5728\u5EAB " + (p.stock || 0) });
+      var num = h("input", { type: "text", inputmode: "numeric", placeholder: stockMode === "add" ? "+\u500B\u6570" : "\u5B9F\u6570", maxlength: "5" });
+      var btn = h("button", { cls: "ok", text: stockMode === "add" ? "\u8FFD\u52A0" : "\u66F4\u65B0" });
+      async function go() {
+        var v = parseInt(num.value, 10);
+        if (!(v >= 0) || stockMode === "add" && v < 1) {
+          toast("\u6570\u3092\u5165\u308C\u3066\u304F\u3060\u3055\u3044", true, 2e3);
+          return;
+        }
+        btn.disabled = true;
+        var r = await sb.rpc("plaa_adjust_stock", { p_id: p.id, p_mode: stockMode, p_qty: v });
+        btn.disabled = false;
+        if (r.error) {
+          toast(errText(r.error), true, 5e3);
+          return;
+        }
+        p.stock = Number(r.data);
+        cur.textContent = "\u5728\u5EAB " + p.stock;
+        num.value = "";
+        toast(displayName(p) + ": \u5728\u5EAB " + p.stock, false, 2200);
+        renderList();
+      }
+      btn.addEventListener("click", go);
+      num.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") go();
+      });
+      box.appendChild(h("div", { cls: "row" }, [th, h("div", { cls: "nm" }, [h("b", { text: displayName(p) }), cur]), num, btn]));
+    });
+  }
+  qin.addEventListener("input", function() {
+    stockQuery = qin.value.trim();
+    draw();
+  });
+  openModal(h("div", null, [h("h2", { text: "\u5165\u8377\u30FB\u68DA\u5378\u3057" }), seg, help, qin, box, h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u9589\u3058\u308B", onclick: closeModal })])]));
+  draw();
 }
 function loadImage(file) {
   return new Promise(function(resolve, reject) {
@@ -584,6 +664,9 @@ $("pw").addEventListener("keydown", function(e) {
 $("logout").addEventListener("click", logout);
 $("add").addEventListener("click", function() {
   openForm(null);
+});
+$("stk").addEventListener("click", function() {
+  openStock();
 });
 $("q").addEventListener("input", function() {
   query = $("q").value.trim();
