@@ -973,6 +973,91 @@ function drawReceipt(rec) {
   y += 90;
   return ctx.getImageData(0, 0, W, y);
 }
+function asciiLine(t) {
+  var o = [];
+  for (var i = 0; i < t.length; i++) {
+    var c = t.charCodeAt(i);
+    o.push(c >= 32 && c < 127 ? c : 63);
+  }
+  o.push(10);
+  return o;
+}
+function padPair(l, r, cols) {
+  var sp = cols - l.length - r.length;
+  if (sp < 1) {
+    l = l.slice(0, Math.max(0, cols - r.length - 1));
+    sp = Math.max(1, cols - l.length - r.length);
+  }
+  return l + new Array(sp + 1).join(" ") + r;
+}
+function stripBytes(hgt, fn) {
+  var cv = document.createElement("canvas");
+  cv.width = W;
+  cv.height = hgt;
+  var ctx = cv.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, W, hgt);
+  ctx.fillStyle = "#000";
+  ctx.textBaseline = "top";
+  fn(ctx);
+  return packRaster(ctx.getImageData(0, 0, W, hgt), 64);
+}
+function textStrip(text, size, bold, lineH) {
+  var tmp = document.createElement("canvas").getContext("2d");
+  tmp.font = (bold ? "700 " : "") + size + "px " + FONT;
+  var ls = wrap(tmp, text, W - 8), hgt = ls.length * lineH + 4;
+  return stripBytes(hgt, function(ctx) {
+    ctx.font = (bold ? "700 " : "") + size + "px " + FONT;
+    ctx.textAlign = "left";
+    ls.forEach(function(t, i) {
+      ctx.fillText(t, 4, 2 + i * lineH);
+    });
+  });
+}
+function centerStrip(texts, size, bold) {
+  var lh = Math.round(size * 1.35);
+  return stripBytes(texts.length * lh + 4, function(ctx) {
+    ctx.font = (bold ? "700 " : "") + size + "px " + FONT;
+    ctx.textAlign = "center";
+    texts.forEach(function(t, i) {
+      ctx.fillText(t, W / 2, 2 + i * lh);
+    });
+  });
+}
+function buildHybrid(rec) {
+  var C = 32, b = [27, 64, 27, 97, 0];
+  if (logoImg) {
+    var sc = Math.min(1, 240 / logoImg.width), lw = Math.round(logoImg.width * sc), lh = Math.round(logoImg.height * sc);
+    b = b.concat(stripBytes(lh + 6, function(ctx) {
+      ctx.drawImage(logoImg, Math.round((W - lw) / 2), 2, lw, lh);
+    }));
+  } else b = b.concat(centerStrip(["SAITO FOODS"], 34, true), centerStrip(["\u30B5\u30A4\u30C8\u30A6\u30D5\u30FC\u30BA"], 22, true));
+  b = b.concat(centerStrip(["Bangkok  Since 1997"], 18, false), centerStrip(STORE_ADDR.concat([STORE_TEL, STORE_URL]), 16, false));
+  var dash = new Array(C + 1).join("-");
+  b = b.concat(asciiLine(dash), asciiLine(padPair("Receipt", rec.receipt_no, C)), asciiLine(padPair("Date", fmtDate(rec.created_at), C)), asciiLine(dash));
+  rec.lines.forEach(function(l) {
+    var name = cleanName(l.name_th) || cleanName(l.name_en) || cleanName(l.name_ja);
+    b = b.concat(textStrip(name, 20, false, 27));
+    var detail = l.sale_type === "weight" ? "  " + l.grams + " g x " + fmt(l.unit_price) + "/" + String(l.unit_label || "").replace(/[^\x20-\x7E]/g, "") : "  " + l.quantity + " x " + fmt(l.price);
+    b = b.concat(asciiLine(padPair(detail, fmt(l.total_price), C)));
+  });
+  b = b.concat(asciiLine(dash));
+  if (rec.discount > 0) b = b.concat(asciiLine(padPair("Subtotal", fmt(rec.subtotal), C)), asciiLine(padPair("Discount", "-" + fmt(rec.discount), C)));
+  b = b.concat([27, 69, 1, 29, 33, 17], asciiLine(padPair("TOTAL", fmt(rec.total), C / 2)), [29, 33, 0, 27, 69, 0], asciiLine("THB"));
+  if (rec.payment_method === "cash" && rec.received != null && rec.received >= rec.total) b = b.concat(asciiLine(padPair("Cash", fmt(rec.received), C)), asciiLine(padPair("Change", fmt(rec.received - rec.total), C)));
+  else if (rec.payment_method === "qr") b = b.concat(asciiLine(padPair("Paid by", "QR", C)));
+  try {
+    var qc = document.createElement("canvas");
+    drawQr(qc, promptpayPayload(PROMPTPAY_ID, rec.total), 260);
+    b = b.concat(stripBytes(qc.height + 4, function(ctx) {
+      ctx.drawImage(qc, Math.round((W - qc.width) / 2), 2);
+    }));
+    b = b.concat(asciiLine("        PromptPay " + fmt(rec.total) + " THB"));
+  } catch (e) {
+  }
+  b = b.concat(asciiLine(dash), centerStrip(["\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E04\u0E48\u0E30 / \u3042\u308A\u304C\u3068\u3046\u3054\u3056\u3044\u307E\u3057\u305F"], 20, false), asciiLine("Thank you"), [27, 100, 3]);
+  return b;
+}
 var BLE_SERVICES = [
   "000018f0-0000-1000-8000-00805f9b34fb",
   "0000ff00-0000-1000-8000-00805f9b34fb",
@@ -1102,8 +1187,7 @@ function printReceipt(rec, withDrawer) {
     }
     try {
       if (withDrawer) await writeBytes(drawerBytes());
-      var img = drawReceipt(rec);
-      var bytes = [27, 64].concat(packRaster(img, 64), [27, 100, 3]);
+      var bytes = lsGet("pos_fast", "0") === "1" ? buildHybrid(rec) : [27, 64].concat(packRaster(drawReceipt(rec), 64), [27, 100, 3]);
       await writeBytes(new Uint8Array(bytes));
     } catch (e) {
       setPrnState(false);
@@ -1131,6 +1215,12 @@ function openSettings() {
     var op = h("option", { value: o[0], text: o[1] });
     if (o[0] === lsGet("pos_mode", "auto")) op.selected = true;
     mode.appendChild(op);
+  });
+  var fast = h("select", {});
+  [["0", "\u0E20\u0E32\u0E1E\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14 / \u5168\u90E8\u753B\u50CF(\u6A19\u6E96\u30FB\u898B\u305F\u76EE\u91CD\u8996)"], ["1", "\u0E40\u0E23\u0E47\u0E27 / \u9AD8\u901F(\u6570\u5B57\u30FB\u82F1\u8A9E\u306F\u5185\u8535\u6587\u5B57)"]].forEach(function(o) {
+    var op = h("option", { value: o[0], text: o[1] });
+    if (o[0] === lsGet("pos_fast", "0")) op.selected = true;
+    fast.appendChild(op);
   });
   var pin = h("select", {});
   [["0", "0 (\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19 / \u6A19\u6E96)"], ["1", "1 (\u0E02\u0E32\u0E2D\u0E37\u0E48\u0E19 / \u5225\u30D4\u30F3)"]].forEach(function(o) {
@@ -1170,6 +1260,8 @@ function openSettings() {
     cols,
     h("label", { text: "\u0E02\u0E19\u0E32\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E48\u0E2D\u0E04\u0E23\u0E31\u0E49\u0E07 (byte) / 1\u56DE\u306E\u9001\u4FE1\u30B5\u30A4\u30BA(100\u306F\u52D5\u4F5C\u78BA\u8A8D\u6E08\u3002\u5927\u304D\u3059\u304E\u308B\u3068\u6587\u5B57\u5316\u3051)" }),
     chunk,
+    h("label", { text: "\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08 / \u30EC\u30B7\u30FC\u30C8\u306E\u5370\u5B57\u65B9\u5F0F(\u5370\u5B57\u304C\u9045\u3044\u30D7\u30EA\u30F3\u30BF\u30FC\u306F\u300C\u9AD8\u901F\u300D)" }),
+    fast,
     h("label", { text: "\u0E0A\u0E48\u0E27\u0E07\u0E23\u0E2D\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07 (ms) / \u9001\u4FE1\u3054\u3068\u306E\u5F85\u3061\u6642\u9593(\u6587\u5B57\u5316\u3051\u3059\u308B\u7AEF\u672B\u3067\u5897\u3084\u3059)" }),
     pace,
     h("label", { text: "\u0E27\u0E34\u0E18\u0E35\u0E2A\u0E48\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 / \u9001\u4FE1\u65B9\u5F0F(\u6587\u5B57\u5316\u3051\u304C\u76F4\u3089\u306A\u3044\u3068\u304D\u300C\u5FDC\u7B54\u3042\u308A\u300D)" }),
@@ -1183,6 +1275,7 @@ function openSettings() {
       lsSet("pos_cols", String(parseInt(cols.value, 10) || 3));
       renderGrid();
       lsSet("pos_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
+      lsSet("pos_fast", fast.value === "1" ? "1" : "0");
       lsSet("pos_pace", String(parseInt(pace.value, 10) || 0));
       lsSet("pos_mode", mode.value === "resp" ? "resp" : "auto");
       lsSet("pos_pin", pin.value === "1" ? "1" : "0");
