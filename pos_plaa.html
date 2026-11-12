@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob: https://sdjgmgyghnlpqydrnllj.supabase.co; connect-src https://sdjgmgyghnlpqydrnllj.supabase.co wss://sdjgmgyghnlpqydrnllj.supabase.co https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data: blob: https://kzacpqrpnoxqtbcstswp.supabase.co; connect-src https://kzacpqrpnoxqtbcstswp.supabase.co wss://kzacpqrpnoxqtbcstswp.supabase.co https://sdjgmgyghnlpqydrnllj.supabase.co wss://sdjgmgyghnlpqydrnllj.supabase.co; base-uri 'none'; form-action 'none'">
 <title>Plaa-Ta-Pian POS</title>
 <style>
 :root{--pri:#c8102e;--pri-d:#9b0c24;--ok:#1a7f37;--bg:#f2f3f5;--card:#fff;--bd:#d8dce1;--tx:#1f2328;--mut:#6a737d;}
@@ -108,6 +108,8 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 #toast.bad{background:var(--pri);}
 .set label{display:block;font-size:13px;color:var(--mut);margin:10px 0 3px;}
 .set .chk{display:flex;align-items:center;margin:10px 0;font-size:15px;} .set .chk input{width:22px;height:22px;margin-right:8px;}
+#gear{position:relative;} #fwd.bdg{position:absolute;top:-4px;right:-4px;background:#c8102e;color:#fff;border-radius:10px;font-size:11px;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px;}
+.set hr{border:0;border-top:1px solid #e1e4e8;margin:12px 0 4px;}
 </style>
 </head>
 <body>
@@ -132,7 +134,7 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
     <button id="prn" class="lt"><i></i><span>เครื่องพิมพ์</span></button>
     <button id="reprint" class="lt">พิมพ์ซ้ำ</button>
     <button id="drawer" class="lt">เปิดลิ้นชัก</button>
-    <button id="gear" class="lt">⚙</button>
+    <button id="gear" class="lt">⚙<span id="fwd" class="hidden"></span></button>
     <button id="logout" class="sec">ออก</button>
   </div>
   <div id="main">
@@ -165,9 +167,10 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
 </script>
 <script>
 "use strict";
-var SUPABASE_URL = "https://sdjgmgyghnlpqydrnllj.supabase.co";
-var SUPABASE_KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
-var GAS_URL = "https://script.google.com/macros/s/AKfycbxRsKhWKYjx-jNdU6YZxsP9fCBYItnQsbfcZHHkIcdvZANl8_qshMrOhSaNu8n7SS0RXA/exec";
+var PLAA_URL = "https://kzacpqrpnoxqtbcstswp.supabase.co";
+var PLAA_KEY = "sb_publishable_X-40StOgx5Q6Gl9k6JRCHw_6w4m3d03";
+var SAITO_URL = "https://sdjgmgyghnlpqydrnllj.supabase.co";
+var SAITO_KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
 var STORE_NAME = "PLAA-TA-PIAN";
 var STORE_NAME_TH = "\u0E1B\u0E25\u0E32\u0E15\u0E30\u0E40\u0E1E\u0E35\u0E22\u0E19";
 var STORE_ADDR = ["2F, 23/7 Soi Naphasub 2 Sukhumvit Soi 36", "Klongton Klongtoey Bangkok 10110"];
@@ -252,24 +255,39 @@ function allocDiscount(grosses, disc) {
     return g - shares[i];
   });
 }
-function isDeclared(p) {
-  return String(p && p.group || "").trim().toUpperCase() === "A";
-}
 function normProduct(r) {
-  return {
-    id: String(r.id),
-    name: String(r.name || "").trim(),
-    group: r.group,
-    cat: String(r.categoryCode || ""),
-    catName: String(r.categoryName || r.categoryCode || ""),
-    price: Number(r.price) || 0,
-    stock: Number(r.stock) || 0,
-    minStock: Number(r.minStock) || 0
-  };
+  var nm = String(r.name_th || r.name_jp || r.name_en || "").trim();
+  var im = r.images && r.images.length ? String(r.images[0]) : "";
+  return { id: String(r.id), name: nm, cat: String(r.category || ""), catName: String(r.category || ""), price: Number(r.price) || 0, stock: Number(r.stock) || 0, img: im };
 }
-var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+function groupForward(rows) {
+  var map = {}, order = [];
+  rows.forEach(function(r) {
+    if (!map[r.receipt_no]) {
+      map[r.receipt_no] = [];
+      order.push(r.receipt_no);
+    }
+    map[r.receipt_no].push(r);
+  });
+  return order.map(function(no) {
+    var rs = map[no], disc = 0;
+    var lines = rs.map(function(r) {
+      var q = Number(r.qty), up = Number(r.unit_price), net = Number(r.net_total);
+      disc += q * up - net;
+      return { name: r.product_name, qty: q, unit_price: up, net, declare: true };
+    });
+    return { receipt_no: no, ids: rs.map(function(r) {
+      return r.id;
+    }), lines, discount: Math.round(disc * 100) / 100 };
+  });
+}
+var sb = window.supabase.createClient(PLAA_URL, PLAA_KEY, {
+  // プラータピアン(商品・在庫・売上)
+  auth: { storageKey: "sb-plaa-pos-auth", persistSession: true, autoRefreshToken: true }
+});
+var sbs = window.supabase.createClient(SAITO_URL, SAITO_KEY, {
+  // サイトウフーズ(税務申告対象の売上の転送先。pos.htmlと同じログインを共有)
   auth: { storageKey: "sb-saitofoods-pos-auth", persistSession: true, autoRefreshToken: true }
-  // サイトウフーズのレジと同じログインを共有
 });
 function $(id) {
   return document.getElementById(id);
@@ -331,11 +349,22 @@ var ERR_TH = {
   BAD_LINE_TOTAL: "\u0E22\u0E2D\u0E14\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
   TOTAL_MISMATCH: "\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E19 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48",
   BAD_DISCOUNT: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
-  DISCOUNT_EXCEEDS_TOTAL: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E21\u0E32\u0E01\u0E01\u0E27\u0E48\u0E32\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21"
+  DISCOUNT_EXCEEDS_TOTAL: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E21\u0E32\u0E01\u0E01\u0E27\u0E48\u0E32\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21",
+  OUT_OF_STOCK: "\u0E2A\u0E15\u0E47\u0E2D\u0E01\u0E44\u0E21\u0E48\u0E1E\u0E2D",
+  PRODUCT_NOT_FOUND: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E19\u0E35\u0E49\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A \u0E01\u0E23\u0E38\u0E13\u0E32\u0E42\u0E2B\u0E25\u0E14\u0E43\u0E2B\u0E21\u0E48",
+  BAD_KIND: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  BAD_CUSTOM_AMOUNT: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  BAD_PAYMENT_METHOD: "\u0E27\u0E34\u0E18\u0E35\u0E0A\u0E33\u0E23\u0E30\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07"
 };
 function errText(e) {
   var m = e && e.message || String(e);
-  for (var k in ERR_TH) if (m.indexOf(k) >= 0) return ERR_TH[k];
+  for (var k in ERR_TH) if (m.indexOf(k) >= 0) {
+    if (k === "OUT_OF_STOCK") {
+      var mm = m.match(/OUT_OF_STOCK:(.*)/);
+      return ERR_TH[k] + (mm ? ": " + mm[1] : "");
+    }
+    return ERR_TH[k];
+  }
   return m;
 }
 function sleep(ms) {
@@ -354,54 +383,48 @@ function newKey() {
     return ("0" + x.toString(16)).slice(-2);
   }).join("");
 }
-async function gasGet(params, tries) {
-  var res = await fetch(GAS_URL + "?" + new URLSearchParams(params));
-  var text = await res.text();
+var fwdBusy = false, fwdPending = 0;
+async function saitoReady() {
   try {
-    return JSON.parse(text);
+    var r = await sbs.auth.getSession();
+    return !!(r.data && r.data.session);
   } catch (e) {
-    if ((tries === void 0 ? 2 : tries) > 0) {
-      await sleep(800);
-      return gasGet(params, (tries === void 0 ? 2 : tries) - 1);
-    }
-    throw new Error("GAS no JSON");
-  }
-}
-function gasPost(body) {
-  return fetch(GAS_URL, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" }, mode: "no-cors" });
-}
-async function sendToGas(body) {
-  try {
-    await gasPost(body);
-    return true;
-  } catch (e) {
-    var q = [];
-    try {
-      q = JSON.parse(lsGet("plp_pending", "[]"));
-    } catch (e2) {
-    }
-    q.push(body);
-    lsSet("plp_pending", JSON.stringify(q.slice(-50)));
     return false;
   }
 }
-async function flushPending() {
-  var q = [];
+async function forwardPending(quiet) {
+  if (fwdBusy) return;
+  fwdBusy = true;
   try {
-    q = JSON.parse(lsGet("plp_pending", "[]"));
-  } catch (e) {
-  }
-  if (!q.length) return;
-  var left = [];
-  for (var i = 0; i < q.length; i++) {
-    try {
-      await gasPost(q[i]);
-    } catch (e) {
-      left.push(q[i]);
+    var r = await sb.rpc("plaa_pos_pending_forward");
+    if (r.error) throw r.error;
+    var groups = groupForward(r.data || []);
+    fwdPending = groups.length;
+    updFwdBadge();
+    if (!groups.length) return;
+    if (!await saitoReady()) return;
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i];
+      var x = await sbs.rpc("plaa_pos_checkout", { p_lines: g.lines, p_discount: g.discount, p_client_key: "plp-" + g.receipt_no });
+      if (x.error) {
+        if (!quiet) toast("\u0E2A\u0E48\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E1B\u0E22\u0E31\u0E07\u0E23\u0E30\u0E1A\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E08\u0E30\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34", true, 4e3);
+        return;
+      }
+      var m = await sb.rpc("plaa_pos_mark_forwarded", { p_ids: g.ids });
+      if (m.error) return;
+      fwdPending--;
+      updFwdBadge();
     }
+  } catch (e) {
+  } finally {
+    fwdBusy = false;
   }
-  lsSet("plp_pending", JSON.stringify(left));
-  if (!left.length) toast("\u0E2A\u0E48\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E15\u0E47\u0E2D\u0E01\u0E17\u0E35\u0E48\u0E04\u0E49\u0E32\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E41\u0E25\u0E49\u0E27", false, 3500);
+}
+function updFwdBadge() {
+  var b = $("fwd");
+  if (!b) return;
+  b.textContent = fwdPending > 0 ? String(fwdPending) : "";
+  b.className = fwdPending > 0 ? "bdg" : "hidden";
 }
 var me = null;
 var products = {};
@@ -413,13 +436,22 @@ var discount = null;
 var paying = false;
 var sampleMode = false;
 var attempt = null;
+var sbsLoginErr = "";
 async function login() {
   var err = $("lerr");
   err.textContent = "";
-  var r = await sb.auth.signInWithPassword({ email: $("em").value.trim(), password: $("pw").value });
+  var em = $("em").value.trim(), pw = $("pw").value;
+  var r = await sb.auth.signInWithPassword({ email: em, password: pw });
   if (r.error) {
     err.textContent = "\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + r.error.message;
     return;
+  }
+  if (!await saitoReady()) {
+    try {
+      var r2 = await sbs.auth.signInWithPassword({ email: em, password: pw });
+      if (r2.error) sbsLoginErr = r2.error.message;
+    } catch (e) {
+    }
   }
   var ok = await afterAuth(r.data.user);
   if (!ok) {
@@ -428,23 +460,32 @@ async function login() {
   }
 }
 async function afterAuth(user) {
-  var c = await sb.from("customers").select("id, family_name, first_name, role").eq("auth_user_id", user.id).single();
-  if (c.error || !c.data || ["staff", "admin"].indexOf(c.data.role) < 0) return false;
-  me = c.data;
+  var c = await sb.rpc("is_plaa_staff");
+  if (c.error || c.data !== true) return false;
+  me = { first_name: user.email || "", role: "staff" };
   $("login").classList.add("hidden");
   $("app").classList.remove("hidden");
   $("pw").value = "";
   await loadData();
   autoReconnect();
-  flushPending();
+  forwardPending(true);
   return true;
 }
 async function logout() {
   await sb.auth.signOut();
   location.reload();
 }
+setInterval(function() {
+  if (me) forwardPending(true);
+}, 6e4);
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden && me) {
+    refreshStock();
+    forwardPending(true);
+  }
+});
+var catOrder = {};
 function applyProducts(list) {
-  var old = products;
   products = {};
   var cm = {};
   list.forEach(function(r) {
@@ -453,17 +494,30 @@ function applyProducts(list) {
     products[p.id] = p;
     if (p.cat && !cm[p.cat]) cm[p.cat] = p.catName;
   });
-  cats = Object.keys(cm).sort().map(function(c) {
+  cats = Object.keys(cm).sort(function(a, b) {
+    return (catOrder[a] || 999) - (catOrder[b] || 999) || (a < b ? -1 : 1);
+  }).map(function(c) {
     return { code: c, name: cm[c] };
   });
-  return old;
+  if (activeTab !== "all" && !cm[activeTab]) activeTab = "all";
+}
+async function fetchProducts() {
+  var res = await Promise.all([
+    sb.from("products").select("id,name_th,name_jp,name_en,category,price,stock,images").eq("in_store", true).eq("is_active", true).order("id"),
+    sb.from("category_order").select("name,sort_order")
+  ]);
+  if (res[0].error) throw res[0].error;
+  catOrder = {};
+  (res[1].data || []).forEach(function(c) {
+    catOrder[c.name] = c.sort_order;
+  });
+  applyProducts(res[0].data || []);
 }
 async function loadData() {
   $("grid").innerHTML = "";
   $("grid").appendChild(h("div", { id: "empty", text: "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u2026" }));
   try {
-    var d = await gasGet({ action: "getProducts" });
-    applyProducts(d.products || []);
+    await fetchProducts();
   } catch (e) {
     toast("\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48", true, 6e3);
   }
@@ -471,6 +525,18 @@ async function loadData() {
   renderCats();
   renderGrid();
   renderCart();
+}
+async function refreshStock() {
+  try {
+    await fetchProducts();
+    cart = cart.filter(function(l) {
+      return l.custom || products[l.pid];
+    });
+    renderCats();
+    renderGrid();
+    renderCart();
+  } catch (e) {
+  }
 }
 function renderCats() {
   var box = $("cats");
@@ -519,9 +585,18 @@ function renderGrid() {
   }
   ids.slice(0, 400).forEach(function(id) {
     var p = products[id];
-    var kids = [h("div", { cls: "nm", text: p.name }), h("div", { cls: "pr", text: "\u0E3F" + fmt(p.price) })];
+    var kids = [];
+    if (p.img && p.img.indexOf(PLAA_URL + "/storage/") === 0) {
+      var im = h("div", { cls: "im" });
+      var ig = new Image();
+      ig.alt = "";
+      ig.src = p.img;
+      im.appendChild(ig);
+      kids.push(im);
+    }
+    kids.push(h("div", { cls: "nm", text: p.name }), h("div", { cls: "pr", text: "\u0E3F" + fmt(p.price) }));
     if (p.stock <= 0) kids.push(h("div", { cls: "bd z", text: "\u0E2A\u0E15\u0E47\u0E2D\u0E01 0" }));
-    else if (p.minStock > 0 && p.stock <= p.minStock) kids.push(h("div", { cls: "bd lo", text: "\u0E40\u0E2B\u0E25\u0E37\u0E2D " + p.stock }));
+    else if (p.stock <= 2) kids.push(h("div", { cls: "bd lo", text: "\u0E40\u0E2B\u0E25\u0E37\u0E2D " + p.stock }));
     g.appendChild(h("div", { cls: "p", onclick: function() {
       tapProduct(id);
     } }, kids));
@@ -782,12 +857,12 @@ function buildSale() {
   cart.forEach(function(l) {
     if (l.sample) return;
     if (l.custom) {
-      lines.push({ pid: null, name: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / \u305D\u306E\u4ED6", qty: 1, price: l.custom, gross: l.custom, declare: false });
+      lines.push({ kind: "custom", pid: null, name: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / \u305D\u306E\u4ED6", qty: 1, price: l.custom, gross: l.custom });
       return;
     }
     var p = products[l.pid];
     if (!p) return;
-    lines.push({ pid: p.id, name: p.name, qty: l.qty, price: p.price, gross: p.price * l.qty, declare: isDeclared(p) });
+    lines.push({ kind: "sale", pid: p.id, name: p.name, qty: l.qty, price: p.price, gross: p.price * l.qty });
   });
   var sub = lines.reduce(function(s, l) {
     return s + l.gross;
@@ -803,6 +878,43 @@ function buildSale() {
     return { pid: l.pid, name: products[l.pid].name, qty: l.qty };
   });
   return { lines, samples, subtotal: sub, discount: disc, total: sub - disc };
+}
+function toRpcLines(sale) {
+  var out = sale.lines.map(function(l) {
+    return l.kind === "custom" ? { kind: "custom", qty: 1, net: l.net, custom_amount: l.price } : { kind: "sale", product_id: l.pid, qty: l.qty, net: l.net };
+  });
+  sale.samples.forEach(function(l) {
+    out.push({ kind: "sample", product_id: l.pid, qty: l.qty, net: 0 });
+  });
+  return out;
+}
+function applyStocks(st) {
+  if (!st) return;
+  Object.keys(st).forEach(function(id) {
+    if (products[id]) products[id].stock = Number(st[id]);
+  });
+  renderGrid();
+}
+async function runCheckout(sale, method) {
+  var payload = { p_lines: toRpcLines(sale), p_discount: sale.discount, p_payment: method };
+  var ps = JSON.stringify(payload);
+  if (!attempt || attempt.payload !== ps) attempt = { payload: ps, key: newKey() };
+  var res;
+  try {
+    res = await sb.rpc("plaa_pos_checkout", { p_lines: payload.p_lines, p_discount: payload.p_discount, p_payment: method, p_client_key: attempt.key });
+  } catch (e) {
+    res = { error: e };
+  }
+  if (!res.error) attempt = null;
+  return res;
+}
+function checkoutError(err) {
+  var m = String(err.message || "");
+  if (/fetch|network|Failed|timeout/i.test(m)) toast("\u0E40\u0E04\u0E23\u0E37\u0E2D\u0E02\u0E48\u0E32\u0E22\u0E02\u0E31\u0E14\u0E02\u0E49\u0E2D\u0E07: \u0E01\u0E14\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E44\u0E14\u0E49 (\u0E23\u0E30\u0E1A\u0E1A\u0E01\u0E31\u0E19\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E0B\u0E49\u0E33)", true, 8e3);
+  else {
+    toast(errText(err), true, 6e3);
+    if (/OUT_OF_STOCK|PRODUCT_NOT_FOUND/.test(m)) refreshStock();
+  }
 }
 function openPay() {
   if (!cart.length || paying) return;
@@ -884,32 +996,19 @@ function openPay() {
       renderCart();
       return;
     }
-    var payload = { p_lines: sale.lines.map(function(l) {
-      return { name: l.name, qty: l.qty, unit_price: l.price, net: l.net, declare: l.declare };
-    }), p_discount: sale.discount };
-    var ps = JSON.stringify(payload);
-    if (!attempt || attempt.payload !== ps) attempt = { payload: ps, key: newKey() };
     paying = true;
     okb.disabled = true;
     okb.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u2026";
     renderCart();
-    var res;
-    try {
-      res = await sb.rpc("plaa_pos_checkout", { p_lines: payload.p_lines, p_discount: payload.p_discount, p_client_key: attempt.key });
-    } catch (e) {
-      res = { error: e };
-    }
+    var res = await runCheckout(sale, method);
     paying = false;
     renderCart();
     if (res.error) {
       okb.textContent = "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19";
       okb.disabled = false;
-      var m = String(res.error.message || "");
-      if (/fetch|network|Failed|timeout/i.test(m)) toast("\u0E40\u0E04\u0E23\u0E37\u0E2D\u0E02\u0E48\u0E32\u0E22\u0E02\u0E31\u0E14\u0E02\u0E49\u0E2D\u0E07: \u0E01\u0E14\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E44\u0E14\u0E49 (\u0E23\u0E30\u0E1A\u0E1A\u0E01\u0E31\u0E19\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E0B\u0E49\u0E33)", true, 8e3);
-      else toast(errText(res.error), true, 6e3);
+      checkoutError(res.error);
       return;
     }
-    attempt = null;
     var d = res.data;
     var rec = {
       receipt_no: d.receipt_no,
@@ -932,9 +1031,10 @@ function openPay() {
     renderCart();
     closeModal();
     lsSet("plp_last", JSON.stringify(rec));
+    applyStocks(d.stocks);
     toast("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27 " + d.receipt_no + (method === "cash" && cashRecv >= rec.total ? "  \u0E17\u0E2D\u0E19 \u0E3F" + fmt(cashRecv - rec.total) : ""), false, 4500);
     printReceipt(rec, method === "cash" && lsGet("plp_autodrawer", "1") === "1");
-    updateStock(sale);
+    forwardPending(false);
   }
 }
 function confirmSamples() {
@@ -942,7 +1042,16 @@ function confirmSamples() {
     return s + l.qty;
   }, 0);
   var okb = h("button", { cls: "ok", text: "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19", onclick: async function() {
+    if (paying) return;
+    paying = true;
     okb.disabled = true;
+    var res = await runCheckout(sale, "cash");
+    paying = false;
+    if (res.error) {
+      okb.disabled = false;
+      checkoutError(res.error);
+      return;
+    }
     cart = [];
     discount = null;
     sampleMode = false;
@@ -950,52 +1059,14 @@ function confirmSamples() {
     saveCart();
     renderCart();
     closeModal();
+    applyStocks(res.data.stocks);
     toast("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07 " + n + " \u0E0A\u0E34\u0E49\u0E19", false, 3e3);
-    updateStock(sale);
   } });
   openModal(h("div", { cls: "set", style: "width:340px;max-width:90vw" }, [
     h("h2", { text: "\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07 / \u30B5\u30F3\u30D7\u30EB\u306E\u307F(" + n + "\u70B9)" }),
     h("div", { text: "\u0E44\u0E21\u0E48\u0E04\u0E34\u0E14\u0E40\u0E07\u0E34\u0E19 \u0E15\u0E31\u0E14\u0E2A\u0E15\u0E47\u0E2D\u0E01\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E40\u0E14\u0E35\u0E22\u0E27 / \u58F2\u4E0A\u306B\u306F\u305B\u305A\u3001\u5728\u5EAB\u3060\u3051\u6E1B\u3089\u3057\u307E\u3059", style: "color:#6a737d;font-size:14px;margin:6px 0" }),
     h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])
   ]));
-}
-async function updateStock(sale) {
-  var want = {};
-  var sales = sale.lines.filter(function(l) {
-    return l.pid;
-  }).map(function(l) {
-    want[l.pid] = (want[l.pid] || 0) + l.qty;
-    return { id: l.pid, qty: l.qty, actualPrice: Math.round(l.net / l.qty * 100) / 100 };
-  });
-  var smp = sale.samples.map(function(l) {
-    want[l.pid] = (want[l.pid] || 0) + l.qty;
-    return { id: l.pid, qty: l.qty };
-  });
-  var before = {};
-  Object.keys(want).forEach(function(pid) {
-    before[pid] = products[pid] ? products[pid].stock : null;
-  });
-  var ok = true;
-  if (sales.length) ok = await sendToGas({ action: "recordSales", sales }) && ok;
-  if (smp.length) ok = await sendToGas({ action: "recordSamples", samples: smp }) && ok;
-  if (!ok) {
-    toast("\u0E2A\u0E48\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E2A\u0E15\u0E47\u0E2D\u0E01\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u0E08\u0E30\u0E2A\u0E48\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34 \u2014 \u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27", true, 8e3);
-    return;
-  }
-  await sleep(2e3);
-  try {
-    var d = await gasGet({ action: "getProducts" });
-    applyProducts(d.products || []);
-    renderCats();
-    renderGrid();
-    var bad = Object.keys(want).filter(function(pid) {
-      return before[pid] !== null && products[pid] && products[pid].stock !== before[pid] - want[pid];
-    });
-    if (bad.length) toast("\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E2A\u0E15\u0E47\u0E2D\u0E01: " + bad.map(function(pid) {
-      return products[pid].name;
-    }).slice(0, 3).join(", ") + " (\u0E22\u0E2D\u0E14\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07)", true, 1e4);
-  } catch (e) {
-  }
 }
 function drawQr(cv, text, size) {
   var qr = qrcode(0, "M");
@@ -1264,7 +1335,8 @@ function printReceipt(rec, withDrawer) {
     }
   });
 }
-function openSettings() {
+async function openSettings() {
+  var sOk = await saitoReady();
   var chunk = h("select", {});
   var curChunk = String(Math.min(512, Math.max(20, parseInt(lsGet("plp_chunk", "100"), 10) || 100)));
   var chunkOpts = ["60", "100", "120", "150", "180", "200", "256", "512"];
@@ -1305,6 +1377,26 @@ function openSettings() {
     };
     rd.readAsDataURL(f);
   });
+  var sEm = h("input", { type: "email", autocomplete: "off" }), sPw = h("input", { type: "password", autocomplete: "off" });
+  var sBox = h("div", null, [h("div", { text: sOk ? "\u0E23\u0E30\u0E1A\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35: \u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E41\u0E25\u0E49\u0E27 / \u4F1A\u8A08\u9023\u643A: \u63A5\u7D9A\u6E08\u307F" : "\u0E23\u0E30\u0E1A\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35: \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D / \u4F1A\u8A08\u9023\u643A: \u672A\u63A5\u7D9A(\u4E0B\u3067\u4E00\u5EA6\u30ED\u30B0\u30A4\u30F3)", style: "font-size:14px;font-weight:700;color:" + (sOk ? "#1a7f37" : "#c8102e") })]);
+  if (!sOk) {
+    sBox.appendChild(h("label", { text: "Email (\u30B5\u30A4\u30C8\u30A6\u30D5\u30FC\u30BA)" }));
+    sBox.appendChild(sEm);
+    sBox.appendChild(h("label", { text: "Password" }));
+    sBox.appendChild(sPw);
+    sBox.appendChild(h("div", { cls: "acts" }, [h("button", { cls: "sec", text: "\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D / \u63A5\u7D9A", onclick: async function() {
+      var r = await sbs.auth.signInWithPassword({ email: sEm.value.trim(), password: sPw.value });
+      if (r.error) {
+        toast("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + r.error.message, true, 5e3);
+        return;
+      }
+      sPw.value = "";
+      closeModal();
+      toast("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E41\u0E25\u0E49\u0E27", false);
+      forwardPending(false);
+    } })]));
+  }
+  sBox.appendChild(h("div", { text: "\u0E04\u0E49\u0E32\u0E07\u0E2A\u0E48\u0E07 " + fwdPending + " \u0E43\u0E1A / \u672A\u9001\u4FE1 " + fwdPending + " \u4EF6", style: "font-size:13px;color:#6a737d;margin-top:6px" }));
   var pp = h("input", { type: "text", inputmode: "numeric", maxlength: "15", placeholder: "0XXXXXXXXX" });
   pp.value = ppId();
   openModal(h("div", { cls: "set", style: "width:380px;max-width:90vw" }, [
@@ -1319,6 +1411,9 @@ function openSettings() {
     h("div", { cls: "chk" }, [auto, h("span", { text: "\u0E40\u0E1B\u0E34\u0E14\u0E25\u0E34\u0E49\u0E19\u0E0A\u0E31\u0E01\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E2A\u0E14 / \u73FE\u91D1\u4F1A\u8A08\u3067\u30C9\u30ED\u30A2\u30FC\u81EA\u52D5" })]),
     h("label", { text: "\u0E42\u0E25\u0E42\u0E01\u0E49 / \u30ED\u30B4\u753B\u50CF(\u306A\u3051\u308C\u3070\u5E97\u540D\u306E\u6587\u5B57)" }),
     logo,
+    h("hr"),
+    sBox,
+    h("hr"),
     h("label", { text: "PromptPay ID (\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23/\u0E40\u0E25\u0E02\u0E1A\u0E31\u0E15\u0E23) / \u3053\u306E\u5E97\u306EPromptPay\u756A\u53F7(\u7A7A\u306A\u3089QR\u306A\u3057)" }),
     pp,
     h("div", { cls: "acts" }, [h("button", { cls: "ok", text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01", onclick: function() {
