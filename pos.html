@@ -1057,13 +1057,20 @@ async function ensurePrinter() {
   }
   return false;
 }
+function sleep(ms) {
+  return new Promise(function(r) {
+    setTimeout(r, ms);
+  });
+}
 async function writeBytes(data) {
   var ch = prn.ch, n = Math.min(512, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100));
-  var useNoResp = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === "function";
+  var useNoResp = lsGet("pos_mode", "auto") !== "resp" && ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === "function";
+  var pace = Math.min(500, Math.max(0, parseInt(lsGet("pos_pace", "0"), 10) || 0));
   for (var i = 0; i < data.length; i += n) {
     var part = data.slice(i, i + n);
     if (useNoResp) await ch.writeValueWithoutResponse(part);
     else await ch.writeValue(part);
+    if (pace && i + n < data.length) await sleep(pace);
   }
 }
 function drawerBytes() {
@@ -1107,12 +1114,23 @@ function printReceipt(rec, withDrawer) {
 function openSettings() {
   var chunk = h("select", {});
   var curChunk = String(Math.min(512, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100)));
-  var chunkOpts = ["60", "100", "120", "150", "180", "200", "256", "512"];
+  var chunkOpts = ["20", "40", "60", "100", "120", "150", "180", "200", "256", "512"];
   if (chunkOpts.indexOf(curChunk) < 0) chunkOpts.push(curChunk);
   chunkOpts.forEach(function(v) {
     var o = h("option", { value: v, text: v + (v === "100" ? "  (\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49 / \u52D5\u4F5C\u78BA\u8A8D\u6E08)" : "") });
     if (v === curChunk) o.selected = true;
     chunk.appendChild(o);
+  });
+  var pace = h("select", {}), mode = h("select", {});
+  [["0", "0 (\u0E44\u0E21\u0E48\u0E23\u0E2D / \u5F85\u305F\u306A\u3044)"], ["10", "10"], ["20", "20"], ["40", "40"], ["80", "80"], ["150", "150"]].forEach(function(o) {
+    var op = h("option", { value: o[0], text: o[1] + " ms" });
+    if (o[0] === String(parseInt(lsGet("pos_pace", "0"), 10) || 0)) op.selected = true;
+    pace.appendChild(op);
+  });
+  [["auto", "\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34 / \u81EA\u52D5(\u6A19\u6E96)"], ["resp", "\u0E23\u0E2D\u0E01\u0E32\u0E23\u0E15\u0E2D\u0E1A\u0E23\u0E31\u0E1A / \u5FDC\u7B54\u3042\u308A(\u9045\u3044\u304C\u78BA\u5B9F)"]].forEach(function(o) {
+    var op = h("option", { value: o[0], text: o[1] });
+    if (o[0] === lsGet("pos_mode", "auto")) op.selected = true;
+    mode.appendChild(op);
   });
   var pin = h("select", {});
   [["0", "0 (\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19 / \u6A19\u6E96)"], ["1", "1 (\u0E02\u0E32\u0E2D\u0E37\u0E48\u0E19 / \u5225\u30D4\u30F3)"]].forEach(function(o) {
@@ -1152,6 +1170,10 @@ function openSettings() {
     cols,
     h("label", { text: "\u0E02\u0E19\u0E32\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E48\u0E2D\u0E04\u0E23\u0E31\u0E49\u0E07 (byte) / 1\u56DE\u306E\u9001\u4FE1\u30B5\u30A4\u30BA(100\u306F\u52D5\u4F5C\u78BA\u8A8D\u6E08\u3002\u5927\u304D\u3059\u304E\u308B\u3068\u6587\u5B57\u5316\u3051)" }),
     chunk,
+    h("label", { text: "\u0E0A\u0E48\u0E27\u0E07\u0E23\u0E2D\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07 (ms) / \u9001\u4FE1\u3054\u3068\u306E\u5F85\u3061\u6642\u9593(\u6587\u5B57\u5316\u3051\u3059\u308B\u7AEF\u672B\u3067\u5897\u3084\u3059)" }),
+    pace,
+    h("label", { text: "\u0E27\u0E34\u0E18\u0E35\u0E2A\u0E48\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 / \u9001\u4FE1\u65B9\u5F0F(\u6587\u5B57\u5316\u3051\u304C\u76F4\u3089\u306A\u3044\u3068\u304D\u300C\u5FDC\u7B54\u3042\u308A\u300D)" }),
+    mode,
     h("label", { text: "\u0E02\u0E32\u0E25\u0E34\u0E49\u0E19\u0E0A\u0E31\u0E01 0 \u0E2B\u0E23\u0E37\u0E2D 1 / \u30C9\u30ED\u30A2\u30FC\u306E\u30D4\u30F3(0=\u6A19\u6E96,1=\u5225\u30D4\u30F3)" }),
     pin,
     h("div", { cls: "chk" }, [auto, h("span", { text: "\u0E40\u0E1B\u0E34\u0E14\u0E25\u0E34\u0E49\u0E19\u0E0A\u0E31\u0E01\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34\u0E40\u0E21\u0E37\u0E48\u0E2D\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E2A\u0E14 / \u73FE\u91D1\u4F1A\u8A08\u3067\u30C9\u30ED\u30A2\u30FC\u81EA\u52D5" })]),
@@ -1161,6 +1183,8 @@ function openSettings() {
       lsSet("pos_cols", String(parseInt(cols.value, 10) || 3));
       renderGrid();
       lsSet("pos_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
+      lsSet("pos_pace", String(parseInt(pace.value, 10) || 0));
+      lsSet("pos_mode", mode.value === "resp" ? "resp" : "auto");
       lsSet("pos_pin", pin.value === "1" ? "1" : "0");
       lsSet("pos_autodrawer", auto.checked ? "1" : "0");
       closeModal();
