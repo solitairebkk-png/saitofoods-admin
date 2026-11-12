@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>プリンター 内蔵文字テスト</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP","Noto Sans Thai",sans-serif;background:#f6f8fa;color:#1f2328;}
+header{background:#fff;border-bottom:1px solid #d0d7de;padding:12px 16px;font-weight:700;font-size:18px;}
+main{max-width:640px;margin:0 auto;padding:12px;}
+section{background:#fff;border:1px solid #d0d7de;border-radius:10px;padding:12px;margin-bottom:12px;}
+h2{margin:0 0 8px;font-size:15px;}
+button{padding:12px 14px;font-size:16px;border:0;border-radius:8px;background:#1f6feb;color:#fff;min-height:46px;margin:0 6px 6px 0;}
+button.g{background:#2da44e;}
+select{padding:10px;font-size:16px;border:1px solid #d0d7de;border-radius:8px;margin:0 6px 6px 0;}
+#st{font-size:14px;padding:8px 10px;border-radius:8px;background:#ddf4ff;margin-top:8px;}
+#log{font-family:ui-monospace,monospace;font-size:12px;background:#0d1117;color:#c9d1d9;padding:8px;border-radius:8px;height:130px;overflow:auto;white-space:pre-wrap;}
+small{color:#57606a;}
+</style></head><body>
+<header>プリンター 内蔵文字テスト(タイ語・英数字)</header>
+<main>
+<section>
+  <h2>1. プリンターに接続</h2>
+  <button id="bConn">Bluetoothで接続</button>
+  <div id="st">未接続</div>
+  <div style="margin-top:8px">
+    送信サイズ <select id="chunk"></select>
+    待ち時間 <select id="pace"></select>
+  </div>
+</section>
+<section>
+  <h2>2. タイ語を内蔵文字で印字</h2>
+  <small>プリンターに文字コード(コードページ)を指定して、タイ語をそのまま送ります。<b>きれいに読める番号</b>があれば、その番号で高速印刷できます。どの番号で読めたか教えてください。</small>
+  <div style="margin-top:8px">
+    <button id="bAll" class="g">主な番号をまとめて印字</button>
+  </div>
+  <div id="btns"></div>
+</section>
+<section>
+  <h2>3. 速さ比べ</h2>
+  <small>同じ長さのレシートを、(A)内蔵文字、(B)画像で印字して、かかった時間を表示します。</small>
+  <div style="margin-top:8px"><button id="bA">A. 内蔵文字で印字</button><button id="bB">B. 画像で印字</button></div>
+</section>
+<section><h2>ログ</h2><div id="log"></div></section>
+</main>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+function log(m) { var l = $('log'); l.textContent += m + '\n'; l.scrollTop = l.scrollHeight; }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+[20, 60, 100, 150, 200, 256, 512].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n; if (n === 100) o.selected = true; $('chunk').appendChild(o); });
+[0, 10, 20, 40, 80, 150].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n + ' ms'; $('pace').appendChild(o); });
+var SERV = ['000018f0-0000-1000-8000-00805f9b34fb', '0000ff00-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', '0000ae30-0000-1000-8000-00805f9b34fb', '0000fee7-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb'];
+var ch = null, dev = null;
+function st(t, ok) { var s = $('st'); s.textContent = t; s.style.background = ok === true ? '#dafbe1' : ok === false ? '#ffebe9' : '#ddf4ff'; }
+$('bConn').onclick = async function () {
+  try {
+    if (!navigator.bluetooth) { st('このChromeはBluetooth非対応です', false); return; }
+    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: SERV });
+    var srv = await dev.gatt.connect(), svcs = await srv.getPrimaryServices();
+    for (var i = 0; i < svcs.length && !ch; i++) {
+      var cs = await svcs[i].getCharacteristics();
+      for (var j = 0; j < cs.length; j++) if (cs[j].properties.write || cs[j].properties.writeWithoutResponse) { ch = cs[j]; break; }
+    }
+    if (!ch) throw new Error('書き込み先が見つかりません');
+    st('接続済み: ' + (dev.name || ''), true); log('connected ' + (dev.name || ''));
+  } catch (e) { st('接続失敗: ' + (e.message || e), false); }
+};
+async function send(bytes) {
+  if (!ch || !dev.gatt.connected) throw new Error('先に接続してください');
+  var data = new Uint8Array(bytes), n = parseInt($('chunk').value, 10) || 100, pace = parseInt($('pace').value, 10) || 0;
+  var nr = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === 'function';
+  for (var i = 0; i < data.length; i += n) {
+    var p = data.slice(i, i + n);
+    if (nr) await ch.writeValueWithoutResponse(p); else await ch.writeValue(p);
+    if (pace && i + n < data.length) await sleep(pace);
+  }
+}
+// Unicode(タイ文字) → TIS-620/CP874 の1バイト。英数字はそのまま
+function enc(str) {
+  var out = [];
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c < 0x80) out.push(c);
+    else if (c >= 0x0E01 && c <= 0x0E5B) out.push(c - 0x0E00 + 0xA0);
+    else if (c === 0x20BF) out.push(0x42);               // ฿ はBで代用
+    else out.push(0x3F);
+  }
+  return out;
+}
+var SAMPLE = 'ปลาตะเพียน สวัสดีค่ะ ขอบคุณ';
+var CPS = [255, 20, 21, 26, 30, 17, 18, 19, 22, 23, 24, 25];
+function pageBytes(n) {
+  return [0x1B, 0x40, 0x1B, 0x74, n].concat(enc('CP ' + n + ': '), enc(SAMPLE), [0x0A], enc('ราคา 1,250 บาท 0123456789'), [0x0A, 0x0A]);
+}
+CPS.forEach(function (n) {
+  var b = document.createElement('button'); b.textContent = '番号 ' + n; b.onclick = async function () { try { await send(pageBytes(n)); log('sent cp ' + n); } catch (e) { log('ERR ' + e.message); } };
+  $('btns').appendChild(b);
+});
+$('bAll').onclick = async function () {
+  try { for (var i = 0; i < CPS.length; i++) { await send(pageBytes(CPS[i])); await sleep(600); } await send([0x0A, 0x0A, 0x0A]); log('sent all'); } catch (e) { log('ERR ' + e.message); }
+};
+// 速さ比べ: 同じ内容を24行
+function lineText(i) { return 'สินค้า ' + (i + 1) + '  2 x 150      300.00'; }
+$('bA').onclick = async function () {
+  try {
+    var b = [0x1B, 0x40, 0x1B, 0x74, 255], t0 = Date.now();
+    for (var i = 0; i < 24; i++) { b = b.concat(enc(lineText(i)), [0x0A]); }
+    b = b.concat([0x0A, 0x0A, 0x0A]);
+    await send(b); log('A 送信完了 ' + (Date.now() - t0) + ' ms (印字が終わるまでの時間は目で測ってください)');
+  } catch (e) { log('ERR ' + e.message); }
+};
+$('bB').onclick = async function () {
+  try {
+    var W = 384, cv = document.createElement('canvas'); cv.width = W; cv.height = 24 * 30 + 20;
+    var ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, cv.height); ctx.fillStyle = '#000'; ctx.textBaseline = 'top'; ctx.font = '22px "Noto Sans Thai","Noto Sans JP",sans-serif';
+    for (var i = 0; i < 24; i++) ctx.fillText(lineText(i), 4, 4 + i * 30);
+    var img = ctx.getImageData(0, 0, W, cv.height), wb = W / 8, band = 64, b = [0x1B, 0x40], t0 = Date.now();
+    for (var y0 = 0; y0 < img.height; y0 += band) {
+      var bh = Math.min(band, img.height - y0);
+      b.push(0x1D, 0x76, 0x30, 0x00, wb & 255, wb >> 8, bh & 255, bh >> 8);
+      for (var y = y0; y < y0 + bh; y++) for (var xb = 0; xb < wb; xb++) {
+        var by = 0; for (var k = 0; k < 8; k++) { var p = (y * W + xb * 8 + k) * 4; var lum = img.data[p] * .299 + img.data[p + 1] * .587 + img.data[p + 2] * .114; if (lum < 140) by |= (0x80 >> k); } b.push(by);
+      }
+    }
+    b.push(0x1B, 0x64, 3);
+    await send(b); log('B 送信完了 ' + (Date.now() - t0) + ' ms');
+  } catch (e) { log('ERR ' + e.message); }
+};
+</script></body></html>
