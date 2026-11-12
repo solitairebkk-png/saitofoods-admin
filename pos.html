@@ -90,16 +90,18 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 .mb{background:var(--card);border-radius:16px;padding:14px;max-width:96vw;max-height:96vh;overflow:auto;}
 .mb h2{margin:0 0 8px;font-size:17px;}
 .kp{display:grid;grid-template-columns:repeat(3,72px);grid-gap:6px;}
-.kp button{min-height:54px;font-size:22px;background:#e6e8eb;color:var(--tx);padding:0;}
+.kp button{min-height:46px;font-size:21px;background:#e6e8eb;color:var(--tx);padding:0;}
 .disp{background:#f6f8fa;border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:28px;font-weight:700;text-align:right;min-height:50px;}
 .sub{color:var(--mut);font-size:13px;text-align:right;min-height:18px;margin:2px 0 6px;}
 .pay{display:flex;} .pay > div{margin-right:16px;} .pay > div:last-child{margin-right:0;}
-.pay > div:first-child{min-width:310px;}
+.pay{align-items:flex-start;} .pay > div:first-child{min-width:240px;max-width:270px;}
+.wide{display:flex;align-items:flex-start;} .wide > .kp{margin-right:14px;} .wide > .wr{min-width:260px;}
+.mb h2{margin:0 0 6px;}
 .seg{display:flex;margin-bottom:8px;} .seg button{flex:1;margin-right:6px;background:#e6e8eb;color:var(--tx);min-height:50px;font-size:17px;}
 .seg button:last-child{margin-right:0;} .seg button.act{background:var(--pri);color:#fff;}
 .quick{display:flex;flex-wrap:wrap;margin-bottom:6px;} .quick button{margin:0 6px 6px 0;min-height:44px;padding:0 12px;background:#e6e8eb;color:var(--tx);font-size:16px;}
 .chg{font-size:22px;font-weight:700;margin:6px 0;} .chg.bad{color:var(--pri);} .chg.good{color:var(--ok);}
-#qrbox{background:#fff;padding:8px;border:1px solid var(--bd);border-radius:10px;text-align:center;}
+#qrbox{background:#fff;padding:6px;border:1px solid var(--bd);border-radius:10px;text-align:center;}
 #qrbox canvas{display:block;margin:0 auto;}
 .acts{display:flex;margin-top:10px;} .acts button{flex:1;margin-right:8px;} .acts button:last-child{margin-right:0;}
 #toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#24292f;color:#fff;padding:10px 18px;border-radius:12px;font-size:16px;z-index:40;max-width:90vw;text-align:center;}
@@ -641,13 +643,12 @@ function askGrams(pid, initial, done) {
       upd();
     } }));
   });
-  openModal(h("div", null, [
+  openModal(h("div", { cls: "wide" }, [kp, h("div", { cls: "wr" }, [
     h("h2", { text: nameOf(p) }),
     disp,
     sub,
-    kp,
     h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])
-  ]));
+  ])]));
   upd();
 }
 function openDiscount() {
@@ -701,7 +702,7 @@ function openDiscount() {
     renderCart();
   } }));
   acts.push(okb);
-  openModal(h("div", null, [h("h2", { text: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / \u30C7\u30A3\u30B9\u30AB\u30A6\u30F3\u30C8(\u4F1A\u8A08\u5168\u4F53)" }), seg, disp, sb2, kp, h("div", { cls: "acts" }, acts)]));
+  openModal(h("div", { cls: "wide" }, [kp, h("div", { cls: "wr" }, [h("h2", { text: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / \u30C7\u30A3\u30B9\u30AB\u30A6\u30F3\u30C8(\u4F1A\u8A08\u5168\u4F53)" }), seg, disp, sb2, h("div", { cls: "acts" }, acts)])]));
   upd();
 }
 function openCustom() {
@@ -729,7 +730,7 @@ function openCustom() {
       upd();
     } }));
   });
-  openModal(h("div", null, [h("h2", { text: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / Other" }), disp, sb2, kp, h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])]));
+  openModal(h("div", { cls: "wide" }, [kp, h("div", { cls: "wr" }, [h("h2", { text: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / Other" }), disp, sb2, h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])])]));
   upd();
 }
 function openPay() {
@@ -737,7 +738,7 @@ function openPay() {
   var amount = total(), method = "cash", recv = "";
   var seg = h("div", { cls: "seg" }), left = h("div"), right = h("div");
   var disp = h("div", { cls: "disp" }), chg = h("div", { cls: "chg" }), quick = h("div", { cls: "quick" }), kp = h("div", { cls: "kp" });
-  var cashPanel = h("div", null, [disp, chg, quick, kp]);
+  var cashL = h("div", null, [disp, chg]), cashR = h("div", null, [quick, kp]), mid = h("div");
   var qrPanel = h("div", { id: "qrbox" });
   var okb = h("button", { cls: "ok", text: "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19", onclick: submit, style: "min-height:68px;font-size:20px;font-weight:700;min-width:96px" });
   var cancel = h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal });
@@ -770,7 +771,8 @@ function openPay() {
   function upd() {
     bCash.className = method === "cash" ? "act" : "";
     bQr.className = method === "qr" ? "act" : "";
-    cashPanel.classList.toggle("hidden", method !== "cash");
+    cashL.classList.toggle("hidden", method !== "cash");
+    cashR.classList.toggle("hidden", method !== "cash");
     qrPanel.classList.toggle("hidden", method !== "qr");
     var r = parseInt(recv || "0", 10);
     disp.textContent = recv ? "\u0E3F" + fmt(r) : "\u0E3F0";
@@ -783,20 +785,20 @@ function openPay() {
   }
   left.appendChild(h("h2", { text: "\u0E22\u0E2D\u0E14\u0E0A\u0E33\u0E23\u0E30" }));
   left.appendChild(h("div", { cls: "disp", text: "\u0E3F" + fmt(amount), style: "color:#c8102e" }));
-  left.appendChild(h("div", { style: "height:8px" }));
   left.appendChild(seg);
-  left.appendChild(cashPanel);
+  left.appendChild(cashL);
+  mid.appendChild(cashR);
   try {
     var cv = document.createElement("canvas");
-    drawQr(cv, promptpayPayload(PROMPTPAY_ID, amount), 220);
+    drawQr(cv, promptpayPayload(PROMPTPAY_ID, amount), 200);
     qrPanel.appendChild(cv);
     qrPanel.appendChild(h("div", { text: "PromptPay \u0E3F" + fmt(amount), style: "font-size:15px;margin-top:6px" }));
   } catch (e) {
     qrPanel.appendChild(h("div", { text: "\u0E2A\u0E23\u0E49\u0E32\u0E07 QR \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49" }));
   }
-  left.appendChild(qrPanel);
+  mid.appendChild(qrPanel);
   right.appendChild(h("div", { cls: "acts", style: "flex-direction:column" }, [okb, h("div", { style: "height:8px" }), cancel]));
-  openModal(h("div", { cls: "pay" }, [left, right]));
+  openModal(h("div", { cls: "pay" }, [left, mid, right]));
   upd();
   async function submit() {
     if (paying) return;
