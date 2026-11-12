@@ -61,7 +61,12 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 #grid.c6{grid-template-columns:repeat(6,1fr);} #grid.c6 .nm{font-size:11px;} #grid.c6 .pr{font-size:13px;} #grid.c6 .pr small{font-size:10px;}
 #empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:40px 0;}
 #cart{width:312px;flex:none;background:var(--card);border-left:1px solid var(--bd);display:flex;flex-direction:column;}
-#lines{flex:1;overflow-y:auto;padding:4px 8px;-webkit-overflow-scrolling:touch;}
+#lines{position:relative;flex:1;overflow-y:auto;padding:8px;background:#e4e6ea;-webkit-overflow-scrolling:touch;}
+.paper{background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.2);padding:10px 8px 12px;}
+.paper .hd{text-align:center;} .paper .hd img{width:150px;height:auto;display:block;margin:0 auto 2px;} .paper .hd div{font-size:11px;color:var(--mut);}
+.paper .dash{border-top:1px dashed #9aa0a8;margin:8px 0 2px;}
+.paper .ptot{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:17px;padding:8px 0 4px;border-top:2px solid var(--tx);margin-top:4px;}
+.paper .pqr{text-align:center;padding-top:6px;} .paper .pqr canvas{width:150px;height:150px;display:block;margin:0 auto;} .paper .pqr div{font-size:12px;color:var(--mut);}
 .ln{border-bottom:1px solid #eceef1;padding:7px 0;}
 .ln .t{font-size:14px;line-height:1.25;margin-bottom:5px;}
 .ln .r{display:flex;align-items:center;}
@@ -458,7 +463,14 @@ function total() {
 function renderCart() {
   var box = $("lines");
   box.innerHTML = "";
-  if (!cart.length) box.appendChild(h("div", { id: "cartEmpty", text: "\u0E41\u0E15\u0E30\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23" }));
+  var paper = h("div", { cls: "paper" });
+  var lg = new Image();
+  lg.alt = "";
+  lg.src = lsGet("pos_logo", "") || DEFAULT_LOGO;
+  paper.appendChild(h("div", { cls: "hd" }, [lg, h("div", { text: "Bangkok  Since 1997" })]));
+  paper.appendChild(h("div", { cls: "dash" }));
+  if (!cart.length) paper.appendChild(h("div", { id: "cartEmpty", text: "\u0E41\u0E15\u0E30\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23" }));
+  var lastEl = null;
   cart.forEach(function(l, i) {
     var p = products[l.pid];
     if (!p) return;
@@ -491,12 +503,27 @@ function renderCart() {
       saveCart();
       renderCart();
     } }));
-    box.appendChild(h("div", { cls: "ln" }, [h("div", { cls: "t", text: nameOf(p) }), h("div", { cls: "r" }, right)]));
+    lastEl = h("div", { cls: "ln" }, [h("div", { cls: "t", text: nameOf(p) }), h("div", { cls: "r" }, right)]);
+    paper.appendChild(lastEl);
   });
-  $("totv").textContent = "\u0E3F" + fmt(total());
+  var tt = total();
+  if (cart.length) {
+    paper.appendChild(h("div", { cls: "ptot" }, [h("span", { text: "\u0E23\u0E27\u0E21 / TOTAL" }), h("span", { text: "\u0E3F" + fmt(tt) })]));
+    if (tt > 0) {
+      try {
+        var cv = document.createElement("canvas");
+        drawQr(cv, promptpayPayload(PROMPTPAY_ID, tt), 300);
+        paper.appendChild(h("div", { cls: "pqr" }, [cv, h("div", { text: "PromptPay \u0E3F" + fmt(tt) })]));
+      } catch (e) {
+      }
+    }
+  }
+  box.appendChild(paper);
+  $("totv").textContent = "\u0E3F" + fmt(tt);
   $("payBtn").disabled = !cart.length || paying;
   $("clear").disabled = !cart.length;
-  box.scrollTop = box.scrollHeight;
+  if (lastEl) box.scrollTop = Math.max(0, lastEl.offsetTop + lastEl.offsetHeight - box.clientHeight + 12);
+  else box.scrollTop = 0;
 }
 function saveCart() {
   lsSet("pos_cart", JSON.stringify(cart));
@@ -914,6 +941,7 @@ function openSettings() {
       i.onload = function() {
         logoImg = i;
         lsSet("pos_logo", rd.result);
+        renderCart();
         toast("\u0E15\u0E31\u0E49\u0E07\u0E42\u0E25\u0E42\u0E01\u0E49\u0E41\u0E25\u0E49\u0E27", false);
       };
       i.src = rd.result;
