@@ -110,6 +110,12 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 .set .chk{display:flex;align-items:center;margin:10px 0;font-size:15px;} .set .chk input{width:22px;height:22px;margin-right:8px;}
 #gear{position:relative;} #fwd.bdg{position:absolute;top:-4px;right:-4px;background:#c8102e;color:#fff;border-radius:10px;font-size:11px;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px;}
 .set hr{border:0;border-top:1px solid #e1e4e8;margin:12px 0 4px;}
+.hl{max-height:60vh;overflow-y:auto;margin:6px 0;-webkit-overflow-scrolling:touch;}
+.hr{display:flex;align-items:center;padding:10px 6px;border-bottom:1px solid #eceef1;cursor:pointer;} .hr:active{background:#f3f4f6;}
+.hr .a{width:104px;flex:none;color:#6a737d;font-size:13px;} .hr .b{flex:1;font-size:14px;} .hr .c{font-weight:700;font-size:17px;}
+.hr.vd{opacity:.45;} .hr.vd .c{text-decoration:line-through;}
+.hd2{max-height:50vh;overflow-y:auto;margin:6px 0;} .hd2 .l1{font-size:15px;padding-top:6px;} .hd2 .l2{display:flex;justify-content:space-between;font-size:15px;color:#444;padding-left:10px;}
+.hd2 .l2.tt{font-weight:700;font-size:19px;color:#1f2328;border-top:2px solid #1f2328;margin-top:8px;padding:6px 0 0;}
 </style>
 </head>
 <body>
@@ -132,6 +138,7 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
     <span class="brand">PLAA-TA-PIAN</span>
     <input id="q" type="search" placeholder="ค้นหาสินค้า" autocomplete="off">
     <button id="prn" class="lt"><i></i><span>เครื่องพิมพ์</span></button>
+    <button id="hist" class="lt">ประวัติ</button>
     <button id="reprint" class="lt">พิมพ์ซ้ำ</button>
     <button id="drawer" class="lt">เปิดลิ้นชัก</button>
     <button id="gear" class="lt">⚙<span id="fwd" class="hidden"></span></button>
@@ -354,7 +361,9 @@ var ERR_TH = {
   PRODUCT_NOT_FOUND: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E19\u0E35\u0E49\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A \u0E01\u0E23\u0E38\u0E13\u0E32\u0E42\u0E2B\u0E25\u0E14\u0E43\u0E2B\u0E21\u0E48",
   BAD_KIND: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
   BAD_CUSTOM_AMOUNT: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
-  BAD_PAYMENT_METHOD: "\u0E27\u0E34\u0E18\u0E35\u0E0A\u0E33\u0E23\u0E30\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07"
+  BAD_PAYMENT_METHOD: "\u0E27\u0E34\u0E18\u0E35\u0E0A\u0E33\u0E23\u0E30\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  NOT_FOUND: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E19\u0E35\u0E49",
+  ALREADY_EXPRESS_ENTERED: "\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E19\u0E35\u0E49\u0E16\u0E39\u0E01\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E41\u0E25\u0E49\u0E27 \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E17\u0E35\u0E48\u0E19\u0E35\u0E48\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49 / \u4F1A\u8A08\u30BD\u30D5\u30C8\u306B\u5165\u529B\u6E08\u307F\u306E\u305F\u3081\u3001\u3053\u3053\u3067\u306F\u53D6\u308A\u6D88\u305B\u307E\u305B\u3093"
 };
 function errText(e) {
   var m = e && e.message || String(e);
@@ -1068,6 +1077,106 @@ function confirmSamples() {
     h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])
   ]));
 }
+function rowsToRec(r) {
+  var lines = [], samples = [];
+  (r.lines || []).forEach(function(l) {
+    if (l.kind === "sample") samples.push({ name: l.name, qty: Number(l.qty) });
+    else lines.push({ name: l.name, qty: Number(l.qty), price: Number(l.price), total: Number(l.price) * Number(l.qty) });
+  });
+  return { receipt_no: r.receipt_no, created_at: r.created_at, payment_method: r.payment_method, total: Number(r.total), subtotal: Number(r.subtotal), discount: Number(r.discount || 0), lines, samples, received: null };
+}
+async function openHistory() {
+  openModal(h("div", { cls: "set", style: "width:420px;max-width:92vw" }, [h("h2", { text: "\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08 / \u4F1A\u8A08\u306E\u5C65\u6B74" }), h("div", { text: "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u2026", style: "padding:20px;color:#6a737d" })]));
+  var res = await sb.rpc("plaa_pos_recent_receipts", { p_limit: 30 });
+  if (res.error) {
+    closeModal();
+    toast("\u0E42\u0E2B\u0E25\u0E14\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08", true, 4e3);
+    return;
+  }
+  var list = h("div", { cls: "hl" });
+  (res.data || []).forEach(function(r) {
+    var voided = !!r.voided_at;
+    list.appendChild(h("div", { cls: "hr" + (voided ? " vd" : ""), onclick: function() {
+      openReceiptDetail(r);
+    } }, [
+      h("div", { cls: "a", text: fmtDate(r.created_at).slice(0, 16) }),
+      h("div", { cls: "b", text: r.receipt_no + (r.payment_method === "qr" ? "  QR" : "") + (voided ? "  \u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E41\u0E25\u0E49\u0E27/\u53D6\u6D88\u6E08" : "") }),
+      h("div", { cls: "c", text: "\u0E3F" + fmt(r.total) })
+    ]));
+  });
+  if (!(res.data || []).length) list.appendChild(h("div", { text: "\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E21\u0E35\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08", style: "padding:20px;color:#6a737d" }));
+  openModal(h("div", { cls: "set", style: "width:420px;max-width:92vw" }, [
+    h("h2", { text: "\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08 / \u4F1A\u8A08\u306E\u5C65\u6B74(\u65B0\u3057\u3044\u9806)" }),
+    list,
+    h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E1B\u0E34\u0E14", onclick: closeModal })])
+  ]));
+}
+function openReceiptDetail(r) {
+  var voided = !!r.voided_at;
+  var body = h("div", { cls: "hd2" });
+  (r.lines || []).forEach(function(l) {
+    body.appendChild(h("div", { cls: "l1", text: l.name }));
+    body.appendChild(h("div", { cls: "l2" }, [h("span", { text: l.kind === "sample" ? l.qty + " \xD7 \u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07 / \u30B5\u30F3\u30D7\u30EB" : l.qty + " \xD7 " + fmt(l.price) }), h("span", { text: l.kind === "sample" ? "FREE" : fmt(l.net) })]));
+  });
+  if (Number(r.discount) > 0) body.appendChild(h("div", { cls: "l2" }, [h("span", { text: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / Discount" }), h("span", { text: "\u2212" + fmt(r.discount) })]));
+  body.appendChild(h("div", { cls: "l2 tt" }, [h("span", { text: "\u0E23\u0E27\u0E21 / TOTAL" }), h("span", { text: "\u0E3F" + fmt(r.total) })]));
+  var acts = [h("button", { cls: "lt", text: "\u0E01\u0E25\u0E31\u0E1A", onclick: openHistory })];
+  if (!voided) {
+    acts.push(h("button", { cls: "lt", text: "\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E0B\u0E49\u0E33", onclick: function() {
+      printReceipt(rowsToRec(r), false);
+      toast("\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E0B\u0E49\u0E33 " + r.receipt_no, false, 2e3);
+    } }));
+    acts.push(h("button", { text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E1A\u0E34\u0E25 / \u53D6\u308A\u6D88\u3057", onclick: function() {
+      confirmVoid(r);
+    } }));
+  }
+  openModal(h("div", { cls: "set", style: "width:380px;max-width:92vw" }, [h("h2", { text: r.receipt_no + (voided ? "  (\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E41\u0E25\u0E49\u0E27 / \u53D6\u6D88\u6E08)" : "") }), h("div", { text: fmtDate(r.created_at) + (r.payment_method === "qr" ? "  QR" : "  \u0E40\u0E07\u0E34\u0E19\u0E2A\u0E14"), style: "color:#6a737d;font-size:13px;margin-bottom:6px" }), body, h("div", { cls: "acts" }, acts)]));
+}
+function confirmVoid(r) {
+  var okb = h("button", { text: "\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01 / \u53D6\u308A\u6D88\u3059", onclick: function() {
+    doVoid(r, okb);
+  } });
+  openModal(h("div", { cls: "set", style: "width:360px;max-width:92vw" }, [
+    h("h2", { text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E19\u0E35\u0E49? / \u3053\u306E\u4F1A\u8A08\u3092\u53D6\u308A\u6D88\u3057\u307E\u3059\u304B?" }),
+    h("div", { text: r.receipt_no + "  \u0E3F" + fmt(r.total), style: "font-size:18px;font-weight:700;margin:8px 0" }),
+    h("div", { text: "\u0E2A\u0E15\u0E47\u0E2D\u0E01\u0E08\u0E30\u0E01\u0E25\u0E31\u0E1A\u0E04\u0E37\u0E19 \u0E41\u0E25\u0E30\u0E22\u0E2D\u0E14\u0E02\u0E32\u0E22\u0E08\u0E30\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01 / \u5728\u5EAB\u304C\u5143\u306B\u623B\u308A\u3001\u58F2\u4E0A\u304C\u53D6\u308A\u6D88\u3055\u308C\u307E\u3059\u3002", style: "color:#6a737d;font-size:14px;margin-bottom:6px" }),
+    h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E01\u0E25\u0E31\u0E1A", onclick: function() {
+      openReceiptDetail(r);
+    } }), okb])
+  ]));
+}
+async function doVoid(r, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23\u2026";
+  }
+  for (var w = 0; fwdBusy && w < 25; w++) await sleep(200);
+  var res = await sb.rpc("plaa_pos_void", { p_receipt_no: r.receipt_no, p_saito_done: false });
+  if (res.error && String(res.error.message).indexOf("NEEDS_SAITO_VOID") >= 0) {
+    if (!await saitoReady()) {
+      toast("\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E23\u0E30\u0E1A\u0E1A\u0E1A\u0E31\u0E0D\u0E0A\u0E35\u0E01\u0E48\u0E2D\u0E19 (\u2699) / \u4F1A\u8A08\u9023\u643A\u306B\u63A5\u7D9A\u3057\u3066\u304B\u3089\u53D6\u308A\u6D88\u3057\u3066\u304F\u3060\u3055\u3044", true, 7e3);
+      openReceiptDetail(r);
+      return;
+    }
+    var x = await sbs.rpc("plaa_pos_void_forwarded", { p_client_key: "plp-" + r.receipt_no });
+    if (x.error) {
+      toast(errText(x.error), true, 8e3);
+      openReceiptDetail(r);
+      return;
+    }
+    res = await sb.rpc("plaa_pos_void", { p_receipt_no: r.receipt_no, p_saito_done: true });
+  }
+  if (res.error) {
+    toast(errText(res.error), true, 6e3);
+    openReceiptDetail(r);
+    return;
+  }
+  applyStocks(res.data.stocks);
+  toast("\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01\u0E41\u0E25\u0E49\u0E27 " + r.receipt_no + " / \u53D6\u308A\u6D88\u3057\u307E\u3057\u305F", false, 3500);
+  openHistory();
+  refreshStock();
+  forwardPending(true);
+}
 function drawQr(cv, text, size) {
   var qr = qrcode(0, "M");
   qr.addData(text);
@@ -1584,6 +1693,7 @@ $("clear").addEventListener("click", function() {
 $("prn").addEventListener("click", connectPrinter);
 $("drawer").addEventListener("click", openDrawer);
 $("gear").addEventListener("click", openSettings);
+$("hist").addEventListener("click", openHistory);
 $("reprint").addEventListener("click", function() {
   var rec = null;
   try {
