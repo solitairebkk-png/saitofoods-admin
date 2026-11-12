@@ -808,23 +808,34 @@ function prepayBanner(o) {
   return '<div class="prepay none">❌ ยังไม่มีสลิปโอนเงิน!<br>ห้ามวางของไว้ → นำของกลับ<small>スリップ未着: 置き配せず持ち帰り(迷ったらマネージャーに確認) / No slip: do not leave the items, take them back</small></div>';
 }
 
-// 現金払いで、その場で代金をもらえなかった場合に押すボタン(2026-11-04)。
+// 代金をもらえなかった場合に押すボタン(2026-11-04)。
+// 現金払い: その場で現金をもらえなかったとき(2026-11-12まで現金のみ)。
+// QR払い: 配送時までに振込みが確認できなかったとき(2026-11-12追加)。
 // 押すと管理画面の一覧で行の色が変わり、入金が確認されるまで管理画面のCompleteが押せなくなる。
 function nocashHtml(o, isBusy) {
   if (o.is_wholesale || o.payment_status === 'paid') return '';
+  const isQr = o.payment_method === 'qr';
   if (o.payment_uncollected) {
-    return `<div class="nocash-flag">⚠️ บันทึกแล้ว: ยังไม่ได้รับเงินสด<small>現金未回収として記録済み(管理画面で色が変わります)</small>
+    const flagText = isQr
+      ? 'ยังไม่พบการโอนเงิน<small>振込み未確認として記録済み(管理画面で色が変わります)</small>'
+      : 'ยังไม่ได้รับเงินสด<small>現金未回収として記録済み(管理画面で色が変わります)</small>';
+    return `<div class="nocash-flag">⚠️ บันทึกแล้ว: ${flagText}
       <button ${isBusy ? 'disabled' : ''} onclick="setUncollected('${escapeHtml(o.id)}', false)">↩️ ยกเลิก / 取り消す</button></div>`;
   }
-  if (o.payment_method !== 'cash') return '';
+  if (o.payment_method !== 'cash' && !isQr) return '';
   return `<button class="nocash-btn" ${isBusy ? 'disabled' : ''} onclick="setUncollected('${escapeHtml(o.id)}', true)">
-    💴 ไม่ได้รับเงินสด<br><small>現金をもらえなかった</small></button>`;
+    ${isQr ? '❌ ไม่พบการโอนเงิน<br><small>振込みが確認できなかった</small>' : '💴 ไม่ได้รับเงินสด<br><small>現金をもらえなかった</small>'}</button>`;
 }
 async function setUncollected(orderId, flag) {
   if (busy[orderId]) return;
+  const isQr = (orderCache[orderId] || {}).payment_method === 'qr';
   const msg = flag
-    ? '💴 บันทึกว่า “ไม่ได้รับเงินสด” ใช่หรือไม่?\n現金をもらえなかったとして記録します(お客様へ未入金のお知らせメールが届きます)'
-    : '↩️ ยกเลิกการบันทึก “ไม่ได้รับเงินสด” ใช่หรือไม่?\n未回収の記録を取り消します';
+    ? (isQr
+        ? '❌ บันทึกว่า “ไม่พบการโอนเงิน” ใช่หรือไม่?\n振込みが確認できなかったとして記録します(お客様へ未入金のお知らせメールが届きます)'
+        : '💴 บันทึกว่า “ไม่ได้รับเงินสด” ใช่หรือไม่?\n現金をもらえなかったとして記録します(お客様へ未入金のお知らせメールが届きます)')
+    : (isQr
+        ? '↩️ ยกเลิกการบันทึก “ไม่พบการโอนเงิน” ใช่หรือไม่?\n未入金の記録を取り消します'
+        : '↩️ ยกเลิกการบันทึก “ไม่ได้รับเงินสด” ใช่หรือไม่?\n未回収の記録を取り消します');
   if (!(await confirmDone(orderId, msg))) return;
   busy[orderId] = true;
   $('main-error').textContent = '';
