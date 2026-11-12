@@ -368,7 +368,7 @@ async function loadData() {
     sb.from("products").select("id,name_ja,name_en,name_th,price,unit_price,unit_label,sale_type,image_url,is_monthly_promotion,promotion_price,stock_qty,is_unlimited_stock,sort_order").eq("is_published", true).eq("is_coming_soon", false).order("sort_order").range(0, 999),
     sb.from("categories").select("id,name_ja,name_en,name_th,sort_order").order("sort_order").range(0, 199),
     sb.from("product_categories").select("product_id,category_id,sort_order").range(0, 1999),
-    sb.rpc("pos_top_products", { p_days: 30, p_limit: 30 })
+    sb.rpc("pos_top_products", { p_days: 90, p_limit: 60 })
   ]);
   if (res[0].error || res[1].error || res[2].error) {
     toast("\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: " + (res[0].error || res[1].error || res[2].error).message, true, 6e3);
