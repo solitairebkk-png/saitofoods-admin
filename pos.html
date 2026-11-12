@@ -1029,7 +1029,7 @@ async function ensurePrinter() {
   return false;
 }
 async function writeBytes(data) {
-  var ch = prn.ch, n = Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100);
+  var ch = prn.ch, n = Math.min(100, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100));
   var useNoResp = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === "function";
   for (var i = 0; i < data.length; i += n) {
     var part = data.slice(i, i + n);
@@ -1076,7 +1076,7 @@ function printReceipt(rec, withDrawer) {
   });
 }
 function openSettings() {
-  var chunk = h("input", { type: "number", value: lsGet("pos_chunk", "100"), min: "20", max: "512" });
+  var chunk = h("input", { type: "number", value: lsGet("pos_chunk", "100"), min: "20", max: "100" });
   var pin = h("input", { type: "number", value: lsGet("pos_pin", "0"), min: "0", max: "1" });
   var auto = h("input", { type: "checkbox" });
   auto.checked = lsGet("pos_autodrawer", "1") === "1";
@@ -1118,7 +1118,7 @@ function openSettings() {
     h("div", { cls: "acts" }, [h("button", { cls: "ok", text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01", onclick: function() {
       lsSet("pos_cols", String(parseInt(cols.value, 10) || 3));
       renderGrid();
-      lsSet("pos_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
+      lsSet("pos_chunk", String(Math.min(100, Math.max(20, parseInt(chunk.value, 10) || 100))));
       lsSet("pos_pin", pin.value === "1" ? "1" : "0");
       lsSet("pos_autodrawer", auto.checked ? "1" : "0");
       closeModal();
