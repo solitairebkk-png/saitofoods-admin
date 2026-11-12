@@ -166,6 +166,9 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
 var SUPABASE_URL = "https://sdjgmgyghnlpqydrnllj.supabase.co";
 var SUPABASE_KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
 var PROMPTPAY_ID = "0639311943";
+var STORE_ADDR = ["23/7 Soi Naphasub 2 Sukhumvit Soi 36", "Klongton Klongtoey Bangkok 10110"];
+var STORE_TEL = "Tel 02-258-9878";
+var STORE_URL = "https://saitofoods.com";
 var W = 384;
 function crc16ccitt(str) {
   var crc = 65535;
@@ -494,7 +497,7 @@ function renderCart() {
   var lg = new Image();
   lg.alt = "";
   lg.src = lsGet("pos_logo", "") || DEFAULT_LOGO;
-  paper.appendChild(h("div", { cls: "hd" }, [lg, h("div", { text: "Bangkok  Since 1997" })]));
+  paper.appendChild(h("div", { cls: "hd" }, [lg, h("div", { text: "Bangkok  Since 1997" }), h("div", { text: STORE_ADDR.join(" ") }), h("div", { text: STORE_TEL + "  " + STORE_URL })]));
   paper.appendChild(h("div", { cls: "dash" }));
   if (!cart.length) paper.appendChild(h("div", { id: "cartEmpty", text: "\u0E41\u0E15\u0E30\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23" }));
   var lastEl = null;
@@ -919,6 +922,12 @@ function drawReceipt(rec) {
     center("\u30B5\u30A4\u30C8\u30A6\u30D5\u30FC\u30BA", 22, true);
   }
   center("Bangkok  Since 1997", 18);
+  ctx.font = "16px " + FONT;
+  STORE_ADDR.forEach(function(t) {
+    center(t, 16);
+  });
+  center(STORE_TEL, 16);
+  center(STORE_URL, 16);
   y += 4;
   rule();
   pair("\u0E43\u0E1A\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19 / Receipt", rec.receipt_no, 18);
