@@ -894,7 +894,7 @@ function drawReceipt(rec) {
   ctx.fillRect(0, 0, W, cv.height);
   ctx.fillStyle = "#000";
   ctx.textBaseline = "top";
-  var y = 8;
+  var y = 40;
   function center(t, size, bold) {
     ctx.font = (bold ? "700 " : "") + size + "px " + FONT;
     ctx.textAlign = "center";
@@ -967,7 +967,7 @@ function drawReceipt(rec) {
   rule();
   center("\u0E02\u0E2D\u0E1A\u0E04\u0E38\u0E13\u0E04\u0E48\u0E30 / \u3042\u308A\u304C\u3068\u3046\u3054\u3056\u3044\u307E\u3057\u305F", 20);
   center("Thank you", 18);
-  y += 14;
+  y += 90;
   return ctx.getImageData(0, 0, W, y);
 }
 var BLE_SERVICES = [
