@@ -639,7 +639,7 @@ function saveDisc() {
   lsSet("plp_disc", discount ? JSON.stringify(discount) : "");
 }
 function ppId() {
-  return lsGet("plp_pp", "");
+  return "";
 }
 function renderCart() {
   var box = $("lines");
@@ -952,8 +952,6 @@ function openPay() {
     method = "qr";
     upd();
   } });
-  seg.appendChild(bCash);
-  seg.appendChild(bQr);
   [["\u0E1E\u0E2D\u0E14\u0E35", amount], ["100", 100], ["500", 500], ["1000", 1e3]].forEach(function(q) {
     quick.appendChild(h("button", { text: q[0], onclick: function() {
       recv = String(q[1]);
@@ -1640,19 +1638,7 @@ async function openSettings() {
     h("hr"),
     sBox,
     h("hr"),
-    h("label", { text: "PromptPay ID (\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23/\u0E40\u0E25\u0E02\u0E1A\u0E31\u0E15\u0E23) / \u3053\u306E\u5E97\u306EPromptPay\u756A\u53F7(\u7A7A\u306A\u3089QR\u306A\u3057)" }),
-    pp,
     h("div", { cls: "acts" }, [h("button", { cls: "ok", text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01", onclick: function() {
-      var id = pp.value.replace(/[^0-9]/g, "");
-      if (id) {
-        try {
-          promptpayPayload(id, 1);
-        } catch (e) {
-          toast("PromptPay ID \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07", true, 4e3);
-          return;
-        }
-      }
-      lsSet("plp_pp", id);
       lsSet("plp_cols", String(parseInt(cols.value, 10) || 3));
       renderGrid();
       lsSet("plp_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
