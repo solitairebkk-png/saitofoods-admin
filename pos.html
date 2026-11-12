@@ -41,6 +41,7 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 #cats{width:128px;flex:none;overflow-y:auto;background:#e9ebee;padding:6px;-webkit-overflow-scrolling:touch;}
 #cats button{display:block;width:100%;margin:0 0 6px;background:#fff;color:var(--tx);min-height:52px;font-size:14px;padding:6px;line-height:1.2;border:2px solid transparent;}
 #cats button.act,#cats button.alt.act{background:var(--pri);color:#fff;border-color:var(--pri);}
+#cats button .th{font-weight:700;font-size:14px;line-height:1.2;} #cats button .en{font-size:11px;line-height:1.2;margin-top:2px;color:var(--mut);} #cats button.act .en{color:#fff;opacity:.9;}
 #cats button.alt{background:#d6e6fa;border-color:#b7cfee;}
 #cats button.top{border-color:#f0b429;font-weight:700;}
 #cats button.top.act{background:var(--pri);border-color:#f0b429;}
@@ -79,6 +80,8 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 #foot{border-top:2px solid var(--bd);padding:8px;}
 #tot{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;margin-bottom:8px;}
 #tot b{font-size:30px;color:var(--pri);}
+#acts2{display:flex;margin-bottom:6px;} #acts2 button{flex:1;margin-right:6px;min-height:40px;font-size:14px;background:#e6e8eb;color:var(--tx);padding:0 6px;} #acts2 button:last-child{margin-right:0;} #acts2 button.on{background:#fff3cd;color:#7a5200;font-weight:700;}
+.paper .psub,.paper .pdisc{display:flex;justify-content:space-between;font-size:14px;padding:3px 0;} .paper .pdisc{color:var(--pri);font-weight:700;}
 #foot .row{display:flex;} #foot .row button{margin-right:8px;} #foot .row button:last-child{margin-right:0;}
 #payBtn{flex:1;min-height:58px;font-size:22px;font-weight:700;}
 
@@ -136,6 +139,7 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
     <div id="cart">
       <div id="lines"></div>
       <div id="foot">
+        <div id="acts2"><button id="discBtn">ส่วนลด</button><button id="customBtn">＋ สินค้าอื่นๆ</button></div>
         <div id="tot"><span>รวม</span><b id="totv">฿0</b></div>
         <div class="row">
           <button id="clear" class="lt">ล้าง</button>
@@ -235,6 +239,11 @@ function fmt(n) {
   n = Number(n);
   return Math.round(n * 100) % 100 === 0 ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",") : n.toFixed(2);
 }
+function calcDiscount(sub, d) {
+  if (!d || !(d.value > 0) || !(sub > 0)) return 0;
+  var v = d.type === "percent" ? Math.round(sub * Math.min(d.value, 100) / 100) : Math.floor(d.value);
+  return Math.max(0, Math.min(v, sub));
+}
 var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { storageKey: "sb-saitofoods-pos-auth", persistSession: true, autoRefreshToken: true }
 });
@@ -297,7 +306,11 @@ var ERR_TH = {
   PRODUCT_UNPUBLISHED: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E19\u0E35\u0E49\u0E1B\u0E34\u0E14\u0E01\u0E32\u0E23\u0E02\u0E32\u0E22\u0E41\u0E25\u0E49\u0E27",
   BAD_QUANTITY: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
   BAD_GRAMS: "\u0E19\u0E49\u0E33\u0E2B\u0E19\u0E31\u0E01\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
-  NO_UNIT_PRICE: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E19\u0E35\u0E49\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E49\u0E07\u0E23\u0E32\u0E04\u0E32\u0E15\u0E48\u0E2D\u0E2B\u0E19\u0E48\u0E27\u0E22"
+  NO_UNIT_PRICE: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E19\u0E35\u0E49\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E15\u0E31\u0E49\u0E07\u0E23\u0E32\u0E04\u0E32\u0E15\u0E48\u0E2D\u0E2B\u0E19\u0E48\u0E27\u0E22",
+  BAD_CUSTOM_AMOUNT: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E40\u0E07\u0E34\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  BAD_DISCOUNT: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  BAD_DISCOUNT_TYPE: "\u0E1B\u0E23\u0E30\u0E40\u0E20\u0E17\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+  DISCOUNT_EXCEEDS_TOTAL: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14\u0E21\u0E32\u0E01\u0E01\u0E27\u0E48\u0E32\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21"
 };
 function errText(e) {
   var m = e && e.message || String(e);
@@ -312,6 +325,7 @@ var topIds = [];
 var activeTab = "top";
 var query = "";
 var cart = [];
+var discount = null;
 var paying = false;
 async function login() {
   var err = $("lerr");
@@ -346,7 +360,7 @@ async function loadData() {
   $("grid").appendChild(h("div", { id: "empty", text: "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u2026" }));
   var res = await Promise.all([
     sb.from("products").select("id,name_ja,name_en,name_th,price,unit_price,unit_label,sale_type,image_url,is_monthly_promotion,promotion_price,stock_qty,is_unlimited_stock,sort_order").eq("is_published", true).eq("is_coming_soon", false).order("sort_order").range(0, 999),
-    sb.from("categories").select("id,name_ja,name_en,sort_order").order("sort_order").range(0, 199),
+    sb.from("categories").select("id,name_ja,name_en,name_th,sort_order").order("sort_order").range(0, 199),
     sb.from("product_categories").select("product_id,category_id,sort_order").range(0, 1999),
     sb.rpc("pos_top_products", { p_days: 30, p_limit: 30 })
   ]);
@@ -367,7 +381,7 @@ async function loadData() {
   cats = (res[1].data || []).filter(function(c) {
     return catProducts[c.id] && catProducts[c.id].length;
   }).map(function(c) {
-    return { id: c.id, name: c.name_en || c.name_ja };
+    return { id: c.id, th: c.name_th || "", en: c.name_en || c.name_ja || "" };
   });
   topIds = res[3].error ? [] : (res[3].data || []).map(function(r) {
     return r.product_id;
@@ -383,22 +397,25 @@ async function loadData() {
 function renderCats() {
   var box = $("cats");
   box.innerHTML = "";
-  var add = function(id, label, extra) {
-    var b = h("button", { text: label, cls: (extra || "") + (activeTab === id && !query ? " act" : ""), onclick: function() {
+  var add = function(id, th, en, extra) {
+    var kids = [];
+    if (th) kids.push(h("div", { cls: "th", text: th }));
+    if (en && en !== th) kids.push(h("div", { cls: "en", text: en }));
+    var b = h("button", { cls: (extra || "") + (activeTab === id && !query ? " act" : ""), onclick: function() {
       activeTab = id;
       query = "";
       $("q").value = "";
       renderCats();
       renderGrid();
-    } });
+    } }, kids);
     box.appendChild(b);
   };
-  if (topIds.length) add("top", "\u2605 \u0E02\u0E32\u0E22\u0E14\u0E35", "top");
+  if (topIds.length) add("top", "\u2605 \u0E02\u0E32\u0E22\u0E14\u0E35", "Best sellers", "top");
   var n = 0;
   cats.forEach(function(c) {
-    add(c.id, c.name, n++ % 2 ? "alt" : "");
+    add(c.id, c.th || c.en, c.th ? c.en : "", n++ % 2 ? "alt" : "");
   });
-  add("all", "\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14", n++ % 2 ? "alt" : "");
+  add("all", "\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14", "All", n++ % 2 ? "alt" : "");
 }
 function visibleIds() {
   if (query) {
@@ -454,11 +471,21 @@ function renderGrid() {
     } }, kids));
   });
 }
-function total() {
+function subtotal() {
   return cart.reduce(function(s, l) {
+    if (l.custom) return s + l.custom;
     var p = products[l.pid];
     return s + (p ? lineTotal(p, l) : 0);
   }, 0);
+}
+function discAmt() {
+  return calcDiscount(subtotal(), discount);
+}
+function total() {
+  return subtotal() - discAmt();
+}
+function saveDisc() {
+  lsSet("pos_disc", discount ? JSON.stringify(discount) : "");
 }
 function renderCart() {
   var box = $("lines");
@@ -471,7 +498,23 @@ function renderCart() {
   paper.appendChild(h("div", { cls: "dash" }));
   if (!cart.length) paper.appendChild(h("div", { id: "cartEmpty", text: "\u0E41\u0E15\u0E30\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23" }));
   var lastEl = null;
+  if (!cart.length && discount) {
+    discount = null;
+    saveDisc();
+  }
   cart.forEach(function(l, i) {
+    if (l.custom) {
+      lastEl = h("div", { cls: "ln" }, [
+        h("div", { cls: "t", text: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / Other" }),
+        h("div", { cls: "r" }, [h("span", { cls: "sp", text: "\u0E3F" + fmt(l.custom) }), h("button", { cls: "x", text: "\u2715", onclick: function() {
+          cart.splice(i, 1);
+          saveCart();
+          renderCart();
+        } })])
+      ]);
+      paper.appendChild(lastEl);
+      return;
+    }
     var p = products[l.pid];
     if (!p) return;
     var isW = p.sale_type === "weight";
@@ -506,8 +549,12 @@ function renderCart() {
     lastEl = h("div", { cls: "ln" }, [h("div", { cls: "t", text: nameOf(p) }), h("div", { cls: "r" }, right)]);
     paper.appendChild(lastEl);
   });
-  var tt = total();
+  var tt = total(), da = discAmt();
   if (cart.length) {
+    if (da > 0) {
+      paper.appendChild(h("div", { cls: "psub" }, [h("span", { text: "\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21 / Subtotal" }), h("span", { text: "\u0E3F" + fmt(subtotal()) })]));
+      paper.appendChild(h("div", { cls: "pdisc" }, [h("span", { text: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / Discount" + (discount.type === "percent" ? " " + discount.value + "%" : "") }), h("span", { text: "\u2212\u0E3F" + fmt(da) })]));
+    }
     paper.appendChild(h("div", { cls: "ptot" }, [h("span", { text: "\u0E23\u0E27\u0E21 / TOTAL" }), h("span", { text: "\u0E3F" + fmt(tt) })]));
     if (tt > 0) {
       try {
@@ -522,6 +569,9 @@ function renderCart() {
   $("totv").textContent = "\u0E3F" + fmt(tt);
   $("payBtn").disabled = !cart.length || paying;
   $("clear").disabled = !cart.length;
+  $("discBtn").disabled = !cart.length;
+  $("discBtn").className = da > 0 ? "on" : "";
+  $("discBtn").textContent = da > 0 ? "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 \u2212\u0E3F" + fmt(da) : "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14";
   if (lastEl) box.scrollTop = Math.max(0, lastEl.offsetTop + lastEl.offsetHeight - box.clientHeight + 12);
   else box.scrollTop = 0;
 }
@@ -531,10 +581,16 @@ function saveCart() {
 function restoreCart() {
   try {
     cart = JSON.parse(lsGet("pos_cart", "[]")).filter(function(l) {
-      return products[l.pid] && (l.qty > 0 || l.grams > 0);
+      return l.custom > 0 && l.custom <= 5e5 || products[l.pid] && (l.qty > 0 || l.grams > 0);
     });
   } catch (e) {
     cart = [];
+  }
+  try {
+    var d = JSON.parse(lsGet("pos_disc", "") || "null");
+    discount = d && (d.type === "amount" || d.type === "percent") && d.value > 0 ? { type: d.type, value: Number(d.value) } : null;
+  } catch (e) {
+    discount = null;
   }
 }
 function tapProduct(id) {
@@ -589,6 +645,88 @@ function askGrams(pid, initial, done) {
     kp,
     h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])
   ]));
+  upd();
+}
+function openDiscount() {
+  if (!cart.length) return;
+  var sub = subtotal(), type = discount ? discount.type : "amount", val = discount ? String(discount.value) : "";
+  var disp = h("div", { cls: "disp" }), sb2 = h("div", { cls: "sub" }), seg = h("div", { cls: "seg" });
+  var bA = h("button", { text: "\u0E3F \u0E25\u0E14\u0E40\u0E1B\u0E47\u0E19\u0E1A\u0E32\u0E17", onclick: function() {
+    type = "amount";
+    upd();
+  } });
+  var bP = h("button", { text: "% \u0E25\u0E14\u0E40\u0E1B\u0E47\u0E19\u0E40\u0E1B\u0E2D\u0E23\u0E4C\u0E40\u0E0B\u0E47\u0E19\u0E15\u0E4C", onclick: function() {
+    type = "percent";
+    upd();
+  } });
+  seg.appendChild(bA);
+  seg.appendChild(bP);
+  var okb = h("button", { cls: "ok", text: "\u0E15\u0E01\u0E25\u0E07", onclick: function() {
+    var v = parseInt(val || "0", 10);
+    if (!ok(v)) return;
+    discount = { type, value: v };
+    saveDisc();
+    closeModal();
+    renderCart();
+  } });
+  function ok(v) {
+    return v > 0 && (type === "percent" ? v <= 100 : v <= sub);
+  }
+  function upd() {
+    bA.className = type === "amount" ? "act" : "";
+    bP.className = type === "percent" ? "act" : "";
+    var v = parseInt(val || "0", 10);
+    disp.textContent = type === "percent" ? (val || "0") + " %" : "\u0E3F" + (val || "0");
+    var d = ok(v) ? calcDiscount(sub, { type, value: v }) : 0;
+    sb2.textContent = ok(v) ? "\u0E25\u0E14 \u0E3F" + fmt(d) + "  \u2192  \u0E22\u0E2D\u0E14\u0E2A\u0E38\u0E17\u0E18\u0E34 \u0E3F" + fmt(sub - d) : "\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21 \u0E3F" + fmt(sub);
+    okb.disabled = !ok(v);
+  }
+  var kp = h("div", { cls: "kp" });
+  ["7", "8", "9", "4", "5", "6", "1", "2", "3", "C", "0", "\u232B"].forEach(function(k) {
+    kp.appendChild(h("button", { text: k, onclick: function() {
+      if (k === "C") val = "";
+      else if (k === "\u232B") val = val.slice(0, -1);
+      else if (val.length < 6) val = (val + k).replace(/^0+/, "");
+      upd();
+    } }));
+  });
+  var acts = [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal })];
+  if (discount) acts.push(h("button", { cls: "lt", text: "\u0E25\u0E49\u0E32\u0E07\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14", onclick: function() {
+    discount = null;
+    saveDisc();
+    closeModal();
+    renderCart();
+  } }));
+  acts.push(okb);
+  openModal(h("div", null, [h("h2", { text: "\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / \u30C7\u30A3\u30B9\u30AB\u30A6\u30F3\u30C8(\u4F1A\u8A08\u5168\u4F53)" }), seg, disp, sb2, kp, h("div", { cls: "acts" }, acts)]));
+  upd();
+}
+function openCustom() {
+  var val = "";
+  var disp = h("div", { cls: "disp" }), sb2 = h("div", { cls: "sub", text: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E25\u0E07\u0E17\u0E30\u0E40\u0E1A\u0E35\u0E22\u0E19 / \u767B\u9332\u306E\u306A\u3044\u5546\u54C1(\u91D1\u984D\u306E\u307F)" });
+  var okb = h("button", { cls: "ok", text: "\u0E40\u0E1E\u0E34\u0E48\u0E21", onclick: function() {
+    var v = parseInt(val || "0", 10);
+    if (!(v > 0 && v <= 5e5)) return;
+    cart.push({ custom: v });
+    saveCart();
+    closeModal();
+    renderCart();
+  } });
+  function upd() {
+    var v = parseInt(val || "0", 10);
+    disp.textContent = "\u0E3F" + (val || "0");
+    okb.disabled = !(v > 0 && v <= 5e5);
+  }
+  var kp = h("div", { cls: "kp" });
+  ["7", "8", "9", "4", "5", "6", "1", "2", "3", "C", "0", "\u232B"].forEach(function(k) {
+    kp.appendChild(h("button", { text: k, onclick: function() {
+      if (k === "C") val = "";
+      else if (k === "\u232B") val = val.slice(0, -1);
+      else if (val.length < 6) val = (val + k).replace(/^0+/, "");
+      upd();
+    } }));
+  });
+  openModal(h("div", null, [h("h2", { text: "\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E2D\u0E37\u0E48\u0E19\u0E46 / Other" }), disp, sb2, kp, h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01", onclick: closeModal }), okb])]));
   upd();
 }
 function openPay() {
@@ -666,11 +804,13 @@ function openPay() {
     okb.textContent = "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u2026";
     renderCart();
     var items = cart.map(function(l) {
+      if (l.custom) return { custom_amount: l.custom };
       return products[l.pid].sale_type === "weight" ? { product_id: l.pid, grams: l.grams } : { product_id: l.pid, quantity: l.qty };
     });
+    var dv = discount ? discount.type === "amount" ? Math.min(discount.value, subtotal()) : discount.value : 0;
     var res;
     try {
-      res = await sb.rpc("pos_checkout", { p_items: items, p_payment_method: method });
+      res = await sb.rpc("pos_checkout", { p_items: items, p_payment_method: method, p_discount_type: discount ? discount.type : null, p_discount_value: dv });
     } catch (e) {
       res = { error: e };
     }
@@ -686,10 +826,12 @@ function openPay() {
     }
     var d = res.data;
     cart = [];
+    discount = null;
+    saveDisc();
     saveCart();
     renderCart();
     closeModal();
-    var rec = { receipt_no: d.receipt_no, created_at: d.created_at, payment_method: d.payment_method, total: Number(d.total_amount), lines: d.lines, received: cashRecv };
+    var rec = { receipt_no: d.receipt_no, created_at: d.created_at, payment_method: d.payment_method, total: Number(d.total_amount), subtotal: Number(d.subtotal), discount: Number(d.discount || 0), lines: d.lines, received: cashRecv };
     lsSet("pos_last", JSON.stringify(rec));
     if (Math.abs(rec.total - amount) > 5e-3) toast("\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21\u0E08\u0E23\u0E34\u0E07 \u0E3F" + fmt(rec.total) + " (\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E17\u0E35\u0E48\u0E41\u0E2A\u0E14\u0E07 \u0E23\u0E32\u0E04\u0E32\u0E2D\u0E32\u0E08\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19)", true, 9e3);
     else toast("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27 " + d.receipt_no + (method === "cash" && cashRecv >= rec.total ? "  \u0E17\u0E2D\u0E19 \u0E3F" + fmt(cashRecv - rec.total) : ""), false, 4500);
@@ -794,6 +936,10 @@ function drawReceipt(rec) {
     pair(detail, fmt(l.total_price), 20);
   });
   rule();
+  if (rec.discount > 0) {
+    pair("\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21 / Subtotal", fmt(rec.subtotal), 20);
+    pair("\u0E2A\u0E48\u0E27\u0E19\u0E25\u0E14 / Discount", "-" + fmt(rec.discount), 20);
+  }
   pair("\u0E23\u0E27\u0E21 / TOTAL", fmt(rec.total) + " THB", 26, true);
   if (rec.payment_method === "cash" && rec.received != null && rec.received >= rec.total) {
     pair("\u0E40\u0E07\u0E34\u0E19\u0E2A\u0E14 / Cash", fmt(rec.received), 20);
@@ -977,9 +1123,13 @@ $("pw").addEventListener("keydown", function(e) {
 });
 $("logout").addEventListener("click", logout);
 $("payBtn").addEventListener("click", openPay);
+$("discBtn").addEventListener("click", openDiscount);
+$("customBtn").addEventListener("click", openCustom);
 $("clear").addEventListener("click", function() {
   if (cart.length && confirm("\u0E25\u0E49\u0E32\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14?")) {
     cart = [];
+    discount = null;
+    saveDisc();
     saveCart();
     renderCart();
   }
