@@ -1816,6 +1816,18 @@ function extractRoomNumber(addr1, addr2) {
   return null;
 }
 
+// 並び替え用の部屋番号(数字)。extractRoomNumberで取り出した部屋番号から数字だけを使う
+// (例: 1203 → 1203、A1110 → 1110)。部屋番号が読み取れない注文・Wholesaleは Infinity にして末尾へ回す。
+function orderRoomSortValue(order) {
+  if (order.is_wholesale) return Infinity;
+  const cust = order.customers || {};
+  const isDummy = s => /^[-\s]*$/.test(s || '');
+  const room = extractRoomNumber(isDummy(cust.address1) ? '' : cust.address1, isDummy(cust.address2) ? '' : cust.address2);
+  if (!room) return Infinity;
+  const n = parseInt(String(room).replace(/\D/g, ''), 10);
+  return isNaN(n) ? Infinity : n;
+}
+
 const PICKUP_RICE_COLS = [
   { key: 'rice5kg', label: '5kg' },
   { key: 'rice2kg', label: '2kg' },
@@ -2350,6 +2362,11 @@ async function _loadOrdersInner() {
         const ca = a.condo_name || '';
         const cb = b.condo_name || '';
         if (ca !== cb) return ca < cb ? -1 : 1;
+        // 同じコンドの中は部屋番号の小さい順に並べる(2026-11-12)。ハーモニック・ラグゼのように
+        // 件数が多いコンドで部屋を探しやすくするため。部屋番号が読み取れない注文は末尾に回す。
+        // この並びは、印刷用Pickup Sheetと、Google スプレッドシートへの出力にもそのまま引き継がれる。
+        const roomDiff = orderRoomSortValue(a) - orderRoomSortValue(b);
+        if (roomDiff !== 0 && !isNaN(roomDiff)) return roomDiff;
         return (a.created_at || '').localeCompare(b.created_at || '');
       }
       const rankDiff = deliveryTimeSlotRank(a) - deliveryTimeSlotRank(b);
