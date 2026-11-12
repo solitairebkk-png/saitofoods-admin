@@ -2578,7 +2578,7 @@ async function connectBle() {
       const n = Math.max(20, Number($('chunk').value) || 100);
       for (let i = 0; i < data.length; i += n) {
         const part = data.slice(i, i + n);
-        if (ch.properties.writeWithoutResponse) await ch.writeValueWithoutResponse(part); else await ch.writeValue(part);
+        if (ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === 'function') await ch.writeValueWithoutResponse(part); else await ch.writeValue(part); // 古いChromeはwriteValueのみ
         await new Promise(r => setTimeout(r, 8));
       }
     },
