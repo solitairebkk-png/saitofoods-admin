@@ -15,7 +15,7 @@ button{font-family:inherit;font-size:16px;border:0;border-radius:10px;cursor:poi
 button:active{filter:brightness(.88);}
 button.sec{background:#59636e;} button.ok{background:var(--ok);} button.lt{background:#e6e8eb;color:var(--tx);}
 button:disabled{opacity:.4;}
-input{font-family:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;width:100%;-webkit-user-select:text;user-select:text;}
+input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;width:100%;background:#fff;color:var(--tx);-webkit-user-select:text;user-select:text;}
 .hidden{display:none !important;}
 
 /* login */
@@ -40,19 +40,25 @@ input{font-family:inherit;font-size:17px;padding:10px 12px;border:1px solid var(
 #main{flex:1;display:flex;min-height:0;}
 #cats{width:128px;flex:none;overflow-y:auto;background:#e9ebee;padding:6px;-webkit-overflow-scrolling:touch;}
 #cats button{display:block;width:100%;margin:0 0 6px;background:#fff;color:var(--tx);min-height:52px;font-size:14px;padding:6px;line-height:1.2;border:2px solid transparent;}
-#cats button.act{background:var(--pri);color:#fff;}
+#cats button.act,#cats button.alt.act{background:var(--pri);color:#fff;border-color:var(--pri);}
+#cats button.alt{background:#d6e6fa;border-color:#b7cfee;}
 #cats button.top{border-color:#f0b429;font-weight:700;}
 #cats button.top.act{background:var(--pri);border-color:#f0b429;}
-#grid{flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));grid-auto-rows:min-content;grid-gap:8px;align-content:start;-webkit-overflow-scrolling:touch;}
+#grid{flex:1;overflow-y:auto;padding:8px;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:min-content;grid-gap:8px;align-content:start;-webkit-overflow-scrolling:touch;}
 .p{background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--bd);cursor:pointer;display:flex;flex-direction:column;position:relative;}
 .p:active{outline:3px solid var(--pri);}
-.p .im{height:84px;background:#f3f4f6 center/cover no-repeat;}
-.p .im img{width:100%;height:100%;object-fit:cover;display:block;}
+.p .im{height:0;padding-bottom:64%;position:relative;overflow:hidden;background:#f3f4f6;}
+.p .im img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;}
 .p .nm{padding:5px 7px 0;font-size:13px;line-height:1.25;height:2.6em;overflow:hidden;}
 .p .pr{padding:2px 7px 6px;font-weight:700;color:var(--pri);font-size:15px;}
 .p .pr small{font-weight:400;color:var(--mut);font-size:11px;}
 .p .bd{position:absolute;top:4px;left:4px;background:#f0b429;color:#000;font-size:11px;border-radius:6px;padding:1px 5px;}
 .p .bd.z{background:#6a737d;color:#fff;left:auto;right:4px;}
+#grid.c2{grid-template-columns:repeat(2,1fr);} #grid.c2 .nm{font-size:17px;} #grid.c2 .pr{font-size:21px;} #grid.c2 .pr small{font-size:14px;}
+#grid.c3{grid-template-columns:repeat(3,1fr);} #grid.c3 .nm{font-size:15px;} #grid.c3 .pr{font-size:18px;} #grid.c3 .pr small{font-size:12px;}
+#grid.c4{grid-template-columns:repeat(4,1fr);} #grid.c4 .nm{font-size:13px;} #grid.c4 .pr{font-size:15px;}
+#grid.c5{grid-template-columns:repeat(5,1fr);} #grid.c5 .nm{font-size:12px;} #grid.c5 .pr{font-size:14px;}
+#grid.c6{grid-template-columns:repeat(6,1fr);} #grid.c6 .nm{font-size:11px;} #grid.c6 .pr{font-size:13px;} #grid.c6 .pr small{font-size:10px;}
 #empty{grid-column:1/-1;text-align:center;color:var(--mut);padding:40px 0;}
 #cart{width:312px;flex:none;background:var(--card);border-left:1px solid var(--bd);display:flex;flex-direction:column;}
 #lines{flex:1;overflow-y:auto;padding:4px 8px;-webkit-overflow-scrolling:touch;}
@@ -383,10 +389,11 @@ function renderCats() {
     box.appendChild(b);
   };
   if (topIds.length) add("top", "\u2605 \u0E02\u0E32\u0E22\u0E14\u0E35", "top");
+  var n = 0;
   cats.forEach(function(c) {
-    add(c.id, c.name);
+    add(c.id, c.name, n++ % 2 ? "alt" : "");
   });
-  add("all", "\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14");
+  add("all", "\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14", n++ % 2 ? "alt" : "");
 }
 function visibleIds() {
   if (query) {
@@ -405,9 +412,14 @@ function visibleIds() {
 function safeImg(u) {
   return typeof u === "string" && u.indexOf(SUPABASE_URL + "/storage/") === 0 ? u : "";
 }
+function gridCols() {
+  var n = parseInt(lsGet("pos_cols", "3"), 10);
+  return n >= 2 && n <= 6 ? n : 3;
+}
 function renderGrid() {
   var g = $("grid");
   g.innerHTML = "";
+  g.className = "c" + gridCols();
   var ids = visibleIds();
   if (!ids.length) {
     g.appendChild(h("div", { id: "empty", text: query ? "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32" : "\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32" }));
@@ -886,6 +898,12 @@ function openSettings() {
   var pin = h("input", { type: "number", value: lsGet("pos_pin", "0"), min: "0", max: "1" });
   var auto = h("input", { type: "checkbox" });
   auto.checked = lsGet("pos_autodrawer", "1") === "1";
+  var cols = h("select", {});
+  [2, 3, 4, 5, 6].forEach(function(n) {
+    var o = h("option", { text: n + " " + (n <= 3 ? "(\u0E43\u0E2B\u0E0D\u0E48 / \u5927\u304D\u3044)" : n === 4 ? "(\u0E01\u0E25\u0E32\u0E07 / \u4E2D)" : "(\u0E40\u0E25\u0E47\u0E01 / \u5C0F\u3055\u3044)"), value: String(n) });
+    if (n === gridCols()) o.selected = true;
+    cols.appendChild(o);
+  });
   var logo = h("input", { type: "file", accept: "image/*" });
   logo.addEventListener("change", function() {
     var f = logo.files[0];
@@ -905,6 +923,8 @@ function openSettings() {
   openModal(h("div", { cls: "set", style: "width:380px;max-width:90vw" }, [
     h("h2", { text: "\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32 / \u8A2D\u5B9A" }),
     h("div", { text: me ? (me.first_name || me.family_name || "") + " (" + me.role + ")" : "", style: "color:#6a737d;font-size:13px" }),
+    h("label", { text: "\u0E08\u0E33\u0E19\u0E27\u0E19\u0E01\u0E32\u0E23\u0E4C\u0E14\u0E2A\u0E34\u0E19\u0E04\u0E49\u0E32\u0E15\u0E48\u0E2D\u0E41\u0E16\u0E27 / \u5546\u54C1\u30AB\u30FC\u30C9\u306E\u6A2A\u306E\u4E26\u3073\u6570(\u5C11\u306A\u3044\u307B\u3069\u5927\u304D\u3044)" }),
+    cols,
     h("label", { text: "\u0E02\u0E19\u0E32\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E48\u0E2D\u0E04\u0E23\u0E31\u0E49\u0E07 (byte) / 1\u56DE\u306E\u9001\u4FE1\u30B5\u30A4\u30BA" }),
     chunk,
     h("label", { text: "\u0E02\u0E32\u0E25\u0E34\u0E49\u0E19\u0E0A\u0E31\u0E01 0 \u0E2B\u0E23\u0E37\u0E2D 1 / \u30C9\u30ED\u30A2\u30FC\u306E\u30D4\u30F3(0=\u6A19\u6E96,1=\u5225\u30D4\u30F3)" }),
@@ -913,6 +933,8 @@ function openSettings() {
     h("label", { text: "\u0E42\u0E25\u0E42\u0E01\u0E49 / \u30ED\u30B4\u753B\u50CF" }),
     logo,
     h("div", { cls: "acts" }, [h("button", { cls: "ok", text: "\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01", onclick: function() {
+      lsSet("pos_cols", String(parseInt(cols.value, 10) || 3));
+      renderGrid();
       lsSet("pos_chunk", String(Math.min(512, Math.max(20, parseInt(chunk.value, 10) || 100))));
       lsSet("pos_pin", pin.value === "1" ? "1" : "0");
       lsSet("pos_autodrawer", auto.checked ? "1" : "0");
