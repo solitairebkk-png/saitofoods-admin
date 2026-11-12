@@ -149,19 +149,6 @@
       <g:product_type>Frozen Foods</g:product_type>
     </item>
     <item>
-      <g:id>1182</g:id>
-      <title>Fried Chicken Tenders with Ume &amp; Shiso 1kg</title>
-      <description>ササミ大葉梅肉フライとほぼ同じですが、衣が薄く小さいピースの1㎏入りです。 お弁当などにちょうど良いサイズ! 4PCS 600W MICROWAVE 2 MINUITE</description>
-      <link>https://saitofoods.com/en/products/1182.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483422546_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>118.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>Good selling</g:product_type>
-    </item>
-    <item>
       <g:id>1152</g:id>
       <title>New Frozen Karaage 500g Pack</title>
       <description>タイで生産された冷凍の優しい味付けの唐揚げです。 ニンニク風味の薄いタイプに変更になりました。 500gパック。 再度油調理して頂くとパリッと美味しくお召し上がりいただけます。 180度の油で約4-5分 エアフライヤーは200度で9-11分</description>
@@ -193,7 +180,7 @@
       <description>Handmade-style tsukune (chicken meatballs) with cartilage. Heat in a microwave before serving. Mild soy sauce flavor.</description>
       <link>https://saitofoods.com/en/products/1407.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1790421570423_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>118.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -219,7 +206,7 @@
       <description>冷凍のつくねボールがリニューアルして戻ってまいりました。 工場が変更になり、味付けはより日本テイストに。 ***今回の製品から炭火ではなくなりました。10本入り</description>
       <link>https://saitofoods.com/en/products/1352.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/04030828_69cf17bab016e.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>220.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1173,7 +1160,7 @@
       <description>1Lのペットボトルにパッキングされた料理酒です。</description>
       <link>https://saitofoods.com/en/products/299.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889088478_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>245.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1890,7 +1877,7 @@
       <description>日本食研様の照り焼きソースを使用して作った照り焼きチキンです。 鳥モモ肉を一つづつパック致しました。 お弁当などにどうぞ! 120g</description>
       <link>https://saitofoods.com/en/products/723.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784869230863_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>66.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1929,7 +1916,7 @@
       <description>牛タンのブロックがゴロゴロと入っている大満足な逸品です。 別に販売しておりますデミグラスソースを使用して作っているこだわりのシチューです。 調理済みですので、湯銭か容器にあけて電子レンジで加熱してお召し上がりください。200g</description>
       <link>https://saitofoods.com/en/products/964.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487947269_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>120.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2140,7 +2127,7 @@
       <description>骨なしのメダイを20g程度にダイスカットした物を西京みそに漬け込んだ商品です。 焼くだけ簡単。お弁当にも。骨なしなので安心。</description>
       <link>https://saitofoods.com/en/products/995.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555963929_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>90.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2455,7 +2442,7 @@
       <description>オランダから輸入したアジを当店独自の技術によりうす塩でおいしい開きに仕上げました。肉厚で脂の乗った柔らかい身質をお楽しみください。冷凍品。 170g-200g</description>
       <link>https://saitofoods.com/en/products/1377.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784878619152_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>110.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -2626,7 +2613,7 @@
       <description>小麦粉・醤油・魚肉スープ使用 原料に卵・乳製品を含みません。 この商品は加熱調理済みの商品です。 電子レンジ等でお好みの暖かさに暖めてお召し上がりください。</description>
       <link>https://saitofoods.com/en/products/18.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884454402_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>86.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
