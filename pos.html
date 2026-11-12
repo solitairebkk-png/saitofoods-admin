@@ -354,6 +354,7 @@ async function afterAuth(user) {
   $("app").classList.remove("hidden");
   $("pw").value = "";
   await loadData();
+  autoReconnect();
   return true;
 }
 async function logout() {
@@ -996,10 +997,35 @@ async function findChar(dev) {
   }
   throw new Error("no writable characteristic");
 }
+async function autoReconnect() {
+  if (!navigator.bluetooth || typeof navigator.bluetooth.getDevices !== "function") return false;
+  try {
+    var devs = await navigator.bluetooth.getDevices(), want = lsGet("pos_prn_id", "");
+    var d = devs.filter(function(x) {
+      return x.id === want;
+    })[0] || devs[0];
+    if (!d) return false;
+    d.addEventListener("gattserverdisconnected", function() {
+      setPrnState(false);
+    });
+    prn.dev = d;
+    prn.ch = await findChar(d);
+    setPrnState(true);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 async function connectPrinter() {
   if (!navigator.bluetooth) {
     toast("Chrome\u0E19\u0E35\u0E49\u0E44\u0E21\u0E48\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A Bluetooth", true, 5e3);
     return false;
+  }
+  if (prn.dev && !(prn.dev.gatt && prn.dev.gatt.connected)) {
+    if (await ensurePrinter()) {
+      toast("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E41\u0E25\u0E49\u0E27: " + (prn.dev.name || ""), false, 2500);
+      return true;
+    }
   }
   try {
     var dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: BLE_SERVICES });
@@ -1009,6 +1035,7 @@ async function connectPrinter() {
     prn.dev = dev;
     prn.ch = await findChar(dev);
     setPrnState(true);
+    lsSet("pos_prn_id", dev.id || "");
     toast("\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E1E\u0E34\u0E21\u0E1E\u0E4C\u0E41\u0E25\u0E49\u0E27: " + (dev.name || ""), false, 2500);
     return true;
   } catch (e) {
