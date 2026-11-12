@@ -1076,8 +1076,21 @@ function printReceipt(rec, withDrawer) {
   });
 }
 function openSettings() {
-  var chunk = h("input", { type: "number", value: lsGet("pos_chunk", "100"), min: "20", max: "512" });
-  var pin = h("input", { type: "number", value: lsGet("pos_pin", "0"), min: "0", max: "1" });
+  var chunk = h("select", {});
+  var curChunk = String(Math.min(512, Math.max(20, parseInt(lsGet("pos_chunk", "100"), 10) || 100)));
+  var chunkOpts = ["60", "100", "120", "150", "180", "200", "256", "512"];
+  if (chunkOpts.indexOf(curChunk) < 0) chunkOpts.push(curChunk);
+  chunkOpts.forEach(function(v) {
+    var o = h("option", { value: v, text: v + (v === "100" ? "  (\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49 / \u52D5\u4F5C\u78BA\u8A8D\u6E08)" : "") });
+    if (v === curChunk) o.selected = true;
+    chunk.appendChild(o);
+  });
+  var pin = h("select", {});
+  [["0", "0 (\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19 / \u6A19\u6E96)"], ["1", "1 (\u0E02\u0E32\u0E2D\u0E37\u0E48\u0E19 / \u5225\u30D4\u30F3)"]].forEach(function(o) {
+    var op = h("option", { value: o[0], text: o[1] });
+    if (o[0] === lsGet("pos_pin", "0")) op.selected = true;
+    pin.appendChild(op);
+  });
   var auto = h("input", { type: "checkbox" });
   auto.checked = lsGet("pos_autodrawer", "1") === "1";
   var cols = h("select", {});
