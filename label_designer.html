@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>ラベルプリンター(DELI 760DW)</title>
+<style>
+*{box-sizing:border-box;}
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP","Noto Sans Thai",sans-serif;background:#f6f8fa;color:#1f2328;}
+header{background:#fff;border-bottom:1px solid #d0d7de;padding:12px 16px;font-weight:700;font-size:18px;}
+main{max-width:760px;margin:0 auto;padding:12px;}
+section{background:#fff;border:1px solid #d0d7de;border-radius:10px;padding:12px;margin-bottom:12px;}
+h2{margin:0 0 8px;font-size:15px;}
+button{padding:10px 14px;font-size:16px;border:0;border-radius:8px;background:#1f6feb;color:#fff;min-height:44px;margin:0 6px 6px 0;}
+button.g{background:#2da44e;}
+button.o{background:#bf8700;}
+button.r{background:#cf222e;}
+button.w{background:#eaeef2;color:#1f2328;}
+button.on{background:#1f2328;color:#fff;}
+select,input,textarea{padding:8px;font-size:16px;border:1px solid #d0d7de;border-radius:8px;margin:0 6px 6px 0;font-family:inherit;}
+input[type=number]{width:76px;}
+input[type=text]{width:180px;}
+textarea{width:100%;margin:0 0 6px;}
+label.c{display:inline-block;margin:0 10px 6px 0;font-size:15px;}
+label.c input{margin:0 4px 0 0;width:auto;}
+#st{font-size:14px;padding:8px 10px;border-radius:8px;background:#ddf4ff;margin-top:8px;}
+#log{font-family:ui-monospace,monospace;font-size:12px;background:#0d1117;color:#c9d1d9;padding:8px;border-radius:8px;height:110px;overflow:auto;white-space:pre-wrap;}
+small{color:#57606a;}
+#cv{width:100%;max-width:640px;border:1px solid #8c959f;background:#fff;display:block;margin:0 0 8px;}
+.row{margin-bottom:4px;}
+.hidden{display:none;}
+.k{display:inline-block;min-width:44px;font-size:14px;color:#57606a;}
+</style></head><body>
+<header>ラベルプリンター(DELI 760DW)</header>
+<main>
+
+<section>
+  <h2>1. プリンターに接続</h2>
+  <button id="bBle">Bluetoothで接続</button>
+  <button id="bUsb" class="o">USBで接続</button>
+  <div id="st">未接続</div>
+  <div style="margin-top:8px">
+    <small>Bluetooth送信サイズ</small> <select id="chunk"></select>
+    <small>待ち時間</small> <select id="pace"></select>
+  </div>
+</section>
+
+<section>
+  <h2>2. ラベルの設定</h2>
+  <div class="row">横 <input id="w" type="number" value="70">mm  縦 <input id="h" type="number" value="50">mm  濃さ <select id="dens"></select></div>
+  <div class="row">種類
+    <select id="gtype"><option value="gap">すき間あり(GAP)</option><option value="cont">連続紙</option><option value="bm">黒マーク紙</option></select>
+    すき間 <input id="gap" type="number" value="2" step="0.5">mm
+  </div>
+  <button id="bAuto" class="w">ラベルのサイズを自動検出</button>
+  <small>ラベルを入れ替えたら、1回押してください。</small>
+</section>
+
+<section>
+  <h2>3. ラベルを作る</h2>
+  <div>
+    <button id="tTile" class="on">並べる(一括)</button>
+    <button id="tFree" class="w">自由に配置</button>
+  </div>
+
+  <canvas id="cv"></canvas>
+  <div id="pager" class="row hidden">
+    <button id="pPrev" class="w">&lt; 前</button><span id="pInfo"></span><button id="pNext" class="w">次 &gt;</button>
+  </div>
+
+  <!-- 並べる -->
+  <div id="mTile">
+    <small>1行が1つの枠になります。コピーしたものを、そのまま貼り付けできます。</small>
+    <textarea id="tLines" rows="6" placeholder="ここに貼り付け(1行=1枠)"></textarea>
+    <div class="row">
+      <span class="k">列</span><input id="tCols" type="number" value="2" min="1">
+      <span class="k">行</span><input id="tRows" type="number" value="5" min="1">
+      <span class="k">余白</span><input id="tMargin" type="number" value="2" step="0.5">mm
+      <span class="k">枠の間</span><input id="tGap" type="number" value="0" step="0.5">mm
+    </div>
+    <div class="row">
+      <span class="k">枠線</span>
+      <select id="tBorder"><option value="solid">実線</option><option value="dash">点線(切り取り線)</option><option value="none">なし</option></select>
+      <span class="k">文字</span><input id="tSize" type="number" value="40" min="8">
+      <label class="c"><input id="tAuto" type="checkbox" checked>枠に合わせて自動で小さく</label>
+      <label class="c"><input id="tBold" type="checkbox" checked>太字</label>
+      <select id="tAlign"><option value="center">中央</option><option value="left">左</option></select>
+    </div>
+    <small>1枚に入る数(列×行)を超えると、次のラベルに続きます。</small>
+  </div>
+
+  <!-- 自由配置 -->
+  <div id="mFree" class="hidden">
+    <small>ラベルの上の枠を指でドラッグして動かします。右下の角をドラッグすると、大きさを変えられます。</small>
+    <div class="row" style="margin-top:6px">
+      <button id="fAddT" class="g">+ 文字</button>
+      <button id="fAddQ" class="w">+ QR</button>
+      <button id="fAddB" class="w">+ バーコード</button>
+      <button id="fDup" class="w">複製</button>
+      <button id="fDel" class="r">削除</button>
+    </div>
+    <div class="row"><select id="fSel"></select></div>
+    <div id="fPanel" class="hidden">
+      <textarea id="fText" rows="3" placeholder="文字(貼り付けできます)"></textarea>
+      <div class="row">
+        <span class="k">左</span><input id="fX" type="number" step="0.5">
+        <span class="k">上</span><input id="fY" type="number" step="0.5">
+        <span class="k">幅</span><input id="fW" type="number" step="0.5">
+        <span class="k">高さ</span><input id="fH" type="number" step="0.5"> mm
+      </div>
+      <div class="row">
+        <span class="k">文字</span><input id="fSize" type="number" min="8">
+        <label class="c"><input id="fAuto" type="checkbox">自動で小さく</label>
+        <label class="c"><input id="fBold" type="checkbox">太字</label>
+        <label class="c"><input id="fBorder" type="checkbox">枠線</label>
+        <select id="fAlign"><option value="center">中央</option><option value="left">左</option></select>
+      </div>
+      <small id="fNote"></small>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>4. 印刷</h2>
+  <div class="row">1枚あたり <input id="copies" type="number" value="1" min="1"> 枚</div>
+  <button id="bPrint" class="g">印刷する</button>
+  <button id="bPrint1" class="w">表示中の1枚だけ印刷</button>
+</section>
+
+<section>
+  <h2>5. 保存したレイアウト</h2>
+  <div class="row"><input id="svName" type="text" placeholder="名前"><button id="svSave" class="w">保存</button></div>
+  <div class="row"><select id="svList"></select><button id="svLoad" class="w">読み込み</button><button id="svDel" class="r">削除</button></div>
+  <small>この端末のブラウザに保存されます。</small>
+</section>
+
+<section><h2>ログ</h2><div id="log"></div></section>
+</main>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+function log(m) { var l = $('log'); l.textContent += m + '\n'; l.scrollTop = l.scrollHeight; }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var DPM = 8; // 203dpi = 約8ドット/mm
+
+[20, 60, 100, 150, 200, 256, 512].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n; if (n === 100) o.selected = true; $('chunk').appendChild(o); });
+[0, 10, 20, 40, 80, 150].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n + ' ms'; $('pace').appendChild(o); });
+for (var d = 1; d <= 15; d++) { var od = document.createElement('option'); od.value = d; od.textContent = d; if (d === 8) od.selected = true; $('dens').appendChild(od); }
+
+// ---------- 接続 ----------
+var SERV = ['000018f0-0000-1000-8000-00805f9b34fb', '0000ff00-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', '0000ae30-0000-1000-8000-00805f9b34fb', '0000fee7-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb', '0000fff0-0000-1000-8000-00805f9b34fb'];
+var mode = '', ch = null, dev = null, usb = null, epOut = 0;
+function st(t, ok) { var s = $('st'); s.textContent = t; s.style.background = ok === true ? '#dafbe1' : ok === false ? '#ffebe9' : '#ddf4ff'; }
+$('bBle').onclick = async function () {
+  try {
+    if (!navigator.bluetooth) { st('このChromeはBluetooth非対応です', false); return; }
+    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: SERV });
+    var srv = await dev.gatt.connect(), svcs = await srv.getPrimaryServices();
+    ch = null;
+    for (var i = 0; i < svcs.length && !ch; i++) {
+      var cs = await svcs[i].getCharacteristics();
+      for (var j = 0; j < cs.length; j++) { var p = cs[j].properties; if (!ch && (p.write || p.writeWithoutResponse)) ch = cs[j]; }
+    }
+    if (!ch) throw new Error('書き込み先が見つかりません');
+    mode = 'ble'; st('Bluetooth接続済み: ' + (dev.name || ''), true);
+  } catch (e) { st('接続失敗: ' + (e.message || e), false); }
+};
+$('bUsb').onclick = async function () {
+  try {
+    if (!navigator.usb) { st('このChromeはUSB非対応です', false); return; }
+    usb = await navigator.usb.requestDevice({ filters: [] });
+    await usb.open();
+    if (usb.configuration === null) await usb.selectConfiguration(1);
+    epOut = 0;
+    var ifs = usb.configuration.interfaces;
+    for (var i = 0; i < ifs.length && !epOut; i++) {
+      var alt = ifs[i].alternates[0];
+      for (var j = 0; j < alt.endpoints.length; j++) { var e = alt.endpoints[j]; if (e.type === 'bulk' && e.direction === 'out' && !epOut) epOut = e.endpointNumber; }
+      if (epOut) await usb.claimInterface(ifs[i].interfaceNumber);
+    }
+    if (!epOut) throw new Error('送信用の口が見つかりません');
+    mode = 'usb'; st('USB接続済み: ' + (usb.productName || ''), true);
+  } catch (e) { st('接続失敗: ' + (e.message || e), false); }
+};
+async function send(bytes) {
+  var data = new Uint8Array(bytes);
+  if (mode === 'usb') { for (var k = 0; k < data.length; k += 4096) await usb.transferOut(epOut, data.slice(k, k + 4096)); return; }
+  if (mode !== 'ble' || !ch || !dev.gatt.connected) throw new Error('先にプリンターに接続してください');
+  var n = parseInt($('chunk').value, 10) || 100, pace = parseInt($('pace').value, 10) || 0;
+  var nr = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === 'function';
+  for (var i = 0; i < data.length; i += n) {
+    var p = data.slice(i, i + n);
+    if (nr) await ch.writeValueWithoutResponse(p); else await ch.writeValue(p);
+    if (pace && i + n < data.length) await sleep(pace);
+  }
+}
+function asc(s) { var a = []; for (var i = 0; i < s.length; i++) a.push(s.charCodeAt(i) & 255); return a; }
+function cat(a, b) { for (var i = 0; i < b.length; i++) a.push(b[i]); return a; }
+
+// ---------- 状態 ----------
+var S = {
+  w: 70, h: 50, gtype: 'gap', gap: 2, dens: 8, mode: 'tile', page: 0, sel: -1,
+  tile: { lines: '', cols: 2, rows: 5, margin: 2, gap: 0, border: 'solid', size: 40, auto: true, bold: true, align: 'center' },
+  items: []
+};
+var cv = $('cv'), cx = cv.getContext('2d');
+function cw() { return Math.round(S.w * DPM); }
+function chh() { return Math.round(S.h * DPM); }
+function num(id, def) { var v = parseFloat($(id).value); return isNaN(v) ? def : v; }
+
+function readInputs() {
+  S.w = Math.max(5, num('w', 70)); S.h = Math.max(5, num('h', 50)); S.gtype = $('gtype').value; S.gap = num('gap', 2); S.dens = parseInt($('dens').value, 10) || 8;
+  var t = S.tile;
+  t.lines = $('tLines').value; t.cols = Math.max(1, Math.round(num('tCols', 2))); t.rows = Math.max(1, Math.round(num('tRows', 5)));
+  t.margin = Math.max(0, num('tMargin', 2)); t.gap = Math.max(0, num('tGap', 0)); t.border = $('tBorder').value;
+  t.size = Math.max(8, num('tSize', 40)); t.auto = $('tAuto').checked; t.bold = $('tBold').checked; t.align = $('tAlign').value;
+}
+function writeInputs() {
+  $('w').value = S.w; $('h').value = S.h; $('gtype').value = S.gtype; $('gap').value = S.gap; $('dens').value = S.dens;
+  var t = S.tile;
+  $('tLines').value = t.lines; $('tCols').value = t.cols; $('tRows').value = t.rows; $('tMargin').value = t.margin; $('tGap').value = t.gap;
+  $('tBorder').value = t.border; $('tSize').value = t.size; $('tAuto').checked = t.auto; $('tBold').checked = t.bold; $('tAlign').value = t.align;
+}
+var saveTimer = null;
+function persist() { clearTimeout(saveTimer); saveTimer = setTimeout(function () { try { localStorage.setItem('lbl_cur', JSON.stringify(S)); } catch (e) {} }, 400); }
+
+// ---------- 文字の折り返し・自動縮小 ----------
+function isComb(c) { var n = c.charCodeAt(0); return n === 0x0E31 || (n >= 0x0E34 && n <= 0x0E3A) || (n >= 0x0E47 && n <= 0x0E4E); }
+function fontStr(size, bold) { return (bold ? 'bold ' : '') + size + 'px "Noto Sans JP","Noto Sans Thai",sans-serif'; }
+function wrapLines(ctx, text, maxW) {
+  var out = [], paras = String(text).split('\n');
+  for (var p = 0; p < paras.length; p++) {
+    var line = '', s = paras[p];
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charAt(i), t = line + c;
+      if (ctx.measureText(t).width > maxW && line !== '' && !isComb(c)) {
+        var sp = line.lastIndexOf(' ');
+        if (sp > 0 && c !== ' ') { out.push(line.slice(0, sp)); line = line.slice(sp + 1) + c; }
+        else { out.push(line); line = (c === ' ') ? '' : c; }
+      } else line = t;
+    }
+    out.push(line);
+  }
+  return out;
+}
+function fitText(ctx, text, bw, bh, maxSize, bold, auto) {
+  var size = Math.round(maxSize), lines;
+  while (true) {
+    ctx.font = fontStr(size, bold);
+    lines = wrapLines(ctx, text, bw);
+    if (!auto || size <= 8 || lines.length * size * 1.25 <= bh) break;
+    size -= 1;
+  }
+  return { size: size, lines: lines };
+}
+
+// ---------- 描画 ----------
+function drawItem(ctx, it, preview) {
+  var x = it.x * DPM, y = it.y * DPM, w = it.w * DPM, h = it.h * DPM;
+  if (it.type === 'qr' || it.type === 'bc') {
+    if (preview) {
+      ctx.save(); ctx.strokeStyle = '#999'; ctx.setLineDash([6, 6]); ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, it.type === 'qr' ? w : w, h);
+      ctx.fillStyle = '#777'; ctx.font = '22px sans-serif'; ctx.textBaseline = 'top';
+      ctx.fillText((it.type === 'qr' ? 'QR: ' : 'バーコード: ') + it.text, x + 6, y + 6);
+      ctx.restore();
+    }
+    return;
+  }
+  if (it.border === 'solid' || it.border === 'dash') {
+    ctx.save(); ctx.lineWidth = 3; ctx.strokeStyle = '#000';
+    if (it.border === 'dash') ctx.setLineDash([10, 8]);
+    ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); ctx.restore();
+  }
+  var pad = 6, bw = w - pad * 2, bh = h - pad * 2;
+  if (bw < 4 || bh < 4 || !it.text) return;
+  var f = fitText(ctx, it.text, bw, bh, it.size, it.bold, it.auto);
+  var lh = f.size * 1.25, total = lh * f.lines.length, sy = y + (h - total) / 2 + lh / 2;
+  ctx.fillStyle = '#000'; ctx.textBaseline = 'middle';
+  ctx.textAlign = it.align === 'left' ? 'left' : 'center';
+  var tx = it.align === 'left' ? x + pad : x + w / 2;
+  for (var i = 0; i < f.lines.length; i++) ctx.fillText(f.lines[i], tx, sy + i * lh);
+  ctx.textAlign = 'left';
+}
+function drawItems(ctx, items, preview) {
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  for (var i = 0; i < items.length; i++) drawItem(ctx, items[i], preview);
+}
+
+// ---------- 並べる ----------
+function tileLines() {
+  var a = S.tile.lines.split('\n'), out = [];
+  for (var i = 0; i < a.length; i++) { var s = a[i].replace(/^\s+|\s+$/g, ''); if (s) out.push(s); }
+  return out;
+}
+function tilePages() { var n = tileLines().length, per = S.tile.cols * S.tile.rows; return Math.max(1, Math.ceil(n / per)); }
+function tileItems(page) {
+  var t = S.tile, lines = tileLines(), per = t.cols * t.rows, items = [];
+  var cwid = (S.w - t.margin * 2 - (t.cols - 1) * t.gap) / t.cols;
+  var chei = (S.h - t.margin * 2 - (t.rows - 1) * t.gap) / t.rows;
+  for (var k = 0; k < per; k++) {
+    var idx = page * per + k; if (idx >= lines.length) break;
+    var c = k % t.cols, r = Math.floor(k / t.cols);
+    items.push({ type: 'text', text: lines[idx], x: t.margin + c * (cwid + t.gap), y: t.margin + r * (chei + t.gap), w: cwid, h: chei,
+      size: t.size, bold: t.bold, align: t.align, border: t.border, auto: t.auto });
+  }
+  return items;
+}
+
+// ---------- 画面の更新 ----------
+function currentItems() { return S.mode === 'tile' ? tileItems(S.page) : S.items; }
+function redraw() {
+  cv.width = cw(); cv.height = chh();
+  if (S.mode === 'tile') { var np = tilePages(); if (S.page >= np) S.page = np - 1; if (S.page < 0) S.page = 0; }
+  var items = currentItems();
+  drawItems(cx, items, true);
+  if (S.mode === 'free' && S.sel >= 0 && S.items[S.sel]) {
+    var it = S.items[S.sel];
+    cx.save(); cx.strokeStyle = '#1f6feb'; cx.lineWidth = 2; cx.setLineDash([]);
+    cx.strokeRect(it.x * DPM - 1, it.y * DPM - 1, it.w * DPM + 2, it.h * DPM + 2);
+    cx.fillStyle = '#1f6feb'; cx.fillRect((it.x + it.w) * DPM - 14, (it.y + it.h) * DPM - 14, 18, 18);
+    cx.restore();
+  }
+  var pg = $('pager');
+  if (S.mode === 'tile') { pg.className = 'row'; $('pInfo').textContent = ' ' + (S.page + 1) + ' / ' + tilePages() + ' 枚目 '; }
+  else pg.className = 'row hidden';
+  persist();
+}
+function onChange() { readInputs(); redraw(); }
+['w', 'h', 'gtype', 'gap', 'dens', 'tLines', 'tCols', 'tRows', 'tMargin', 'tGap', 'tBorder', 'tSize', 'tAuto', 'tBold', 'tAlign'].forEach(function (id) {
+  $(id).oninput = onChange; $(id).onchange = onChange;
+});
+$('pPrev').onclick = function () { S.page--; redraw(); };
+$('pNext').onclick = function () { S.page++; redraw(); };
+
+function setMode(m) {
+  S.mode = m;
+  $('mTile').className = m === 'tile' ? '' : 'hidden';
+  $('mFree').className = m === 'free' ? '' : 'hidden';
+  $('tTile').className = m === 'tile' ? 'on' : 'w';
+  $('tFree').className = m === 'free' ? 'on' : 'w';
+  cv.style.touchAction = m === 'free' ? 'none' : 'auto';
+  if (m === 'free') refreshFree();
+  redraw();
+}
+$('tTile').onclick = function () { readInputs(); setMode('tile'); };
+$('tFree').onclick = function () { readInputs(); setMode('free'); };
+
+// ---------- 自由配置 ----------
+function refreshFree() {
+  var sel = $('fSel'); sel.innerHTML = '';
+  for (var i = 0; i < S.items.length; i++) {
+    var o = document.createElement('option'), it = S.items[i];
+    o.value = i; o.textContent = (i + 1) + ': ' + (it.type === 'qr' ? '[QR] ' : it.type === 'bc' ? '[バーコード] ' : '') + (it.text || '(空)').split('\n')[0].slice(0, 20);
+    sel.appendChild(o);
+  }
+  if (S.sel >= S.items.length) S.sel = S.items.length - 1;
+  if (S.sel >= 0) sel.value = S.sel;
+  $('fPanel').className = S.sel >= 0 && S.items[S.sel] ? '' : 'hidden';
+  loadPanel();
+}
+function loadPanel() {
+  var it = S.items[S.sel]; if (!it) return;
+  $('fText').value = it.text; $('fX').value = round1(it.x); $('fY').value = round1(it.y); $('fW').value = round1(it.w); $('fH').value = round1(it.h);
+  $('fSize').value = it.size; $('fAuto').checked = !!it.auto; $('fBold').checked = !!it.bold; $('fBorder').checked = it.border === 'solid'; $('fAlign').value = it.align;
+  $('fNote').textContent = it.type === 'qr' ? 'QR: 幅で大きさが決まります。文字欄にQRの中身(URLなど)を入れます。' : it.type === 'bc' ? 'バーコード: 高さで大きさが決まります。文字欄に数字を入れます(Code128)。' : '';
+}
+function round1(v) { return Math.round(v * 10) / 10; }
+function addItem(type) {
+  var it = { type: type, text: type === 'text' ? 'テキスト' : type === 'qr' ? 'https://saitofoods.com' : '4901234567894', x: 3 + (S.items.length % 5) * 4, y: 3 + (S.items.length % 5) * 4,
+    w: type === 'qr' ? 20 : type === 'bc' ? 40 : Math.min(40, S.w - 6), h: type === 'qr' ? 20 : type === 'bc' ? 12 : 12,
+    size: 40, bold: true, align: 'center', border: type === 'text' ? 'solid' : 'none', auto: true };
+  S.items.push(it); S.sel = S.items.length - 1; refreshFree(); redraw();
+}
+$('fAddT').onclick = function () { addItem('text'); };
+$('fAddQ').onclick = function () { addItem('qr'); };
+$('fAddB').onclick = function () { addItem('bc'); };
+$('fDup').onclick = function () {
+  var it = S.items[S.sel]; if (!it) return;
+  var c = JSON.parse(JSON.stringify(it)); c.x += 3; c.y += 3; S.items.push(c); S.sel = S.items.length - 1; refreshFree(); redraw();
+};
+$('fDel').onclick = function () {
+  if (!S.items[S.sel]) return; S.items.splice(S.sel, 1); S.sel = S.items.length - 1; refreshFree(); redraw();
+};
+$('fSel').onchange = function () { S.sel = parseInt($('fSel').value, 10); $('fPanel').className = ''; loadPanel(); redraw(); };
+function applyPanel() {
+  var it = S.items[S.sel]; if (!it) return;
+  it.text = $('fText').value; it.x = num('fX', it.x); it.y = num('fY', it.y); it.w = Math.max(2, num('fW', it.w)); it.h = Math.max(2, num('fH', it.h));
+  it.size = Math.max(8, num('fSize', it.size)); it.auto = $('fAuto').checked; it.bold = $('fBold').checked;
+  it.border = $('fBorder').checked ? 'solid' : 'none'; it.align = $('fAlign').value;
+  redraw();
+}
+['fText', 'fX', 'fY', 'fW', 'fH', 'fSize', 'fAuto', 'fBold', 'fBorder', 'fAlign'].forEach(function (id) { $(id).oninput = applyPanel; $(id).onchange = applyPanel; });
+$('fText').onchange = function () { applyPanel(); var o = $('fSel').options[S.sel]; if (o) { var it = S.items[S.sel]; o.textContent = (S.sel + 1) + ': ' + (it.text || '(空)').split('\n')[0].slice(0, 20); } };
+
+// ドラッグ操作
+var drag = null;
+function pos(e) { var r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * S.w, y: (e.clientY - r.top) / r.height * S.h }; }
+cv.onpointerdown = function (e) {
+  if (S.mode !== 'free') return;
+  var p = pos(e), hit = -1, mode2 = 'move';
+  var hh = S.w > 0 ? 4 : 4; // 角の当たり判定(mm)
+  var sel = S.items[S.sel];
+  if (sel && p.x >= sel.x + sel.w - hh && p.x <= sel.x + sel.w + 1 && p.y >= sel.y + sel.h - hh && p.y <= sel.y + sel.h + 1) { hit = S.sel; mode2 = 'resize'; }
+  else for (var i = S.items.length - 1; i >= 0; i--) { var it = S.items[i]; if (p.x >= it.x && p.x <= it.x + it.w && p.y >= it.y && p.y <= it.y + it.h) { hit = i; break; } }
+  if (hit < 0) { S.sel = -1; refreshFree(); redraw(); return; }
+  S.sel = hit; var t = S.items[hit];
+  drag = { m: mode2, sx: p.x, sy: p.y, ox: t.x, oy: t.y, ow: t.w, oh: t.h };
+  cv.setPointerCapture(e.pointerId); refreshFree(); redraw(); e.preventDefault();
+};
+cv.onpointermove = function (e) {
+  if (!drag) return; var it = S.items[S.sel]; if (!it) return; var p = pos(e), dx = p.x - drag.sx, dy = p.y - drag.sy;
+  if (drag.m === 'move') { it.x = round1(drag.ox + dx); it.y = round1(drag.oy + dy); }
+  else { it.w = Math.max(2, round1(drag.ow + dx)); it.h = Math.max(2, round1(drag.oh + dy)); }
+  $('fX').value = round1(it.x); $('fY').value = round1(it.y); $('fW').value = round1(it.w); $('fH').value = round1(it.h);
+  redraw(); e.preventDefault();
+};
+cv.onpointerup = function () { drag = null; };
+cv.onpointercancel = function () { drag = null; };
+
+// ---------- 印刷 ----------
+function setupCmd() {
+  var s = 'SIZE ' + S.w + ' mm,' + S.h + ' mm\r\n';
+  if (S.gtype === 'gap') s += 'GAP ' + S.gap + ' mm,0 mm\r\n';
+  else if (S.gtype === 'cont') s += 'GAP 0 mm,0 mm\r\n';
+  else s += 'BLINE ' + S.gap + ' mm,0 mm\r\n';
+  return s + 'DIRECTION 1\r\nREFERENCE 0,0\r\nDENSITY ' + S.dens + '\r\nSPEED 4\r\n';
+}
+function toMono(c, threshold) {
+  var wd = c.width, ht = c.height, bpr = Math.ceil(wd / 8), d = c.getContext('2d').getImageData(0, 0, wd, ht).data;
+  var out = new Uint8Array(bpr * ht).fill(255); // TSPLは 1=白 0=黒
+  for (var y = 0; y < ht; y++) for (var x = 0; x < wd; x++) {
+    var i = (y * wd + x) * 4, lum = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+    if (lum < threshold) out[y * bpr + (x >> 3)] &= ~(0x80 >> (x & 7));
+  }
+  return { bytes: out, bpr: bpr, h: ht };
+}
+function pageBytes(items, copies) {
+  var c = document.createElement('canvas'); c.width = cw(); c.height = chh();
+  var ctx = c.getContext('2d'); drawItems(ctx, items, false);
+  var m = toMono(c, 170);
+  var b = asc(setupCmd() + 'CLS\r\nBITMAP 0,0,' + m.bpr + ',' + m.h + ',0,');
+  cat(b, Array.prototype.slice.call(m.bytes));
+  var tail = '\r\n';
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i], x = Math.round(it.x * DPM), y = Math.round(it.y * DPM), data = String(it.text).replace(/"/g, "'").replace(/[\r\n]/g, ' ');
+    if (it.type === 'qr') tail += 'QRCODE ' + x + ',' + y + ',L,' + Math.max(2, Math.min(10, Math.round(it.w * DPM / 29))) + ',A,0,"' + data + '"\r\n';
+    else if (it.type === 'bc') tail += 'BARCODE ' + x + ',' + y + ',"128",' + Math.round(it.h * DPM) + ',1,0,2,2,"' + data + '"\r\n';
+  }
+  tail += 'PRINT 1,' + copies + '\r\n';
+  return cat(b, asc(tail));
+}
+async function doPrint(pages) {
+  readInputs();
+  var copies = Math.max(1, Math.round(num('copies', 1))), t0 = Date.now();
+  try {
+    for (var k = 0; k < pages.length; k++) {
+      var items = S.mode === 'tile' ? tileItems(pages[k]) : S.items;
+      if (!items.length) { st('印刷するものがありません', false); return; }
+      st((k + 1) + ' / ' + pages.length + ' 枚目を送信中...', null);
+      await send(pageBytes(items, copies));
+      if (pages.length > 1) await sleep(300);
+    }
+    st('送信完了 (' + pages.length + '種類 × ' + copies + '枚, ' + (Date.now() - t0) + ' ms)', true);
+  } catch (e) { st('印刷失敗: ' + (e.message || e), false); log('ERR ' + (e.message || e)); }
+}
+$('bPrint').onclick = function () {
+  var pages = []; if (S.mode === 'tile') { for (var i = 0; i < tilePages(); i++) pages.push(i); } else pages = [0];
+  doPrint(pages);
+};
+$('bPrint1').onclick = function () { doPrint([S.mode === 'tile' ? S.page : 0]); };
+$('bAuto').onclick = async function () {
+  readInputs();
+  try { await send(asc(setupCmd() + (S.gtype === 'bm' ? 'AUTODETECT\r\n' : 'GAPDETECT\r\n'))); st('自動検出を送信しました', true); }
+  catch (e) { st('失敗: ' + (e.message || e), false); }
+};
+
+// ---------- 保存 ----------
+function loadSaved() { try { return JSON.parse(localStorage.getItem('lbl_saved') || '[]'); } catch (e) { return []; } }
+function refreshSaved() {
+  var l = $('svList'); l.innerHTML = ''; var a = loadSaved();
+  for (var i = 0; i < a.length; i++) { var o = document.createElement('option'); o.value = i; o.textContent = a[i].name; l.appendChild(o); }
+}
+$('svSave').onclick = function () {
+  readInputs(); var name = $('svName').value.replace(/^\s+|\s+$/g, ''); if (!name) { st('名前を入れてください', false); return; }
+  var a = loadSaved(), d = JSON.parse(JSON.stringify(S)), done = false;
+  for (var i = 0; i < a.length; i++) if (a[i].name === name) { a[i].data = d; done = true; }
+  if (!done) a.push({ name: name, data: d });
+  try { localStorage.setItem('lbl_saved', JSON.stringify(a)); st('保存しました: ' + name, true); } catch (e) { st('保存できませんでした', false); }
+  refreshSaved();
+};
+$('svLoad').onclick = function () {
+  var a = loadSaved(), i = parseInt($('svList').value, 10); if (isNaN(i) || !a[i]) return;
+  S = a[i].data; S.page = 0; S.sel = S.items.length ? 0 : -1; writeInputs(); setMode(S.mode); st('読み込みました: ' + a[i].name, true);
+};
+$('svDel').onclick = function () {
+  var a = loadSaved(), i = parseInt($('svList').value, 10); if (isNaN(i) || !a[i]) return;
+  a.splice(i, 1); try { localStorage.setItem('lbl_saved', JSON.stringify(a)); } catch (e) {} refreshSaved();
+};
+
+// ---------- 起動 ----------
+try { var cur = JSON.parse(localStorage.getItem('lbl_cur') || 'null'); if (cur && cur.tile) { S = cur; } } catch (e) {}
+S.page = 0; S.sel = S.items && S.items.length ? 0 : -1;
+writeInputs(); refreshSaved();
+setMode(S.mode || 'tile');
+</script>
+</body></html>
