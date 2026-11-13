@@ -640,7 +640,7 @@
       <description>ノルウェー産の冷凍サバを弊社で開いて塩漬けしてほした手作り商品。ダイナミックな大きいサイズ！</description>
       <link>https://saitofoods.com/products/358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785556020999_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>210.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -802,6 +802,19 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>無添加の商品</g:product_type>
+    </item>
+    <item>
+      <g:id>934</g:id>
+      <title>本格スモークサーモン スライス　200g</title>
+      <description>ホテル等で提供されるねっとりしたタイプのスモークサーモンです。 チリ産トラウトを使用した本格的な商品です。 パンに挟んだりサラダやスパゲティに。 調理法/アイディアレシピはInstagramでご紹介しております! https://www.instagram.com/reel/DIitpqJRM5T/?utm_source=ig_web_copy_link&amp;igsh=MzRlODBiNWFlZA== お手数ですが上記リンク↑をコピーのうえご利用ください。 もしくは下部の「youtubeを見る」をクリック!インスタグラムが開きます。 youtubeを見る と記述にありますが、リンク先はインスタグラムです。</description>
+      <link>https://saitofoods.com/products/934.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785487152586_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>310.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>サイトウフーズオリジナル商品</g:product_type>
     </item>
     <item>
       <g:id>278</g:id>
@@ -1434,7 +1447,7 @@
       <description>ミツカン金の粒シリーズのたまご醤油たれ納豆 3パックセットです。付属のたれを使用すると生卵を混ぜたような出来上がりになります。タレに卵黄が入っております。</description>
       <link>https://saitofoods.com/products/1175.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489026721_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1447,7 +1460,7 @@
       <description>使用大豆:アメリカ産 有機小粒大豆、契約栽培大豆を100%使用。 有機栽培大豆とは… ①畑は、2年以上有機肥料で土作りをします ②農薬や化学肥料に頼らないことを基本としています ③遺伝子組換え技術を使用しません 大豆の栽培から納豆の製造まで有機認証を受けた納豆です。 有機しょうゆ使用たれとからし付。 40g * 3パック</description>
       <link>https://saitofoods.com/products/1358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201401_6a0d5c592fe48.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1538,7 +1551,7 @@
       <description>紀文の定番ちくわ 竹笛 5本入り 32g*5本</description>
       <link>https://saitofoods.com/products/1130.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785489876742_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>62.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3046,7 +3059,7 @@
       <description>北海道のミルクを使用したもちもち食感のプリンです。 卵はミルク、メロン、抹茶どのもちもちプリンにも含まれておりません。但し、牛乳、生クリームといった乳脂肪分は含まれています為、乳アレルギーという観点では対象となります。</description>
       <link>https://saitofoods.com/products/1207.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784869001139_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>65.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -3223,6 +3236,19 @@
       <g:product_type>メー・カノム /🇹🇭の美味</g:product_type>
     </item>
     <item>
+      <g:id>548</g:id>
+      <title>アラウベビー 泡全身ソープ ボトル 450ml</title>
+      <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
+      <link>https://saitofoods.com/products/548.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785483940749_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>325.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>サラヤ製品</g:product_type>
+    </item>
+    <item>
       <g:id>549</g:id>
       <title>アラウベビー 泡全身ソープ 詰め替え 400ml</title>
       <description>赤ちゃんの頭(髪)から足先まで全身洗える泡全身ソープ。 きめ細やかでなめらかな泡がお肌をやさしく包み込み、さっぱりと洗い上げ、すべすべの肌に。詰め替え用。※合成界面活性剤、合成香料、着色料、保存料 無添加。</description>
@@ -3256,6 +3282,19 @@
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785485089889_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
       <g:price>70.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>日本からの輸入品</g:product_type>
+    </item>
+    <item>
+      <g:id>830</g:id>
+      <title>殺虫成分不使用　ダニトリーゼ 3枚入り</title>
+      <description>シーツの下に敷くだけで、ダニが取れるダニトリーゼ、困った時の一品。</description>
+      <link>https://saitofoods.com/products/830.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785486078182_slot1.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>598.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
@@ -3325,19 +3364,6 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>日本へのお土産に!</g:product_type>
-    </item>
-    <item>
-      <g:id>1292</g:id>
-      <title>タイシルク デンタルフロス</title>
-      <description>タイ産シルク繊維を、天然の蜜蝋でコーティング! 故シリキット王太后のご支援により創設された財団に由来する製品です。 歯間に入りやすく歯茎を傷めにくいソフトなフィット感。 私自身と息子も長年愛用しており、タイならではのお土産としてもおすすめです。 使用感/詳細 ・スルッと歯間におさまるやわらかなフィット感 ・ミント味なし!!!息子幼少時から仕上げ磨きに欠かせません ・天然由来の糸に食べかすが絡みやすい ・フロスによっては知覚過敏が生じる私の歯も無事です(全ての方に生じることがないとは限りません) ・裏面の日付は製造年月日です。使用期限の設定はございませんが、保管状態により品質が変化する場合があります。変色・異臭等が見られる場合は使用を中止してください ・天然蜜蝋:滅菌済 ・長さ:約30m</description>
-      <link>https://saitofoods.com/products/1292.html</link>
-      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784874847512_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
-      <g:price>175.00 THB</g:price>
-      <g:condition>new</g:condition>
-      <g:brand>Saito Foods</g:brand>
-      <g:identifier_exists>no</g:identifier_exists>
-      <g:product_type>メー・カノム /🇹🇭の美味</g:product_type>
     </item>
   </channel>
 </rss>
