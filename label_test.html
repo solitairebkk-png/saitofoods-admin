@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>DELI 760DW 接続テスト</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans JP","Noto Sans Thai",sans-serif;background:#f6f8fa;color:#1f2328;}
+header{background:#fff;border-bottom:1px solid #d0d7de;padding:12px 16px;font-weight:700;font-size:18px;}
+main{max-width:680px;margin:0 auto;padding:12px;}
+section{background:#fff;border:1px solid #d0d7de;border-radius:10px;padding:12px;margin-bottom:12px;}
+h2{margin:0 0 8px;font-size:15px;}
+button{padding:12px 14px;font-size:16px;border:0;border-radius:8px;background:#1f6feb;color:#fff;min-height:46px;margin:0 6px 6px 0;}
+button.g{background:#2da44e;}
+button.o{background:#bf8700;}
+select,input{padding:10px;font-size:16px;border:1px solid #d0d7de;border-radius:8px;margin:0 6px 6px 0;}
+input{width:70px;}
+#st{font-size:14px;padding:8px 10px;border-radius:8px;background:#ddf4ff;margin-top:8px;}
+#log{font-family:ui-monospace,monospace;font-size:12px;background:#0d1117;color:#c9d1d9;padding:8px;border-radius:8px;height:170px;overflow:auto;white-space:pre-wrap;}
+small{color:#57606a;}
+</style></head><body>
+<header>DELI 760DW 接続・命令テスト</header>
+<main>
+<section>
+  <h2>1. プリンターに接続(どちらか一方)</h2>
+  <button id="bBle">Bluetoothで接続</button>
+  <button id="bUsb" class="o">USBで接続</button>
+  <div id="st">未接続</div>
+  <div style="margin-top:8px">
+    送信サイズ <select id="chunk"></select>
+    待ち時間 <select id="pace"></select>
+  </div>
+  <small>Bluetoothの一覧に出ない場合は、プリンターの電源を入れ直してください。USBはタブレットにUSBケーブルでつなぎます。</small>
+</section>
+<section>
+  <h2>2. ラベルの設定</h2>
+  <div>横 <input id="w" type="number" value="70">mm 縦 <input id="h" type="number" value="50">mm</div>
+  <div>ラベルの種類
+    <select id="gtype">
+      <option value="gap">すき間のあるラベル(GAP)</option>
+      <option value="cont">連続紙(すき間なし)</option>
+      <option value="bm">黒マーク紙</option>
+    </select>
+    すき間 <input id="gap" type="number" value="2" step="0.5">mm
+  </div>
+  <button id="bAuto">ラベルのサイズを自動検出</button>
+  <small>ラベルを入れたあと、まず自動検出をすると、紙の位置が合います。</small>
+</section>
+<section>
+  <h2>3. ラベル用の命令(TSPL)</h2>
+  <small>文字、バーコード、QR、枠線を、プリンター内蔵の命令で印字します。</small>
+  <div style="margin-top:8px">
+    <button id="bT1" class="g">TSPL 文字・バーコード・QR</button>
+    <button id="bT2" class="g">TSPL 画像(日本語・タイ語)</button>
+  </div>
+</section>
+<section>
+  <h2>4. レシート用の命令(ESC/POS)</h2>
+  <small>ラベル用ではなく、レジのレシートと同じ命令です。これが動けばレシートにも使えます。</small>
+  <div style="margin-top:8px">
+    <button id="bE1">ESC/POS 文字</button>
+    <button id="bE2">ESC/POS 画像</button>
+  </div>
+</section>
+<section>
+  <h2>5. 機種の問い合わせ(USBのみ)</h2>
+  <button id="bQ">機種名を問い合わせる</button>
+</section>
+<section><h2>ログ</h2><div id="log"></div></section>
+</main>
+<script>
+var $ = function (id) { return document.getElementById(id); };
+function log(m) { var l = $('log'); l.textContent += m + '\n'; l.scrollTop = l.scrollHeight; }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+[20, 60, 100, 150, 200, 256, 512].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n; if (n === 100) o.selected = true; $('chunk').appendChild(o); });
+[0, 10, 20, 40, 80, 150].forEach(function (n) { var o = document.createElement('option'); o.value = n; o.textContent = n + ' ms'; $('pace').appendChild(o); });
+var SERV = ['000018f0-0000-1000-8000-00805f9b34fb', '0000ff00-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', '0000ae30-0000-1000-8000-00805f9b34fb', '0000fee7-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb', '0000fff0-0000-1000-8000-00805f9b34fb'];
+var mode = '', ch = null, dev = null, usb = null, epOut = 0, epIn = 0;
+function st(t, ok) { var s = $('st'); s.textContent = t; s.style.background = ok === true ? '#dafbe1' : ok === false ? '#ffebe9' : '#ddf4ff'; }
+
+$('bBle').onclick = async function () {
+  try {
+    if (!navigator.bluetooth) { st('このChromeはBluetooth非対応です', false); return; }
+    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: SERV });
+    var srv = await dev.gatt.connect(), svcs = await srv.getPrimaryServices();
+    ch = null;
+    for (var i = 0; i < svcs.length && !ch; i++) {
+      var cs = await svcs[i].getCharacteristics();
+      log('service ' + svcs[i].uuid);
+      for (var j = 0; j < cs.length; j++) {
+        var p = cs[j].properties;
+        log('  char ' + cs[j].uuid + (p.write ? ' W' : '') + (p.writeWithoutResponse ? ' Wn' : '') + (p.notify ? ' N' : ''));
+        if (!ch && (p.write || p.writeWithoutResponse)) ch = cs[j];
+      }
+    }
+    if (!ch) throw new Error('書き込み先が見つかりません');
+    mode = 'ble'; st('Bluetooth接続済み: ' + (dev.name || ''), true); log('connected ' + (dev.name || ''));
+  } catch (e) { st('接続失敗: ' + (e.message || e), false); log('ERR ' + (e.message || e)); }
+};
+$('bUsb').onclick = async function () {
+  try {
+    if (!navigator.usb) { st('このChromeはUSB(WebUSB)非対応です', false); return; }
+    usb = await navigator.usb.requestDevice({ filters: [] });
+    await usb.open();
+    if (usb.configuration === null) await usb.selectConfiguration(1);
+    epOut = 0; epIn = 0;
+    var ifs = usb.configuration.interfaces;
+    for (var i = 0; i < ifs.length && !epOut; i++) {
+      var alt = ifs[i].alternates[0];
+      for (var j = 0; j < alt.endpoints.length; j++) {
+        var e = alt.endpoints[j];
+        if (e.type === 'bulk' && e.direction === 'out' && !epOut) { epOut = e.endpointNumber; }
+        if (e.type === 'bulk' && e.direction === 'in' && !epIn) { epIn = e.endpointNumber; }
+      }
+      if (epOut) { await usb.claimInterface(ifs[i].interfaceNumber); log('interface ' + ifs[i].interfaceNumber + ' class ' + alt.interfaceClass); }
+    }
+    if (!epOut) throw new Error('送信用の口が見つかりません');
+    mode = 'usb'; st('USB接続済み: ' + (usb.productName || '') + ' (' + usb.vendorId.toString(16) + ':' + usb.productId.toString(16) + ')', true);
+    log('usb ' + (usb.manufacturerName || '') + ' ' + (usb.productName || '') + ' ep out ' + epOut + ' in ' + epIn);
+  } catch (e) { st('接続失敗: ' + (e.message || e), false); log('ERR ' + (e.message || e)); }
+};
+async function send(bytes) {
+  var data = new Uint8Array(bytes);
+  if (mode === 'usb') {
+    for (var k = 0; k < data.length; k += 4096) await usb.transferOut(epOut, data.slice(k, k + 4096));
+    return;
+  }
+  if (mode !== 'ble' || !ch || !dev.gatt.connected) throw new Error('先に接続してください');
+  var n = parseInt($('chunk').value, 10) || 100, pace = parseInt($('pace').value, 10) || 0;
+  var nr = ch.properties.writeWithoutResponse && typeof ch.writeValueWithoutResponse === 'function';
+  for (var i = 0; i < data.length; i += n) {
+    var p = data.slice(i, i + n);
+    if (nr) await ch.writeValueWithoutResponse(p); else await ch.writeValue(p);
+    if (pace && i + n < data.length) await sleep(pace);
+  }
+}
+function asc(s) { var a = []; for (var i = 0; i < s.length; i++) a.push(s.charCodeAt(i) & 255); return a; }
+function cat(a, b) { for (var i = 0; i < b.length; i++) a.push(b[i]); return a; }
+async function run(name, fn) {
+  try { var t = Date.now(); log(name + ' 送信中...'); await fn(); log(name + ' 送信完了 ' + (Date.now() - t) + ' ms'); }
+  catch (e) { st('失敗: ' + (e.message || e), false); log('ERR ' + (e.message || e)); }
+}
+function setup() {
+  var w = $('w').value, h = $('h').value, g = $('gap').value, t = $('gtype').value;
+  var s = 'SIZE ' + w + ' mm,' + h + ' mm\r\n';
+  if (t === 'gap') s += 'GAP ' + g + ' mm,0 mm\r\n';
+  else if (t === 'cont') s += 'GAP 0 mm,0 mm\r\n';
+  else s += 'BLINE ' + g + ' mm,0 mm\r\n';
+  s += 'DIRECTION 1\r\nREFERENCE 0,0\r\nDENSITY 8\r\nSPEED 4\r\n';
+  return s;
+}
+// ---- 画像(キャンバス)作成 ----
+function drawCanvas(wd, ht) {
+  var c = document.createElement('canvas'); c.width = wd; c.height = ht;
+  var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, wd, ht); x.fillStyle = '#000';
+  x.lineWidth = 3; x.strokeRect(4, 4, wd - 8, ht - 8);
+  x.textBaseline = 'top';
+  x.font = 'bold 40px "Noto Sans JP",sans-serif'; x.fillText('日本語テスト 鮭おにぎり', 16, 18);
+  x.font = 'bold 40px "Noto Sans Thai","Noto Sans JP",sans-serif'; x.fillText('ทดสอบภาษาไทย ปลาแซลมอน', 16, 72);
+  x.font = 'bold 84px sans-serif'; x.fillText('฿ 1,280', 16, 128);
+  x.font = '28px sans-serif'; x.fillText('DELI 760DW  ' + wd + 'x' + ht + ' dots', 16, ht - 48);
+  return c;
+}
+function toMono(c, threshold) {
+  var wd = c.width, ht = c.height, bpr = Math.ceil(wd / 8), d = c.getContext('2d').getImageData(0, 0, wd, ht).data;
+  var out = new Uint8Array(bpr * ht);
+  for (var y = 0; y < ht; y++) for (var x = 0; x < wd; x++) {
+    var i = (y * wd + x) * 4, lum = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+    if (lum < threshold) out[y * bpr + (x >> 3)] |= (0x80 >> (x & 7));   // 1 = 黒
+  }
+  return { bytes: out, bpr: bpr, h: ht };
+}
+// ---- 1 ラベルの自動検出 ----
+$('bAuto').onclick = function () {
+  run('自動検出', function () {
+    var t = $('gtype').value;
+    var s = setup() + (t === 'bm' ? 'AUTODETECT\r\n' : 'GAPDETECT\r\n');
+    return send(asc(s));
+  });
+};
+// ---- 2 TSPL 内蔵命令 ----
+$('bT1').onclick = function () {
+  run('TSPL 内蔵', function () {
+    var s = setup() + 'CLS\r\n' +
+      'BOX 8,8,552,392,3\r\n' +
+      'TEXT 24,24,"4",0,1,1,"DELI 760DW"\r\n' +
+      'TEXT 24,76,"3",0,1,1,"TSPL TEST 70x50"\r\n' +
+      'BARCODE 24,130,"128",90,1,0,2,2,"4901234567894"\r\n' +
+      'QRCODE 400,130,L,6,A,0,"https://saitofoods.com"\r\n' +
+      'TEXT 24,300,"2",0,1,1,"Saito Foods / Plaa-Ta-Pian"\r\n' +
+      'PRINT 1,1\r\n';
+    return send(asc(s));
+  });
+};
+// ---- 3 TSPL 画像 ----
+$('bT2').onclick = function () {
+  run('TSPL 画像', function () {
+    var wd = Math.round($('w').value * 8), ht = Math.round($('h').value * 8);
+    var m = toMono(drawCanvas(wd, ht), 160);
+    // TSPLのBITMAPは 1=印字しない(白)、0=印字(黒) なので反転する
+    var body = new Uint8Array(m.bytes.length);
+    for (var i = 0; i < body.length; i++) body[i] = (~m.bytes[i]) & 255;
+    var head = asc(setup() + 'CLS\r\nBITMAP 0,0,' + m.bpr + ',' + m.h + ',0,');
+    var all = cat(head, Array.prototype.slice.call(body));
+    cat(all, asc('\r\nPRINT 1,1\r\n'));
+    return send(all);
+  });
+};
+// ---- 4 ESC/POS 文字 ----
+$('bE1').onclick = function () {
+  run('ESC/POS 文字', function () {
+    var b = [0x1b, 0x40, 0x1b, 0x61, 1];
+    cat(b, asc('DELI 760DW\nESC/POS TEST\n--------------------------------\n'));
+    cat(b, [0x1b, 0x61, 0]);
+    cat(b, asc('Salmon onigiri  x2     240.00\nTotal                 240.00\n\n\n\n'));
+    cat(b, [0x1d, 0x56, 0x42, 0x00]);
+    return send(b);
+  });
+};
+// ---- 5 ESC/POS 画像 ----
+$('bE2').onclick = function () {
+  run('ESC/POS 画像', function () {
+    var wd = 560, ht = 300, m = toMono(drawCanvas(wd, ht), 160);
+    var b = [0x1b, 0x40];
+    var rows = 64;
+    for (var y = 0; y < ht; y += rows) {
+      var hh = Math.min(rows, ht - y);
+      cat(b, [0x1d, 0x76, 0x30, 0, m.bpr & 255, m.bpr >> 8, hh & 255, hh >> 8]);
+      cat(b, Array.prototype.slice.call(m.bytes.subarray(y * m.bpr, (y + hh) * m.bpr)));
+    }
+    cat(b, asc('\n\n\n'));
+    return send(b);
+  });
+};
+// ---- 6 機種問い合わせ ----
+$('bQ').onclick = function () {
+  run('機種問い合わせ', async function () {
+    if (mode !== 'usb' || !epIn) throw new Error('USB接続のときだけ使えます');
+    await send(asc('~!T\r\n'));
+    await sleep(300);
+    var r = await usb.transferIn(epIn, 64);
+    var t = ''; if (r.data) for (var i = 0; i < r.data.byteLength; i++) t += String.fromCharCode(r.data.getUint8(i));
+    log('返事: ' + t);
+  });
+};
+</script>
+</body></html>
