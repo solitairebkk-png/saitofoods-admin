@@ -11,6 +11,7 @@
 <meta name="theme-color" content="#1f6f43">
 <title>Delivery Photo | Saito Foods</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="chat.js?v=1"></script>
 <style>
   :root {
     --green: #1f6f43;
@@ -219,6 +220,15 @@
   #line-banner small { display: block; font-weight: 600; font-size: 12px; }
   #pending-banner { background: #f59e0b; color: #fff; font-weight: 800; font-size: 15px; padding: 10px 14px; text-align: center; cursor: pointer; line-height: 1.35; }
   #pending-banner small { display: block; font-weight: 600; font-size: 12px; opacity: .95; }
+  /* スタッフチャット(💬ボタン+全画面の窓) */
+  #chat-btn { position: relative; }
+  #chat-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #6b7280; color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; }
+  #chat-badge.ment { background: #dc2626; }
+  #chat-overlay { position: fixed; inset: 0; z-index: 70; background: #fff; display: flex; flex-direction: column; padding-bottom: env(safe-area-inset-bottom); }
+  #chat-overlay .chat-top { background: var(--green); color: #fff; padding: calc(10px + env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; font-weight: 800; }
+  #chat-overlay .chat-top span { flex: 1; }
+  #chat-overlay .chat-top button { background: rgba(255,255,255,.2); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; font-size: 14px; font-weight: 700; }
+  #chat-body { flex: 1; min-height: 0; }
 </style>
 </head>
 <body>
@@ -271,6 +281,7 @@
     <span class="logo-mini"><img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/logo4.png" alt="SAITO FOODS"></span>
     <div class="ttl"><b>SAITO FOODS</b><span>DELIVERY SYSTEM</span></div>
     <span class="who" id="who-label"></span>
+    <button id="chat-btn" aria-label="chat">💬<span id="chat-badge" class="hidden"></span></button>
     <button id="refresh-btn" aria-label="refresh">↻</button>
     <button id="menu-btn">⋯</button>
   </header>
@@ -300,6 +311,11 @@
     <div id="main-error" class="err" onclick="this.textContent=''"></div>
   </main>
   <div id="toast" role="status"></div>
+  <!-- スタッフチャット(💬で開く全画面の窓。中身は chat.js) -->
+  <div id="chat-overlay" class="hidden">
+    <div class="chat-top"><span>💬 แชทพนักงาน / Staff Chat</span><button type="button" id="chat-close">✕ ปิด / Close</button></div>
+    <div id="chat-body"></div>
+  </div>
   <div class="navbtns">
     <button type="button" aria-label="previous" onclick="jumpCard(-1)">▲</button>
     <button type="button" aria-label="next" onclick="jumpCard(1)">▼</button>
@@ -1606,7 +1622,37 @@ function enterMain() {
   $('who-label').textContent = currentStaff.name;
   show('main-view'); refreshLocation();
   loadOrders();
+  startChat();
 }
+
+// ---------------- スタッフチャット ----------------
+// ログイン後に一度だけ起動。窓を閉じている間も新着を受け取り、💬に未読数を出す(自分が@された未読があれば赤)。
+let chatApi = null;
+function chatOpen() { return !$('chat-overlay').classList.contains('hidden'); }
+function startChat() {
+  if (chatApi || !window.StaffChat) return;
+  try {
+    chatApi = window.StaffChat.mount({
+      client: supabaseClient,
+      container: $('chat-body'),
+      isVisible: chatOpen,
+      onUnread: ({ unread, mentions }) => {
+        const b = $('chat-badge');
+        b.textContent = unread > 99 ? '99+' : String(unread);
+        b.classList.toggle('hidden', unread === 0);
+        b.classList.toggle('ment', mentions > 0);
+      }
+    });
+  } catch (e) { /* チャットが動かなくても、配送の操作には影響させない */ }
+}
+function openChat() {
+  if (!chatApi) startChat();
+  $('chat-overlay').classList.remove('hidden');
+  if (chatApi) chatApi.onShow();
+}
+function closeChat() { $('chat-overlay').classList.add('hidden'); }
+$('chat-btn').addEventListener('click', openChat);
+$('chat-close').addEventListener('click', closeChat);
 
 $('login-btn').addEventListener('click', login);
 $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
@@ -1647,7 +1693,8 @@ async function checkAppUpdate() {
     if (h === appHash) return;
     // 写真はサーバーに保存済み(state=saved)なら、読み込み直しても消えない。まだ保存されていない写真があるときだけ待つ
     const unsaved = Object.values(staged).some(arr => (arr || []).some(p => p.state !== 'saved'));
-    const working = unsaved || Object.keys(busy).length || Object.keys(memoEditing).length || Date.now() < pickerUntil;
+    const working = unsaved || Object.keys(busy).length || Object.keys(memoEditing).length || Date.now() < pickerUntil
+      || chatOpen() || (chatApi && chatApi.isBusy());   // チャットを開いている間・入力中は再読み込みしない
     if (!working && !document.hidden) location.reload();
   } catch (_) { /* オフライン等は無視 */ }
 }

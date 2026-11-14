@@ -6,6 +6,7 @@
 <title>Order Management | Saito Foods</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="chat.js?v=1"></script>
 <style>
   :root {
     --navy: #1c3557;
@@ -648,6 +649,15 @@
     .scroll-fab-wrap-bottom { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
     .scroll-fab { width: 48px; height: 48px; font-size: 20px; }
   }
+
+  /* スタッフチャット: 上部メニューの下の段に出す開閉式の窓 */
+  #staff-chat-dock { background: #fff; border-bottom: 1px solid var(--border); }
+  #staff-chat-toggle { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 24px; background: #f3f6fa; border: 0; font: inherit; font-size: 13px; font-weight: 700; color: var(--navy); cursor: pointer; text-align: left; }
+  #staff-chat-toggle .grow { flex: 1; }
+  #staff-chat-badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: #6b7280; color: #fff; font-size: 12px; font-weight: 800; line-height: 20px; text-align: center; }
+  #staff-chat-badge.ment { background: #dc2626; }
+  #staff-chat-body { height: 280px; border-top: 1px solid var(--border); }
+  @media (max-width: 700px) { #staff-chat-toggle { padding: 9px 14px; } }
 </style>
 </head>
 <body>
@@ -699,6 +709,17 @@
     <a href="#" onclick="logout()">Logout / ออกจากระบบ</a>
   </div>
 </header>
+
+<!-- スタッフチャット(上部メニューの下の段の窓。中身は chat.js) -->
+<div id="staff-chat-dock" style="display:none;">
+  <button type="button" id="staff-chat-toggle" onclick="toggleStaffChat()">
+    <span>🗨️ Staff Chat / แชทพนักงาน</span>
+    <span id="staff-chat-badge" style="display:none;"></span>
+    <span class="grow"></span>
+    <span id="staff-chat-chev">▼</span>
+  </button>
+  <div id="staff-chat-body" style="display:none;"></div>
+</div>
 
 <div id="login-panel">
   <h2><span class="th">เข้าสู่ระบบพนักงาน</span><span class="en">Staff Login</span></h2>
@@ -1152,6 +1173,38 @@ async function loadStaffList() {
   srirachaRouteStaffId = ((data || []).find(s => s.is_route_account) || {}).id || null;
 }
 
+// ---------------- Staff Chat(上部メニュー下の窓) ----------------
+// ログイン後に一度だけ起動。窓を閉じている間も新着を受け取り、見出しに未読数を出す(自分が@された未読があれば赤)。
+let staffChatApi = null;
+function staffChatIsOpen() { return document.getElementById('staff-chat-body').style.display !== 'none'; }
+function toggleStaffChat(force) {
+  const open = typeof force === 'boolean' ? force : !staffChatIsOpen();
+  document.getElementById('staff-chat-body').style.display = open ? 'block' : 'none';
+  document.getElementById('staff-chat-chev').textContent = open ? '▲' : '▼';
+  try { localStorage.setItem('staffchat-dock-open', open ? '1' : '0'); } catch (_) {}
+  if (open && staffChatApi) staffChatApi.onShow();
+}
+function startStaffChat() {
+  if (staffChatApi || !window.StaffChat) return;
+  document.getElementById('staff-chat-dock').style.display = 'block';
+  try {
+    staffChatApi = window.StaffChat.mount({
+      client: supabaseClient,
+      container: document.getElementById('staff-chat-body'),
+      isVisible: staffChatIsOpen,
+      onUnread: ({ unread, mentions }) => {
+        const b = document.getElementById('staff-chat-badge');
+        b.textContent = unread > 99 ? '99+' : String(unread);
+        b.style.display = unread ? 'inline-block' : 'none';
+        b.classList.toggle('ment', mentions > 0);
+      }
+    });
+    // 前回の開閉状態を引き継ぐ(初回は、画面が広いときだけ開く)
+    let saved = null; try { saved = localStorage.getItem('staffchat-dock-open'); } catch (_) {}
+    toggleStaffChat(saved === null ? window.innerWidth >= 900 : saved === '1');
+  } catch (e) { /* チャットが動かなくても、注文管理の操作には影響させない */ }
+}
+
 // ---------------- Auth ----------------
 async function login() {
   const email = document.getElementById('login-email').value.trim();
@@ -1212,6 +1265,7 @@ function showMain() {
   updateScbStripVisibility();
   loadScbSms(true);
   loadUndelivered();
+  startStaffChat();
 
   // receipt.htmlなど別タブで印刷・重量確定などを行った後、このタブに戻ってきた(フォーカスが戻った)
   // タイミングで自動的に一覧を再読み込みする(手動でSearch/Todayを押し直す必要をなくすため)。
