@@ -421,7 +421,7 @@
   .mg-modal-checkbox { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: var(--ink); cursor: pointer; }
   .mg-modal-checkbox input { width: 15px; height: 15px; cursor: pointer; }
 </style>
-<script src="i18n.js?v=20261006b"></script>
+<script src="i18n.js?v=20261117a"></script>
 </head>
 <body>
 <div id="migration-guide-modal" class="mg-modal-overlay">
@@ -515,9 +515,9 @@ function closeMigrationGuideModal() {
 
     <div class="hero">
       <div class="hero-mascot-wrap">
-        <div class="hero-bubble" data-i18n-html="hero.shipBubble"><span class="bubble-main">600バーツ未満での配送を<br>開始しました！</span><span class="bubble-sub">〈※ 配送料金100バーツ〉</span></div>
+        <div class="hero-bubble" data-i18n-html="hero.shipBubble"><span class="bubble-main">500バーツ未満での配送を<br>開始しました！</span><span class="bubble-sub">〈※ 配送料金100バーツ〉</span></div>
         <img class="hero-mascot" src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/9.png" alt="サイトウフーズ カオポン君">
-        <div class="hero-note" data-i18n-html="hero.shipNote"><span class="note-main">ご注文600バーツ以上で<br>バンコク広域 無料配送！</span><span class="note-sub">(<a href="#delivery-area">配送エリア</a>以外の方もご相談ください)</span></div>
+        <div class="hero-note" data-i18n-html="hero.shipNote"><span class="note-main">ご注文500バーツ以上で<br>バンコク広域 無料配送！</span><span class="note-sub">(<a href="#delivery-area">配送エリア</a>以外の方もご相談ください)</span></div>
       </div>
       <h1 data-i18n="hero.h1">サイトウフーズの願い、それはおいしい生活@タイランド！</h1>
       <p data-i18n-html="hero.p">「おいしいね」ってみんなが笑顔になれる幸せは万国共通。<br>おいしいものを囲んでホッとできるひとときを、少しでもお手伝いできたら。<br>今日も皆様の食卓に、美味しさと笑顔をお届けします。</p>
@@ -696,6 +696,22 @@ async function supabase(method, path) {
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
+
+// Settingsの無料配送金額・配送料をヒーロー表記に反映(i18n.jsの{FREE}/{FEE}を置き換える)
+async function loadShippingSettings() {
+  try {
+    const rows = await supabase('GET', 'settings?select=key,value&key=in.(min_order_free_shipping,shipping_fee_amount)');
+    window.saitoShip = window.saitoShip || {};
+    rows.forEach(r => {
+      const v = parseFloat(r.value);
+      if (!isFinite(v) || v < 0) return;
+      if (r.key === 'min_order_free_shipping') { window.saitoShip.free = v; try { localStorage.setItem('saitofoods_ship_free', v); } catch (e) {} }
+      if (r.key === 'shipping_fee_amount') { window.saitoShip.fee = v; try { localStorage.setItem('saitofoods_ship_fee', v); } catch (e) {} }
+    });
+    if (typeof window.i18nApply === 'function') window.i18nApply();
+  } catch (e) { console.warn('shipping settings load failed', e); }
+}
+loadShippingSettings();
 
 // ヘッダーのカート個数(product_list.html/cart.htmlと同じlocalStorageキー)
 // 検索欄の×(クリア)ボタン共通処理。他の検索欄でも同じ2関数を使い回す想定。
