@@ -421,7 +421,7 @@
   .mg-modal-checkbox { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; color: var(--ink); cursor: pointer; }
   .mg-modal-checkbox input { width: 15px; height: 15px; cursor: pointer; }
 </style>
-<script src="i18n.js?v=20261117a"></script>
+<script src="i18n.js?v=20261117b"></script>
 </head>
 <body>
 <div id="migration-guide-modal" class="mg-modal-overlay">
@@ -696,22 +696,6 @@ async function supabase(method, path) {
   const text = await res.text();
   return text ? JSON.parse(text) : [];
 }
-
-// Settingsの無料配送金額・配送料をヒーロー表記に反映(i18n.jsの{FREE}/{FEE}を置き換える)
-async function loadShippingSettings() {
-  try {
-    const rows = await supabase('GET', 'settings?select=key,value&key=in.(min_order_free_shipping,shipping_fee_amount)');
-    window.saitoShip = window.saitoShip || {};
-    rows.forEach(r => {
-      const v = parseFloat(r.value);
-      if (!isFinite(v) || v < 0) return;
-      if (r.key === 'min_order_free_shipping') { window.saitoShip.free = v; try { localStorage.setItem('saitofoods_ship_free', v); } catch (e) {} }
-      if (r.key === 'shipping_fee_amount') { window.saitoShip.fee = v; try { localStorage.setItem('saitofoods_ship_fee', v); } catch (e) {} }
-    });
-    if (typeof window.i18nApply === 'function') window.i18nApply();
-  } catch (e) { console.warn('shipping settings load failed', e); }
-}
-loadShippingSettings();
 
 // ヘッダーのカート個数(product_list.html/cart.htmlと同じlocalStorageキー)
 // 検索欄の×(クリア)ボタン共通処理。他の検索欄でも同じ2関数を使い回す想定。

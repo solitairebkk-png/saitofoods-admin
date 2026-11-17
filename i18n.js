@@ -101,8 +101,8 @@
     // ---- user_guide.html ----
     'guide.h1': { ja: 'ユーザーガイド / User Guide', en: 'User Guide' },
     'guide.item1': { ja: 'トップページの配送エリアをご確認くださいませ。', en: 'Please check the delivery area on the top page.' },
-    'guide.item2': { ja: '配送エリア内はご購入代金合計600baht以上で送料無料で配送サービスを承っております。', en: 'Within the delivery area, orders totaling 600 baht or more qualify for free delivery.' },
-    'guide.item2sub': { ja: '※お買い物合計金額600baht以下の配送は別途配送料がかかります。', en: '※ A separate delivery fee applies for orders totaling less than 600 baht.' },
+    'guide.item2': { ja: '配送エリア内はご購入代金合計{FREE}baht以上で送料無料で配送サービスを承っております。', en: 'Within the delivery area, orders totaling {FREE} baht or more qualify for free delivery.' },
+    'guide.item2sub': { ja: '※お買い物合計金額{FREE}baht未満の配送は別途配送料がかかります。', en: '※ A separate delivery fee applies for orders totaling less than {FREE} baht.' },
     'guide.item3': { ja: '会員登録を完了してからご注文をお願いいたします。お支払いは商品到着時にタイバーツ現金にてお支払いいただくか、QRコード、銀行振込みをご利用いただけます。', en: 'Please complete member registration before ordering. Payment can be made in Thai baht cash on delivery, or by QR code / bank transfer.' },
     'guide.item3sub': { ja: '※口座番号等々はご注文時にご案内しております。', en: '※ Bank account details are provided at the time of your order.' },
     'guide.item4': { ja: '配送エリア外への配送に関しましてはお問い合わせくださいませ。ご登録の際は必ずother Provincesを選択くださいませ。', en: 'Please contact us regarding delivery outside our regular delivery area. When registering, please be sure to select "Other Provinces."' },
@@ -410,5 +410,31 @@
   window.i18nGetLang = getLang;
   window.i18nText = textFor;
 
-  document.addEventListener('DOMContentLoaded', apply);
+  // {FREE}/{FEE} を使う表記があるページだけ、Settingsの値をSupabaseから読み込んで反映する
+  function loadShipSettings() {
+    var used = false;
+    document.querySelectorAll('[data-i18n],[data-i18n-html]').forEach(function (el) {
+      var e = DICT[el.getAttribute('data-i18n') || el.getAttribute('data-i18n-html')];
+      if (e && /\{(FREE|FEE)\}/.test((e.ja || '') + (e.en || ''))) used = true;
+    });
+    if (!used) return;
+    var url = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+    var key = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+    fetch(url + '/rest/v1/settings?select=key,value&key=in.(min_order_free_shipping,shipping_fee_amount)', {
+      headers: { apikey: key, Authorization: 'Bearer ' + key }
+    }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+      window.saitoShip = window.saitoShip || {};
+      rows.forEach(function (r) {
+        var v = parseFloat(r.value);
+        if (!isFinite(v) || v < 0) return;
+        var name = r.key === 'min_order_free_shipping' ? 'free' : r.key === 'shipping_fee_amount' ? 'fee' : null;
+        if (!name) return;
+        window.saitoShip[name] = v;
+        try { localStorage.setItem('saitofoods_ship_' + name, v); } catch (e) {}
+      });
+      apply();
+    }).catch(function (e) { console.warn('shipping settings load failed', e); });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { apply(); loadShipSettings(); });
 })();
