@@ -349,6 +349,7 @@
   .calendar-weekdays .wd-sun { color: #D32F2F; }
   .calendar-col .calendar-grid { gap: 3px; }
   .calendar-col .calendar-cell { font-size: 15px; border-radius: 8px; }
+  .calendar-col .calendar-cell.other-month { font-size: 12px; }
   .calendar-col .calendar-cell.closed-day { padding-bottom: 14px; }
   .calendar-col .calendar-cell.closed-day::after { font-size: 10px; bottom: 4px; }
   .calendar-col .area-dot { width: 16px; height: 16px; border-radius: 4px; font-size: 11px; bottom: 2px; }
@@ -363,6 +364,7 @@
     .top-info-col.calendar-col { flex: 1 1 auto; max-width: 100%; }
     .calendar-col .calendar-card { padding: 12px 10px 10px; }
     .calendar-col .calendar-weekdays { font-size: 11px; letter-spacing: 0; }
+    .calendar-col .calendar-cell.other-month { font-size: 10px; }
     .calendar-col .calendar-cell.closed-day { padding-bottom: 11px; }
     .calendar-col .calendar-cell.closed-day::after { font-size: 8.5px; bottom: 3px; }
     .calendar-col .area-dot { width: 13px; height: 13px; font-size: 9.5px; }
@@ -1020,7 +1022,8 @@ function renderCalendar() {
     if (isDeliveryDay && dayOfWeek === 3) dots += '<span class="area-dot nichada" title="ニチャダタニ配送日(13:00-15:00) / Nichada Thani delivery (13:00-15:00)">N</span>'; // 毎週水曜日
     if (isDeliveryDay && isPattayaDay) dots += '<span class="area-dot pattaya" title="パタヤ配送日 / Pattaya delivery">P</span>';
 
-    html += `<div class="${cls}">${d}${dots}</div>`;
+    const label = isOtherMonth ? `${dateObj.getMonth() + 1}/${d}` : d; // 前月・翌月は「11/29」のように月も表示
+    html += `<div class="${cls}">${label}${dots}</div>`;
   }
 
   gridEl.innerHTML = html;
