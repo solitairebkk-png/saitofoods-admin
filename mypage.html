@@ -116,6 +116,8 @@
   .form-input { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 14px; font-family: inherit; color: var(--text); background: var(--white); outline: none; }
   .form-input:focus { border-color: var(--yellow-dark); }
   .form-hint { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .form-group label.req-label::after { content: ' *'; color: #c0392b; font-weight: 700; }
+  .form-input.input-missing { border-color: #c0392b !important; background: #fff5f4; }
   .password-field { position: relative; }
   .password-field .form-input { padding-right: 44px; }
   .password-toggle-btn {
@@ -424,6 +426,11 @@
         </div>
       </div>
       <div id="mypage-main">
+        <div class="card" id="tax-tel-notice" style="display:none;border:2px solid #c0392b;background:#fff5f4;">
+          <div style="font-size:14px;font-weight:700;color:#c0392b;margin-bottom:6px;" data-i18n="my.taxTelNoticeTitle">【お願い】会社の電話番号をご登録ください</div>
+          <div class="form-hint" style="margin:0 0 10px;color:#5a2a25;" data-i18n="my.taxTelNotice">TAXインボイスの登録情報に、会社の電話番号が必要になりました。下の「領収書・TAXインボイス」欄から電話番号を入力して保存してください。</div>
+          <button class="submit-btn" type="button" onclick="goToTaxTel()" data-i18n="my.taxTelNoticeBtn">電話番号を入力する</button>
+        </div>
         <div class="card">
           <div class="welcome" id="welcome-name"></div>
           <div class="point-box">
@@ -529,27 +536,32 @@
           </label>
           <div class="form-hint" data-i18n="my.taxHint">ご登録いただくと、ご注文のたびにコメント欄へご記入いただかなくても、当店の経理がTAXインボイスを作成します。</div>
           <div id="tax-fields" style="display:none;margin-top:14px;">
+            <div class="form-hint" style="margin:0 0 12px;color:#c0392b;font-weight:700;" data-i18n="my.taxAllRequired">※ すべての項目が必須です(未入力の場合は保存できません)</div>
             <div class="form-group">
-              <label data-i18n="my.taxCompanyLabel">会社名 / Company Name</label>
-              <input type="text" class="form-input" id="tax-company-name" maxlength="200" placeholder="ABC CO., LTD.">
+              <label class="req-label" data-i18n="my.taxCompanyLabel">会社名 / Company Name</label>
+              <input type="text" class="form-input" id="tax-company-name" maxlength="200" placeholder="ABC CO., LTD." required>
             </div>
             <div class="form-group">
-              <label data-i18n="my.taxAddressLabel">会社の住所 / Company Address</label>
-              <input type="text" class="form-input" id="tax-company-address" maxlength="400">
+              <label class="req-label" data-i18n="my.taxAddressLabel">会社の住所 / Company Address</label>
+              <input type="text" class="form-input" id="tax-company-address" maxlength="400" required>
             </div>
             <div class="form-group">
-              <label data-i18n="my.taxIdLabel">納税者番号(13桁) / Tax ID (13 digits)</label>
-              <input type="text" class="form-input" id="tax-id" inputmode="numeric" maxlength="17" placeholder="0105565201666">
+              <label class="req-label" data-i18n="my.taxTelLabel">会社の電話番号 / Company Phone Number</label>
+              <input type="tel" class="form-input" id="tax-company-tel" inputmode="tel" maxlength="30" placeholder="02-123-4567" required>
             </div>
             <div class="form-group">
-              <label data-i18n="my.taxBranchLabel">本店・支店 / Head Office or Branch</label>
-              <select class="form-input" id="tax-branch-type" onchange="onTaxBranchChange()">
+              <label class="req-label" data-i18n="my.taxIdLabel">納税者番号(13桁) / Tax ID (13 digits)</label>
+              <input type="text" class="form-input" id="tax-id" inputmode="numeric" maxlength="17" placeholder="0105565201666" required>
+            </div>
+            <div class="form-group">
+              <label class="req-label" data-i18n="my.taxBranchLabel">本店・支店 / Head Office or Branch</label>
+              <select class="form-input" id="tax-branch-type" onchange="onTaxBranchChange()" required>
                 <option value="head" data-i18n="my.taxHead">本店 / Head Office</option>
                 <option value="branch" data-i18n="my.taxBranch">支店 / Branch</option>
               </select>
             </div>
             <div class="form-group" id="tax-branch-no-group" style="display:none;">
-              <label data-i18n="my.taxBranchNoLabel">支店番号(5桁) / Branch No. (5 digits)</label>
+              <label class="req-label" data-i18n="my.taxBranchNoLabel">支店番号(5桁) / Branch No. (5 digits)</label>
               <input type="text" class="form-input" id="tax-branch-no" inputmode="numeric" maxlength="5" placeholder="00001">
             </div>
           </div>
@@ -969,7 +981,7 @@ async function loadMyPage(user) {
   await supabaseClient.rpc('sync_own_email');
   let { data: customerRow, error } = await supabaseClient
     .from('customers')
-    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
+    .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_company_tel, tax_id, tax_branch_type, tax_branch_no')
     .eq('auth_user_id', user.id)
     .single();
   if ((error || !customerRow) && user.email) {
@@ -1003,7 +1015,7 @@ async function loadMyPage(user) {
       if (attempt > 0) await sleep(500 * attempt);
       const retry = await supabaseClient
         .from('customers')
-        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
+        .select('id, family_name, first_name, point_balance, last_purchase_date, email, tel1, address1, address2, area_id, condo_name, sms_notify, tax_invoice_needed, tax_company_name, tax_company_address, tax_company_tel, tax_id, tax_branch_type, tax_branch_no')
         .eq('auth_user_id', user.id)
         .single();
       customerRow = retry.data;
@@ -1583,10 +1595,20 @@ function fillTaxForm(c) {
   document.getElementById('tax-needed').checked = !!c.tax_invoice_needed;
   document.getElementById('tax-company-name').value = c.tax_company_name || '';
   document.getElementById('tax-company-address').value = c.tax_company_address || '';
+  document.getElementById('tax-company-tel').value = c.tax_company_tel || '';
   document.getElementById('tax-id').value = c.tax_id || '';
   document.getElementById('tax-branch-type').value = c.tax_branch_type === 'branch' ? 'branch' : 'head';
   document.getElementById('tax-branch-no').value = (c.tax_branch_type === 'branch' && c.tax_branch_no) ? c.tax_branch_no : '';
   onTaxNeededChange();
+  // 既に登録済みで電話番号だけ未登録の方には、マイページを開いた時に入力をお願いする案内を出す(2026-11-19)
+  const needTel = !!c.tax_invoice_needed && !(c.tax_company_tel || '').trim();
+  document.getElementById('tax-tel-notice').style.display = needTel ? 'block' : 'none';
+  document.getElementById('tax-company-tel').classList.toggle('input-missing', needTel);
+}
+function goToTaxTel() {
+  const card = document.getElementById('tax-card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => { const el = document.getElementById('tax-company-tel'); if (el) el.focus(); }, 400);
 }
 function onTaxNeededChange() {
   const on = document.getElementById('tax-needed').checked;
@@ -1606,10 +1628,37 @@ function showTaxMsg(msg, isError) {
 async function saveTaxInfo() {
   const needed = document.getElementById('tax-needed').checked;
   const branchType = document.getElementById('tax-branch-type').value;
+  // 会社情報を登録する場合は、すべての項目が入力されていないと保存できない(2026-11-19)
+  if (needed) {
+    ['tax-company-name', 'tax-company-address', 'tax-company-tel', 'tax-id', 'tax-branch-no']
+      .forEach(id => document.getElementById(id).classList.remove('input-missing'));
+    const checks = [
+      ['tax-company-name', !document.getElementById('tax-company-name').value.trim()],
+      ['tax-company-address', !document.getElementById('tax-company-address').value.trim()],
+      ['tax-company-tel', !document.getElementById('tax-company-tel').value.trim()],
+      ['tax-id', !document.getElementById('tax-id').value.trim()],
+      ['tax-branch-no', branchType === 'branch' && !document.getElementById('tax-branch-no').value.trim()],
+    ];
+    const missing = checks.filter(c => c[1]).map(c => c[0]);
+    if (missing.length) {
+      missing.forEach(id => document.getElementById(id).classList.add('input-missing'));
+      document.getElementById(missing[0]).focus();
+      showTaxMsg(i18nText('my.taxErrIncomplete'), true);
+      return;
+    }
+    const telDigits = document.getElementById('tax-company-tel').value.replace(/[^0-9]/g, '');
+    if (telDigits.length < 8 || telDigits.length > 15) {
+      document.getElementById('tax-company-tel').classList.add('input-missing');
+      document.getElementById('tax-company-tel').focus();
+      showTaxMsg(i18nText('my.taxErrTel'), true);
+      return;
+    }
+  }
   const args = {
     p_needed: needed,
     p_company_name: needed ? document.getElementById('tax-company-name').value.trim() : null,
     p_company_address: needed ? document.getElementById('tax-company-address').value.trim() : null,
+    p_company_tel: needed ? document.getElementById('tax-company-tel').value.trim() : null,
     p_tax_id: needed ? document.getElementById('tax-id').value.trim() : null,
     p_branch_type: needed ? branchType : null,
     p_branch_no: (needed && branchType === 'branch') ? document.getElementById('tax-branch-no').value.trim() : null,
@@ -1619,6 +1668,7 @@ async function saveTaxInfo() {
     const key = {
       TAX_INFO_INCOMPLETE: 'my.taxErrIncomplete',
       TAX_ID_INVALID: 'my.taxErrTaxId',
+      TAX_TEL_INVALID: 'my.taxErrTel',
       BRANCH_NO_REQUIRED: 'my.taxErrBranchNo',
       BRANCH_NO_INVALID: 'my.taxErrBranchNo',
     };
@@ -1628,7 +1678,7 @@ async function saveTaxInfo() {
   }
   // 5桁にそろえた支店番号などを画面に反映するため、保存後の値を読み直す
   const { data } = await supabaseClient.from('customers')
-    .select('tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no')
+    .select('tax_invoice_needed, tax_company_name, tax_company_address, tax_company_tel, tax_id, tax_branch_type, tax_branch_no')
     .eq('id', currentCustomer.id).single();
   if (data) { Object.assign(currentCustomer, data); fillTaxForm(data); }
   showTaxMsg(i18nText('my.taxSaved'));

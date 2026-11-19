@@ -506,10 +506,11 @@ function toggleEdit(customerId) {
           <input type="checkbox" class="e-tax-on" ${c.tax_invoice_needed ? 'checked' : ''} onchange="onTaxEditToggle(this)">
           🧾 TAXインボイス用の会社情報を登録する / Register company info for tax invoice
         </label>
-        <div style="font-size:10.5px;color:var(--text-muted);margin:2px 0 6px;">登録すると、このお客様は注文時に「TAXインボイスが必要」を選べます(書類は経理が作成)。4項目すべて必須です。</div>
+        <div style="font-size:10.5px;color:var(--text-muted);margin:2px 0 6px;">登録すると、このお客様は注文時に「TAXインボイスが必要」を選べます(書類は経理が作成)。5項目(会社名・住所・電話番号・納税者番号・本店/支店)すべて必須です。</div>
         <div class="edit-grid tax-fields" style="display:${c.tax_invoice_needed ? 'grid' : 'none'};margin-bottom:0;">
           <label>会社名 / Company name<input type="text" class="e-tax-name" maxlength="200" value="${escapeHtml(c.tax_company_name || '')}"></label>
           <label>会社の住所 / Company address<input type="text" class="e-tax-addr" maxlength="400" value="${escapeHtml(c.tax_company_address || '')}"></label>
+          <label>会社の電話番号 / Company phone<input type="tel" class="e-tax-tel" inputmode="tel" maxlength="30" value="${escapeHtml(c.tax_company_tel || '')}"></label>
           <label>納税者番号(13桁) / Tax ID<input type="text" class="e-tax-id" inputmode="numeric" maxlength="17" value="${escapeHtml(c.tax_id || '')}"></label>
           <label>本店・支店 / Head office or branch
             <select class="e-tax-bt" onchange="onTaxEditToggle(this)">
@@ -565,10 +566,13 @@ async function saveCustomer(customerId) {
   if (taxOn) {
     const name = g('.e-tax-name').value.trim();
     const addr = g('.e-tax-addr').value.trim();
+    const tel = g('.e-tax-tel').value.trim();
     const taxId = g('.e-tax-id').value.replace(/[^0-9]/g, '');
     const bt = g('.e-tax-bt').value;
     let bn = g('.e-tax-bn').value.replace(/[^0-9]/g, '');
-    if (!name || !addr || !taxId) { showSaveMsg('会社名・住所・納税者番号をすべて入力してください / Fill in company name, address and Tax ID', true); return; }
+    if (!name || !addr || !tel || !taxId) { showSaveMsg('会社名・住所・電話番号・納税者番号をすべて入力してください / Fill in company name, address, phone and Tax ID', true); return; }
+    const telDigits = tel.replace(/[^0-9]/g, '');
+    if (telDigits.length < 8 || telDigits.length > 15) { showSaveMsg('電話番号は8〜15桁の数字です / Phone must be 8-15 digits', true); return; }
     if (!/^[0-9]{13}$/.test(taxId)) { showSaveMsg('納税者番号は13桁の数字です / Tax ID must be 13 digits', true); return; }
     if (bt === 'branch') {
       if (!bn) { showSaveMsg('支店番号を入力してください / Enter the branch number', true); return; }
@@ -576,9 +580,9 @@ async function saveCustomer(customerId) {
     } else {
       bn = '00000';
     }
-    Object.assign(payload, { tax_invoice_needed: true, tax_company_name: name, tax_company_address: addr, tax_id: taxId, tax_branch_type: bt, tax_branch_no: bn });
+    Object.assign(payload, { tax_invoice_needed: true, tax_company_name: name, tax_company_address: addr, tax_company_tel: tel, tax_id: taxId, tax_branch_type: bt, tax_branch_no: bn });
   } else {
-    Object.assign(payload, { tax_invoice_needed: false, tax_company_name: null, tax_company_address: null, tax_id: null, tax_branch_type: null, tax_branch_no: null });
+    Object.assign(payload, { tax_invoice_needed: false, tax_company_name: null, tax_company_address: null, tax_company_tel: null, tax_id: null, tax_branch_type: null, tax_branch_no: null });
   }
 
   const { error } = await supabaseClient.from('customers').update(payload).eq('id', customerId);

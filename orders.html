@@ -2291,7 +2291,7 @@ async function _loadOrdersInner() {
       walkin_nationality, walkin_age_bracket, walkin_gender,
       is_store_pickup,
       is_wholesale, wholesale_restaurant_name,
-      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, tax_invoice_needed, tax_company_name, tax_company_address, tax_id, tax_branch_type, tax_branch_no, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
+      customers!customer_id ( family_name, first_name, tel1, tel2, email, address1, address2, area_id, tax_invoice_needed, tax_company_name, tax_company_address, tax_company_tel, tax_id, tax_branch_type, tax_branch_no, areas ( name ), customer_delivery_memos ( memo, memo_by, memo_at ) ),
       order_items ( id, product_id, product_name_snapshot, quantity, sale_type, unit_price, price, total_price, products ( name_en, name_th, unit_label ) )
     `)
     .order('delivery_date', { ascending: true })
@@ -3295,6 +3295,7 @@ function renderOrderRow(order, idx, showDate, countForDate, displayDate) {
           + `🧾 TAX INVOICE / ต้องการใบกำกับภาษี`
           + `<div style="font-weight:600;font-size:12px;">${escapeHtml(detail)}</div>`
           + (taxCust.tax_company_address ? `<div style="font-weight:500;font-size:11.5px;">${escapeHtml(taxCust.tax_company_address)}</div>` : '')
+          + (taxCust.tax_company_tel ? `<div style="font-weight:500;font-size:11.5px;">Tel ${escapeHtml(taxCust.tax_company_tel)}</div>` : '')
           + `</div>`;
       })()
     : '';
