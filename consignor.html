@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Saito Foods | Consignment Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#222; --sub:#6b6b6b; --line:#e3e0d8; --accent:#b3261e; --ok:#2e7d32; --warn:#b26a00; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; flex:1; min-width:180px; }
+  header .who { color:var(--sub); font-size:13px; }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  button, .btn { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.small { padding:4px 10px; font-size:13px; }
+  input { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; margin:0 0 16px; }
+  .tabs button { border-radius:999px; }
+  .tabs button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .card .k { color:var(--sub); font-size:13px; }
+  .card .v { font-size:22px; font-weight:700; margin-top:4px; }
+  .card .s { color:var(--sub); font-size:12px; margin-top:2px; }
+  h2 { font-size:16px; margin:20px 0 8px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:14px; }
+  th, td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:#faf9f6; color:var(--sub); font-weight:600; font-size:13px; }
+  td.n, th.n { text-align:right; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  .wrap { overflow-x:auto; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); }
+  .red { color:var(--accent); font-weight:600; } .amber { color:var(--warn); font-weight:600; } .green { color:var(--ok); }
+  .note { color:var(--sub); font-size:12px; margin:8px 0; }
+  .center { max-width:420px; margin:48px auto; }
+  .msg { padding:10px 12px; border-radius:8px; background:#eef6ee; border:1px solid #cfe5cf; margin-top:12px; }
+  .err { background:#fdeceb; border-color:#f3c5c1; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Saito Foods</h1>
+  <span class="who" id="who"></span>
+  <button class="small" id="langBtn"></button>
+  <button class="small hidden" id="logoutBtn"></button>
+</header>
+<main id="app"></main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const T = {
+  ja: {
+    title:'委託販売ダッシュボード', logout:'ログアウト', lang:'English',
+    loginTitle:'ログイン', loginDesc:'登録済みのメールアドレスを入力してください。ログイン用のリンクをお送りします。',
+    email:'メールアドレス', sendLink:'ログインリンクを送る', linkSent:'ログインリンクを送りました。メールをご確認ください。',
+    pendingTitle:'登録の確認待ちです', pendingDesc:'このメールアドレスは、まだ委託者として登録されていません。サイトウフーズの担当者へご連絡ください。',
+    tabDash:'ダッシュボード', tabStock:'在庫・賞味期限', tabSales:'販売', tabStatements:'精算', tabProducts:'商品', tabSim:'価格シミュレーター',
+    totalQty:'累計販売数', totalSales:'累計売上', totalComm:'サイトウフーズへの手数料', totalPayout:'お受け取り額(累計)',
+    settled:'精算済み', unsettled:'未精算の残高', thisMonth:'今月', monthSales:'今月の売上', monthComm:'今月の手数料', monthPayout:'今月のお受け取り額',
+    rate:'手数料率', expiring:'賞味期限が近いもの(60日以内)', none:'該当なし',
+    product:'商品', lot:'ロット', expiry:'賞味期限', daysLeft:'残り日数', received:'入荷数', remaining:'残り', stockNow:'現在庫', date:'日付', qty:'数量', sales:'売上', comm:'手数料', payout:'お受け取り額',
+    from:'開始日', to:'終了日', show:'表示', total:'合計', month:'月', status:'状態', issued:'発行済み', paid:'支払い済み', paidOn:'支払日',
+    price:'販売価格', fda:'食品登録番号', since:'取扱開始', simPrice:'販売価格(1個あたり)', simQty:'販売数', simUnit:'1個あたり', simTotal:'合計',
+    simNote:'手数料は売値の一律%のみで、追加費用はありません。',
+    note1:'数字は、配達が完了した注文をもとに集計しています。', days:'日', loading:'読み込み中…', error:'読み込めませんでした。時間をおいて、もう一度お試しください。',
+    stockNote:'賞味期限の近いロットから先に売れた前提で、ロットごとの残りを計算しています。実際の在庫と違うときは、サイトウフーズへお知らせください。'
+  },
+  en: {
+    title:'Consignment Dashboard', logout:'Log out', lang:'日本語',
+    loginTitle:'Log in', loginDesc:'Enter your registered email address. We will send you a login link.',
+    email:'Email address', sendLink:'Send login link', linkSent:'We sent you a login link. Please check your email.',
+    pendingTitle:'Registration pending', pendingDesc:'This email address is not registered as a consignor yet. Please contact Saito Foods.',
+    tabDash:'Dashboard', tabStock:'Stock & expiry', tabSales:'Sales', tabStatements:'Statements', tabProducts:'Products', tabSim:'Price simulator',
+    totalQty:'Units sold (total)', totalSales:'Sales (total)', totalComm:'Commission to Saito Foods', totalPayout:'Your payout (total)',
+    settled:'Settled', unsettled:'Unsettled balance', thisMonth:'This month', monthSales:'Sales this month', monthComm:'Commission this month', monthPayout:'Payout this month',
+    rate:'Commission rate', expiring:'Expiring within 60 days', none:'None',
+    product:'Product', lot:'Lot', expiry:'Best before', daysLeft:'Days left', received:'Received', remaining:'Remaining', stockNow:'In stock', date:'Date', qty:'Qty', sales:'Sales', comm:'Commission', payout:'Your payout',
+    from:'From', to:'To', show:'Show', total:'Total', month:'Month', status:'Status', issued:'Issued', paid:'Paid', paidOn:'Paid on',
+    price:'Selling price', fda:'Food registration no.', since:'Since', simPrice:'Selling price (per unit)', simQty:'Units sold', simUnit:'Per unit', simTotal:'Total',
+    simNote:'Commission is a flat percentage of the selling price. No additional fees.',
+    note1:'Figures are based on completed deliveries.', days:'d', loading:'Loading…', error:'Could not load data. Please try again later.',
+    stockNote:'Lot balances assume the lots closest to expiry are sold first. If this differs from your actual stock, please tell Saito Foods.'
+  }
+};
+
+let lang = (navigator.language || '').startsWith('ja') ? 'ja' : 'en';
+try { const saved = localStorage.getItem('cons_lang'); if (saved === 'ja' || saved === 'en') lang = saved; } catch (e) {}
+const t = k => (T[lang] && T[lang][k]) || k;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '฿' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const num = n => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const cleanName = s => String(s || '').replace(/\s*=[A-Za-z0-9-]+\s*$/, '').replace(/\s*\([A-Za-z]-?\d+\)\s*/g, ' ').trim();
+const pname = r => lang === 'en' ? cleanName(r.name_en || r.name_ja) : (r.name_ja || r.name_en || '');
+const today = () => new Date().toISOString().slice(0, 10);
+const monthStart = () => today().slice(0, 8) + '01';
+
+const app = document.getElementById('app');
+const state = { session:null, info:null, tab:'dash', data:{}, from:monthStart(), to:today(), simPrice:1000, simQty:1 };
+
+function setHeader() {
+  document.getElementById('title').textContent = 'Saito Foods | ' + t('title');
+  document.getElementById('langBtn').textContent = t('lang');
+  const lo = document.getElementById('logoutBtn');
+  lo.textContent = t('logout');
+  lo.classList.toggle('hidden', !state.session);
+  const nm = state.info ? (lang === 'en' ? (state.info.name_en || state.info.name_ja) : state.info.name_ja) : (state.session ? state.session.user.email : '');
+  document.getElementById('who').textContent = nm || '';
+}
+
+document.getElementById('langBtn').onclick = () => {
+  lang = lang === 'ja' ? 'en' : 'ja';
+  try { localStorage.setItem('cons_lang', lang); } catch (e) {}
+  document.documentElement.lang = lang;
+  render();
+};
+document.getElementById('logoutBtn').onclick = async () => { await sb.auth.signOut(); state.session = null; state.info = null; render(); };
+
+function renderLogin(msg, isErr) {
+  setHeader();
+  app.innerHTML = `<div class="card center">
+    <h2 style="margin-top:0">${esc(t('loginTitle'))}</h2>
+    <p class="note">${esc(t('loginDesc'))}</p>
+    <input id="email" type="email" autocomplete="email" placeholder="${esc(t('email'))}">
+    <div style="height:8px"></div>
+    <button class="primary" id="sendBtn">${esc(t('sendLink'))}</button>
+    ${msg ? `<div class="msg ${isErr ? 'err' : ''}">${esc(msg)}</div>` : ''}
+  </div>`;
+  document.getElementById('sendBtn').onclick = async () => {
+    const email = document.getElementById('email').value.trim();
+    if (!email) return;
+    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+    renderLogin(error ? error.message : t('linkSent'), !!error);
+  };
+}
+
+function renderPending() {
+  setHeader();
+  app.innerHTML = `<div class="card center"><h2 style="margin-top:0">${esc(t('pendingTitle'))}</h2><p>${esc(t('pendingDesc'))}</p><p class="note">${esc(state.session.user.email)}</p></div>`;
+}
+
+async function loadAll() {
+  app.innerHTML = `<p class="note">${esc(t('loading'))}</p>`;
+  const [sum, stock, stm, prods] = await Promise.all([
+    sb.rpc('consignor_summary'), sb.rpc('consignor_stock'), sb.rpc('consignor_statements'), sb.rpc('consignor_products')
+  ]);
+  if (sum.error || stock.error || stm.error || prods.error) throw (sum.error || stock.error || stm.error || prods.error);
+  state.data = { sum: (sum.data || [])[0] || {}, stock: stock.data || [], stm: stm.data || [], prods: prods.data || [] };
+  await loadSales();
+}
+
+async function loadSales() {
+  const args = {};
+  if (state.from) args.p_from = state.from;
+  if (state.to) args.p_to = state.to;
+  const r = await sb.rpc('consignor_sales', args);
+  if (r.error) throw r.error;
+  state.data.sales = r.data || [];
+}
+
+function card(k, v, s) { return `<div class="card"><div class="k">${esc(k)}</div><div class="v">${v}</div>${s ? `<div class="s">${esc(s)}</div>` : ''}</div>`; }
+function daysClass(d) { return d == null ? '' : d <= 30 ? 'red' : d <= 60 ? 'amber' : ''; }
+
+function viewDash() {
+  const s = state.data.sum, rate = state.info ? Number(state.info.commission_rate) : 0;
+  const soon = state.data.stock.filter(r => r.lot_no !== null && Number(r.remaining_qty) > 0 && r.days_to_expiry != null && r.days_to_expiry <= 60);
+  return `<div class="grid">
+    ${card(t('totalQty'), num(s.total_qty))}
+    ${card(t('totalSales'), money(s.total_sales))}
+    ${card(t('totalComm'), money(s.total_commission), t('rate') + ' ' + rate + '%')}
+    ${card(t('totalPayout'), money(s.total_payout))}
+    ${card(t('settled'), money(s.settled_payout))}
+    ${card(t('unsettled'), money(s.unsettled_payout))}
+  </div>
+  <h2>${esc(t('thisMonth'))}</h2>
+  <div class="grid">
+    ${card(t('monthSales'), money(s.month_sales))}
+    ${card(t('monthComm'), money(s.month_commission))}
+    ${card(t('monthPayout'), money(s.month_payout))}
+  </div>
+  <h2>${esc(t('expiring'))}</h2>
+  ${soon.length ? `<div class="wrap"><table><tr><th>${esc(t('product'))}</th><th>${esc(t('lot'))}</th><th>${esc(t('expiry'))}</th><th class="n">${esc(t('daysLeft'))}</th><th class="n">${esc(t('remaining'))}</th></tr>
+    ${soon.map(r => `<tr><td>${esc(pname(r))}</td><td>${esc(r.lot_no || '')}</td><td>${esc(r.expiry_date)}</td><td class="n ${daysClass(r.days_to_expiry)}">${r.days_to_expiry}</td><td class="n">${num(r.remaining_qty)}</td></tr>`).join('')}</table></div>` : `<p class="note">${esc(t('none'))}</p>`}
+  <p class="note">${esc(t('note1'))}</p>`;
+}
+
+function viewStock() {
+  const rows = state.data.stock;
+  const byProd = new Map();
+  rows.forEach(r => { if (!byProd.has(r.product_id)) byProd.set(r.product_id, r); });
+  const lots = rows.filter(r => r.lot_no !== null || r.expiry_date !== null || r.received_qty !== null);
+  return `<h2 style="margin-top:0">${esc(t('stockNow'))}</h2>
+  <div class="wrap"><table><tr><th>${esc(t('product'))}</th><th class="n">${esc(t('stockNow'))}</th></tr>
+  ${[...byProd.values()].map(r => `<tr><td>${esc(pname(r))}</td><td class="n">${num(r.product_stock)}</td></tr>`).join('') || `<tr><td colspan="2">${esc(t('none'))}</td></tr>`}</table></div>
+  <h2>${esc(t('lot'))} / ${esc(t('expiry'))}</h2>
+  <div class="wrap"><table><tr><th>${esc(t('product'))}</th><th>${esc(t('lot'))}</th><th>${esc(t('expiry'))}</th><th class="n">${esc(t('daysLeft'))}</th><th class="n">${esc(t('received'))}</th><th class="n">${esc(t('remaining'))}</th></tr>
+  ${lots.map(r => `<tr><td>${esc(pname(r))}</td><td>${esc(r.lot_no || '')}</td><td>${esc(r.expiry_date || '')}</td><td class="n ${Number(r.remaining_qty) > 0 ? daysClass(r.days_to_expiry) : ''}">${r.days_to_expiry == null ? '' : r.days_to_expiry}</td><td class="n">${num(r.received_qty)}</td><td class="n">${num(r.remaining_qty)}</td></tr>`).join('') || `<tr><td colspan="6">${esc(t('none'))}</td></tr>`}</table></div>
+  <p class="note">${esc(t('stockNote'))}</p>`;
+}
+
+function viewSales() {
+  const rows = state.data.sales;
+  const tot = rows.reduce((a, r) => ({ q: a.q + Number(r.qty), s: a.s + Number(r.sales_amount), c: a.c + Number(r.commission_amount), p: a.p + Number(r.payout_amount) }), { q:0, s:0, c:0, p:0 });
+  return `<div class="row" style="margin-bottom:12px">
+    <label>${esc(t('from'))} <input type="date" id="fromD" value="${esc(state.from)}" style="width:auto"></label>
+    <label>${esc(t('to'))} <input type="date" id="toD" value="${esc(state.to)}" style="width:auto"></label>
+    <button id="showBtn">${esc(t('show'))}</button></div>
+  <div class="wrap"><table><tr><th>${esc(t('date'))}</th><th>${esc(t('product'))}</th><th class="n">${esc(t('qty'))}</th><th class="n">${esc(t('sales'))}</th><th class="n">${esc(t('comm'))}</th><th class="n">${esc(t('payout'))}</th></tr>
+  ${rows.map(r => `<tr><td>${esc(r.sale_date)}</td><td>${esc(pname(r))}</td><td class="n">${num(r.qty)}</td><td class="n">${money(r.sales_amount)}</td><td class="n">${money(r.commission_amount)}</td><td class="n">${money(r.payout_amount)}</td></tr>`).join('') || `<tr><td colspan="6">${esc(t('none'))}</td></tr>`}
+  ${rows.length ? `<tr><th>${esc(t('total'))}</th><th></th><th class="n">${num(tot.q)}</th><th class="n">${money(tot.s)}</th><th class="n">${money(tot.c)}</th><th class="n">${money(tot.p)}</th></tr>` : ''}</table></div>
+  <p class="note">${esc(t('note1'))}</p>`;
+}
+
+function viewStatements() {
+  const rows = state.data.stm;
+  return `<div class="wrap"><table><tr><th>${esc(t('month'))}</th><th class="n">${esc(t('sales'))}</th><th class="n">${esc(t('comm'))}</th><th class="n">${esc(t('payout'))}</th><th>${esc(t('status'))}</th><th>${esc(t('paidOn'))}</th></tr>
+  ${rows.map(r => `<tr><td>${esc(String(r.period_month).slice(0, 7))}</td><td class="n">${money(r.sales_amount)}</td><td class="n">${money(r.commission_amount)}</td><td class="n">${money(r.payout_amount)}</td><td><span class="pill ${r.status === 'paid' ? 'green' : ''}">${esc(r.status === 'paid' ? t('paid') : t('issued'))}</span></td><td>${esc(r.paid_at ? String(r.paid_at).slice(0, 10) : '')}</td></tr>`).join('') || `<tr><td colspan="6">${esc(t('none'))}</td></tr>`}</table></div>`;
+}
+
+function viewProducts() {
+  const rows = state.data.prods;
+  return `<div class="wrap"><table><tr><th>${esc(t('product'))}</th><th class="n">${esc(t('price'))}</th><th class="n">${esc(t('rate'))}</th><th>${esc(t('fda'))}</th><th>${esc(t('since'))}</th></tr>
+  ${rows.map(r => `<tr><td>${esc(pname(r))}</td><td class="n">${money(r.price)}</td><td class="n">${num(r.commission_rate)}%</td><td>${esc(r.fda_serial_no || '')}</td><td>${esc(r.started_on || '')}</td></tr>`).join('') || `<tr><td colspan="5">${esc(t('none'))}</td></tr>`}</table></div>`;
+}
+
+function viewSim() {
+  const rate = state.info ? Number(state.info.commission_rate) : 0;
+  const p = Number(state.simPrice) || 0, q = Number(state.simQty) || 0;
+  const comm = p * rate / 100, pay = p - comm;
+  return `<div class="card" style="max-width:480px">
+    <label class="k">${esc(t('simPrice'))}</label><input id="simP" type="number" min="0" step="1" value="${esc(state.simPrice)}">
+    <div style="height:8px"></div>
+    <label class="k">${esc(t('simQty'))}</label><input id="simQ" type="number" min="0" step="1" value="${esc(state.simQty)}">
+    <div class="wrap" style="margin-top:12px"><table>
+      <tr><th></th><th class="n">${esc(t('simUnit'))}</th><th class="n">${esc(t('simTotal'))}</th></tr>
+      <tr><td>${esc(t('sales'))}</td><td class="n">${money(p)}</td><td class="n">${money(p * q)}</td></tr>
+      <tr><td>${esc(t('comm'))} (${rate}%)</td><td class="n">${money(comm)}</td><td class="n">${money(comm * q)}</td></tr>
+      <tr><th>${esc(t('payout'))}</th><th class="n">${money(pay)}</th><th class="n">${money(pay * q)}</th></tr>
+    </table></div>
+    <p class="note">${esc(t('simNote'))}</p></div>`;
+}
+
+function renderMain() {
+  setHeader();
+  const tabs = [['dash','tabDash'],['stock','tabStock'],['sales','tabSales'],['statements','tabStatements'],['products','tabProducts'],['sim','tabSim']];
+  const views = { dash:viewDash, stock:viewStock, sales:viewSales, statements:viewStatements, products:viewProducts, sim:viewSim };
+  app.innerHTML = `<div class="tabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${esc(t(l))}</button>`).join('')}</div>${views[state.tab]()}`;
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; renderMain(); });
+  const showBtn = document.getElementById('showBtn');
+  if (showBtn) showBtn.onclick = async () => {
+    state.from = document.getElementById('fromD').value; state.to = document.getElementById('toD').value;
+    try { await loadSales(); } catch (e) { app.innerHTML = `<div class="msg err">${esc(t('error'))}</div>`; return; }
+    renderMain();
+  };
+  const sp = document.getElementById('simP'), sq = document.getElementById('simQ');
+  if (sp) { sp.oninput = () => { state.simPrice = sp.value; renderMainKeepFocus('simP'); }; sq.oninput = () => { state.simQty = sq.value; renderMainKeepFocus('simQ'); }; }
+}
+
+function renderMainKeepFocus(id) {
+  renderMain();
+  const el = document.getElementById(id);
+  if (el) { el.focus(); const v = el.value; el.value = ''; el.value = v; }
+}
+
+async function render() {
+  if (!state.session) return renderLogin();
+  if (!state.info) return renderPending();
+  renderMain();
+}
+
+async function init() {
+  const { data } = await sb.auth.getSession();
+  state.session = data.session;
+  state.info = null;
+  if (!state.session) return render();
+  const r = await sb.rpc('consignor_info');
+  if (r.error || !r.data || !r.data.length) { setHeader(); return renderPending(); }
+  state.info = r.data[0];
+  setHeader();
+  try { await loadAll(); } catch (e) { app.innerHTML = `<div class="msg err">${esc(t('error'))}</div>`; return; }
+  render();
+}
+
+sb.auth.onAuthStateChange((ev, session) => {
+  if (ev === 'SIGNED_OUT') init();
+  else if (ev === 'SIGNED_IN' && session && (!state.session || state.session.user.id !== session.user.id)) init();
+});
+document.documentElement.lang = lang;
+init();
+</script>
+</body>
+</html>

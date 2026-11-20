@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>委託販売の管理 | Saito Foods</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#222; --sub:#6b6b6b; --line:#e3e0d8; --accent:#b3261e; --ok:#2e7d32; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); font-size:15px; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; flex:1; min-width:180px; }
+  header .who { color:var(--sub); font-size:13px; }
+  main { max-width:1000px; margin:0 auto; padding:16px; }
+  button { font:inherit; border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 12px; cursor:pointer; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.small { padding:4px 10px; font-size:13px; }
+  input, select { font:inherit; border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; background:#fff; }
+  label { display:block; font-size:13px; color:var(--sub); margin-bottom:4px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1; min-width:150px; }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; margin:0 0 16px; }
+  .tabs button { border-radius:999px; }
+  .tabs button.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:14px; }
+  th, td { padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:#faf9f6; color:var(--sub); font-weight:600; font-size:13px; }
+  td.n, th.n { text-align:right; white-space:nowrap; }
+  tr:last-child td { border-bottom:none; }
+  .wrap { overflow-x:auto; margin-bottom:16px; }
+  .note { color:var(--sub); font-size:12px; margin:8px 0; }
+  .msg { padding:10px 12px; border-radius:8px; background:#eef6ee; border:1px solid #cfe5cf; margin:12px 0; }
+  .err { background:#fdeceb; border-color:#f3c5c1; }
+  .center { max-width:420px; margin:48px auto; }
+  .hidden { display:none; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid var(--line); }
+</style>
+</head>
+<body>
+<header>
+  <h1>委託販売の管理</h1>
+  <span class="who" id="who"></span>
+  <button class="small hidden" id="logoutBtn">ログアウト</button>
+</header>
+<main id="app"></main>
+
+<script>
+const SUPABASE_URL = 'https://sdjgmgyghnlpqydrnllj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => '฿' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const num = n => Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+const today = () => new Date().toISOString().slice(0, 10);
+const app = document.getElementById('app');
+const st = { session:null, isStaff:false, isAdmin:false, tab:'consignors', consignors:[], cid:null, msg:'', err:'', editing:null, found:[] };
+
+const MOVE = { receive:'入荷', return:'返品', dispose:'廃棄', adjust:'調整(±)' };
+
+function flash(m, isErr) { st.msg = isErr ? '' : m; st.err = isErr ? m : ''; }
+function banner() { return (st.msg ? `<div class="msg">${esc(st.msg)}</div>` : '') + (st.err ? `<div class="msg err">${esc(st.err)}</div>` : ''); }
+function consignorSelect() {
+  return `<div style="max-width:360px;margin-bottom:16px"><label>委託者</label><select id="cidSel">${st.consignors.map(c => `<option value="${esc(c.id)}" ${c.id === st.cid ? 'selected' : ''}>${esc(c.name_ja)}</option>`).join('')}</select></div>`;
+}
+function bindCid() { const s = document.getElementById('cidSel'); if (s) s.onchange = () => { st.cid = s.value; st.msg = st.err = ''; render(); }; }
+
+document.getElementById('logoutBtn').onclick = async () => { await sb.auth.signOut(); st.session = null; render(); };
+
+function renderLogin(msg) {
+  app.innerHTML = `<div class="card center"><h2>ログイン(スタッフ用)</h2>
+    <label>メールアドレス</label><input id="em" type="email" autocomplete="email">
+    <div style="height:8px"></div><label>パスワード</label><input id="pw" type="password" autocomplete="current-password">
+    <div style="height:12px"></div><button class="primary" id="go">ログイン</button>
+    ${msg ? `<div class="msg err">${esc(msg)}</div>` : ''}</div>`;
+  document.getElementById('go').onclick = async () => {
+    const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('em').value.trim(), password: document.getElementById('pw').value });
+    if (error) renderLogin(error.message); else init();
+  };
+}
+
+async function loadConsignors() {
+  const r = await sb.from('consignors').select('*').order('created_at');
+  if (r.error) throw r.error;
+  st.consignors = r.data || [];
+  if (!st.cid || !st.consignors.some(c => c.id === st.cid)) st.cid = st.consignors.length ? st.consignors[0].id : null;
+}
+
+/* ---------- 委託者 ---------- */
+async function viewConsignors() {
+  const links = {};
+  if (st.isAdmin) {
+    await Promise.all(st.consignors.map(async c => {
+      const r = await sb.rpc('consignment_list_users', { p_consignor_id: c.id });
+      links[c.id] = r.error ? [] : (r.data || []);
+    }));
+  }
+  const e = st.editing ? st.consignors.find(c => c.id === st.editing) : null;
+  return `<div class="card"><h2>${e ? '委託者を編集' : '委託者を追加'}</h2>
+    <div class="row">
+      <div><label>名前(日本語)</label><input id="nJa" value="${esc(e ? e.name_ja : '')}"></div>
+      <div><label>名前(英語)</label><input id="nEn" value="${esc(e ? e.name_en : '')}"></div>
+      <div><label>連絡先メール</label><input id="nMail" type="email" value="${esc(e ? e.contact_email : '')}"></div>
+      <div style="max-width:140px"><label>手数料率(%)</label><input id="nRate" type="number" min="0" max="100" step="0.5" value="${esc(e ? e.commission_rate : 30)}"></div>
+      <div style="max-width:120px"><label>状態</label><select id="nAct"><option value="1" ${!e || e.is_active ? 'selected' : ''}>有効</option><option value="0" ${e && !e.is_active ? 'selected' : ''}>停止</option></select></div>
+    </div>
+    <div style="margin-top:12px" class="row"><div style="flex:0"><button class="primary" id="saveC">${e ? '保存' : '追加'}</button></div>${e ? '<div style="flex:0"><button id="cancelC">キャンセル</button></div>' : ''}</div>
+  </div>
+  <div class="wrap"><table><tr><th></th><th>名前</th><th>連絡先</th><th class="n">手数料率</th><th>状態</th><th>ログイン紐づけ</th></tr>
+  ${st.consignors.map(c => `<tr><td><button class="small" data-edit="${esc(c.id)}">編集</button></td><td>${esc(c.name_ja)}<br><span class="note">${esc(c.name_en || '')}</span></td><td>${esc(c.contact_email || '')}</td><td class="n">${num(c.commission_rate)}%</td><td>${c.is_active ? '有効' : '停止'}</td><td>${(links[c.id] || []).map(u => esc(u.email)).join('<br>') || '<span class="note">未設定</span>'}</td></tr>`).join('') || '<tr><td colspan="6">まだ登録がありません</td></tr>'}</table></div>
+  ${st.isAdmin ? `<div class="card"><h2>ログインの紐づけ</h2>
+    <p class="note">委託者が、委託者用ページで一度ログインリンクを送ってログインしたあと、そのメールアドレスをここで委託者に紐づけます。</p>
+    <div class="row"><div><label>委託者</label><select id="lkC">${st.consignors.map(c => `<option value="${esc(c.id)}">${esc(c.name_ja)}</option>`).join('')}</select></div>
+    <div><label>ログインに使うメールアドレス</label><input id="lkMail" type="email"></div>
+    <div style="flex:0"><button class="primary" id="lkBtn">紐づける</button></div></div></div>` : '<p class="note">ログインの紐づけは、管理者のみ操作できます。</p>'}`;
+}
+function bindConsignors() {
+  const $ = id => document.getElementById(id);
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => { st.editing = b.dataset.edit; render(); });
+  if ($('cancelC')) $('cancelC').onclick = () => { st.editing = null; render(); };
+  if ($('saveC')) $('saveC').onclick = async () => {
+    const row = { name_ja: $('nJa').value.trim(), name_en: $('nEn').value.trim() || null, contact_email: $('nMail').value.trim() || null, commission_rate: Number($('nRate').value), is_active: $('nAct').value === '1' };
+    if (!row.name_ja) { flash('日本語の名前を入力してください', true); return render(); }
+    const r = st.editing ? await sb.from('consignors').update(row).eq('id', st.editing) : await sb.from('consignors').insert(row);
+    if (r.error) flash(r.error.message, true); else { flash('保存しました'); st.editing = null; await loadConsignors(); }
+    render();
+  };
+  if ($('lkBtn')) $('lkBtn').onclick = async () => {
+    const r = await sb.rpc('consignment_link_user', { p_email: $('lkMail').value, p_consignor_id: $('lkC').value });
+    if (r.error) flash(r.error.message.includes('user_not_found') ? 'そのメールアドレスでのログイン記録がありません。委託者に、委託者用ページで一度ログインしてもらってください。' : r.error.message, true);
+    else flash('紐づけました');
+    render();
+  };
+}
+
+/* ---------- 商品 ---------- */
+async function viewProducts() {
+  if (!st.cid) return '<p class="note">先に委託者を登録してください。</p>';
+  const r = await sb.from('consignment_products').select('product_id,started_on,ended_on,fda_serial_no,commission_rate,products(name_ja,name_en,price)').eq('consignor_id', st.cid).order('created_at');
+  const rows = r.data || [];
+  return `${consignorSelect()}
+  <div class="card"><h2>商品を委託商品として登録</h2>
+    <div class="row"><div><label>商品名で検索</label><input id="q" placeholder="例: 米"></div><div style="flex:0"><button id="searchBtn">検索</button></div></div>
+    ${st.found.length ? `<div class="wrap" style="margin-top:12px"><table><tr><th></th><th>商品</th><th class="n">価格</th></tr>${st.found.map(p => `<tr><td><button class="small" data-pick="${esc(p.id)}">選ぶ</button></td><td>${esc(p.name_ja)}<br><span class="note">${esc(p.name_en || '')}</span></td><td class="n">${money(p.price)}</td></tr>`).join('')}</table></div>` : ''}
+    <div id="pickBox"></div></div>
+  <div class="wrap"><table><tr><th></th><th>商品</th><th class="n">価格</th><th>取扱開始</th><th>食品登録番号</th><th class="n">手数料率</th><th>状態</th></tr>
+  ${rows.map(x => `<tr><td>${x.ended_on ? '' : `<button class="small" data-end="${esc(x.product_id)}">取扱終了</button>`}</td><td>${esc(x.products ? x.products.name_ja : '')}</td><td class="n">${money(x.products ? x.products.price : 0)}</td><td>${esc(x.started_on)}</td><td>${esc(x.fda_serial_no || '')}</td><td class="n">${x.commission_rate == null ? '(委託者の既定)' : num(x.commission_rate) + '%'}</td><td>${x.ended_on ? '終了 ' + esc(x.ended_on) : '取扱中'}</td></tr>`).join('') || '<tr><td colspan="7">まだ商品がありません</td></tr>'}</table></div>
+  <p class="note">売上は「取扱開始」の日以降の分から集計されます。</p>`;
+}
+function bindProducts() {
+  const $ = id => document.getElementById(id);
+  bindCid();
+  if ($('searchBtn')) $('searchBtn').onclick = async () => {
+    const q = $('q').value.replace(/[,()%*]/g, ' ').trim();
+    if (!q) return;
+    const r = await sb.from('products').select('id,name_ja,name_en,price').or(`name_ja.ilike.%${q}%,name_en.ilike.%${q}%`).limit(20);
+    if (r.error) flash(r.error.message, true); else { st.found = r.data || []; st.msg = st.err = ''; }
+    render();
+  };
+  document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+    const p = st.found.find(x => x.id === b.dataset.pick);
+    $('pickBox').innerHTML = `<div class="row" style="margin-top:12px"><div><label>選んだ商品</label><input value="${esc(p.name_ja)}" disabled></div>
+      <div><label>取扱開始日</label><input type="date" id="pStart" value="${today()}"></div>
+      <div><label>食品登録番号(任意)</label><input id="pFda"></div>
+      <div style="max-width:150px"><label>手数料率(空欄=既定)</label><input id="pRate" type="number" min="0" max="100" step="0.5"></div>
+      <div style="flex:0"><button class="primary" id="pAdd">登録</button></div></div>`;
+    $('pAdd').onclick = async () => {
+      const rate = $('pRate').value;
+      const r = await sb.from('consignment_products').insert({ product_id: p.id, consignor_id: st.cid, started_on: $('pStart').value || today(), fda_serial_no: $('pFda').value.trim() || null, commission_rate: rate === '' ? null : Number(rate) });
+      if (r.error) flash(r.error.message.includes('duplicate') ? 'この商品はすでに委託商品として登録されています' : r.error.message, true); else { flash('登録しました'); st.found = []; }
+      render();
+    };
+  });
+  document.querySelectorAll('[data-end]').forEach(b => b.onclick = async () => {
+    const r = await sb.from('consignment_products').update({ ended_on: today() }).eq('product_id', b.dataset.end).eq('consignor_id', st.cid);
+    if (r.error) flash(r.error.message, true); else flash('取扱を終了しました');
+    render();
+  });
+}
+
+/* ---------- 入荷・在庫 ---------- */
+async function viewStock() {
+  if (!st.cid) return '<p class="note">先に委託者を登録してください。</p>';
+  const [pr, stock, moves] = await Promise.all([
+    sb.from('consignment_products').select('product_id,products(name_ja)').eq('consignor_id', st.cid).is('ended_on', null),
+    sb.rpc('consignor_stock', { p_consignor_id: st.cid }),
+    sb.from('consignment_stock_moves').select('id,product_id,move_type,quantity,lot_no,expiry_date,move_date,note,products(name_ja)').eq('consignor_id', st.cid).order('created_at', { ascending: false }).limit(30)
+  ]);
+  const prods = pr.data || [];
+  const lots = (stock.data || []).filter(r => r.lot_no !== null || r.expiry_date !== null || r.received_qty !== null);
+  const byProd = new Map(); (stock.data || []).forEach(r => { if (!byProd.has(r.product_id)) byProd.set(r.product_id, r); });
+  return `${consignorSelect()}
+  <div class="card"><h2>入荷・返品・廃棄・調整を記録</h2>
+    <div class="row">
+      <div><label>商品</label><select id="mP">${prods.map(p => `<option value="${esc(p.product_id)}">${esc(p.products ? p.products.name_ja : '')}</option>`).join('')}</select></div>
+      <div style="max-width:140px"><label>種類</label><select id="mT">${Object.entries(MOVE).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div style="max-width:110px"><label>数量</label><input id="mQ" type="number" step="any"></div>
+      <div style="max-width:130px"><label>ロット(任意)</label><input id="mL"></div>
+      <div style="max-width:160px"><label>賞味期限(入荷時)</label><input id="mE" type="date"></div>
+      <div style="max-width:160px"><label>日付</label><input id="mD" type="date" value="${today()}"></div>
+      <div><label>メモ(任意)</label><input id="mN"></div>
+      <div style="flex:0"><button class="primary" id="mAdd">記録</button></div>
+    </div>
+    <p class="note">返品・廃棄の数量はプラスで入力します。「調整」は、プラスで在庫が増え、マイナスで減ります。</p></div>
+  <h2>現在庫</h2>
+  <div class="wrap"><table><tr><th>商品</th><th class="n">現在庫</th></tr>${[...byProd.values()].map(r => `<tr><td>${esc(r.name_ja)}</td><td class="n">${num(r.product_stock)}</td></tr>`).join('') || '<tr><td colspan="2">なし</td></tr>'}</table></div>
+  <h2>ロット別(賞味期限の近いものから)</h2>
+  <div class="wrap"><table><tr><th>商品</th><th>ロット</th><th>賞味期限</th><th class="n">残り日数</th><th class="n">入荷数</th><th class="n">残り</th></tr>
+  ${lots.map(r => `<tr><td>${esc(r.name_ja)}</td><td>${esc(r.lot_no || '')}</td><td>${esc(r.expiry_date || '')}</td><td class="n">${r.days_to_expiry == null ? '' : r.days_to_expiry}</td><td class="n">${num(r.received_qty)}</td><td class="n">${num(r.remaining_qty)}</td></tr>`).join('') || '<tr><td colspan="6">なし</td></tr>'}</table></div>
+  <h2>最近の記録(30件)</h2>
+  <div class="wrap"><table><tr><th>日付</th><th>種類</th><th>商品</th><th class="n">数量</th><th>ロット</th><th>賞味期限</th><th>メモ</th></tr>
+  ${(moves.data || []).map(m => `<tr><td>${esc(m.move_date)}</td><td>${esc(MOVE[m.move_type] || m.move_type)}</td><td>${esc(m.products ? m.products.name_ja : '')}</td><td class="n">${num(m.quantity)}</td><td>${esc(m.lot_no || '')}</td><td>${esc(m.expiry_date || '')}</td><td>${esc(m.note || '')}</td></tr>`).join('') || '<tr><td colspan="7">なし</td></tr>'}</table></div>`;
+}
+function bindStock() {
+  const $ = id => document.getElementById(id);
+  bindCid();
+  if ($('mAdd')) $('mAdd').onclick = async () => {
+    const type = $('mT').value, q = Number($('mQ').value);
+    if (!$('mP').value) { flash('先に商品を登録してください', true); return render(); }
+    if (!q || (type !== 'adjust' && q <= 0)) { flash('数量を正しく入力してください', true); return render(); }
+    const r = await sb.from('consignment_stock_moves').insert({ consignor_id: st.cid, product_id: $('mP').value, move_type: type, quantity: q, lot_no: $('mL').value.trim() || null, expiry_date: type === 'receive' ? ($('mE').value || null) : null, move_date: $('mD').value || today(), note: $('mN').value.trim() || null });
+    if (r.error) flash(r.error.message, true); else flash('記録しました');
+    render();
+  };
+}
+
+/* ---------- 精算 ---------- */
+async function viewStatements() {
+  if (!st.cid) return '<p class="note">先に委託者を登録してください。</p>';
+  const [rows, sum] = await Promise.all([
+    sb.from('consignment_statements').select('*').eq('consignor_id', st.cid).order('period_month', { ascending: false }),
+    sb.rpc('consignor_summary', { p_consignor_id: st.cid })
+  ]);
+  const s = (sum.data || [])[0] || {};
+  const label = { draft:'下書き', issued:'発行済み', paid:'支払い済み' };
+  return `${consignorSelect()}
+  <div class="card"><h2>累計</h2><div class="row">
+    <div><label>累計売上</label><b>${money(s.total_sales)}</b></div><div><label>手数料</label><b>${money(s.total_commission)}</b></div>
+    <div><label>お受け取り額</label><b>${money(s.total_payout)}</b></div><div><label>精算済み</label><b>${money(s.settled_payout)}</b></div><div><label>未精算</label><b>${money(s.unsettled_payout)}</b></div></div></div>
+  <div class="card"><h2>月次精算書を作る</h2><div class="row"><div style="max-width:200px"><label>対象の月</label><input type="month" id="sM" value="${today().slice(0, 7)}"></div>
+    <div style="flex:0"><button class="primary" id="sGen">下書きを作る / 更新</button></div></div>
+    <p class="note">下書きは何度でも作り直せます。「発行済み」にすると、委託者用ページに表示され、金額は固定されます。</p></div>
+  <div class="wrap"><table><tr><th></th><th>月</th><th class="n">売上</th><th class="n">手数料</th><th class="n">お受け取り額</th><th>状態</th></tr>
+  ${(rows.data || []).map(r => `<tr><td>${r.status === 'draft' ? `<button class="small" data-issue="${esc(r.id)}">発行する</button>` : r.status === 'issued' ? `<button class="small" data-paid="${esc(r.id)}">支払い済みにする</button>` : ''}</td><td>${esc(String(r.period_month).slice(0, 7))}</td><td class="n">${money(r.sales_amount)}</td><td class="n">${money(r.commission_amount)}</td><td class="n">${money(r.payout_amount)}</td><td><span class="pill">${esc(label[r.status] || r.status)}</span></td></tr>`).join('') || '<tr><td colspan="6">まだありません</td></tr>'}</table></div>`;
+}
+function bindStatements() {
+  const $ = id => document.getElementById(id);
+  bindCid();
+  if ($('sGen')) $('sGen').onclick = async () => {
+    const m = $('sM').value;
+    if (!m) return;
+    const r = await sb.rpc('consignment_generate_statement', { p_consignor_id: st.cid, p_month: m + '-01' });
+    if (r.error) flash(r.error.message, true); else if (!r.data || !r.data.id) flash('この月はすでに発行済みのため、更新できません', true); else flash('下書きを作りました');
+    render();
+  };
+  document.querySelectorAll('[data-issue]').forEach(b => b.onclick = async () => {
+    const r = await sb.from('consignment_statements').update({ status: 'issued', issued_at: new Date().toISOString() }).eq('id', b.dataset.issue).eq('status', 'draft');
+    if (r.error) flash(r.error.message, true); else flash('発行しました');
+    render();
+  });
+  document.querySelectorAll('[data-paid]').forEach(b => b.onclick = async () => {
+    const r = await sb.from('consignment_statements').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', b.dataset.paid).eq('status', 'issued');
+    if (r.error) flash(r.error.message, true); else flash('支払い済みにしました');
+    render();
+  });
+}
+
+/* ---------- 画面 ---------- */
+async function render() {
+  if (!st.session) { document.getElementById('logoutBtn').classList.add('hidden'); document.getElementById('who').textContent = ''; return renderLogin(); }
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('who').textContent = st.session.user.email;
+  if (!st.isStaff) { app.innerHTML = '<div class="card center"><h2>権限がありません</h2><p class="note">このページは、サイトウフーズのスタッフ専用です。</p></div>'; return; }
+  const tabs = [['consignors', '委託者'], ['products', '商品'], ['stock', '入荷・在庫'], ['statements', '精算']];
+  const views = { consignors: viewConsignors, products: viewProducts, stock: viewStock, statements: viewStatements };
+  const binders = { consignors: bindConsignors, products: bindProducts, stock: bindStock, statements: bindStatements };
+  let html;
+  try { html = await views[st.tab](); } catch (e) { html = `<div class="msg err">${esc(e.message || e)}</div>`; }
+  app.innerHTML = `<div class="tabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${esc(l)}</button>`).join('')}</div>${banner()}${html}`;
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; st.msg = st.err = ''; st.editing = null; render(); });
+  binders[st.tab]();
+}
+
+async function init() {
+  const { data } = await sb.auth.getSession();
+  st.session = data.session;
+  st.isStaff = st.isAdmin = false;
+  if (st.session) {
+    const [a, b] = await Promise.all([sb.rpc('is_staff_or_admin'), sb.rpc('is_admin')]);
+    st.isStaff = a.data === true; st.isAdmin = b.data === true;
+    if (st.isStaff) { try { await loadConsignors(); } catch (e) { st.err = e.message; } }
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
