@@ -59,8 +59,8 @@
     </item>
     <item>
       <g:id>744</g:id>
-      <title>Niigata Blend Rinse-Free Rice 5kg</title>
-      <description>コシイブキ 80%、コシヒカリ 20%のブレンド無洗米です。 お米を研がなくてよいのは本当に楽で癖になります。 5kg入り!</description>
+      <title>Prewashed Rice - Niigata Blend Rice 5kg</title>
+      <description>This is a blend of 80% Koshi Ibuki and 20% Koshihikari, a no-wash rice. It is rice imported from Japan. No need to rinse the rice - it's truly convenient and addictive! 5kg bag.</description>
       <link>https://saitofoods.com/en/products/744.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889267586_slot1.jpg</g:image_link>
       <g:availability>in_stock</g:availability>
@@ -1616,7 +1616,7 @@
       <description>日本製造のコシの強い冷凍うどんです。 125g*5玉入りです。</description>
       <link>https://saitofoods.com/en/products/485.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889500007_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>142.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
