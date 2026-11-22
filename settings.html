@@ -61,6 +61,12 @@
   .entry-card-fields input, .entry-card-fields textarea { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: inherit; }
   .entry-card-fields .used-count-display { padding: 6px 0; color: var(--text-muted); font-size: 13px; }
   .entry-card-actions { display: flex; gap: 8px; }
+  .ann-images { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .ann-img-item { position: relative; width: 84px; height: 84px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fff; }
+  .ann-img-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ann-img-item button { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; border: none; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff; font-size: 12px; line-height: 22px; padding: 0; cursor: pointer; }
+  .ann-img-add { padding: 8px 12px; border: 1px dashed #3b6ea5; border-radius: 6px; background: #fff; color: #3b6ea5; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .ann-img-status { font-size: 12px; color: #999; }
 
   .scroll-fab-group { position: fixed; right: 20px; bottom: 24px; z-index: 60; display: flex; flex-direction: column; gap: 10px; }
   .scroll-fab { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; background: #fff; color: var(--navy); font-size: 18px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; transition: opacity 0.2s, transform 0.15s; }
@@ -1151,6 +1157,13 @@ function renderAnnouncementRow(a) {
       </label>
       <label style="flex:1;min-width:140px;">リンクの文言 / Link Text<input type="text" class="ann-link-text" value="${a.link_text ? a.link_text.replace(/"/g, '&quot;') : ''}" placeholder="例: ヤフージャパンへ"></label>
       <label>有効 / Active<input type="checkbox" class="ann-active" ${a.is_active !== false ? 'checked' : ''} style="width:18px;height:18px;margin-top:6px;"></label>
+      <div class="ann-images">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted);">画像 / Images(最大6枚。トップページではサムネイルで表示され、タップすると大きく表示されます)</span>
+        <div class="ann-img-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        <button type="button" class="ann-img-add" onclick="this.parentNode.querySelector('.ann-img-file').click()">📷 画像を追加 / Add image</button>
+        <input type="file" class="ann-img-file" accept="image/*" multiple style="display:none;" onchange="annUploadImages(this)">
+        <span class="ann-img-status"></span>
+      </div>
     </div>
     <div class="entry-card-fields" style="border-top:1px dashed var(--border);padding-top:10px;">
       <div style="flex-basis:100%;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1170,13 +1183,102 @@ function renderAnnouncementRow(a) {
       ${a.id ? `<button class="btn-delete-row" onclick="deleteAnnouncementRow(this)">削除 / Del</button>` : ''}
     </div>
   `;
+  div.dataset.images = JSON.stringify(Array.isArray(a.image_urls) ? a.image_urls : []);
+  renderAnnImages(div);
   return div;
+}
+
+// ---- お知らせの画像(商品画像と同じ公開バケット product-images の announcements/ に保存) ----
+const ANN_MAX_IMAGES = 6;
+
+function annGetImages(card) {
+  try { return JSON.parse(card.dataset.images || '[]'); } catch (e) { return []; }
+}
+function annThumbUrl(url) {
+  return String(url).replace('/product-images/', '/product-images/thumb/');
+}
+function renderAnnImages(card) {
+  const list = card.querySelector('.ann-img-list');
+  const imgs = annGetImages(card);
+  list.innerHTML = imgs.map((u, i) =>
+    `<div class="ann-img-item"><img src="${annEsc(annThumbUrl(u))}" onerror="this.onerror=null;this.src='${annEsc(u)}'" alt=""><button type="button" onclick="annRemoveImage(this, ${i})" title="削除 / Remove">✕</button></div>`
+  ).join('');
+  const addBtn = card.querySelector('.ann-img-add');
+  if (addBtn) addBtn.style.display = imgs.length >= ANN_MAX_IMAGES ? 'none' : '';
+}
+function annRemoveImage(btn, idx) {
+  const card = btn.closest('.entry-card');
+  const imgs = annGetImages(card);
+  imgs.splice(idx, 1);
+  card.dataset.images = JSON.stringify(imgs);
+  renderAnnImages(card);
+  showSaveMsg('画像を外しました。「保存」を押すと反映されます / Removed. Press Save to apply.');
+}
+function annCompressImage(fileOrBlob, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(fileOrBlob);
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); // 透明な部分は白にする(JPEG変換のため)
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(url);
+        if (blob) resolve(blob); else reject(new Error('画像の変換に失敗しました'));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('画像の読み込みに失敗しました(HEICなどは未対応。JPEG/PNGで選んでください)')); };
+    img.src = url;
+  });
+}
+async function annUploadImages(input) {
+  const card = input.closest('.entry-card');
+  const status = card.querySelector('.ann-img-status');
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  const imgs = annGetImages(card);
+  const room = ANN_MAX_IMAGES - imgs.length;
+  if (room <= 0) { status.textContent = '画像は最大' + ANN_MAX_IMAGES + '枚までです / Max ' + ANN_MAX_IMAGES; input.value = ''; return; }
+  const targets = files.slice(0, room);
+  status.style.color = '#999';
+  status.textContent = 'アップロード中... / Uploading...';
+  try {
+    for (let i = 0; i < targets.length; i++) {
+      const big = await annCompressImage(targets[i], 1600, 0.82);
+      const small = await annCompressImage(big, 480, 0.7);
+      const stamp = Date.now() + '_' + i;
+      const path = `announcements/${stamp}.jpg`;
+      const up = await supabaseClient.storage.from('product-images').upload(path, big, { cacheControl: '31536000', upsert: false, contentType: 'image/jpeg' });
+      if (up.error) throw up.error;
+      // サムネイル(失敗しても元画像で表示できるので、警告だけ出して続ける)
+      const th = await supabaseClient.storage.from('product-images').upload('thumb/' + path, small, { cacheControl: '31536000', upsert: false, contentType: 'image/jpeg' });
+      if (th.error) console.warn('サムネイルの保存に失敗(元画像で表示します):', th.error);
+      const { data } = supabaseClient.storage.from('product-images').getPublicUrl(path);
+      imgs.push(data.publicUrl);
+    }
+    card.dataset.images = JSON.stringify(imgs);
+    renderAnnImages(card);
+    status.style.color = 'var(--green, #1a6b45)';
+    status.textContent = '✓ 追加しました。「保存」を押すとトップページに反映されます / Added. Press Save to publish.' + (files.length > room ? '(最大枚数のため一部は追加していません)' : '');
+  } catch (e) {
+    status.style.color = 'var(--red-accent, #d32f2f)';
+    status.textContent = 'アップロードに失敗しました / Upload failed: ' + (e.message || e);
+  } finally {
+    input.value = '';
+  }
 }
 
 function addNewAnnouncementRow() {
   const wrap = document.getElementById('announce-tbody');
   const todayStr = new Date().toISOString().slice(0, 10);
-  wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', link_text: '', is_active: true }));
+  wrap.prepend(renderAnnouncementRow({ published_at: todayStr, title: '', body: '', link_url: '', link_text: '', is_active: true, image_urls: [] }));
   refreshAnnouncementOrderButtons();
 }
 
@@ -1267,7 +1369,7 @@ async function saveAnnouncementRow(btn) {
   const wrap = document.getElementById('announce-tbody');
   const sortOrder = Array.from(wrap.children).indexOf(card) + 1;
 
-  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, link_text: linkText || null, title_en: titleEn || null, body_en: bodyEn || null, link_text_en: linkTextEn || null, is_active: isActive, sort_order: sortOrder };
+  const payload = { published_at: publishedAt, title, body: body || null, link_url: linkUrl || null, link_text: linkText || null, title_en: titleEn || null, body_en: bodyEn || null, link_text_en: linkTextEn || null, image_urls: annGetImages(card), is_active: isActive, sort_order: sortOrder };
 
   let error;
   if (id) {

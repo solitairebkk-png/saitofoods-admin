@@ -291,6 +291,18 @@
   .announce-title { display: block; font-size: 18px; font-weight: 800; line-height: 1.4; color: #1F1F1F; margin-bottom: 6px; text-decoration: none; }
   a.announce-title { cursor: pointer; }
   a.announce-title:hover { color: var(--brand-dark); text-decoration: underline; text-underline-offset: 3px; }
+  .announce-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .announce-thumb { width: 92px; height: 92px; border-radius: 8px; border: 1px solid var(--line-soft); overflow: hidden; padding: 0; background: #fff; cursor: zoom-in; display: block; }
+  .announce-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .announce-thumb:hover { border-color: var(--brand); }
+  #img-modal { position: fixed; inset: 0; background: rgba(0,0,0,.82); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px; }
+  #img-modal.open { display: flex; }
+  #img-modal img { max-width: 94vw; max-height: 88vh; border-radius: 6px; background: #fff; box-shadow: 0 6px 30px rgba(0,0,0,.5); }
+  #img-modal .im-btn { position: absolute; border: none; background: rgba(255,255,255,.92); color: #222; width: 44px; height: 44px; border-radius: 50%; font-size: 22px; cursor: pointer; line-height: 44px; padding: 0; }
+  #img-modal .im-close { top: 14px; right: 14px; }
+  #img-modal .im-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+  #img-modal .im-next { right: 12px; top: 50%; transform: translateY(-50%); }
+  #img-modal .im-count { position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; }
   .announce-body { font-size: 14.5px; color: #2E2E2E; font-weight: 500; line-height: 1.75; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word; }
   @media (max-width: 480px) {
     .announce-item { padding: 12px 13px; }
@@ -902,6 +914,74 @@ async function loadBargainProducts() {
 }
 
 // ---------------- お知らせ ----------------
+// お知らせの画像: サムネイル(product-images/thumb/ 以下)を表示し、タップすると大きな画像をモーダルで開く
+function annAttr(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function annThumbUrl(url) { return String(url).replace('/product-images/', '/product-images/thumb/'); }
+
+let annModalState = { list: [], idx: 0 };
+function ensureAnnImageModal() {
+  let m = document.getElementById('img-modal');
+  if (m) return m;
+  m = document.createElement('div');
+  m.id = 'img-modal';
+  m.setAttribute('role', 'dialog');
+  m.setAttribute('aria-modal', 'true');
+  m.innerHTML = '<button type="button" class="im-btn im-close" aria-label="閉じる / Close">✕</button>' +
+    '<button type="button" class="im-btn im-prev" aria-label="前へ / Previous">‹</button>' +
+    '<img alt="">' +
+    '<button type="button" class="im-btn im-next" aria-label="次へ / Next">›</button>' +
+    '<div class="im-count"></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) closeAnnImage(); });
+  m.querySelector('.im-close').addEventListener('click', closeAnnImage);
+  m.querySelector('.im-prev').addEventListener('click', e => { e.stopPropagation(); stepAnnImage(-1); });
+  m.querySelector('.im-next').addEventListener('click', e => { e.stopPropagation(); stepAnnImage(1); });
+  // スマホ: 左右にスワイプして前後の画像へ
+  let sx = null;
+  m.addEventListener('touchstart', e => { sx = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+  m.addEventListener('touchend', e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) > 50) stepAnnImage(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  document.addEventListener('keydown', e => {
+    if (!m.classList.contains('open')) return;
+    if (e.key === 'Escape') closeAnnImage();
+    else if (e.key === 'ArrowLeft') stepAnnImage(-1);
+    else if (e.key === 'ArrowRight') stepAnnImage(1);
+  });
+  return m;
+}
+function renderAnnImageModal() {
+  const m = ensureAnnImageModal();
+  const { list, idx } = annModalState;
+  m.querySelector('img').src = list[idx];
+  const multi = list.length > 1;
+  m.querySelector('.im-prev').style.display = multi ? '' : 'none';
+  m.querySelector('.im-next').style.display = multi ? '' : 'none';
+  m.querySelector('.im-count').textContent = multi ? (idx + 1) + ' / ' + list.length : '';
+}
+function openAnnImage(ai, idx) {
+  const list = (window.__annImgs && window.__annImgs[ai]) || [];
+  if (!list.length) return;
+  annModalState = { list, idx: Math.min(Math.max(idx, 0), list.length - 1) };
+  const m = ensureAnnImageModal();
+  renderAnnImageModal();
+  m.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function stepAnnImage(d) {
+  const n = annModalState.list.length;
+  if (n < 2) return;
+  annModalState.idx = (annModalState.idx + d + n) % n;
+  renderAnnImageModal();
+}
+function closeAnnImage() {
+  const m = document.getElementById('img-modal');
+  if (m) m.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 async function loadAnnouncements() {
   const listEl = document.getElementById('announce-list');
   try {
@@ -910,8 +990,13 @@ async function loadAnnouncements() {
 
     // English表示のときは英語の内容を出す。英語が未入力の項目は日本語のまま(お知らせごとに、項目ごとに切り替わる)。
     const isEn = typeof window.i18nGetLang === 'function' && window.i18nGetLang() === 'en';
-    listEl.innerHTML = rows.map(a => {
+    window.__annImgs = rows.map(r => Array.isArray(r.image_urls) ? r.image_urls : []);
+    listEl.innerHTML = rows.map((a, ai) => {
       const hasLink = !!a.link_url;
+      const imgs = window.__annImgs[ai];
+      const thumbsHtml = imgs.length ? `<div class="announce-thumbs">${imgs.map((u, i) =>
+        `<button type="button" class="announce-thumb" onclick="openAnnImage(${ai}, ${i})" aria-label="画像を拡大 / Enlarge image"><img src="${annAttr(annThumbUrl(u))}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${annAttr(u)}'" alt=""></button>`
+      ).join('')}</div>` : '';
       const title = (isEn && a.title_en) ? a.title_en : a.title;
       const body = (isEn && a.body_en) ? a.body_en : a.body;
       const linkLabel = isEn ? (a.link_text_en || 'See details') : (a.link_text || '詳しく見る');
@@ -922,6 +1007,7 @@ async function loadAnnouncements() {
           <div class="announce-date">${a.published_at || ''}</div>
           ${hasLink ? `<a class="announce-title" href="${a.link_url}" ${linkAttrs}>${title}</a>` : `<div class="announce-title">${title}</div>`}
           ${body ? `<div class="announce-body">${body}</div>` : ''}
+          ${thumbsHtml}
           ${hasLink ? `<a class="announce-link-btn" href="${a.link_url}" ${linkAttrs}>${linkLabel} →</a>` : ''}
         </div>
       `;
