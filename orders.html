@@ -526,6 +526,19 @@
   .autopost-item-time { color: var(--text-muted); font-size: 10.5px; white-space: nowrap; }
   .autopost-item-type { display: inline-block; font-size: 9.5px; padding: 1px 6px; border-radius: 999px; margin-left: 6px; background: #e8e2f5; color: #5a3f9e; }
   .autopost-item-status-failed { color: var(--red-accent); font-weight: 700; font-size: 10.5px; }
+  .autopost-pending-head { font-size: 11px; font-weight: 700; color: #5a3f9e; padding: 8px 8px 4px; }
+  .autopost-draft { padding: 10px 8px; border-bottom: 1px solid #f0efec; font-size: 12.5px; background: #faf8ff; }
+  .autopost-draft.approved { background: #f4f8f4; }
+  .autopost-draft-img { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; float: right; margin: 0 0 6px 8px; }
+  .autopost-draft textarea { width: 100%; min-height: 150px; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; clear: both; }
+  .autopost-draft-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-start; flex-wrap: wrap; }
+  .autopost-draft-actions button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: white; font-family: inherit; font-size: 12px; cursor: pointer; }
+  .autopost-draft-actions .ap-approve { background: #1f6b34; color: white; border-color: #1f6b34; font-weight: 700; }
+  .autopost-draft-actions .ap-unapprove { background: #fff3e0; border-color: #e0b36a; }
+  .autopost-draft-note { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+  .autopost-draft-state { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; }
+  .autopost-draft-state.draft { background: #fde8c8; color: #8a5a00; }
+  .autopost-draft-state.approved { background: #d7efdc; color: #1f6b34; }
 
   /* 日次レポート(Cashier/Ootoya、LINE通知文言をそのまま表示)モーダル */
   #reports-modal {
@@ -4958,13 +4971,47 @@ async function loadAutoPostList() {
   if (error) { listEl.innerHTML = '<div class="empty-state">Error: ' + error.message + '</div>'; return; }
   if (!data || data.length === 0) { listEl.innerHTML = '<div class="empty-state">No posts yet / ยังไม่มีโพสต์</div>'; return; }
 
-  listEl.innerHTML = data.map(item => {
+  // 承認待ち(draft)・承認済み(approved)を先頭に、それ以外(投稿済み・失敗・見送り)は履歴として下に表示
+  const pending = data.filter(i => i.status === 'draft' || i.status === 'approved')
+    .sort((a, b) => new Date(a.scheduled_for || a.posted_at) - new Date(b.scheduled_for || b.posted_at));
+  const history = data.filter(i => i.status !== 'draft' && i.status !== 'approved');
+
+  const pendingHtml = pending.length === 0 ? '' :
+    '<div class="autopost-pending-head">📝 承認待ち・承認済み / Pending approval</div>' +
+    pending.map(item => {
+      const sched = item.scheduled_for
+        ? new Date(item.scheduled_for).toLocaleString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })
+        : '-';
+      const isApproved = item.status === 'approved';
+      const img = item.image_url ? `<img class="autopost-draft-img" src="${escapeHtml(item.image_url)}" alt="">` : '';
+      const actions = isApproved
+        ? `<button class="ap-unapprove" onclick="unapproveAutoPost('${item.id}')">承認を取り消す</button>`
+        : `<button class="ap-approve" onclick="approveAutoPost('${item.id}')">✅ 承認</button>
+           <button onclick="saveAutoPostDraft('${item.id}')">💾 保存</button>
+           <button onclick="skipAutoPost('${item.id}')">見送り</button>`;
+      return `
+        <div class="autopost-draft ${isApproved ? 'approved' : ''}">
+          <div class="autopost-item-top">
+            <span class="autopost-item-product">${escapeHtml(item.product_name || '-')}<span class="autopost-item-type">${escapeHtml(item.caption_type || '')}</span><span class="autopost-draft-state ${item.status}">${isApproved ? '承認済み' : '承認待ち'}</span></span>
+            <span class="autopost-item-time">投稿予定 ${sched}</span>
+          </div>
+          ${img}
+          <textarea id="ap-ja-${item.id}" data-orig="${escapeHtml(item.caption_ja || '')}" ${isApproved ? 'readonly' : ''}>${escapeHtml(item.caption_ja || '')}</textarea>
+          <div class="autopost-draft-actions">${actions}</div>
+          <div class="autopost-draft-note">日本語を直して「承認」を押すと、タイ語・英語は日本語から自動で翻訳し直して投稿します。承認しないと投稿されません。</div>
+        </div>`;
+    }).join('') +
+    (history.length ? '<div class="autopost-pending-head" style="color:var(--text-muted);">投稿履歴 / History</div>' : '');
+
+  if (history.length === 0) { listEl.innerHTML = pendingHtml; return; }
+
+  listEl.innerHTML = pendingHtml + history.map(item => {
     const timeStr = new Date(item.posted_at).toLocaleString('en-GB', {
       month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
     });
     const statusHtml = item.status === 'failed'
       ? `<div class="autopost-item-status-failed">⚠️ Failed: ${escapeHtml(item.error_message || '')}</div>`
-      : '';
+      : (item.status === 'skipped' ? '<div style="color:var(--text-muted);font-size:10.5px;">見送り / Skipped</div>' : '');
     const permalinkBtn = item.fb_permalink
       ? `<div style="margin-top:4px;"><a href="${escapeHtml(item.fb_permalink)}" target="_blank" style="font-size:10.5px;">Open post / เปิดโพสต์</a></div>` : '';
     return `
@@ -4977,6 +5024,48 @@ async function loadAutoPostList() {
         ${permalinkBtn}
       </div>`;
   }).join('');
+}
+
+// ---- FB/IG自動投稿の承認フロー(下書き→日本語を編集→承認→投稿時刻に承認済みだけ投稿) ----
+// 日本語を直した場合は ja_edited=true にしておき、GAS側が投稿前にタイ語・英語を日本語から翻訳し直す。
+function _apJaValue(id) {
+  const el = document.getElementById('ap-ja-' + id);
+  return { el, text: el ? el.value.trim() : '', orig: el ? (el.getAttribute('data-orig') || '').trim() : '' };
+}
+
+async function saveAutoPostDraft(id, silent) {
+  const { text, orig } = _apJaValue(id);
+  if (!text) { alert('日本語の文章が空です / Caption is empty'); return false; }
+  const patch = { caption_ja: text };
+  if (text !== orig) patch.ja_edited = true;
+  const { error } = await supabaseClient.from('fb_auto_posts').update(patch).eq('id', id).eq('status', 'draft');
+  if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return false; }
+  if (!silent) loadAutoPostList();
+  return true;
+}
+
+async function approveAutoPost(id) {
+  const ok = await saveAutoPostDraft(id, true);
+  if (!ok) return;
+  const { error } = await supabaseClient.from('fb_auto_posts')
+    .update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', id).eq('status', 'draft');
+  if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
+  loadAutoPostList();
+}
+
+async function unapproveAutoPost(id) {
+  const { error } = await supabaseClient.from('fb_auto_posts')
+    .update({ status: 'draft', approved_at: null }).eq('id', id).eq('status', 'approved');
+  if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
+  loadAutoPostList();
+}
+
+async function skipAutoPost(id) {
+  if (!confirm('この投稿を見送りますか? / Skip this post?')) return;
+  const { error } = await supabaseClient.from('fb_auto_posts')
+    .update({ status: 'skipped' }).eq('id', id).eq('status', 'draft');
+  if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
+  loadAutoPostList();
 }
 
 // ================= 日次レポート(Cashier Daily Report / Ootoya Rice Order) =================
