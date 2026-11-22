@@ -535,6 +535,9 @@
   .autopost-draft-actions button { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: white; font-family: inherit; font-size: 12px; cursor: pointer; }
   .autopost-draft-actions .ap-approve { background: #1f6b34; color: white; border-color: #1f6b34; font-weight: 700; }
   .autopost-draft-actions .ap-unapprove { background: #fff3e0; border-color: #e0b36a; }
+  .autopost-draft-tr { margin-top: 6px; font-size: 11.5px; }
+  .autopost-draft-tr summary { cursor: pointer; color: #5a3f9e; }
+  .autopost-draft-trtext { white-space: pre-wrap; margin-top: 6px; padding: 6px 8px; background: #fff; border: 1px solid #eee; border-radius: 6px; color: #444; }
   .autopost-draft-note { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
   .autopost-draft-state { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px; margin-left: 6px; }
   .autopost-draft-state.draft { background: #fde8c8; color: #8a5a00; }
@@ -712,7 +715,7 @@
       ✉️<span class="header-icon-badge" id="email-badge">0</span>
     </button>
     <button class="header-icon-btn" id="autopost-bell-btn" onclick="openSnsModal('autopost')" title="FB Auto-post history / ประวัติโพสต์อัตโนมัติ">
-      📢
+      📢<span class="header-icon-badge" id="autopost-badge">0</span>
     </button>
     <button class="header-icon-btn" id="reports-bell-btn" onclick="openReportsModal()" title="Daily Reports / รายงานประจำวัน">
       📋<span class="header-icon-badge" id="reports-badge">!</span>
@@ -4700,6 +4703,11 @@ async function loadInboxBadge() {
     .from('sns_inbox').select('id', { count: 'exact', head: true })
     .eq('is_read', false).eq('platform', 'email');
   setInboxBadge('email-badge', mailRes.count, mailRes.error);
+  // 自動投稿の「承認待ち」の件数(承認し忘れて投稿が止まるのを防ぐ)
+  const apRes = await supabaseClient
+    .from('fb_auto_posts').select('id', { count: 'exact', head: true })
+    .eq('status', 'draft');
+  setInboxBadge('autopost-badge', apRes.count, apRes.error);
 }
 
 let snsModalMode = 'inbox'; // 'inbox'(FB/IG) / 'email' / 'autopost'
@@ -4997,8 +5005,13 @@ async function loadAutoPostList() {
           </div>
           ${img}
           <textarea id="ap-ja-${item.id}" data-orig="${escapeHtml(item.caption_ja || '')}" ${isApproved ? 'readonly' : ''}>${escapeHtml(item.caption_ja || '')}</textarea>
+          <details class="autopost-draft-tr">
+            <summary>${item.ja_edited ? '⏳ タイ語・英語は翻訳待ち(10分以内に更新)' : 'タイ語・英語を見る / Thai & English'}</summary>
+            <div class="autopost-draft-trtext">🇹🇭 ${escapeHtml(item.caption_th || '')}</div>
+            <div class="autopost-draft-trtext">🇬🇧 ${escapeHtml(item.caption_en || '')}</div>
+          </details>
           <div class="autopost-draft-actions">${actions}</div>
-          <div class="autopost-draft-note">日本語を直して「承認」を押すと、タイ語・英語は日本語から自動で翻訳し直して投稿します。承認しないと投稿されません。</div>
+          <div class="autopost-draft-note">日本語を直して「承認」を押すと、投稿予定の時刻に投稿されます(過ぎていれば10分以内)。直した場合、タイ語・英語は日本語から自動で翻訳し直します。承認しないと投稿されません。</div>
         </div>`;
     }).join('') +
     (history.length ? '<div class="autopost-pending-head" style="color:var(--text-muted);">投稿履歴 / History</div>' : '');
@@ -5051,6 +5064,7 @@ async function approveAutoPost(id) {
     .update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', id).eq('status', 'draft');
   if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
   loadAutoPostList();
+  loadInboxBadge();
 }
 
 async function unapproveAutoPost(id) {
@@ -5058,6 +5072,7 @@ async function unapproveAutoPost(id) {
     .update({ status: 'draft', approved_at: null }).eq('id', id).eq('status', 'approved');
   if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
   loadAutoPostList();
+  loadInboxBadge();
 }
 
 async function skipAutoPost(id) {
@@ -5066,6 +5081,7 @@ async function skipAutoPost(id) {
     .update({ status: 'skipped' }).eq('id', id).eq('status', 'draft');
   if (error) { alert('Failed / ไม่สำเร็จ: ' + error.message); return; }
   loadAutoPostList();
+  loadInboxBadge();
 }
 
 // ================= 日次レポート(Cashier Daily Report / Ootoya Rice Order) =================
