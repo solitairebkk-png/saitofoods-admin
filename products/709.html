@@ -25,7 +25,7 @@
 <meta property="og:image" content="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488910380_slot1.jpg">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"骨取り　赤魚の西京味噌漬 1切","sku":"709","url":"https://saitofoods.com/products/709.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488910380_slot1.jpg"],"description":"骨を取り去った、淡白な味の赤魚を西京味噌漬けにしてみました。 解凍後に、オーブントースターで約15分焼いてください。 1枚約160gです。 ブルン!とした身質と、甘い味噌の味をお楽しみください。 レシピ・調理法等はインスタグラムでご紹介しております。 https://www.instagram.com/p/DEe3jaRPUX5/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA== 上記URLからご覧いただけます。 88baht/100gの商品です。 この商品は量り売りです。実際の価格とは多少の誤差が生じます。 予め御了承くださいませ。 赤魚 ノルウェー産 骨取り加工 タイ 塩麹漬け込み サイトウフーズ 赤魚・白味噌*日本産・砂糖・酒 *合成保存料・着色料・人工調味料は不使用*","category":"売れ筋商品","offers":{"@type":"Offer","url":"https://saitofoods.com/products/709.html","priceCurrency":"THB","price":"140.00","availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"骨取り　赤魚の西京味噌漬 1切","sku":"709","url":"https://saitofoods.com/products/709.html","image":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488910380_slot1.jpg"],"description":"骨を取り去った、淡白な味の赤魚を西京味噌漬けにしてみました。 解凍後に、オーブントースターで約15分焼いてください。 1枚約160gです。 ブルン!とした身質と、甘い味噌の味をお楽しみください。 レシピ・調理法等はインスタグラムでご紹介しております。 https://www.instagram.com/p/DEe3jaRPUX5/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA== 上記URLからご覧いただけます。 88baht/100gの商品です。 この商品は量り売りです。実際の価格とは多少の誤差が生じます。 予め御了承くださいませ。 赤魚 ノルウェー産 骨取り加工 タイ 塩麹漬け込み サイトウフーズ 赤魚・白味噌*日本産・砂糖・酒 *合成保存料・着色料・人工調味料は不使用*","category":"売れ筋商品","offers":{"@type":"Offer","url":"https://saitofoods.com/products/709.html","priceCurrency":"THB","price":"140.00","availability":"https://schema.org/OutOfStock","itemCondition":"https://schema.org/NewCondition","seller":{"@type":"Organization","name":"SAITO FOODS CO.,LTD."}}}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"トップ","item":"https://saitofoods.com/"},{"@type":"ListItem","position":2,"name":"商品一覧","item":"https://saitofoods.com/product_list.html"},{"@type":"ListItem","position":3,"name":"骨取り　赤魚の西京味噌漬 1切","item":"https://saitofoods.com/products/709.html"}]}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
@@ -161,12 +161,12 @@
     <div class="subname">Boneless Akauo Rockfish in Saikyo Miso 1pc</div>
     <div class="price" id="price">฿88 <small>/ 100g</small></div>
     <div class="perunit">1パックの目安: ฿140</div>
-    <div class="stock" id="stock">在庫あり</div>
+    <div class="stock out" id="stock">在庫なし</div>
     <div class="buy">
-      <div class="stepper" id="stepper">
+      <div class="stepper" id="stepper" style="display:none">
         <button type="button" onclick="chg(-1)" aria-label="-">−</button><span id="qty">1</span><button type="button" onclick="chg(1)" aria-label="+">+</button>
       </div>
-      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()">カートに入れる</button>
+      <button type="button" class="add-btn" id="add-btn" onclick="addToCart()" disabled>在庫なし</button>
     </div>
     <div class="added" id="added">カートに入れました<a href="/cart.html">カートを見る ›</a></div>
     <div class="note">※ 量り売りの商品です。ご注文後に重さを量って、金額を確定します。</div>
@@ -238,7 +238,7 @@ https://www.instagram.com/p/DEe3jaRPUX5/?utm_source=ig_web_copy_link&amp;igsh=Mz
 
 <script>
 (function () {
-  var P = {"id":"ef57a3f0-4210-4bba-904b-831f1610e005","lang":"ja","max":3,"limit":null,"price":140,"unitPrice":88,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488910380_slot1.jpg"],"url":"https://saitofoods.com/products/709.html","title":"骨取り　赤魚の西京味噌漬 1切","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","maxedLimit":"ご注文の上限に達しました(1回のご注文 {n}個まで)","unavailable":"この商品は現在お取り扱いしておりません。"}};
+  var P = {"id":"ef57a3f0-4210-4bba-904b-831f1610e005","lang":"ja","max":0,"limit":null,"price":140,"unitPrice":88,"unitLabel":"100g","weight":true,"images":["https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785488910380_slot1.jpg"],"url":"https://saitofoods.com/products/709.html","title":"骨取り　赤魚の西京味噌漬 1切","t":{"copyManual":"このリンクをコピーしてください","igCopied":"リンクをコピーしました。Instagramのストーリーズ・DMに貼り付けてください","copied":"リンクをコピーしました ✓","inStock":"在庫あり","outOfStock":"在庫なし","add":"カートに入れる","added":"カートに入れました","maxed":"これ以上は入れられません(在庫の上限)","maxedLimit":"ご注文の上限に達しました(1回のご注文 {n}個まで)","unavailable":"この商品は現在お取り扱いしておりません。"}};
   var SB = "https://sdjgmgyghnlpqydrnllj.supabase.co", KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
   var qty = 1;
   
