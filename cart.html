@@ -1334,13 +1334,21 @@ function renderCart() {
           ? `<span style="text-decoration:line-through;color:#999;font-weight:600;margin-right:5px;">฿${item.original_price}</span>฿${item.price}`
           : `฿${item.price}`);
     const displayName = i18nGetLang() === 'en' && item.name_en ? item.name_en : item.name;
+    // 注文確定時に「在庫が足りない」と判定された商品は、行を赤く囲んで残り在庫数を表示する(2026-11-23)
+    const isShort = !!item.stockShort && item.quantity > item.stockShort.available;
+    const shortNote = isShort
+      ? (item.stockShort.available > 0
+          ? `<div style="font-size:12px;color:#c62828;font-weight:700;margin-top:3px;">在庫は残り${item.stockShort.available}個です。数量を減らしてください / Only ${item.stockShort.available} left. Please reduce the quantity.</div>`
+          : `<div style="font-size:12px;color:#c62828;font-weight:700;margin-top:3px;">在庫がなくなりました。✕で削除してください / Out of stock. Please remove it with ✕.</div>`)
+      : '';
     return `
-      <div class="cart-item-row">
+      <div class="cart-item-row"${isShort ? ' style="border:2px solid #c62828;border-radius:8px;padding:6px;background:#fff5f5;"' : ''}>
         ${img}
         <div class="cart-item-info">
           <div class="cart-item-name">${displayName}${isWeight ? `<span class="cart-item-weight-tag">${i18nText('cart.weightTag')}</span>` : ''}</div>
           <div class="cart-item-price">${priceLabel}</div>
           ${item.orderLimit ? `<div style="font-size:11px;color:#b45309;margin-top:2px;">1回のご注文 ${item.orderLimit}個まで / Limit ${item.orderLimit} per order</div>` : ''}
+          ${shortNote}
         </div>
         <div class="cart-item-controls">
           <button class="qty-btn" onclick="updateQty(${i}, -1)">−</button>
@@ -1363,9 +1371,93 @@ function updateQty(index, delta) {
     alert('この商品は1回のご注文 ' + item.orderLimit + '個までです / Limit ' + item.orderLimit + ' per order for this item.');
     return;
   }
+  // 在庫不足と判定された商品は、残り在庫数までしか増やせない
+  if (delta > 0 && item.stockShort && item.quantity >= item.stockShort.available) {
+    alert('この商品の在庫は残り' + item.stockShort.available + '個です / Only ' + item.stockShort.available + ' left in stock.');
+    return;
+  }
   item.quantity = Math.max(1, Math.min(max, item.quantity + delta));
   saveCartToStorage();
   renderCart();
+}
+
+// ===== 在庫不足エラー(OUT_OF_STOCK)の表示と、数量の調整(2026-11-23) =====
+// place_order は在庫が足りない商品を [{id,name_ja,name_en,requested,available}, ...] の形で返す。
+// 古い形式(OUT_OF_STOCK: 商品名)でも、商品名だけは表示する。
+function parseOutOfStock(raw) {
+  const i = raw.indexOf('OUT_OF_STOCK');
+  if (i < 0) return null;
+  const s = raw.indexOf('[', i);
+  const e = raw.lastIndexOf(']');
+  if (s >= 0 && e > s) {
+    try {
+      const arr = JSON.parse(raw.slice(s, e + 1));
+      if (Array.isArray(arr) && arr.length) return arr;
+    } catch (err) { /* 古い形式として扱う */ }
+  }
+  const name = raw.slice(i + 'OUT_OF_STOCK'.length).replace(/^[:\s]+/, '').trim();
+  return name ? [{ id: null, name_ja: name, name_en: name, requested: null, available: null }] : [];
+}
+
+function showOutOfStock(list, msgEl) {
+  const lines = [];
+  list.forEach(entry => {
+    const ci = cart.find(c => (entry.id && c.product_id === entry.id) || (!entry.id && c.name === entry.name_ja));
+    const avail = entry.available === null || entry.available === undefined ? null : Math.max(0, Number(entry.available));
+    if (ci && avail !== null) {
+      ci.stockShort = { available: avail };
+      ci.maxQty = avail > 0 ? Math.min(ci.maxQty || avail, avail) : ci.maxQty;
+    }
+    const nameJa = entry.name_ja || (ci && ci.name) || '';
+    const nameEn = entry.name_en || (ci && ci.name_en) || nameJa;
+    const ja = avail === null ? nameJa : (avail > 0 ? `${nameJa}(残り${avail}個)` : `${nameJa}(在庫なし)`);
+    const en = avail === null ? nameEn : (avail > 0 ? `${nameEn} (${avail} left)` : `${nameEn} (out of stock)`);
+    lines.push({ ja, en });
+  });
+
+  msgEl.textContent = '';
+  msgEl.className = 'error';
+  const head = document.createElement('div');
+  head.style.fontWeight = '700';
+  head.textContent = '申し訳ございません、ご注文の間に他のお客様のご注文があり、以下の商品の在庫が足りなくなりました。 / Sorry, the following item(s) ran out of stock while you were ordering.';
+  msgEl.appendChild(head);
+  const ul = document.createElement('ul');
+  ul.style.cssText = 'text-align:left;margin:8px auto;max-width:420px;padding-left:20px;';
+  lines.forEach(l => {
+    const li = document.createElement('li');
+    li.textContent = l.ja + ' / ' + l.en;
+    ul.appendChild(li);
+  });
+  msgEl.appendChild(ul);
+  const tail = document.createElement('div');
+  tail.textContent = '数量を減らすか、商品を削除してから、もう一度「注文を確定する」を押してください。 / Please reduce the quantity or remove the item(s), then press "Place order" again.';
+  msgEl.appendChild(tail);
+  if (cart.some(c => c.stockShort)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn-primary';
+    b.style.cssText = 'margin-top:10px;';
+    b.textContent = '在庫に合わせて自動で調整する / Adjust to available stock';
+    b.onclick = adjustCartToStock;
+    msgEl.appendChild(b);
+  }
+  renderCart();
+}
+
+function adjustCartToStock() {
+  cart = cart.filter(c => !(c.stockShort && c.stockShort.available <= 0));
+  cart.forEach(c => {
+    if (c.stockShort) {
+      c.quantity = Math.max(1, Math.min(c.quantity, c.stockShort.available));
+      c.maxQty = c.stockShort.available;
+      delete c.stockShort;
+    }
+  });
+  saveCartToStorage();
+  renderCart();
+  const msgEl = document.getElementById('submit-msg');
+  msgEl.className = 'success';
+  msgEl.textContent = '在庫に合わせて数量を調整しました。内容をご確認のうえ、もう一度「注文を確定する」を押してください。 / Quantities were adjusted to the available stock. Please review and press "Place order" again.';
 }
 
 function removeItem(index) {
@@ -2054,6 +2146,14 @@ async function submitOrder() {
   } catch (e) {
     // サーバー側が投げるエラーコードを、お客様向けの分かりやすい文言に変換する
     const raw = (e && e.message) ? e.message : '';
+    // 在庫不足: どの商品が足りないか(残り何個か)を表示し、数量を減らして続行できるようにする
+    const oosList = parseOutOfStock(raw);
+    if (oosList && oosList.length) {
+      showOutOfStock(oosList, msgEl);
+      btn.disabled = false;
+      btn.textContent = '注文を確定する / Place order';
+      return;
+    }
     let friendly = '注文の送信に失敗しました / Failed to submit order';
     if (raw.includes('PRODUCT_LIMIT_EXCEEDED')) friendly = '申し訳ございません、1回のご注文の上限数を超えている商品があります(' + (raw.split(':').slice(1).join(':').trim() || '') + ')。カートの数量をご確認ください / Sorry, an item in your cart exceeds the per-order limit. Please review your cart.';
     else if (raw.includes('OUT_OF_STOCK')) friendly = '申し訳ございません、在庫が不足している商品があります。カートの数量をご確認ください / Some items are out of stock. Please review your cart.';
