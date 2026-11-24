@@ -42,6 +42,9 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
 #snd.on i{background:#2a2;}
 #dep{position:fixed;left:50%;top:64px;transform:translateX(-50%);background:var(--ok);color:#fff;padding:12px 30px;border-radius:16px;font-size:38px;font-weight:700;z-index:50;box-shadow:0 6px 24px rgba(0,0,0,.35);text-align:center;pointer-events:none;max-width:94vw;white-space:nowrap;}
 #dep small{display:block;font-size:16px;font-weight:400;opacity:.92;}
+#dep.un{background:#4b5563;}
+#qrw{background:#f0b429;color:#000;}
+#qrw.late{background:var(--pri);color:#fff;}
 #main{flex:1;display:flex;min-height:0;}
 #cats{width:128px;flex:none;overflow-y:auto;background:#e9ebee;padding:6px;-webkit-overflow-scrolling:touch;}
 #cats button{display:block;width:100%;margin:0 0 6px;background:#fff;color:var(--tx);min-height:52px;font-size:14px;padding:6px;line-height:1.2;border:2px solid transparent;}
@@ -136,6 +139,7 @@ input,select{font-family:inherit;font-size:17px;padding:10px 12px;border:1px sol
     <input id="q" type="search" placeholder="ค้นหาสินค้า" autocomplete="off">
     <button id="prn" class="lt"><i></i><span>เครื่องพิมพ์</span></button>
     <button id="snd" class="lt"><i></i><span>🔊 เสียงเงินเข้า</span></button>
+    <button id="qrw" class="hidden"></button>
     <button id="reprint" class="lt">พิมพ์ซ้ำ</button>
     <button id="drawer" class="lt">เปิดลิ้นชัก</button>
     <button id="gear" class="lt">⚙</button>
@@ -362,6 +366,8 @@ async function afterAuth(user) {
   $("pw").value = "";
   await loadData();
   autoReconnect();
+  refreshQrWait();
+  if (!qrWaitTimer) qrWaitTimer = setInterval(refreshQrWait, 2e4);
   return true;
 }
 async function logout() {
@@ -850,6 +856,7 @@ function openPay() {
     if (Math.abs(rec.total - amount) > 5e-3) toast("\u0E22\u0E2D\u0E14\u0E23\u0E27\u0E21\u0E08\u0E23\u0E34\u0E07 \u0E3F" + fmt(rec.total) + " (\u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E17\u0E35\u0E48\u0E41\u0E2A\u0E14\u0E07 \u0E23\u0E32\u0E04\u0E32\u0E2D\u0E32\u0E08\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19)", true, 9e3);
     else toast("\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27 " + d.receipt_no + (method === "cash" && cashRecv >= rec.total ? "  \u0E17\u0E2D\u0E19 \u0E3F" + fmt(cashRecv - rec.total) : ""), false, 4500);
     printReceipt(rec, method === "cash" && lsGet("pos_autodrawer", "1") === "1");
+    if (method === "qr") afterQrSale(d);
   }
 }
 function drawQr(cv, text, size) {
@@ -1318,13 +1325,57 @@ function speakTh(text) {
     return false;
   }
 }
+var qrWait = [];
+var qrWaitTimer = null;
+async function refreshQrWait() {
+  try {
+    var since = new Date(Date.now() - 30 * 60 * 1e3).toISOString();
+    var r = await sb.from("orders").select("id,legacy_order_no,total_amount,created_at").eq("order_source", "pos").eq("payment_method", "qr").is("qr_confirmed_at", null).or("is_cancelled.is.null,is_cancelled.eq.false").gte("created_at", since).order("created_at", { ascending: true });
+    if (r.error) return;
+    qrWait = r.data || [];
+  } catch (e) {
+    return;
+  }
+  var b = $("qrw");
+  if (!qrWait.length) {
+    b.className = "hidden";
+    return;
+  }
+  var late = qrWait.some(function(o) {
+    return Date.now() - new Date(o.created_at).getTime() > 18e4;
+  });
+  b.className = late ? "late" : "";
+  b.textContent = "⏳ QR รอเงิน " + qrWait.length;
+}
+function openQrWait() {
+  var rows = qrWait.map(function(o) {
+    var mins = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 6e4);
+    return h("div", { style: "display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eceef1;font-size:16px" }, [
+      h("span", { text: o.legacy_order_no }),
+      h("b", { text: "฿" + fmt(o.total_amount) }),
+      h("span", { text: mins + " นาทีที่แล้ว", style: "color:#6a737d" })
+    ]);
+  });
+  openModal(h("div", { style: "width:360px;max-width:90vw" }, [
+    h("h2", { text: "QR ยังไม่พบเงินเข้า / 入金未確認" }),
+    h("div", { text: "30 นาทีที่ผ่านมา / 直近30分のQR会計", style: "color:#6a737d;font-size:13px;margin-bottom:6px" })
+  ].concat(rows, [h("div", { cls: "acts" }, [h("button", { cls: "lt", text: "ปิด", onclick: closeModal })])])));
+}
+async function afterQrSale(d) {
+  try {
+    var r = await sb.from("orders").select("qr_confirmed_at").eq("id", d.order_id).maybeSingle();
+    if (r.data && r.data.qr_confirmed_at) showDeposit(Number(d.total_amount), d.receipt_no);
+  } catch (e) {
+  }
+  refreshQrWait();
+}
 var depTimer = null;
-function showDeposit(amt) {
+function showDeposit(amt, rno) {
   var d = $("dep");
   d.innerHTML = "";
-  d.appendChild(h("small", { text: "\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27 / \u5165\u91D1\u3042\u308A" }));
+  d.className = rno ? "" : "un";
+  d.appendChild(h("small", { text: rno ? "\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27 \u2713 \u5165\u91D1\u78BA\u8A8D\u6E08\u307F  " + rno : "\u0E23\u0E31\u0E1A\u0E40\u0E07\u0E34\u0E19\u0E41\u0E25\u0E49\u0E27 / \u5165\u91D1\u3042\u308A (\u8A72\u5F53\u30EC\u30B7\u30FC\u30C8\u306A\u3057)" }));
   d.appendChild(document.createTextNode("\u0E3F" + fmt(amt)));
-  d.classList.remove("hidden");
   clearTimeout(depTimer);
   depTimer = setTimeout(function() {
     d.classList.add("hidden");
@@ -1340,12 +1391,13 @@ function onDeposit(row, silentIfOld) {
   if (silentIfOld && Date.now() - new Date(row.received_at).getTime() > 18e4) return;
   var plain = Math.round(amt * 100) % 100 === 0 ? String(Math.round(amt)) : amt.toFixed(2);
   speakTh("ได้รับเงิน " + plain + " บาท");
-  showDeposit(amt);
+  showDeposit(amt, row.matched_receipt_no);
+  refreshQrWait();
 }
 async function pollDeposits() {
   if (!snd.on) return;
   try {
-    var r = await sb.from("scb_deposits").select("id,amount,received_at").gt("id", snd.lastId).order("id", { ascending: true }).limit(20);
+    var r = await sb.from("scb_deposits").select("id,amount,received_at,matched_receipt_no").gt("id", snd.lastId).order("id", { ascending: true }).limit(20);
     if (r.data) r.data.forEach(function(row) {
       onDeposit(row, true);
     });
@@ -1423,6 +1475,7 @@ $("clear").addEventListener("click", function() {
   }
 });
 $("prn").addEventListener("click", connectPrinter);
+$("qrw").addEventListener("click", openQrWait);
 $("snd").addEventListener("click", function() {
   if (snd.on) stopSnd();
   else startSnd();
