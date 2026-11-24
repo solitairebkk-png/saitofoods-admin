@@ -363,17 +363,8 @@
       <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Optional. Deducted from the order total (in addition to any coupon/points already applied). Enter 0 to remove. / ไม่บังคับ หักจากยอดรวม ใส่ 0 เพื่อยกเลิก
       <div id="discount-total-preview" style="margin-top:6px;font-size:13px;font-weight:700;color:#b71c1c;"></div></div>
     </div>
-    <div id="points-card" style="display:none;margin-top:8px;background:#eef5fb;border:1px solid #90b4d4;border-radius:6px;padding:8px 10px;">
-      <div style="font-size:12px;font-weight:700;color:#1c5279;">⭐ Points / แต้ม</div>
-      <div style="margin-top:4px;font-size:13px;">Points used on this order / แต้มที่ใช้ในออเดอร์นี้: <b id="points-used-display">0</b> pt
-        <span style="color:var(--text-muted);font-size:12px;">・ Customer balance / แต้มคงเหลือ: <b id="points-balance-display">0</b> pt</span></div>
-      <div id="points-admin-row" style="display:none;margin-top:6px;">
-        <label style="display:block;font-size:12px;font-weight:700;color:#1c5279;">Admin: set points used / ผู้ดูแล: ตั้งแต้มที่ใช้</label>
-        <input type="number" id="points-new-input" min="0" step="1" style="width:110px;margin-top:4px;">
-        <button type="button" id="points-apply-btn" onclick="applyPointsChange()" style="margin-left:6px;padding:6px 12px;border-radius:6px;border:none;background:#1c5279;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Apply / ใช้งาน</button>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Changing this updates the order total, the customer's balance and the points history immediately (saved right away, no need to press Save). Raising it deducts from the balance; lowering it returns points to the customer. / เปลี่ยนแล้วยอดรวม แต้มคงเหลือ และประวัติแต้มจะอัปเดตทันที (ไม่ต้องกดบันทึก)</div>
-        <div id="points-msg" style="margin-top:4px;font-size:12px;font-weight:700;"></div>
-      </div>
+    <div id="points-card" style="display:none;margin-top:8px;background:#eef5fb;border:1px solid #90b4d4;border-radius:6px;padding:8px 10px;font-size:13px;font-weight:700;color:#1c5279;">
+      ⭐ Points used / แต้มที่ลูกค้าใช้: <span id="points-used-display">0</span> pt <span style="font-weight:400;color:var(--text-muted);font-size:12px;">(= -฿<span id="points-used-baht">0</span>)</span>
     </div>
     <div id="shipping-override-row" style="display:none;margin-top:6px;font-size:12px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:8px 10px;">
       <div style="font-weight:700;color:#1b5e20;">✅ This order already qualified for free shipping — shipping is not added even if the total drops below the minimum. / ออเดอร์นี้ได้ส่งฟรีแล้ว จึงไม่คิดค่าส่งเพิ่มแม้ยอดลดลง</div>
@@ -1352,63 +1343,6 @@ function initEditSms(customer) {
   box.style.display = 'flex';
 }
 
-// ---------------- ポイント欄(編集画面) ----------------
-// この注文で使われたポイントと、お客様の残高を表示する。管理者(role=admin)だけが使用ポイントを
-// 増減できる。実際の更新はDB関数 admin_set_order_points_used が、注文(使用ポイント・合計)・
-// お客様の残高・ポイント履歴を1回の処理でまとめて行う(管理者以外は関数側で拒否される)。
-function initPointsCard(order) {
-  const card = document.getElementById('points-card');
-  if (!card) return;
-  if (order.order_type === 'walk_in' || !order.customers) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-  document.getElementById('points-admin-row').style.display = (currentCustomer && currentCustomer.role === 'admin') ? 'block' : 'none';
-  document.getElementById('points-new-input').value = editingOrderPointsUsed;
-  refreshPointsCard(order.customers.point_balance);
-}
-
-function refreshPointsCard(balance) {
-  document.getElementById('points-used-display').textContent = editingOrderPointsUsed;
-  if (balance !== undefined && balance !== null) document.getElementById('points-balance-display').textContent = balance;
-}
-
-async function applyPointsChange() {
-  if (!editingOrderId) return;
-  const msgEl = document.getElementById('points-msg');
-  const raw = document.getElementById('points-new-input').value;
-  const n = Math.floor(Number(raw));
-  if (raw === '' || !isFinite(n) || n < 0) { msgEl.style.color = '#b71c1c'; msgEl.textContent = 'กรุณาใส่จำนวนแต้ม / Enter a valid number of points.'; return; }
-  if (n === editingOrderPointsUsed) { msgEl.style.color = '#b71c1c'; msgEl.textContent = 'ไม่มีการเปลี่ยนแปลง / No change.'; return; }
-  const diff = n - editingOrderPointsUsed;
-  if (!confirm(`แต้มที่ใช้: ${editingOrderPointsUsed} → ${n} pt\n${diff > 0 ? 'หักแต้มลูกค้าเพิ่ม ' + diff : 'คืนแต้มให้ลูกค้า ' + (-diff)} pt\n\nPoints used: ${editingOrderPointsUsed} → ${n}\n${diff > 0 ? 'Deduct ' + diff + ' more pt from the customer' : 'Return ' + (-diff) + ' pt to the customer'}.\nOK?`)) return;
-  const btn = document.getElementById('points-apply-btn');
-  btn.disabled = true;
-  msgEl.style.color = 'var(--text-muted)';
-  msgEl.textContent = 'Saving... / กำลังบันทึก...';
-  const { data, error } = await supabaseClient.rpc('admin_set_order_points_used', {
-    p_order_id: editingOrderId, p_new_points: n,
-  });
-  btn.disabled = false;
-  if (error) {
-    const m = error.message || '';
-    let t = m;
-    if (m.includes('INSUFFICIENT_POINTS')) t = 'แต้มคงเหลือของลูกค้าไม่พอ / Not enough points in the customer balance (' + (m.split(': ')[1] || '') + ')';
-    else if (m.includes('EXCEEDS_ORDER_AMOUNT')) t = 'เกินยอดสั่งซื้อ / More than the order amount allows (max ' + (m.split(': ')[1] || '') + ')';
-    else if (m.includes('NOT_AUTHORIZED')) t = 'เฉพาะผู้ดูแลระบบ / Admin only';
-    msgEl.style.color = '#b71c1c';
-    msgEl.textContent = '✗ ' + t;
-    return;
-  }
-  editingOrderPointsUsed = Number(data.points_used) || 0;
-  if (selectedCustomer) selectedCustomer.point_balance = data.point_balance;
-  refreshPointsCard(data.point_balance);
-  document.getElementById('points-new-input').value = editingOrderPointsUsed;
-  const noteEl = document.getElementById('existing-discount-note');
-  if (noteEl && editingOrderPointsUsed === 0 && !editingOrderBaseDiscount) noteEl.style.display = 'none';
-  msgEl.style.color = '#1b5e20';
-  msgEl.textContent = `✓ บันทึกแล้ว / Saved. ยอดรวม / Total: ${data.total_amount} THB`;
-  renderCart();
-}
-
 async function loadOrderForEdit(orderId) {
   const { data: order, error } = await supabaseClient
     .from('orders')
@@ -1453,7 +1387,14 @@ async function loadOrderForEdit(orderId) {
     document.getElementById('manual-discount').value = editingOrderDiscountAmount;
   }
   editingOrderPointsUsed = Number(order.points_used) || 0;
-  initPointsCard(order);
+  // 編集画面にも、お客様がこの注文で使ったポイントを常に表示する(ポイント0・ウォークインは非表示)。
+  const pointsCardEl = document.getElementById('points-card');
+  if (pointsCardEl) {
+    const showPts = order.order_type !== 'walk_in' && editingOrderPointsUsed > 0;
+    pointsCardEl.style.display = showPts ? 'block' : 'none';
+    document.getElementById('points-used-display').textContent = editingOrderPointsUsed;
+    document.getElementById('points-used-baht').textContent = editingOrderPointsUsed;
+  }
 
   // この注文が元々クーポン・ポイントを使っていた場合、編集画面を開いたスタッフが気づけるよう表示する。
   // 表示するだけで、この情報自体は編集で変更できない(割引・ポイントの取り消しは今の画面では非対応)。
