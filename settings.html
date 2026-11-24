@@ -1098,12 +1098,35 @@ async function annTranslateText(text) {
   const t = String(text || '').trim();
   if (!t) return '';
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=t&q=${encodeURIComponent(t)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('translate failed');
-  const data = await res.json();
-  const out = (data[0] || []).map(seg => seg[0]).join('');
-  if (!out) throw new Error('empty result');
-  return out;
+  // 無料サービスは短時間に多数送ると断られることがあるため、失敗したら少し待って最大3回までやり直す
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const out = (data[0] || []).map(seg => seg[0]).join('');
+      if (!out) throw new Error('empty result');
+      return out;
+    } catch (e) {
+      lastErr = e;
+      await new Promise(r => setTimeout(r, 700 * (attempt + 1)));
+    }
+  }
+  throw lastErr || new Error('translate failed');
+}
+// 複数の文を、同時に送りすぎないよう3件ずつ順番に翻訳する(結果の順番は元のまま)
+async function annTranslateMany(texts) {
+  const results = new Array(texts.length);
+  let next = 0;
+  async function worker() {
+    while (next < texts.length) {
+      const i = next++;
+      results[i] = await annTranslateText(texts[i]);
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+  return results;
 }
 async function translateAnnouncementToEnglish(btn) {
   const card = btn.closest('.entry-card');
@@ -1121,11 +1144,7 @@ async function translateAnnouncementToEnglish(btn) {
     const body = card.querySelector('.ann-body').value;
     const linkText = card.querySelector('.ann-link-text').value;
     const lines = body.split('\n');
-    const [tt, ll, ...bl] = await Promise.all([
-      annTranslateText(title),
-      annTranslateText(linkText),
-      ...lines.map(l => annTranslateText(l)),
-    ]);
+    const [tt, ll, ...bl] = await annTranslateMany([title, linkText, ...lines]);
     tEn.value = tt;
     lEn.value = ll;
     bEn.value = bl.join('\n');
@@ -1133,7 +1152,7 @@ async function translateAnnouncementToEnglish(btn) {
     status.textContent = '✓ 自動翻訳しました。内容を確認・修正して「保存」を押してください / Translated. Please review, then Save.';
   } catch (e) {
     status.style.color = 'var(--red-accent, #d32f2f)';
-    status.textContent = '翻訳に失敗しました。時間をおいて再度お試しください / Translation failed. Please try again later.';
+    status.textContent = '翻訳に失敗しました。時間をおいて再度お試しください / Translation failed. Please try again later.(' + ((e && e.message) || e) + ')';
   } finally {
     btn.disabled = false;
   }
