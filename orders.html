@@ -1079,8 +1079,8 @@
       <button onclick="closeReportsModal()">✕</button>
     </div>
     <div class="reports-tabs">
-      <button id="reports-tab-cashier" class="active" onclick="switchReportsTab('cashier')">Cashier / แคชเชียร์</button>
-      <button id="reports-tab-ootoya" onclick="switchReportsTab('ootoya')">Ootoya</button>
+      <button id="reports-tab-cashier" onclick="switchReportsTab('cashier')">Cashier / แคชเชียร์</button>
+      <button id="reports-tab-ootoya" class="active" onclick="switchReportsTab('ootoya')">Ootoya</button>
     </div>
     <div class="sns-modal-list" id="reports-modal-list">
       <div class="loading">Loading...</div>
@@ -5094,7 +5094,7 @@ async function skipAutoPost(id) {
 // 「新着があるか」は全スタッフ共通のDBフラグではなく、この端末(ブラウザ)で
 // 最後にモーダルを開いた時刻(localStorage)と最新レポートの更新日時を比較して判定する。
 const REPORTS_LAST_SEEN_KEY = 'saitofoods_reports_last_seen';
-let reportsModalType = 'cashier';
+let reportsModalType = 'ootoya'; // 最初に開くタブ(2026-11-24: Cashier→Ootoyaに変更)
 
 async function checkReportsBadge() {
   const badge = document.getElementById('reports-badge');
