@@ -47,6 +47,14 @@
     "postalCode": "10110",
     "addressCountry": "TH"
   },
+  "description": "1997年創業。バンコクを中心に、冷凍食品・手作り惣菜・日本からの輸入品を通販・宅配でお届けする日本食品店です。直売店も同住所で営業しています。日曜・一部の祝日は休業。",
+  "email": "orders@saitofoods.com",
+  "hasMap": "https://maps.app.goo.gl/QKdhHvcsrUkLti857",
+  "sameAs": [
+    "https://x.com/SaitoFoods",
+    "https://www.instagram.com/saito_foods/",
+    "https://www.facebook.com/SaitoFoodsThailand"
+  ],
   "areaServed": ["Bangkok", "Sriracha", "Pattaya"],
   "foundingDate": "1997",
   "openingHoursSpecification": [
@@ -54,13 +62,7 @@
       "@type": "OpeningHoursSpecification",
       "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
       "opens": "08:20",
-      "closes": "17:30"
-    },
-    {
-      "@type": "OpeningHoursSpecification",
-      "dayOfWeek": ["Saturday"],
-      "opens": "09:00",
-      "closes": "12:00"
+      "closes": "17:00"
     }
   ]
 }
@@ -407,7 +409,7 @@
   .footer-social a:hover { filter: brightness(1.1); }
   .footer-social svg { width: 18px; height: 18px; }
   .footer-section { margin-bottom: 18px; }
-  .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
+  .footer-section h2, .footer-section h3 { font-size: 12px; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
   .footer-section p { line-height: 1.9; overflow-wrap: break-word; word-break: break-word; }
   .footer-section a { color: var(--brand-dark); text-decoration: underline; }
   .footer-row { display: flex; gap: 24px; flex-wrap: wrap; }
@@ -558,6 +560,9 @@ function closeMigrationGuideModal() {
         <div class="section-title" style="padding:0 0 6px;font-size:13px;margin-bottom:0;"><svg class="ttl-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg> <span data-i18n="hours.title">営業時間案内 / Business Hours</span></div>
         <div class="calendar-card" id="hours-card">
           <div class="hours-block">
+            <div class="hours-line" style="font-weight:700;color:var(--red);" data-i18n="hours.closedNote">日曜・一部の祝日は休業です(配送カレンダーをご確認ください)</div>
+          </div>
+          <div class="hours-block">
             <div class="hours-block-title" data-i18n="hours.deliveryTitle">配達時間</div>
             <div class="hours-line" data-i18n="hours.deliveryLine1">月～金　9:00-12:00　13:00-18:00</div>
             <div class="hours-line" data-i18n="hours.deliveryLine2">土曜日　9:00-12:00　月2回営業</div>
@@ -641,7 +646,7 @@ function closeMigrationGuideModal() {
 
       <div class="footer-row">
         <div class="footer-section footer-company-info">
-          <h3 data-i18n="footer.companyTitle">会社情報・直売店のご案内 / Company &amp; Store</h3>
+          <h2 data-i18n="footer.companyTitle">会社情報・直売店のご案内 / Company &amp; Store</h2>
           <div class="footer-store-media">
             <img src="https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/store-front.jpg" alt="サイトウフーズ直売店" class="footer-store-photo">
             <div id="footer-map" class="footer-store-map"></div>
@@ -659,9 +664,16 @@ function closeMigrationGuideModal() {
         </div>
 
         <div class="footer-section footer-delivery-area" id="delivery-area">
-          <h3 data-i18n="footer.deliveryAreaTitle">配送エリアについて / Delivery Area</h3>
+          <h2 data-i18n="footer.deliveryAreaTitle">配送エリアについて / Delivery Area</h2>
           <p>
 <span data-i18n="footer.deliveryAreaText">バンコク・シラチャ・パタヤは自社配送でお届けします。それ以外の地域は、外部のクール便(冷蔵・冷凍配送サービス)を利用して全国どこへでもお届け可能です。詳しくはお問い合わせください。</span>
+          </p>
+          <p class="footer-area-list" style="margin-top:8px;">
+            <strong data-i18n="footer.bangkokAreaListTitle">バンコクの主な配送エリア:</strong>
+            <span data-i18n="footer.bangkokAreaList">スクムヴィット、サトーン、バンスー、バンナ、ラマ3、ラムカムヘン、シーナカリン、ラプラオ</span><br>
+            <strong data-i18n="footer.otherAreaListTitle">その他の自社配送エリア:</strong>
+            <span data-i18n="footer.otherAreaList">シラチャ、パタヤ</span><br>
+            <span data-i18n="footer.areaContactNote">これ以外のエリアもお気軽にご相談ください。</span>
           </p>
           <div class="footer-area-images">
             <div class="footer-area-image-item">
