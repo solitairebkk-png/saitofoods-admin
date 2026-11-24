@@ -3696,7 +3696,11 @@ function openManualPayModal(order) {
   const bkkNow = new Date(now.getTime() + 7 * 3600000);
   const defaultTimeStr = bkkNow.toISOString().slice(0, 16).replace('T', ' ');
   document.getElementById('manualpay-time-input').value = defaultTimeStr;
-  document.getElementById('manualpay-amount-input').value = order.total_amount || '';
+  // 初期値は「合計 − すでに入金確認済みの額」(=あと足りない分)。合計をそのまま入れると、
+  // 一部入金済みの注文で確定したときに入金額へ全額が上乗せされ、二重計上になる(2026-11-24発覚)。
+  const alreadyPaid = Number(order.paid_amount) || 0;
+  const remainingDue = Math.max(0, (Number(order.total_amount) || 0) - alreadyPaid);
+  document.getElementById('manualpay-amount-input').value = alreadyPaid > 0 ? (remainingDue || '') : (order.total_amount || '');
   document.getElementById('manualpay-modal-confirm-btn').disabled = false;
   document.getElementById('manualpay-modal-confirm-btn').textContent = 'Confirm / ยืนยัน';
   document.getElementById('manualpay-modal').classList.add('open');
