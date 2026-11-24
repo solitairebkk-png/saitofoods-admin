@@ -1225,8 +1225,16 @@ function renderCart() {
     const pre = subtotal + computeShipping(subtotal, isWalkin);
     const capped = Math.min(editingOrderBaseDiscount + md, pre);
     const finalAmt = Math.max(0, pre - capped - editingOrderPointsUsed);
-    previewEl.textContent = md > 0
-      ? `Total to pay / ยอดที่ต้องชำระ: ${finalAmt} THB` + (md > pre ? ' (discount capped / ส่วนลดถูกจำกัดไม่เกินยอดรวม)' : '')
+    // 手入力の値引きがなくても、この注文が元々使っていたクーポン・ポイントがある場合は
+    // 差し引き後の「支払い金額」を必ず表示する(上の小計は割引前の金額なので、
+    // これが出ないとポイント分が消えたように見えてしまう)。
+    const hasExistingDiscount = editingOrderBaseDiscount > 0 || editingOrderPointsUsed > 0;
+    const parts = [];
+    if (editingOrderBaseDiscount > 0) parts.push(`coupon -${editingOrderBaseDiscount}`);
+    if (editingOrderPointsUsed > 0) parts.push(`points -${editingOrderPointsUsed}`);
+    if (md > 0) parts.push(`discount -${md}`);
+    previewEl.textContent = (md > 0 || hasExistingDiscount)
+      ? `Total to pay / ยอดที่ต้องชำระ: ${finalAmt} THB` + (parts.length ? ` (${parts.join(', ')})` : '') + (md > pre ? ' (discount capped / ส่วนลดถูกจำกัดไม่เกินยอดรวม)' : '')
       : '';
   }
 }
