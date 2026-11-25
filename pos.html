@@ -179,6 +179,7 @@ var qrcode=(function(){var P=function(x,w){var g=236,l=17,n=x,s=O[w],t=null,r=0,
 var SUPABASE_URL = "https://sdjgmgyghnlpqydrnllj.supabase.co";
 var SUPABASE_KEY = "sb_publishable_GzbK9P2cp7FPFxrnyBjVug_IMCbjOpk";
 var PROMPTPAY_ID = "0639311943";
+var PROMPTPAY_BILLER_ID = "010554007919109";
 var STORE_ADDR = ["23/7 Soi Naphasub 2 Sukhumvit Soi 36", "Klongton Klongtoey Bangkok 10110"];
 var STORE_TEL = "Tel 02-258-9878";
 var STORE_URL = "https://saitofoods.com";
@@ -195,16 +196,10 @@ function tlv(tag, val) {
   return tag + String(val.length).padStart(2, "0") + val;
 }
 function promptpayPayload(id, amount) {
-  id = String(id || "").replace(/[^0-9]/g, "");
-  var acc;
-  if (id.length >= 15) acc = tlv("03", id);
-  else if (id.length === 13) acc = tlv("02", id);
-  else if (id.length === 10 || id.length === 9) acc = tlv("01", "0066" + id.replace(/^0/, ""));
-  else throw new Error("bad promptpay id");
-  var hasAmt = amount && Number(amount) > 0;
-  var s = tlv("00", "01") + tlv("01", hasAmt ? "12" : "11") + tlv("29", tlv("00", "A000000677010111") + acc) + tlv("58", "TH") + tlv("53", "764");
-  if (hasAmt) s += tlv("54", Number(amount).toFixed(2));
-  s += "6304";
+  var merchant = tlv("00", "A000000677010112") + tlv("01", PROMPTPAY_BILLER_ID) + tlv("02", "REF001") + tlv("03", "REF002");
+  var s = tlv("00", "01") + tlv("01", "12") + tlv("30", merchant) + tlv("53", "764");
+  if (amount && Number(amount) > 0) s += tlv("54", Number(amount).toFixed(2));
+  s += tlv("58", "TH") + tlv("62", tlv("07", "IFB0639311943")) + "6304";
   return s + crc16ccitt(s);
 }
 function packRaster(img, band) {
