@@ -58,7 +58,7 @@
   .btn.secondary:hover { background: #eef2f7; }
   #login-error { color: var(--red-accent); font-size: 13px; min-height: 18px; margin-top: 6px; }
 
-  main { padding: 20px 24px 80px; display: none; max-width: 900px; margin: 0 auto; }
+  main { padding: 20px 24px 80px; display: none; max-width: 1100px; margin: 0 auto; }
 
   .card {
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
@@ -123,6 +123,55 @@
   }
   .product-search-result div:hover { background: #eef2f7; }
   .product-search-result div:last-child { border-bottom: none; }
+
+  /* ---- POS-style product picker ---- */
+  .pk-top { display: flex; gap: 8px; margin-bottom: 8px; }
+  .pk-top input { flex: 1; font-size: 16px; padding: 10px 12px; }
+  .pk-top select { width: 64px; font-size: 15px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: white; }
+  .pk-wrap { display: flex; gap: 8px; height: min(72vh, 640px); min-height: 380px; }
+  .pk-cats { width: 138px; flex: none; overflow-y: auto; background: #e9ebee; padding: 6px; border-radius: 8px; -webkit-overflow-scrolling: touch; }
+  .pk-cats button {
+    display: block; width: 100%; margin: 0 0 6px; background: #fff; color: var(--text); min-height: 52px; font-size: 13px; padding: 6px;
+    line-height: 1.2; border: 2px solid transparent; border-radius: 10px; cursor: pointer; font-family: inherit; text-align: center;
+  }
+  .pk-cats button.alt { background: #d6e6fa; border-color: #b7cfee; }
+  .pk-cats button.top { border-color: #f0b429; font-weight: 700; }
+  .pk-cats button.act, .pk-cats button.alt.act { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .pk-cats button .th { font-weight: 700; font-size: 13px; }
+  .pk-cats button .en { font-size: 11px; margin-top: 2px; color: var(--text-muted); }
+  .pk-cats button.act .en { color: #dbe6f1; }
+  .pk-grid { flex: 1; overflow-y: auto; padding: 4px; display: grid; gap: 8px; align-content: start; grid-auto-rows: min-content; -webkit-overflow-scrolling: touch; }
+  .pk-grid.c2 { grid-template-columns: repeat(2, 1fr); }
+  .pk-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .pk-grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  .pk-grid.c5 { grid-template-columns: repeat(5, 1fr); }
+  .pk-grid.c6 { grid-template-columns: repeat(6, 1fr); }
+  .pk-card { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; }
+  .pk-card:hover { border-color: var(--navy); }
+  .pk-card:active, .pk-card.flash { outline: 3px solid var(--green); }
+  .pk-card .im { height: 0; padding-bottom: 64%; position: relative; overflow: hidden; background: #f3f4f6; }
+  .pk-card .im img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+  .pk-card .nm { padding: 5px 7px 0; font-size: 13px; line-height: 1.25; font-weight: 600; min-height: 2.6em; max-height: 2.6em; overflow: hidden; }
+  .pk-card .sub { padding: 0 7px; font-size: 11px; line-height: 1.25; color: var(--text-muted); height: 1.25em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .pk-card .pr { padding: 2px 7px 6px; font-weight: 700; color: var(--navy); font-size: 15px; }
+  .pk-card .pr small { font-weight: 400; color: var(--text-muted); font-size: 11px; }
+  .pk-card .bd { position: absolute; top: 4px; left: 4px; background: #f0b429; color: #000; font-size: 11px; border-radius: 6px; padding: 1px 5px; }
+  .pk-card .bd.z { background: #6a737d; color: #fff; left: auto; right: 4px; }
+  .pk-card .im .bd.np { position: absolute; background: #6a737d; color: #fff; top: auto; bottom: 4px; left: 4px; right: auto; font-size: 11px; border-radius: 6px; padding: 1px 5px; }
+  .pk-card .qty { position: absolute; right: 6px; bottom: 6px; min-width: 24px; height: 24px; border-radius: 12px; background: var(--green); color: #fff; font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; padding: 0 6px; display: none; }
+  .pk-card.incart .qty { display: block; }
+  .pk-card.incart { border-color: var(--green); }
+  .pk-empty { grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+  .pk-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 8px 12px; background: #eef5ee; border: 1px solid #b7d3bd; border-radius: 8px; font-size: 14px; font-weight: 700; color: #1b4d2c; }
+  .pk-bar button { background: var(--green); color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  @media (max-width: 640px) {
+    .pk-wrap { flex-direction: column; height: auto; }
+    .pk-cats { width: auto; display: flex; overflow-x: auto; overflow-y: hidden; padding: 6px; }
+    .pk-cats button { width: auto; min-width: 96px; margin: 0 6px 0 0; flex: none; }
+    .pk-grid { max-height: 60vh; }
+    .pk-grid.c5, .pk-grid.c6 { grid-template-columns: repeat(3, 1fr); }
+    .pk-grid.c4 { grid-template-columns: repeat(3, 1fr); }
+  }
 
   table.cart { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
   table.cart th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-weight: 600; font-size: 11px; border-bottom: 1px solid var(--border); }
@@ -331,14 +380,17 @@
   <!-- Products -->
   <div class="card">
     <h2><span class="th">สินค้า</span><span class="en">Products</span></h2>
-    <div class="field">
-      <label><span class="th">ค้นหาสินค้า</span>Search product</label>
-      <input type="text" id="product-search" placeholder="พิมพ์ชื่อสินค้า / Type product name" oninput="searchProducts()">
-      <div class="product-search-result" id="product-search-result"></div>
+    <div class="pk-top">
+      <input type="text" id="product-search" placeholder="ค้นหาสินค้า / Search · 日本語 · English · ไทย" oninput="onProductSearch()" autocomplete="off">
+      <select id="pk-cols" onchange="setPickerCols(this.value)" title="การ์ดต่อแถว / Cards per row / 1行の枚数">
+        <option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option>
+      </select>
     </div>
-
-    <div class="category-tabs" id="category-tabs"></div>
-    <div class="product-grid" id="product-grid"></div>
+    <div class="pk-wrap">
+      <div class="pk-cats" id="pk-cats"></div>
+      <div class="pk-grid c4" id="product-grid"></div>
+    </div>
+    <div class="pk-bar"><span id="pk-bar-text">🛒 0</span><button type="button" onclick="scrollToCart()">ดูตะกร้า / View cart ↓</button></div>
 
     <table class="cart">
       <thead>
@@ -938,124 +990,223 @@ function fillNewOrderCondos() {
   onEditCondoChange();
 }
 
-// ---------------- Category tabs & product grid ----------------
-let allCategories = [];
-let currentCategoryId = null;
+// ---------------- Product picker (POS-style: category column + photo cards) ----------------
+let pkProducts = {};     // id -> product
+let pkCatProducts = {};  // category_id -> [product id]
+let pkCats = [];         // [{ id, th, en }]
+let pkTopIds = [];       // best sellers for delivery orders (last 90 days)
+let pkTab = 'top';
+let pkQuery = '';
+let pkSearchTimer = null;
+const PK_COLS_KEY = 'lo_pk_cols';
+
+function pkCols() {
+  try { const n = parseInt(localStorage.getItem(PK_COLS_KEY) || '4', 10); return (n >= 2 && n <= 6) ? n : 4; } catch (e) { return 4; }
+}
+function setPickerCols(v) {
+  try { localStorage.setItem(PK_COLS_KEY, String(parseInt(v, 10) || 4)); } catch (e) {}
+  renderPkGrid();
+}
+// 「=xxxx」のような管理用サフィックスを表示から除く(POSと同じ)
+function pkClean(x) { return String(x || '').replace(/\s*=[A-Za-z0-9\-]+\s*$/, '').trim(); }
+// 検索用の正規化: 全角→半角、大文字→小文字、カタカナ→ひらがな
+function pkNorm(x) {
+  return String(x || '').normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+function pkSafeImg(u) {
+  return (typeof u === 'string' && u.indexOf(SUPABASE_URL + '/storage/') === 0) ? u : '';
+}
+function pkPrimaryName(p) { return pkClean(p.name_en) || pkClean(p.name_ja) || pkClean(p.name_th); }
 
 async function loadCategories() {
-  const { data, error } = await supabaseClient.from('categories').select('id, name_ja, name_en').order('name_ja');
-  if (error || !data) return;
-  allCategories = data;
+  const grid = document.getElementById('product-grid');
+  grid.innerHTML = '<div class="pk-empty">กำลังโหลด... / Loading...</div>';
+  document.getElementById('pk-cols').value = String(pkCols());
 
-  const tabsEl = document.getElementById('category-tabs');
-  tabsEl.innerHTML = '';
+  const [pr, ca, pc, top] = await Promise.all([
+    supabaseClient.from('products')
+      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published, image_url, stock_qty, is_unlimited_stock, sort_order')
+      .order('sort_order').range(0, 1999),
+    supabaseClient.from('categories').select('id, name_ja, name_en, name_th, sort_order').order('sort_order').range(0, 199),
+    supabaseClient.from('product_categories').select('product_id, category_id, sort_order').range(0, 4999),
+    supabaseClient.rpc('delivery_top_products', { p_days: 90, p_limit: 60 })
+  ]);
+  const err = pr.error || ca.error || pc.error;
+  if (err) { grid.innerHTML = '<div class="pk-empty" style="color:var(--red-accent);">Error: ' + escapeHtml(err.message) + '</div>'; return; }
 
-  const popularBtn = document.createElement('button');
-  popularBtn.textContent = '⭐ ยอดนิยม / Popular';
-  popularBtn.onclick = () => selectCategory('popular', popularBtn);
-  tabsEl.appendChild(popularBtn);
+  pkProducts = {};
+  (pr.data || []).forEach(p => { pkProducts[p.id] = p; });
 
-  const weightBtn = document.createElement('button');
-  weightBtn.textContent = '⚖️ ชั่งน้ำหนัก / Weight-based';
-  weightBtn.onclick = () => selectCategory('weight', weightBtn);
-  tabsEl.appendChild(weightBtn);
-
-  const allBtn = document.createElement('button');
-  allBtn.textContent = 'ทั้งหมด / All';
-  allBtn.classList.add('active');
-  allBtn.onclick = () => selectCategory(null, allBtn);
-  tabsEl.appendChild(allBtn);
-
-  data.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.textContent = cat.name_en || cat.name_ja;
-    btn.onclick = () => selectCategory(cat.id, btn);
-    tabsEl.appendChild(btn);
+  pkCatProducts = {};
+  (pc.data || []).slice().sort((a, b) => (a.sort_order || 999) - (b.sort_order || 999)).forEach(r => {
+    if (!pkProducts[r.product_id]) return;
+    (pkCatProducts[r.category_id] = pkCatProducts[r.category_id] || []).push(r.product_id);
   });
+  pkCats = (ca.data || []).filter(c => pkCatProducts[c.id] && pkCatProducts[c.id].length)
+    .map(c => ({ id: c.id, th: c.name_th || '', en: c.name_en || c.name_ja || '' }));
+  pkTopIds = top.error ? [] : (top.data || []).map(r => r.product_id).filter(id => pkProducts[id]);
 
-  selectCategory(null, allBtn);
+  pkTab = pkTopIds.length ? 'top' : (pkCats.length ? pkCats[0].id : 'all');
+  pkQuery = '';
+  document.getElementById('product-search').value = '';
+  renderPkCats();
+  renderPkGrid();
 }
 
-function selectCategory(categoryId, btn) {
-  currentCategoryId = categoryId;
-  document.querySelectorAll('.category-tabs button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  loadProductGrid();
+function renderPkCats() {
+  const box = document.getElementById('pk-cats');
+  if (!box) return;
+  box.innerHTML = '';
+  const add = (id, th, en, extra) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = (extra || '') + ((pkTab === id && !pkQuery) ? ' act' : '');
+    if (th) { const d = document.createElement('div'); d.className = 'th'; d.textContent = th; b.appendChild(d); }
+    if (en && en !== th) { const d = document.createElement('div'); d.className = 'en'; d.textContent = en; b.appendChild(d); }
+    b.onclick = () => {
+      pkTab = id; pkQuery = '';
+      document.getElementById('product-search').value = '';
+      renderPkCats(); renderPkGrid();
+    };
+    box.appendChild(b);
+  };
+  if (pkTopIds.length) add('top', '★ ขายดี', 'Best sellers', 'top');
+  let n = 0;
+  pkCats.forEach(c => add(c.id, c.th || c.en, c.th ? c.en : '', (n++ % 2) ? 'alt' : ''));
+  add('weight', 'ชั่งน้ำหนัก', 'Weight-based', (n++ % 2) ? 'alt' : '');
+  add('all', 'ทั้งหมด', 'All', (n++ % 2) ? 'alt' : '');
 }
 
-async function loadProductGrid() {
-  const gridEl = document.getElementById('product-grid');
-  gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">กำลังโหลด... / Loading...</div>';
+function pkVisibleIds() {
+  if (pkQuery) {
+    const tokens = pkNorm(pkQuery).split(/\s+/).filter(Boolean);
+    return Object.keys(pkProducts).filter(id => {
+      const p = pkProducts[id];
+      const hay = pkNorm([p.name_ja, p.name_en, p.name_th].join(' '));
+      return tokens.every(t => hay.indexOf(t) >= 0);
+    });
+  }
+  if (pkTab === 'top') return pkTopIds;
+  if (pkTab === 'all') return Object.keys(pkProducts);
+  if (pkTab === 'weight') return Object.keys(pkProducts).filter(id => pkProducts[id].sale_type === 'weight');
+  return pkCatProducts[pkTab] || [];
+}
 
-  // 「人気商品」タブ: 注文履歴から集計したビューを使う
-  if (currentCategoryId === 'popular') {
-    const { data: popData, error: popError } = await supabaseClient
-      .from('popular_products')
-      .select('product_id, order_count')
-      .order('order_count', { ascending: false })
-      .limit(12);
+function renderPkGrid() {
+  const g = document.getElementById('product-grid');
+  if (!g) return;
+  g.innerHTML = '';
+  g.className = 'pk-grid c' + pkCols();
+  const ids = pkVisibleIds();
+  if (!ids.length) {
+    const e = document.createElement('div');
+    e.className = 'pk-empty';
+    e.textContent = pkQuery ? 'ไม่พบสินค้า / Not found / 見つかりません' : 'ไม่มีสินค้า / No products';
+    g.appendChild(e);
+    return;
+  }
+  ids.slice(0, 300).forEach(id => {
+    const p = pkProducts[id];
+    const isW = p.sale_type === 'weight';
+    const noPrice = !p.price || p.price === 0;
+    const eff = effectivePrice(p);
+    const card = document.createElement('div');
+    card.className = 'pk-card';
+    card.dataset.pid = id;
 
-    if (popError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + popError.message + '</div>'; return; }
-
-    if (!popData || popData.length === 0) {
-      gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ยังไม่มีข้อมูลคำสั่งซื้อเพียงพอ / Not enough order history yet</div>';
-      return;
+    const im = document.createElement('div');
+    im.className = 'im';
+    const u = pkSafeImg(p.image_url);
+    if (u) {
+      const img = document.createElement('img');
+      img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.src = u;
+      im.appendChild(img);
     }
+    card.appendChild(im);
 
-    const ids = popData.map(p => p.product_id);
-    const { data: prodData, error: prodError } = await supabaseClient
-      .from('products')
-      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
-      .in('id', ids);
+    const nm = document.createElement('div');
+    nm.className = 'nm';
+    nm.textContent = pkPrimaryName(p);
+    card.appendChild(nm);
 
-    if (prodError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + prodError.message + '</div>'; return; }
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    const th = pkClean(p.name_th), ja = pkClean(p.name_ja), en = pkClean(p.name_en);
+    sub.textContent = [th, (en ? ja : '')].filter(x => x && x !== pkPrimaryName(p)).join(' · ');
+    card.appendChild(sub);
 
-    // 注文回数の多い順に並び替え(inクエリは順序を保証しないため)
-    const orderMap = {};
-    popData.forEach(p => { orderMap[p.product_id] = p.order_count; });
-    const sorted = (prodData || []).slice().sort((a, b) => (orderMap[b.id] || 0) - (orderMap[a.id] || 0));
+    const pr = document.createElement('div');
+    pr.className = 'pr';
+    if (noPrice) {
+      pr.textContent = 'ยังไม่ตั้งราคา / No price';
+      pr.style.color = '#9c3a2c'; pr.style.fontSize = '12px';
+    } else if (isW) {
+      pr.appendChild(document.createTextNode(fmtThb(p.unit_price) + ' '));
+      const sm = document.createElement('small'); sm.textContent = '/' + (p.unit_label || '100g'); pr.appendChild(sm);
+    } else if (eff < p.price) {
+      const old = document.createElement('small'); old.style.textDecoration = 'line-through'; old.textContent = fmtThb(p.price) + ' ';
+      pr.appendChild(old); pr.appendChild(document.createTextNode(fmtThb(eff) + ' 🔥'));
+    } else {
+      pr.textContent = fmtThb(eff);
+    }
+    card.appendChild(pr);
 
-    renderProductGrid(sorted, orderMap);
-    return;
-  }
+    const badge = (cls, text) => { const b = document.createElement('div'); b.className = 'bd ' + cls; b.textContent = text; card.appendChild(b); };
+    if (isW) badge('', 'ชั่งน้ำหนัก');
+    else if (p.is_monthly_promotion && eff < Number(p.price || 0)) badge('', 'โปร');
+    if (!p.is_unlimited_stock && Number(p.stock_qty || 0) <= 0) badge('z', 'สต็อก 0');
+    if (p.is_published === false) { const b = document.createElement('div'); b.className = 'bd np'; b.textContent = 'ไม่เผยแพร่ / 非公開'; im.appendChild(b); }
 
-  // 「量り売り」タブ: sale_type='weight'の商品だけを一覧表示
-  if (currentCategoryId === 'weight') {
-    const { data: weightData, error: weightError } = await supabaseClient
-      .from('products')
-      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
-      .eq('sale_type', 'weight')
-      .order('name_ja')
-      .limit(200);
+    const q = document.createElement('div');
+    q.className = 'qty';
+    card.appendChild(q);
 
-    if (weightError) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + weightError.message + '</div>'; return; }
+    card.onclick = () => {
+      addToCart(p);
+      card.classList.add('flash');
+      setTimeout(() => card.classList.remove('flash'), 350);
+    };
+    g.appendChild(card);
+  });
+  updatePkBar();
+}
 
-    renderProductGrid(weightData || []);
-    return;
-  }
+function fmtThb(n) {
+  n = Number(n);
+  return '฿' + (Math.round(n * 100) % 100 === 0 ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : n.toFixed(2));
+}
 
-  let query;
-  if (currentCategoryId) {
-    query = supabaseClient
-      .from('product_categories')
-      .select('products ( id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published )')
-      .eq('category_id', currentCategoryId);
-  } else {
-    query = supabaseClient
-      .from('products')
-      .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type, is_published')
-      .order('name_ja')
-      .limit(500);
-  }
+function onProductSearch() {
+  clearTimeout(pkSearchTimer);
+  pkSearchTimer = setTimeout(() => {
+    pkQuery = document.getElementById('product-search').value.trim();
+    renderPkCats();
+    renderPkGrid();
+  }, 120);
+}
 
-  const { data, error } = await query;
-  if (error) { gridEl.innerHTML = '<div style="color:var(--red-accent);font-size:12px;">Error: ' + error.message + '</div>'; return; }
-
-  const products = currentCategoryId
-    ? (data || []).map(r => r.products).filter(p => p)
-    : (data || []);
-
-  renderProductGrid(products);
+// カートの内容を、商品カードの「個数バッジ」と下のバーに反映する
+function updatePkBar(subtotal) {
+  const txt = document.getElementById('pk-bar-text');
+  if (!txt) return;
+  const counts = {};
+  let items = 0, sum = 0;
+  cart.forEach(it => {
+    counts[it.product_id] = (counts[it.product_id] || 0) + 1;
+    items += 1;
+    sum += (it.price || 0) * (it.quantity || 0);
+  });
+  txt.textContent = '🛒 ' + items + ' รายการ / items' + (items ? '  ·  ' + (subtotal !== undefined ? subtotal : sum) + ' THB' : '');
+  document.querySelectorAll('#product-grid .pk-card').forEach(card => {
+    const c = counts[card.dataset.pid] || 0;
+    card.classList.toggle('incart', c > 0);
+    const q = card.querySelector('.qty');
+    if (q) q.textContent = c > 0 ? '×' + c : '';
+  });
+}
+function scrollToCart() {
+  const t = document.querySelector('table.cart');
+  if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // プロモーション価格の判定(cart.html・product_list.htmlと同じルール):
@@ -1063,62 +1214,6 @@ async function loadProductGrid() {
 function effectivePrice(p) {
   const promo = p.promotion_price;
   return (p.is_monthly_promotion && promo !== null && promo !== undefined && promo < p.price) ? promo : p.price;
-}
-
-function renderProductGrid(products, orderMap) {
-  const gridEl = document.getElementById('product-grid');
-
-  if (products.length === 0) { gridEl.innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:12px;">ไม่มีสินค้า / No products</div>'; return; }
-
-  gridEl.innerHTML = '';
-  products.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    const isWeight = p.sale_type === 'weight';
-    // 量り売りも「価格未入力」の警告対象に含める(product_control.htmlの方針と統一)
-    const noPrice = !p.price || p.price === 0;
-    const eff = effectivePrice(p);
-    const hasDiscount = !isWeight && !noPrice && eff < p.price;
-    const priceLabel = isWeight
-      ? (noPrice ? 'ยังไม่ตั้งราคา / No price' : `${p.price} THB (approx.)`)
-      : (noPrice ? 'ยังไม่ตั้งราคา / No price' : (hasDiscount
-          ? `<span style="text-decoration:line-through;color:var(--text-muted);font-size:10px;margin-right:4px;">${p.price}</span>${eff} THB 🔥`
-          : `${p.price} THB`));
-    const thLine = p.name_th ? `<div style="color:var(--text-muted);font-size:11px;">${escapeHtml(p.name_th)}</div>` : '';
-    const orderBadge = (orderMap && orderMap[p.id]) ? `<div style="color:#8a6d1e;font-size:10px;">⭐ ${orderMap[p.id]} ครั้ง / times</div>` : '';
-    card.innerHTML = `<div class="p-name">${escapeHtml(p.name_en || p.name_ja)}${isWeight ? '<span class="weight-tag">ชั่ง</span>' : ''}${noPrice ? '<span class="weight-tag" style="background:#fbd7d2;color:#9c3a2c;">!</span>' : ''}</div>${thLine}${orderBadge}<div class="p-price${isWeight ? ' weight' : ''}${noPrice ? ' no-price' : ''}">${priceLabel}</div>`;
-    card.onclick = () => addToCart(p);
-    gridEl.appendChild(card);
-  });
-}
-
-// ---------------- Product search ----------------
-async function searchProducts() {
-  const q = document.getElementById('product-search').value.trim();
-  const resultEl = document.getElementById('product-search-result');
-  if (!q) { resultEl.style.display = 'none'; return; }
-
-  const { data, error } = await supabaseClient
-    .from('products')
-    .select('id, name_ja, name_en, name_th, price, promotion_price, is_monthly_promotion, unit_price, unit_label, sale_type')
-    .or(`name_ja.ilike.%${q}%,name_th.ilike.%${q}%`)
-    .limit(15);
-
-  if (error || !data || data.length === 0) { resultEl.style.display = 'none'; return; }
-
-  resultEl.innerHTML = '';
-  data.forEach(p => {
-    const div = document.createElement('div');
-    const eff = effectivePrice(p);
-    const priceLabel = p.sale_type === 'weight'
-      ? `${p.unit_price} THB / ${p.unit_label} (approx. ${p.price} THB)`
-      : (eff < p.price ? `${eff} THB 🔥 (was ${p.price})` : `${p.price} THB`);
-    const thPart = p.name_th ? ` / ${escapeHtml(p.name_th)}` : '';
-    div.innerHTML = `${escapeHtml(p.name_en || p.name_ja)}${thPart} <span style="color:var(--text-muted)">(${priceLabel})</span>`;
-    div.onclick = () => addToCart(p);
-    resultEl.appendChild(div);
-  });
-  resultEl.style.display = 'block';
 }
 
 function addToCart(p) {
@@ -1134,8 +1229,12 @@ function addToCart(p) {
     unit_label: p.unit_label,
     quantity: 1
   });
-  document.getElementById('product-search').value = '';
-  document.getElementById('product-search-result').style.display = 'none';
+  if (pkQuery) {
+    document.getElementById('product-search').value = '';
+    pkQuery = '';
+    renderPkCats();
+    renderPkGrid();
+  }
   renderCart();
 }
 
@@ -1222,6 +1321,7 @@ function renderCart() {
   const md = getManualDiscount();
   const discNote = md > 0 ? ` − discount ${md} THB / ส่วนลด ${md} THB` : '';
   document.getElementById('subtotal-display').textContent = subtotal + ' THB' + shippingNote + discNote;
+  if (typeof updatePkBar === 'function') updatePkBar(subtotal);
   // 値引き後の支払い金額のプレビュー(クーポン・ポイント使用分も差し引いた最終額)
   const previewEl = document.getElementById('discount-total-preview');
   if (previewEl) {
