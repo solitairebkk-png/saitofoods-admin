@@ -289,7 +289,7 @@ async function loadSummary() {
     .eq('delivery_date', date);
 
   // レシーバブル分(receivables.htmlで毎日アップされるPDFから読み取った合計金額): upload_date で判定。
-  // 売上のTotalには合算せず、独立したカードで表示する(卸売り等との二重計上を避けるため)。
+  // 独立したカードで表示しつつ、売上のTotalにも合算する。
   const receivablesPromise = supabaseClient
     .from('receivables_uploads').select('total_amount, total_source')
     .eq('upload_date', date)
@@ -429,7 +429,10 @@ function renderSummary(orders, plaaTapianRows, receivablesRow) {
   const plaaTapianAmount = plaaTapianRows.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
   const plaaTapianCount = plaaTapianRows.length;
 
-  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount;
+  // レシーバブル(PDF合計)の当日金額。PDF未アップ・金額なしの日は0として扱う。Totalに合算する(2026-11-26)。
+  const receivablesAmount = Number(receivablesRow?.total_amount) || 0;
+
+  const grandTotal = Object.values(buckets).reduce((s, b) => s + b.amount, 0) + plaaTapianAmount + receivablesAmount;
   const grandOrders = Object.values(buckets).reduce((s, b) => s + b.orders, 0);
 
   // 配達完了SMSを送る依頼を出した件数(選んだ日の配送注文。キャンセル分・卸売りは含めない)。0件の日は表示しない。
@@ -477,7 +480,7 @@ function renderSummary(orders, plaaTapianRows, receivablesRow) {
       <div class="count">${plaaTapianCount} items / รายการ</div>
     </div>`;
 
-  // レシーバブル専用カード(常に表示)。PDF未アップ・金額なしの日は、その旨を表示する。Totalには合算しない。
+  // レシーバブル専用カード(常に表示)。PDF未アップ・金額なしの日は、その旨を表示する。金額はTotalにも合算される。
   let receivablesBody;
   if (!receivablesRow) {
     receivablesBody = `<div class="amount muted">ยังไม่อัปโหลด / Not uploaded</div>`;
@@ -490,7 +493,7 @@ function renderSummary(orders, plaaTapianRows, receivablesRow) {
     <div class="card receivables">
       <div class="label">Receivables / レシーバブル</div>
       ${receivablesBody}
-      <div class="count">PDF total, not included in Total / PDF合計(Totalには含まず)</div>
+      <div class="count">PDF total, included in Total / PDF合計(Totalに含む)</div>
     </div>`;
 
   cardsEl.innerHTML += `
