@@ -52,6 +52,9 @@
   .card.plaatapian { border: 1px solid #8B2E8B; }
   .card.plaatapian .label { color: #8B2E8B; font-weight: 600; }
   .card.plaatapian .amount { color: #8B2E8B; }
+  .card.receivables { border: 1px solid var(--amber); }
+  .card.receivables .label { color: var(--amber); font-weight: 600; }
+  .card.receivables .amount.muted { font-size: 15px; color: var(--text-muted); font-weight: 600; }
 
   .warn-box { background: #fdf4e3; border: 1px solid #eecf8a; color: var(--amber); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
   .info-box { background: #eaf1f8; border: 1px solid #b9d0e6; color: var(--navy); border-radius: 6px; padding: 10px 14px; font-size: 12px; margin-bottom: 20px; display: none; }
@@ -285,15 +288,23 @@ async function loadSummary() {
     .eq('order_type', 'wholesale')
     .eq('delivery_date', date);
 
+  // レシーバブル分(receivables.htmlで毎日アップされるPDFから読み取った合計金額): upload_date で判定。
+  // 売上のTotalには合算せず、独立したカードで表示する(卸売り等との二重計上を避けるため)。
+  const receivablesPromise = supabaseClient
+    .from('receivables_uploads').select('total_amount, total_source')
+    .eq('upload_date', date)
+    .maybeSingle();
+
   const [
     { data: deliveryData, error: err1 },
     { data: walkinData, error: err2 },
     { data: plaaTapianData, error: err3 },
     { data: wholesaleData, error: err4 },
-  ] = await Promise.all([deliveryPromise, walkinPromise, plaaTapianPromise, wholesalePromise]);
+    { data: receivablesData, error: err5 },
+  ] = await Promise.all([deliveryPromise, walkinPromise, plaaTapianPromise, wholesalePromise, receivablesPromise]);
 
-  if (err1 || err2 || err3 || err4) {
-    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message || err3?.message || err4?.message) + '</div>';
+  if (err1 || err2 || err3 || err4 || err5) {
+    document.getElementById('summary-cards').innerHTML = '<div class="empty-state">Error: ' + (err1?.message || err2?.message || err3?.message || err4?.message || err5?.message) + '</div>';
     document.getElementById('prod-tbody').innerHTML = '';
     document.getElementById('staff-tbody').innerHTML = '';
     return;
@@ -319,11 +330,11 @@ async function loadSummary() {
       _wholesaleName: o.wholesale_restaurant_name,
     }));
 
-  renderSummary([...allOrders, ...wholesaleRows], plaaTapianRows);
+  renderSummary([...allOrders, ...wholesaleRows], plaaTapianRows, receivablesData);
   renderStaffDeliveries(allOrders);
 }
 
-function renderSummary(orders, plaaTapianRows) {
+function renderSummary(orders, plaaTapianRows, receivablesRow) {
   // Sriracha・Pattayaはそれぞれ独立集計。それ以外(バンコク本体・エリア外/未設定)はすべてバンコクに含める。
   // 卸売り(is_wholesale)は、選択されたエリアのバケットにそのまま合算する。
   const buckets = {
@@ -464,6 +475,22 @@ function renderSummary(orders, plaaTapianRows) {
       <div class="label">Plaa-Ta-Pian</div>
       <div class="amount">${plaaTapianAmount.toLocaleString()} THB</div>
       <div class="count">${plaaTapianCount} items / รายการ</div>
+    </div>`;
+
+  // レシーバブル専用カード(常に表示)。PDF未アップ・金額なしの日は、その旨を表示する。Totalには合算しない。
+  let receivablesBody;
+  if (!receivablesRow) {
+    receivablesBody = `<div class="amount muted">ยังไม่อัปโหลด / Not uploaded</div>`;
+  } else if (receivablesRow.total_amount == null) {
+    receivablesBody = `<div class="amount muted">ไม่มียอด / No amount</div>`;
+  } else {
+    receivablesBody = `<div class="amount">${Number(receivablesRow.total_amount).toLocaleString(undefined, { maximumFractionDigits: 2 })} THB</div>`;
+  }
+  cardsEl.innerHTML += `
+    <div class="card receivables">
+      <div class="label">Receivables / レシーバブル</div>
+      ${receivablesBody}
+      <div class="count">PDF total, not included in Total / PDF合計(Totalには含まず)</div>
     </div>`;
 
   cardsEl.innerHTML += `
