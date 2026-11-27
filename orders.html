@@ -515,6 +515,16 @@
   .sns-att-name { color: var(--text-muted); word-break: break-all; }
   .sns-att button, .sns-att a.sns-att-link { font-size: 10.5px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: white; cursor: pointer; font-family: inherit; color: var(--text); text-decoration: none; }
   .sns-att-done { color: #1f6b34; font-weight: 600; }
+  /* ✉️メールの「誰が・何を」を一目で分かるようにする表示(2026-11-27) */
+  .sns-who { margin-top: 6px; padding: 6px 8px; border-radius: 6px; font-size: 11.5px; line-height: 1.5; background: #eef5ff; border: 1px solid #cfe0f7; color: #1d3b66; }
+  .sns-who.unknown { background: #fff6e5; border-color: #f0d9a8; color: #7a5200; }
+  .sns-who b { font-weight: 700; }
+  .sns-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .sns-chip { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: #eee; color: #444; }
+  .sns-chip.warn { background: #ffe4cc; color: #8a3d00; }
+  .sns-chip.ok { background: #e1efe3; color: #1f6b34; }
+  .sns-nobody { background: #fff6e5; border: 1px dashed #e0b45c; border-radius: 6px; padding: 8px 10px; font-size: 12px; line-height: 1.55; color: #7a5200; }
+  .sns-quote-muted { margin-top: 6px; font-size: 10.5px; color: var(--text-muted); word-break: break-word; }
   #inbox-slip-picker { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 12px; }
   #inbox-slip-picker .picker-box { background: white; border-radius: 10px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 14px; font-size: 12.5px; }
   #inbox-slip-picker .picker-order { display: block; width: 100%; text-align: left; margin-top: 6px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-family: inherit; font-size: 12px; }
@@ -4752,6 +4762,9 @@ async function loadInboxList() {
   inboxItemCache = {};
   data.forEach(i => { inboxItemCache[i.id] = i; });
 
+  // メールは、送信元アドレスから登録済みのお客様と最新の注文を突き合わせる(「誰からか」を分かりやすくする)
+  const whoMap = (snsModalMode === 'email') ? await lookupInboxSenders(data) : {};
+
   listEl.innerHTML = data.map(item => {
     const timeStr = new Date(item.received_at).toLocaleString('en-GB', {
       month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
@@ -4767,21 +4780,44 @@ async function loadInboxList() {
     const platformLabel = isEmail ? 'MAIL' : (item.platform === 'instagram' ? 'IG' : 'FB');
     const senderEmailHtml = (isEmail && item.sender_email)
       ? ` <span style="color:var(--text-muted);font-size:10.5px;">&lt;${escapeHtml(item.sender_email)}&gt;</span>` : '';
+    // 本文が実質ない(引用の見出し行や [image0.jpeg] だけ)メールかどうかを判定する
+    const bi = isEmail ? inboxBodyInfo(item) : null;
+    const attCount = Array.isArray(item.attachments) ? item.attachments.length : 0;
+    const noBodyNotice = (isEmail && bi.noBody)
+      ? `<div class="sns-nobody">
+           📷 <b>本文なし${attCount > 0 ? '(添付ファイルのみ)' : '(画像のみ・埋め込み画像の可能性)'} / ไม่มีข้อความ ${attCount > 0 ? '(มีเฉพาะไฟล์แนบ)' : '(อาจมีเฉพาะรูปภาพที่ฝังในอีเมล)'}</b><br>
+           ${attCount > 0
+             ? '下の添付ファイルを確認してください。<br>กรุณาตรวจสอบไฟล์แนบด้านล่าง'
+             : 'メール本文に貼り付けられた画像は、この画面に取り込まれていません。送金スリップの可能性があります。ご不明なときは「返信」で送信者へ問い合わせるか、マネージャー(Gmail)で元のメールを確認してください。<br>รูปที่ฝังในเนื้อหาอีเมลไม่แสดงในหน้านี้ อาจเป็นสลิปโอนเงิน หากไม่แน่ใจ กดปุ่ม "ตอบกลับ" เพื่อสอบถามลูกค้า หรือให้ผู้จัดการตรวจสอบอีเมลต้นฉบับใน Gmail'}
+         </div>
+         ${item.message_text ? `<div class="sns-quote-muted">(引用の見出しのみ / เฉพาะหัวข้อที่ถูกอ้างอิง) ${escapeHtml(item.message_text)}</div>` : ''}`
+      : '';
     const bodyHtml = isEmail
       ? `<div class="sns-bilingual">
            <div class="sns-bilingual-col">
              <div class="sns-bilingual-label">ORIGINAL / ต้นฉบับ</div>
              ${item.subject ? `<div class="sns-email-subject">${escapeHtml(item.subject)}</div>` : ''}
-             <div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>
+             ${bi.noBody ? noBodyNotice : `<div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>`}
            </div>
            <div class="sns-bilingual-col th">
              <div class="sns-bilingual-label">THAI / ภาษาไทย (แปลโดยเครื่อง / machine translation)</div>
              ${item.subject_th ? `<div class="sns-email-subject">${escapeHtml(item.subject_th)}</div>` : ''}
-             <div class="sns-item-text">${escapeHtml(item.message_text_th || '—')}</div>
+             <div class="sns-item-text">${bi.noBody ? '—' : escapeHtml(item.message_text_th || '—')}</div>
            </div>
          </div>`
       : `<div class="sns-item-text">${escapeHtml(item.message_text || '(no text)')}</div>`;
     const attachmentsHtml = isEmail ? renderInboxAttachments(item) : '';
+    // 「誰からか」: 登録顧客との照合結果 + 一目で分かる印(チップ)
+    const whoHtml = isEmail ? renderInboxWho(item, whoMap) : '';
+    const chipsHtml = isEmail
+      ? `<div class="sns-chips">${
+          attCount > 0 ? `<span class="sns-chip ok">📎 添付 ${attCount} / ไฟล์แนบ ${attCount}</span>` : ''
+        }${
+          bi.noBody && attCount === 0 ? '<span class="sns-chip warn">🖼 本文なし・画像のみ? / ไม่มีข้อความ</span>' : ''
+        }${
+          bi.noBody && attCount > 0 ? '<span class="sns-chip warn">本文なし / ไม่มีข้อความ</span>' : ''
+        }</div>`
+      : '';
     const readBtn = item.is_read
       ? ''
       : `<button onclick="markInboxRead('${item.id}')">Mark as read / อ่านแล้ว</button>`;
@@ -4804,6 +4840,8 @@ async function loadInboxList() {
           </span>
           <span class="sns-item-time">${timeStr}</span>
         </div>
+        ${whoHtml}
+        ${chipsHtml}
         ${bodyHtml}
         ${attachmentsHtml}
         ${repliedHtml}
@@ -4811,6 +4849,70 @@ async function loadInboxList() {
       </div>`;
   }).join('');
   hydrateInboxAttachments(listEl);
+}
+
+// ===== ✉️メールの「誰が・何を」表示(2026-11-27) =====
+// 本文が実質空か判定する。引用の見出し行(「…<xxx@yyy>:」「… wrote:」)、[image0.jpeg] / [cid:…]、
+// 「Get Outlook for iOS」「Sent from my iPhone」だけの場合は「本文なし」とみなす。
+function inboxBodyInfo(item) {
+  const raw = String(item.message_text || '');
+  const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const meaningful = lines.filter(l => {
+    if (/^\[(image|cid:|inline)[^\]]*\]$/i.test(l)) return false;
+    if (/<[^<>\s]+@[^<>\s]+>\s*[:：]\s*$/.test(l)) return false;
+    if (/\b(wrote|writes)\s*[:：]\s*$/i.test(l)) return false;
+    if (/^(Get Outlook for|Sent from my|Sent from Mail|iPhoneから送信|Android\s*から送信)/i.test(l)) return false;
+    if (/^[-_=─ー\s]{3,}$/.test(l)) return false;
+    return true;
+  });
+  return { noBody: meaningful.length === 0 };
+}
+
+// 送信元メールアドレスから、登録済みのお客様と、その最新の注文を調べる
+async function lookupInboxSenders(items) {
+  const map = {};
+  try {
+    const emails = Array.from(new Set(items
+      .map(i => String(i.sender_email || '').trim().toLowerCase())
+      .filter(e => e && /^[^,()\s]+@[^,()\s]+$/.test(e))));
+    if (emails.length === 0) return map;
+    const { data: custs, error } = await supabaseClient.from('customers')
+      .select('id, family_name, first_name, tel1, email')
+      .or(emails.map(e => 'email.ilike.' + e).join(','));
+    if (error || !custs || custs.length === 0) return map;
+    const byId = {};
+    custs.forEach(c => { byId[c.id] = c; map[String(c.email || '').toLowerCase()] = { customer: c, order: null }; });
+    const { data: ords } = await supabaseClient.from('orders')
+      .select('id, customer_id, created_at, total_amount, payment_status')
+      .in('customer_id', custs.map(c => c.id))
+      .order('created_at', { ascending: false }).limit(300);
+    (ords || []).forEach(o => {
+      const c = byId[o.customer_id];
+      if (!c) return;
+      const entry = map[String(c.email || '').toLowerCase()];
+      if (entry && !entry.order) entry.order = o;
+    });
+  } catch (e) { /* 照合に失敗しても一覧は表示する */ }
+  return map;
+}
+
+function renderInboxWho(item, whoMap) {
+  const key = String(item.sender_email || '').trim().toLowerCase();
+  const hit = whoMap[key];
+  if (!hit) {
+    return `<div class="sns-who unknown">⚠ 登録お客様と一致なし(別のメールアドレスで登録している可能性) / ไม่พบลูกค้าที่ลงทะเบียนด้วยอีเมลนี้</div>`;
+  }
+  const c = hit.customer;
+  const name = [c.family_name, c.first_name].filter(Boolean).join(' ') || '(no name)';
+  let orderHtml = '';
+  if (hit.order) {
+    const o = hit.order;
+    const d = new Date(o.created_at).toLocaleString('en-GB', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
+    const amt = (o.total_amount != null) ? ' · ฿' + Number(o.total_amount).toLocaleString() : '';
+    orderHtml = `<br>🧾 最新の注文 / ออเดอร์ล่าสุด: #${escapeHtml(String(o.id).slice(0, 8))} · ${escapeHtml(d)}${amt}${o.payment_status ? ' · ' + escapeHtml(String(o.payment_status)) : ''}`;
+  }
+  const tel = c.tel1 ? ` · ☎ ${escapeHtml(c.tel1)}` : '';
+  return `<div class="sns-who">👤 登録お客様 / ลูกค้า: <b>${escapeHtml(name)}</b>${tel}${orderHtml}</div>`;
 }
 
 // ===== ✉️メールの添付ファイル(2026-11-09) =====
