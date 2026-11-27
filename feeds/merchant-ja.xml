@@ -468,7 +468,7 @@
       <description>オーソドックスなトンカツですが迫力のサイズ!140g</description>
       <link>https://saitofoods.com/products/990.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555992646_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>79.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -705,7 +705,7 @@
       <description>優しい塩味のサバ塩焼き20g*10切れパック。 既に焼いてありますので、解凍するだけでお召し上がりいただけます。 骨取りでお子様でも安心。</description>
       <link>https://saitofoods.com/products/1273.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784884156393_slot1.jpg</g:image_link>
-      <g:availability>out_of_stock</g:availability>
+      <g:availability>in_stock</g:availability>
       <g:price>150.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1408,7 +1408,7 @@
       <description>日本から輸入の冷凍納豆です。 4パック入りで、タレ付です。 朝ごはんに食べたくなりますね。</description>
       <link>https://saitofoods.com/products/479.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784889743888_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>67.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1421,7 +1421,7 @@
       <description>北海道大豆を使用した小粒の納豆です。3パックセット タレ、からし付き</description>
       <link>https://saitofoods.com/products/1176.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1784868855340_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1447,7 +1447,7 @@
       <description>ミツカン 金のつぶ納豆の 梅酢タレ納豆です。 納得の味、品質です。</description>
       <link>https://saitofoods.com/products/978.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/staff-uploads/1785555498929_slot1.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>74.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1460,7 +1460,7 @@
       <description>使用大豆:アメリカ産 有機小粒大豆、契約栽培大豆を100%使用。 有機栽培大豆とは… ①畑は、2年以上有機肥料で土作りをします ②農薬や化学肥料に頼らないことを基本としています ③遺伝子組換え技術を使用しません 大豆の栽培から納豆の製造まで有機認証を受けた納豆です。 有機しょうゆ使用たれとからし付。 40g * 3パック</description>
       <link>https://saitofoods.com/products/1358.html</link>
       <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05201401_6a0d5c592fe48.jpg</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>out_of_stock</g:availability>
       <g:price>60.00 THB</g:price>
       <g:condition>new</g:condition>
       <g:brand>Saito Foods</g:brand>
@@ -1935,6 +1935,19 @@
       <g:brand>Saito Foods</g:brand>
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>サイトウフーズオリジナル商品</g:product_type>
+    </item>
+    <item>
+      <g:id>1357</g:id>
+      <title>ゆめの大地(北海道豚肉)の味噌漬け 100g</title>
+      <description>北海道のプレミアム豚肉「ゆめの大地」ステーキ100gを使用した自家製味噌漬けです。 甘目の味付けで味噌漬けに仕上げました。解凍後に焼いてお召し上がりください。 https://hokkaido-pork.com/ja/</description>
+      <link>https://saitofoods.com/products/1357.html</link>
+      <g:image_link>https://sdjgmgyghnlpqydrnllj.supabase.co/storage/v1/object/public/product-images/05081649_69fdb19403aec.jpg</g:image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>125.00 THB</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>Saito Foods</g:brand>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>冷凍食品</g:product_type>
     </item>
     <item>
       <g:id>1133</g:id>
