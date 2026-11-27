@@ -4790,7 +4790,7 @@ async function loadInboxList() {
              ? '下の添付ファイルを確認してください。<br>กรุณาตรวจสอบไฟล์แนบด้านล่าง'
              : 'メール本文に貼り付けられた画像は、この画面に取り込まれていません。送金スリップの可能性があります。ご不明なときは「返信」で送信者へ問い合わせるか、マネージャー(Gmail)で元のメールを確認してください。<br>รูปที่ฝังในเนื้อหาอีเมลไม่แสดงในหน้านี้ อาจเป็นสลิปโอนเงิน หากไม่แน่ใจ กดปุ่ม "ตอบกลับ" เพื่อสอบถามลูกค้า หรือให้ผู้จัดการตรวจสอบอีเมลต้นฉบับใน Gmail'}
          </div>
-         ${item.message_text ? `<div class="sns-quote-muted">(引用の見出しのみ / เฉพาะหัวข้อที่ถูกอ้างอิง) ${escapeHtml(item.message_text)}</div>` : ''}`
+         ${(item.message_text && item.message_text !== '(no text)') ? `<div class="sns-quote-muted">(引用の見出しのみ / เฉพาะหัวข้อที่ถูกอ้างอิง) ${escapeHtml(item.message_text)}</div>` : ''}`
       : '';
     const bodyHtml = isEmail
       ? `<div class="sns-bilingual">
@@ -4859,6 +4859,7 @@ function inboxBodyInfo(item) {
   const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
   const meaningful = lines.filter(l => {
     if (/^\[(image|cid:|inline)[^\]]*\]$/i.test(l)) return false;
+    if (l === '(no text)') return false;
     if (/<[^<>\s]+@[^<>\s]+>\s*[:：]\s*$/.test(l)) return false;
     if (/\b(wrote|writes)\s*[:：]\s*$/i.test(l)) return false;
     if (/^(Get Outlook for|Sent from my|Sent from Mail|iPhoneから送信|Android\s*から送信)/i.test(l)) return false;
